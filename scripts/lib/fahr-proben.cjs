@@ -3014,6 +3014,40 @@ async function probeLeben(expected) {
             r._freiLuftPacken = (K, X, x) => (X[x + 38] = X[x + 41] = X[x + 42] = 0);
             S.frei.ohneLuft = wurf(0);
             delete r._freiLuftPacken;
+            // (4b) DER PREIS DES WINDS (same.physik.flug#1): 20 Steinwürfel fallen 30 Sim-Schritte (die Uhr `_simZeit` läuft) — der
+            // Löser fragt `_windAt` nur, wenn ein Körper FREI.luft.windM quer weiter steht oder die Uhr FREI.luft.windS weiter ist:
+            // höchstens 20 · (⌈30 dt / windS⌉ + 1) Fragen. Die Mutante: ohne das Merken (`K.wind` je Schritt leer) fragt jeder je
+            // Schritt (vorher, main 7e73426e: 200 fallende Kisten 1,84 ms je Schritt, 0,46 ohne Luft).
+            const windPreis = (merken) => {
+                const [windAt, t0, F, dt] = [r._windAt, st._simZeit, A.FREI.luft, A.FIXED_DT];
+                const bp = { name: "k3_wind_preis", label: "k3_wind_preis", frei: true, builtIn: false, parts: [{ shape: "box", material: "stein", size: { x: 0.1, y: 0.1, z: 0.1 }, position: { x: 0, y: 0.05, z: 0 } }] }; // prettier-ignore
+                st.blueprints[bp.name] = bp;
+                const E = [];
+                let lesen = 0;
+                try {
+                    for (let i = 0; i < 20; i++) {
+                        const [x, zz] = [gasse.x + gasse.ux * (4 + (i % 5) * 0.5), gasse.z + gasse.uz * (4 + (i % 5) * 0.5) + Math.floor(i / 5) * 0.5];
+                        E.push(r.spawnArchitecture(bp.name, { x, y: hh(x, zz) + 30, z: zz }, { precise: true, silent: true }));
+                    }
+                    r._windAt = function (...a) {
+                        lesen++;
+                        return windAt.apply(this, a);
+                    };
+                    for (let k = 0; k < 30; k++) {
+                        st._simZeit = (Number.isFinite(st._simZeit) ? st._simZeit : 0) + dt;
+                        if (!merken) for (const e of E) e._frei.wind = null;
+                        r._freiSchritt(dt);
+                    }
+                } finally {
+                    r._windAt = windAt;
+                    st._simZeit = t0;
+                    for (const e of E) r.removeArchitecture(e, { still: true });
+                    delete st.blueprints[bp.name];
+                }
+                return { lesen, soll: 20 * (Math.ceil((30 * dt) / F.windS - 1e-9) + 1), koerper: E.length, schritte: 30 };
+            };
+            S.frei.windPreis = windPreis(true);
+            S.frei.windPreisOhneMerken = windPreis(false);
             // (5) DER FLACHE KÖRPER (same.physik.reaktion#2: der Trümmer, die Scherbe — dünner als der Spalt des Lösers, Ober- und
             // Unterseite sind zugleich Kontakt): ein Brett 25 × 5 × 25 cm fällt 20 cm und liegt, zwei Scheiben 25 × 0,4 × 25 cm
             // fallen halb übereinander. Bis alle drei schlafen (null: nach 4 s wach, `wach` ihre Zahl) und wie das Brett liegt

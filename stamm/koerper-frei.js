@@ -1172,9 +1172,18 @@ class AnazhRealm_koerper_frei {
               )
             : Math.max(L.cwWalzeQuer * 4 * K.r * b, this._freiLuftZahl(2 * b, 2 * K.r) * Math.PI * K.r * K.r);
         X[x + 38] = (0.5 * rho * cwA) / K.m;
-        const w = this._windAt(K.p[0], K.p[2], this.state._simZeit, this._freiWindAus || (this._freiWindAus = {}));
-        X[x + 41] = w.x * w.ms;
-        X[x + 42] = w.z * w.ms;
+        // DER WIND KOSTET, WAS IHN ÄNDERT (Gebot 7): der Körper liest den EINEN Wind neu, wenn er FREI.luft.windM quer weiter
+        // steht oder die Uhr des Sim-Schritts FREI.luft.windS weiter ist — dazwischen trägt er seinen (`K.wind`: x, z, Uhr, Wind
+        // x, z). Vorher fragte jeder wache Körper je Schritt `_windAt` (5,6 µs: das Wetter-Feld 3,8, die Böe 2,5): 200 fallende
+        // Kisten 1,84 → 0,61 ms je Schritt (ohne Luft 0,46) — der Fall selbst ändert den Wind nicht (`_windAt` liest nur x, z).
+        const t = this.state._simZeit;
+        const M = K.wind || (K.wind = Float64Array.of(NaN, NaN, NaN, 0, 0));
+        if (!(Math.abs(K.p[0] - M[0]) < L.windM && Math.abs(K.p[2] - M[1]) < L.windM && Math.abs(t - M[2]) < L.windS)) {
+            const w = this._windAt(K.p[0], K.p[2], t, this._freiWindAus || (this._freiWindAus = {}));
+            [M[0], M[1], M[2], M[3], M[4]] = [K.p[0], K.p[2], t, w.x * w.ms, w.z * w.ms];
+        }
+        X[x + 41] = M[3];
+        X[x + 42] = M[4];
     }
     // c_w einer Fläche aus ihrer Tiefe durch ihre Breite: die Platte (0) bis der Würfel (≥ 1), dazwischen gerade
     _freiLuftZahl(tiefe, breite) {
@@ -1521,6 +1530,9 @@ AnazhRealm.FREI = Object.freeze({
     // DIE LUFT AM KÖRPER (same.physik.flug#1): der Widerstand je Fläche der Hülle c_w nach Hoerner (Fluid-Dynamic Drag 1965,
     // 3-12/3-16): die dünne Platte quer 1,17, der Würfel 1,05 — dazwischen nach der Tiefe der Fläche durch ihre Breite
     // (`_freiLuftZahl`); die kurze Walze quer angeströmt 0,8 (L/D 1–2). Dichte und Wind sind die der EINEN Luft
-    // (vehicle:FAHR.luft.rho, `_windAt`).
-    luft: Object.freeze({ cwPlatte: 1.17, cwWuerfel: 1.05, cwWalzeQuer: 0.8 }),
+    // (vehicle:FAHR.luft.rho, `_windAt`). Der Wind am Körper gilt windM quer und windS lang (`_freiLuftPacken`): die feinste
+    // Gestalt des Winds ist die Böe (λ = 2π / WIND_BOE.k = 164 m; ihr Gang k · 0,9 · 24 m/s im Sturm: in 0,1 s ≤ 5 % des Winds,
+    // auf 1 m 1,7 % der Böe) und die Gasse (Häuser-Schlucht, Meter); die Feder (Platte 25 × 5 cm, 1,9 g) sinkt nach Hoerner
+    // √(2 m g / (ρ c_w A)) = 1,45 m/s, aus 2 m in 1,50 s gegen den Stein 0,65 s (Vakuum 0,64 s).
+    luft: Object.freeze({ cwPlatte: 1.17, cwWuerfel: 1.05, cwWalzeQuer: 0.8, windM: 1, windS: 0.1 }),
 });

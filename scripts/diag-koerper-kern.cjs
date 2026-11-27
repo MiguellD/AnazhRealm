@@ -236,6 +236,10 @@ function satzUrteil(mutante = null) {
         if (mutante === "ohneWetter") P._bewohnerTracht = function (d, T, tuch) { const ov = Object.assign(d, { top: T.top, bottom: T.bottom, shoes: T.shoes }); for (const k of ["topColor", "bottomColor", "shoeColor"]) if (!T.farben.includes(ov[k])) ov[k] = T.farben[Math.max(0, tuch.indexOf(ov[k])) % T.farben.length]; return ov; }; // prettier-ignore
         if (mutante === "ohneZeile") K.leibSatzNamen = () => [];
         if (mutante === "tatOhneKunst") { const th = K.tagesHaltung, taten = Object.values(K.TAGES_GESETZ.rollen).map((R) => R.tat).filter(Boolean); K.tagesHaltung = (akt, rolle, s) => th(akt, rolle, s && taten.includes(akt) ? { krank: s.krank, uebung: { haupt: null } } : s); } // prettier-ignore
+        // (kunst-am-leib) der Leib liest die Stufe nicht: Tun und Profil des Namens ohne das Wort der Stufe (der Stand vor dem Gesetz des Könnens)
+        if (mutante === "leibOhneKunst") { const stufen = K.LEIB_SATZ.stufe.map((s) => s.wort), ohne = (nm) => nm.split(K.LEIB_SATZ.trenner).filter((w) => !stufen.includes(w)).join(K.LEIB_SATZ.trenner), tun = K.leibStandTun, pr = K.leibSatzProfil; K.leibStandTun = (nm) => tun(typeof nm === "string" ? ohne(nm) : nm); K.leibSatzProfil = (M, nm) => pr(M, typeof nm === "string" ? ohne(nm) : nm); } // prettier-ignore
+        // (kunst-am-leib 2) die Kunst hängt am Tor der Rolle: die Rolle ohne Haltung steht in jedem Akt neutral, auch im Zweikampf (der Stand vor Kopf 2)
+        if (mutante === "kunstAmTor") { const th = K.tagesHaltung; K.tagesHaltung = (akt, ro, satz) => { const R = K.TAGES_GESETZ.rollen[ro]; return R && R.haltung === false ? (satz && satz.krank === true ? "idle" + K.LEIB_SATZ.trenner + "krank" : null) : th(akt, ro, satz); }; } // prettier-ignore
     };
     const { r, A, st, ctx } = require("./lib/stamm.cjs").grundWirt(path.join(__dirname, ".."), null, eingriff);
     const K = ctx.__koerperCore, FC = ctx.__fachwerkCore; // prettier-ignore
@@ -338,6 +342,70 @@ function satzUrteil(mutante = null) {
     }
     aus.tat = tat;
     if (!tatN || tat.length < tatN) rot.push(`L6 die Tat der Rolle liest den Satz nicht: ${tat.length} von ${tatN} Rollen mit Tat trennen Meister, Lehrling und Kranken am Ort ihrer Tat — Täter: koerper LEIB_SATZ.kunst · tagesHaltung · stamm _bewohnerGemuet`); // prettier-ignore
+    // L7 der Leib zeigt sein Können (kunst-am-leib): je Kunst Meister (1,05) und Lehrling (0,3) über `_bewohnerGemuet` →
+    // `_animateHumanoidRig` 3 Zyklen à 30 Hz; der Zug ist der Anteil des Tuns an der Schulter (das Rig mit ↔ ohne `leibStandTun`),
+    // das Schwanken die Hüfte. Soll je Kunst: der Meister greift, der Lehrling seltener; die Streuung des Ausschlags (CV) des
+    // Lehrlings ≥ 2× die des Meisters; der Meister greift in EINER Teilbewegung, der Lehrling in mehr; die Hüfte des Lehrlings
+    // schwankt ≥ 1,5× — und der Gegenlauf ist gleich
+    const guss = ctx.BAKERS_BY_KIND.koerper(K, "mensch", 1, 0, null);
+    r._foundry = { recipes: { [A.KOERPER_HOST_RECIPE]: { fx: { motion: { presets: K.MOTION } } } } };
+    const FPS = 30, N = Math.round(3 * K.STAND.zyklus * FPS); // prettier-ignore
+    const mw = (a) => a.reduce((s, x) => s + x, 0) / (a.length || 1);
+    const sdv = (a) => Math.sqrt(mw(a.map((x) => (x - mw(a)) ** 2)));
+    const zeige = (akt, k, rolle = null) => {
+        const gem = r._bewohnerGemuet({ akt, rolle, krank: false, uebung: gut(k), leib: null });
+        const sig = [[], []], hz = [], roh = K.leibStandTun;
+        K.leibGussGestellt(guss, (rig) => {
+            for (let i = 0; i < N; i++) {
+                r._animateHumanoidRig(rig, i / FPS, 0, false, false, gem);
+                const mit = [rig.armL.shoulder.rotation.x, rig.armR.shoulder.rotation.x];
+                hz.push(rig.hips.rotation.z);
+                K.leibStandTun = () => null;
+                try { r._animateHumanoidRig(rig, i / FPS, 0, false, false, gem); } finally { K.leibStandTun = roh; } // prettier-ignore
+                sig[0].push(rig.armL.shoulder.rotation.x - mit[0]);
+                sig[1].push(rig.armR.shoulder.rotation.x - mit[1]);
+            }
+        });
+        const gipfel = [], teile = [];
+        for (const d of sig) {
+            const hoch = Math.max(1e-9, ...d), seg = []; // prettier-ignore
+            for (let i = 0, an = null; i <= d.length; i++) {
+                const oben = i < d.length && d[i] > 0.02 * hoch;
+                if (oben && an === null) an = i;
+                if (!oben && an !== null) ((an > 0 && i < d.length && seg.push([an, i])), (an = null)); // ein Zug, den der Rand schneidet, zählt nicht
+            }
+            const g = [];
+            for (const [a, b] of seg) {
+                let m = a, n = 0; // prettier-ignore
+                for (let j = a; j < b; j++) if (d[j] > d[m]) m = j;
+                for (let j = a + 1; j < b - 1; j++) if (d[j] > d[j - 1] && d[j] >= d[j + 1] && d[j] > 0.15 * d[m]) n++;
+                g.push(d[m]);
+                teile.push(n);
+            }
+            if (g.length) gipfel.push(g);
+        }
+        return { name: gem.haltung, zuege: gipfel.reduce((s, g) => s + g.length, 0), cv: mw(gipfel.map((g) => sdv(g) / mw(g))), teile: mw(teile), schwanken: sdv(hz), spur: JSON.stringify([sig, hz]) }; // prettier-ignore
+    };
+    // (kunst-am-leib 2: die Rolle ohne Haltung — die Wache, der Fahrer — steht an ihrem Werk neutral, die benannte Kunst ihres Leibs —
+    // der Zweikampf, das Brett, der Hieb der Wache — trägt sie wie jeder: die besten Kämpfer der Stadt sind ihre Wachen)
+    const kunst = [], tor = Object.keys(K.TAGES_GESETZ.rollen).filter((ro) => K.TAGES_GESETZ.rollen[ro].haltung === false); // prettier-ignore
+    const faelle = [["arbeit", null], ["zweikampf", null], ["brett", null], ["hieb", null]];
+    for (const ro of tor) for (const akt of ["zweikampf", "brett", "hieb"]) faelle.push([akt, ro]);
+    let gleich = true;
+    for (const [akt, ro] of faelle) {
+        const [m, l] = [zeige(akt, 1.05, ro), zeige(akt, 0.3, ro)];
+        gleich = gleich && zeige(akt, 0.3, ro).spur === l.spur;
+        const f = (x) => x.toFixed(3);
+        const z = `${akt}${ro ? " (" + ro + ")" : ""} ${m.name} ↔ ${l.name}: Züge ${m.zuege} ↔ ${l.zuege} · CV ${f(m.cv)} ↔ ${f(l.cv)} · Teile ${f(m.teile)} ↔ ${f(l.teile)} · Hüfte ${(1000 * m.schwanken).toFixed(2)} ↔ ${(1000 * l.schwanken).toFixed(2)} mrad`; // prettier-ignore
+        kunst.push(z);
+        if (!(m.zuege > 0 && l.zuege > 0 && l.zuege < m.zuege && l.cv >= 2 * m.cv && m.teile <= 1.05 && l.teile >= m.teile + 0.5 && l.schwanken >= 1.5 * m.schwanken)) rot.push(`L7 der Leib zeigt sein Können nicht: ${z} (Soll: beide greifen, der Lehrling seltener, CV ≥ 2×, Teile Meister ≤ 1,05 und Lehrling ≥ +0,5, Hüfte ≥ 1,5×) — Täter: koerper leibKunst · leibStandTun · leibTunWert · leibSatzProfil`); // prettier-ignore
+    }
+    const posten = [];
+    for (const ro of tor) for (const k of [1.05, 0.3]) for (const krank of [false, true]) { const h = r._bewohnerGemuet({ akt: "arbeit", rolle: ro, krank, uebung: gut(k), leib: null }).haltung; if (h !== (krank ? "idle" + K.LEIB_SATZ.trenner + "krank" : null)) posten.push(`${ro} ${k}${krank ? " krank" : ""}: ${h}`); } // prettier-ignore
+    aus.posten = `${tor.length} Rollen ohne Haltung am Werk, ${posten.length} nicht neutral`;
+    if (!tor.length || posten.length) rot.push(`L7 der Leib zeigt sein Können nicht, wo er soll: die Rolle ohne Haltung steht am Werk nicht neutral — ${posten.slice(0, 3).join(" · ") || "keine Rolle ohne Haltung"} — Täter: koerper tagesHaltung`); // prettier-ignore
+    if (!gleich) rot.push("L7 der Leib zeigt sein Können nicht im Gegenlauf gleich: dieselbe Uhr, derselbe Name, eine andere Spur — Täter: koerper leibTunKunst (Math.random?)"); // prettier-ignore
+    aus.kunst = kunst;
     return { rot, ...aus };
 }
 
@@ -1507,7 +1575,7 @@ if (SELBSTTEST) {
     const eTaeter = [[jederMorgenVon(core.tagesPlan), null, "M1", "jederMorgen"], [ausWerkVon(core.tagesPlan), null, "M1", "ausWerk"], [fuerSichVon(core.tagesPlan), null, "M1", "fuerSich"], [spaeterMarktVon(core, core.tagesPlan), null, "M2", "spaeterMarkt"], [core.tagesPlan, kindKauftVon(core.tagesEinkaeufer), "M5", "kindKauft"]].map(([P, E, m, name]) => [!ekGut.length && einkaufRot(einkaufUrteil(core, P, E || core.tagesEinkaeufer)).some((z) => z.startsWith(m + " ")), `Einkauf ${name} ${m}`]); // prettier-ignore
     // der Satz des Leibs: das Gesetz hält, jeder Täter fällt ROT beim Namen (leib-liest-satz)
     const saGut = !satzUrteil().rot.length;
-    const satzTaeter = [["alt", "L1 der Kranke steht wie der Gesunde"], ["ohneStufe", "L2 der Lehrling steht wie der Meister"], ["einmalRate", "L3 die Güte steht über der Übung still"], ["ohneWetter", "L4 die Tracht liest das Wetter nicht"], ["ohneZeile", "L5 der ferne Satz trägt die Namen des Satzes nicht"], ["tatOhneKunst", "L6 die Tat der Rolle liest den Satz nicht"]].map(([m, z]) => { const rr = satzUrteil(m).rot; console.log(`  ${saGut && rr.some((x) => x.startsWith(z)) ? "✅" : "⛔"} Satz-Täter „${m}“ → ROT an ${z.split(" ")[0]}`); return [saGut && rr.some((x) => x.startsWith(z)), "Satz " + m + " " + z]; }); // prettier-ignore
+    const satzTaeter = [["alt", "L1 der Kranke steht wie der Gesunde"], ["ohneStufe", "L2 der Lehrling steht wie der Meister"], ["einmalRate", "L3 die Güte steht über der Übung still"], ["ohneWetter", "L4 die Tracht liest das Wetter nicht"], ["ohneZeile", "L5 der ferne Satz trägt die Namen des Satzes nicht"], ["tatOhneKunst", "L6 die Tat der Rolle liest den Satz nicht"], ["leibOhneKunst", "L7 der Leib zeigt sein Können nicht"], ["kunstAmTor", "L7 der Leib zeigt sein Können nicht"]].map(([m, z]) => { const rr = satzUrteil(m).rot; console.log(`  ${saGut && rr.some((x) => x.startsWith(z)) ? "✅" : "⛔"} Satz-Täter „${m}“ → ROT an ${z.split(" ")[0]}`); return [saGut && rr.some((x) => x.startsWith(z)), "Satz " + m + " " + z]; }); // prettier-ignore
     const ankGut = ankunftUrteil(core, 0.4), ankWende = ankunftUrteil(core, 0.4, "zurWende");
     const uGut = eigeneUhr(stammTexte()), uTaeter = eigeneUhr([["stamm/probe.js", "        const soll = KC.tagesPlan(b.same, b.rolle, stunde, o, regen, b.krank);"]]);
     // die Rolle und ihr Tages-Angebot: das Gesetz hält, jeder Täter fällt ROT beim Namen
@@ -1530,7 +1598,7 @@ if (verb.length < 2) st.rot.push(`VERB die Stadt um 12 Uhr steht in ${verb.lengt
 console.log(`  VERB die Stadt um 12 Uhr: ${verb.join(" · ")}`);
 const sa = satzUrteil();
 for (const z of sa.rot) st.rot.push("SATZ " + z);
-console.log(`  SATZ des Leibs: L1 ${sa.krank.anders} von ${sa.krank.n} Kranken stehen anders · L2 ${sa.paare.length} von 3 Künsten trennen Meister und Lehrling [${sa.paare.join(" · ")}] · L3 R² ${sa.uebung.r2 == null ? "—" : sa.uebung.r2.toFixed(3)} über ${sa.uebung.spanne.toFixed(0)} h (Steigung ${sa.uebung.steigung == null ? "—" : sa.uebung.steigung.toFixed(4)}, Band ${Number.isFinite(sa.uebung.soll) ? sa.uebung.soll.toFixed(4) : "—"}) · L4 Lagen am Dorf Sommer ${sa.lagen.sommer.toFixed(3)} · Winter ${sa.lagen.winter.toFixed(3)} · Regen ${sa.lagen.regen.toFixed(3)} · L5 ${sa.namen} Namen im Satz · L6 ${sa.tat.length} Rollen mit Tat lesen den Satz [${sa.tat.join(" · ")}]`);
+console.log(`  SATZ des Leibs: L1 ${sa.krank.anders} von ${sa.krank.n} Kranken stehen anders · L2 ${sa.paare.length} von 3 Künsten trennen Meister und Lehrling [${sa.paare.join(" · ")}] · L3 R² ${sa.uebung.r2 == null ? "—" : sa.uebung.r2.toFixed(3)} über ${sa.uebung.spanne.toFixed(0)} h (Steigung ${sa.uebung.steigung == null ? "—" : sa.uebung.steigung.toFixed(4)}, Band ${Number.isFinite(sa.uebung.soll) ? sa.uebung.soll.toFixed(4) : "—"}) · L4 Lagen am Dorf Sommer ${sa.lagen.sommer.toFixed(3)} · Winter ${sa.lagen.winter.toFixed(3)} · Regen ${sa.lagen.regen.toFixed(3)} · L5 ${sa.namen} Namen im Satz · L6 ${sa.tat.length} Rollen mit Tat lesen den Satz [${sa.tat.join(" · ")}] · L7 der Leib zeigt sein Können [${sa.kunst.join(" · ")}] · ${sa.posten}`);
 const be = bestandUrteil(core);
 for (const z of be.rot) st.rot.push("BESTAND " + z + " — Täter: koerper BESTAND_GESETZ");
 const ak = typeof core.scheuneFassen === "function" && typeof globalThis.__phytoCore.ackerStand === "function"
