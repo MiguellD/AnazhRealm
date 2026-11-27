@@ -3020,7 +3020,7 @@
   },
   "profiband.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Gehen 61 Bilder · max 108.65 ms · 77.05 % > 33 ms · Fahrt 51 Bilder · max 92.02 ms · 90.20 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 2 Bild(er) > 100 ms (max 108.65), 77.05 % > 33 ms | Fahrt: 90.20 % > 33 ms an bed6256c radeon · gehalten: Gehen 82 Bilder · max 75 ms · 24.39 % > 33 ms · Fahrt 46 Bilder · max 116.68 ms · 82.61 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 24.39 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 116.68), 82.61 % > 33 ms an bed6256c gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an bed6256c: Last: Referenz f 1,287 (Faden 1,287 · alle Kerne 1,203; vor 107,4/310 ms, nach 107,5/312,5 ms, Ruhe 83,5/259,8 ms seit 2026-11-16) · fremd: node.exe punkte/punkte.cjs buchen --kopf bed6256cc52c9489d5f · profiband.K4#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, koerper-core.js +28) — zuletzt an 7e73426e: Last: Referenz f 1,376 (Faden 1,376 · alle Kerne 1,185; vor 121,9/260,1 ms, nach 98,9/241,1 ms, Ruhe 88,6/219,5 ms seit 2026-11-26) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjx",
+   "beleg": "Maschine: gehalten: Gehen 61 Bilder · max 108.65 ms · 77.05 % > 33 ms · Fahrt 51 Bilder · max 92.02 ms · 90.20 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 2 Bild(er) > 100 ms (max 108.65), 77.05 % > 33 ms | Fahrt: 90.20 % > 33 ms an bed6256c radeon · gehalten: Gehen 82 Bilder · max 75 ms · 24.39 % > 33 ms · Fahrt 46 Bilder · max 116.68 ms · 82.61 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 24.39 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 116.68), 82.61 % > 33 ms an bed6256c gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an bed6256c: Last: Referenz f 1,287 (Faden 1,287 · alle Kerne 1,203; vor 107,4/310 ms, nach 107,5/312,5 ms, Ruhe 83,5/259,8 ms seit 2026-11-16) · fremd: node.exe punkte/punkte.cjs buchen --kopf bed6256cc52c9489d5f · profiband.K4#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, koerper-core.js +28) — zuletzt an 948f68ee: Last: Referenz f 1,249 (Faden 1,249 · alle Kerne 1,214; vor 102,3/267,6 ms, nach 110,9/266,5 ms, Ruhe 88,8/220,5 ms seit 2026-11-27) · fremd: TiWorker.exe 27,5 CPU-s · cleanmgr.exe 11,0 CPU-s · taskho",
    "stationen": [
     {
      "id": "profiband.K4#1",
@@ -3038,7 +3038,7 @@
      "gruen": true,
      "zahl": "Gehen 82 Bilder · max 75 ms · 24.39 % > 33 ms · Fahrt 46 Bilder · max 116.68 ms · 82.61 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 24.39 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 116.68), 82.61 % > 33 ms",
      "sha": "bed6256cc52c9489d5f9bb30b2d7faf5b307806d",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, koerper-core.js +28)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, koerper-core.js +28) — zuletzt an 948f68ee: Last: Referenz f 1,249 (Faden 1,249 · alle Kerne 1,214; vor 102,3/267,6 ms, nach 110,9/266,5 ms, Ruhe 88,8/220,5 ms seit 2026-11-27) · fremd: TiWorker.exe 27,5 CPU-s · cleanmgr.exe 11,0 CPU-s · taskho",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -3057,7 +3057,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, koerper-core.js +28) — zuletzt an 7e73426e: Last: Referenz f 1,376 (Faden 1,376 · alle Kerne 1,185; vor 121,9/260,1 ms, nach 98,9/241,1 ms, Ruhe 88,6/219,5 ms seit 2026-11-26) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjx",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, koerper-core.js +28) — zuletzt an 948f68ee: Last: Referenz f 1,249 (Faden 1,249 · alle Kerne 1,214; vor 102,3/267,6 ms, nach 110,9/266,5 ms, Ruhe 88,8/220,5 ms seit 2026-11-27) · fremd: TiWorker.exe 27,5 CPU-s · cleanmgr.exe 11,0 CPU-s · taskho",
      "ungemessen": true,
      "r6": "konsum"
     }
@@ -5515,7 +5515,7 @@
   },
   "karte2.erleben.bild.nacht": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S1 · GRÜN ✅ schatten_kontrast 4,6456 (Soll ≥ 3) · ✅ kelvin_abw 38 (Soll ≤ 200) · ✅ Umfang verlangt 1 Leuchtquellen, die Welt erzeugte 482 an 2a2e8a54 radeon — offen: karte2.erleben.bild.nacht#1 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs, scripts/lib/wirt-wache.cjs +4) · karte2.erleben.bild.nacht#2 gtx: Konsum seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs, scripts/lib/wirt-wache.cjs +2) · karte2.erleben.bild.nacht#3 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#3 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#4 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#4 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#5 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#5 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#6 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#6 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#7 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#7 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#8 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#8 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: S1 · GRÜN ✅ schatten_kontrast 4,6456 (Soll ≥ 3) · ✅ kelvin_abw 38 (Soll ≤ 200) · ✅ Umfang verlangt 1 Leuchtquellen, die Welt erzeugte 482 an 2a2e8a54 radeon — offen: karte2.erleben.bild.nacht#1 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs, scripts/lib/wirt-wache.cjs +4) · karte2.erleben.bild.nacht#2 gtx: ROT: S2 · ROT ✅ bodenfleck_anteil 1 (Soll ≥ 0,9) · ❌ gasse_dev_median 2,67 (Soll ≤ 0,5) · ✅ Umfang verlangt 100 Leuchtquellen der Welt, die Welt erzeugte 755 — Täter: das Histogramm der Gasse liegt unter dem Band (Median -1.42 EV): ΔEV p10 -6.62 · p25 -5.87 · p50 -1 · p75 -1.17 · p90 -1.68 · p99 3.67 — Belichtung k 10370, Mittelgrau bei 0.2793 cd/m² · gasse_dev_median 2,67 statt ≤ 0,5 an 948f68ee · karte2.erleben.bild.nacht#3 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#3 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#4 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#4 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#5 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#5 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#6 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#6 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#7 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#7 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#8 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#8 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.erleben.bild.nacht#1",
@@ -5551,10 +5551,9 @@
      "id": "karte2.erleben.bild.nacht#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs, scripts/lib/wirt-wache.cjs +2)",
-     "ungemessen": true,
+     "zahl": "S2 · ROT ✅ bodenfleck_anteil 1 (Soll ≥ 0,9) · ❌ gasse_dev_median 2,67 (Soll ≤ 0,5) · ✅ Umfang verlangt 100 Leuchtquellen der Welt, die Welt erzeugte 755 — Täter: das Histogramm der Gasse liegt unter dem Band (Median -1.42 EV): ΔEV p10 -6.62 · p25 -5.87 · p50 -1 · p75 -1.17 · p90 -1.68 · p99 3.67 — Belichtung k 10370, Mittelgrau bei 0.2793 cd/m² · gasse_dev_median 2,67 statt ≤ 0,5",
+     "sha": "948f68eeee479d4db0192c99c448e887313eefb3",
+     "grund": "ROT: S2 · ROT ✅ bodenfleck_anteil 1 (Soll ≥ 0,9) · ❌ gasse_dev_median 2,67 (Soll ≤ 0,5) · ✅ Umfang verlangt 100 Leuchtquellen der Welt, die Welt erzeugte 755 — Täter: das Histogramm der Gasse liegt unter dem Band (Median -1.42 EV): ΔEV p10 -6.62 · p25 -5.87 · p50 -1 · p75 -1.17 · p90 -1.68 · p99 3.67 — Belichtung k 10370, Mittelgrau bei 0.2793 cd/m² · gasse_dev_median 2,67 statt ≤ 0,5",
      "r6": "konsum"
     },
     {
@@ -16134,7 +16133,7 @@
   },
   "karte2.mensch.fahrzeug.lenker": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.fahrzeug.lenker#1 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#1 gtx: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#2 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#2 gtx: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#3 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#3 gtx: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#4 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#4 gtx: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#5 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#5 gtx: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#6 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.fahrzeug.lenker#1 radeon: ungemessen (R10) — zuletzt an bed6256c: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 48 s · S1 warf: eine Spielstunde Verkehr nicht erreicht: 84 von 2500000000000 s in 2520 Tak · karte2.mensch.fahrzeug.lenker#1 gtx: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#2 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#2 gtx: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#3 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#3 gtx: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#4 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#4 gtx: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#5 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#5 gtx: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#6 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.fahrzeug.lenker#1",
@@ -16142,7 +16141,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an bed6256c: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 48 s · S1 warf: eine Spielstunde Verkehr nicht erreicht: 84 von 2500000000000 s in 2520 Tak",
      "ungemessen": true,
      "beide": true
     },
@@ -37612,8 +37611,8 @@
   "ohne": 3385
  },
  "kopfVoll": "948f68eeee479d4db0192c99c448e887313eefb3",
- "zeit": "2026-11-27T16:58:53.830Z",
- "vorher": "42a14279",
+ "zeit": "2026-11-27T17:11:02.477Z",
+ "vorher": "948f68ee",
  "bilanz": {
   "gewinn": [],
   "fall": [],
