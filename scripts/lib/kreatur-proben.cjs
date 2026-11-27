@@ -76,6 +76,13 @@ async function kreaturProben(r, T, opts) {
         // Welt-Tiere ruhen); das Tempo des Spielers und die Spiel-Zeit samt dem Takt des Lebenszyklus kehren nach jeder Probe zurück.
         // DIE UHR DER BÜHNE: jede Probe beginnt am selben Takt der Kreatur-Uhr und des KI-Takts, mit frischen Fauna-Strömen
         // und dem Blick nach Norden — gleich, wie lange die Welt einschwang und welche Probe vorher lief.
+        // DIE SIM-UHR DER BÜHNE (mahl-uhr): auch die Uhr des Schritts (`_simZeit`) steht je Probe auf der Kreatur-Uhr — die Nase liest
+        // an ihr den Wind der Fahne (`_scentAt` → `_rauchWindAt`), die Probe an ihr den Wind, nach dem sie Rudel und Gäste stellt. Bis
+        // hier trug sie, was das Einschwingen an der Wanduhr hinterließ (`_gameLoopTick(performance.now())`): mahl an 120 Sim-Uhren
+        // 5…600 s 4 ROT — „kein Geruch: der baer/fuchs folgt dem Kadaver nicht (frisst 0 s)“ bei 180 · 310 · 515 s, „das Rudel frisst
+        // nicht“ bei 290 s —, die CI an vier fremden Köpfen in Versuch 1 rot.
+        // Fiedler 2004 („Fix Your Timestep“): die Simulation läuft auf ihrer eigenen Uhr, nie auf der Wanduhr — dieselbe Eingabe,
+        // dasselbe Ergebnis
         // DER TAG DES SPIELERS (w18-mensch-deckel): jede Probe lebt den Tag des Gesetzes (`DAY_LENGTH_DEFAULT_MINUTES`) — die Bühne der
         // Werkbank hält ihn an (ausgabe-aufnahme `buehne`: die Tag-Länge des Halts 1e12, „eine Linse, die die Sonne laufen lässt,
         // setzt ihre eigene“), und nach jedem `umstellen` rechnete der Tag der Probe bewohner 2,5e11 Takte je Zehntel-Stunde
@@ -98,6 +105,7 @@ async function kreaturProben(r, T, opts) {
                 creatureEmotions: [],
                 maxCreatures: 64,
                 creatureAnimationTime: 100,
+                _simZeit: 100,
                 _herdContagionAcc: 0,
                 _creatureNetSeq: 1e6, // prettier-ignore
                 dayLengthMinutes: A.DAY_LENGTH_DEFAULT_MINUTES,

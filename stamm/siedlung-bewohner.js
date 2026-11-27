@@ -296,7 +296,9 @@ class AnazhRealm_siedlung_bewohner {
         const B = this._bewohnerSiedlungen || (this._bewohnerSiedlungen = new Map());
         const S0 = B.get(key);
         if (S0 && !S0.gemeldet) return;
-        if (S0) Object.assign(S0, { plan, ox: origin.x, oz: origin.z, gemeldet: false, netz: null, netzGrund: null });
+        // (die Kachel, die schlief, `_kachelSchlafTakt`, erwacht wie ein gemeldeter Nachbar)
+        const wach = { gemeldet: false, schlaeft: false, netz: null, netzGrund: null };
+        if (S0) Object.assign(S0, { plan, ox: origin.x, oz: origin.z }, wach);
         else B.set(key, { key, plan, ox: origin.x, oz: origin.z, liste: null, gestalten: null, wirt: this });
         const SG = AnazhRealm._siedlungGesetz();
         if (!SG) return;

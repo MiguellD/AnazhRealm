@@ -845,9 +845,13 @@ class AnazhRealm_siedlung_instanz {
         }
         if (Number.isFinite(boden)) {
             // der Federweg je Rad aus dem Fahr-Satz (vehicle-core fahrAufstand: radHub × radR × Skala — derselbe, mit dem die
-            // Ebene des Kerns rechnet: was er nicht trägt, hob sie schon; `_fahr` lebt nur mit dem Satz)
+            // Ebene des Kerns rechnet: was er nicht trägt, hob sie schon; `_fahr` lebt nur mit dem Satz). Das Rad steht so tief
+            // im weichen Boden, wie das Gesetz es sinken lässt (`fz.einsinken`, vehicle-core radImBoden — dieselbe Tiefe, um die
+            // die Ebene der Sim liegt): bis hier federte es auf die Fläche zurück, und im Schlamm stand der Reifen oben, der
+            // Wagen um die Rinne tiefer (dorf, nasses Gras, der GT im Stand: Gesetz 4,33 cm, gezeichnet 0)
             const hub = entry._fahrSatz.auf.hub;
-            out.elements[13] += Math.max(-hub, Math.min(hub, boden - P.y));
+            const sink = fz.einsinken > 0 ? fz.einsinken : 0;
+            out.elements[13] += Math.max(-hub, Math.min(hub, boden - sink - P.y));
         }
         return out;
     }

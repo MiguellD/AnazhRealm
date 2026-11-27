@@ -686,18 +686,25 @@ function zeige(rep) {
 // rechnen Stamm-Leser, jeder Voxel-Faden und eine frische Instanz des Kerns Wort für Wort gleich; je Mutation der festen Liste
 // (der Server liefert den Kern verändert aus) ziehen beide Leser. Selbsttest: liest einer den unveränderten Kern, nennt die
 // Probe ihn beim Namen.
+// DAS KORN IM BILD (karte2.planet.relief.boden#2, die Klasse „ein Feld lebt im Zustand, das Bild liest es nicht“): an den
+// Ufer-Punkten des Kanals, an denen die Boden-Farbe (Stamm `_bodenFarbeAt`, Faden `bodenFarbe` — der Leser jedes Chunk-Vertex)
+// das Korn-Feld des Kerns fragt (`korn`, gezählt am Leser selbst), tragen Stamm und Faden Wort für Wort dieselbe Farbe, und die
+// Mutation „Korn“ (die Quelle der Sohle halbiert) zieht beide. ROT beim Namen: kein Ufer-Punkt fragt das Feld · Stamm ≠ Faden ·
+// ein Leser folgt der Mutation nicht. Selbsttest: das Bild ohne Korn-Leser (`amFluss` im Stamm liest das Korn nie) → ROT am BILD.
 const KERN_MUTATIONEN = {
     "Edit-Stärke": ["tiefeM: 4, rundM: 1", "tiefeM: 5, rundM: 1"],
     "Edit-Radius": ["if (!(ed.r > 0)) return n;", "if (!(ed.r > 0)) return n;\n        ed = { ...ed, r: ed.r * 1.1 };"],
     "Dichte-Versatz": ["let d = surf - y;", "let d = surf - y + 0.25;"],
     "See-Spiegel": ["const y = h.water.waterY[i];", "const y = h.water.waterY[i] + 0.5;"],
+    // das Korn der Sohle (`kornBett`): die Quelle halbiert — jede Ufer-Farbe, die das Feld liest, zieht
+    Korn: ["const D = KORN.quelleMm * Math.exp(", "const D = 0.5 * KORN.quelleMm * Math.exp("],
     "Höhen-Versatz": ["let h = hoeheGrund(L, x, z, mitDetail, aus, fuss);", "let h = hoeheGrund(L, x, z, mitDetail, aus, fuss) + 0.01;"],
     // die Gezeit (`--gezeit`): der Hub des Meers fällt auf 0 — der Spiegel steht
     "Spiegel steht": ["return k * GEZEIT.stufe;", "return 0;"],
     // die Gezeit (`--gezeit`): der Spiegel des Lands (`landSpiegel`) trägt die Uhr — die Ebbe gäbe das Watt dem Wald und dem Ort
     "Land mit Uhr": ["if (!L.gezeit) return L;", "return L;"],
 };
-const KERN_MODUS = { haupt: null, faden: null, probe: null, wald: false }; // je Boot die Mutation im Haupt-Faden, im Voxel-Faden, in der Probe; `wald`: der Faden ohne „die Reihe zuerst“
+const KERN_MODUS = { haupt: null, faden: null, probe: null, wald: false, blind: false }; // `blind`: das Bild des Stamms ohne Korn-Leser; je Boot die Mutation im Haupt-Faden, im Voxel-Faden, in der Probe; `wald`: der Faden ohne „die Reihe zuerst“
 // TEIL R: die Abstände (m) der vier Aufträge in der Reihe des Sendens — und die Zeile des Fadens, die seiner Wahl die Wahl gibt
 // (der Selbsttest nimmt sie ihm: er muss in der Reihe der Ankunft liefern)
 const RANG_REIHE = [500, 400, 300, 1];
@@ -743,7 +750,13 @@ function mascheUrteil(ma) {
 }
 const kernQuelle = (wurzel = root) => ausDatei(path.join(wurzel, "gelaende-core.js")); // der EINE Leser des Kerns
 const kernMutiert = (roh, name) => String(roh).replace(...(KERN_MUTATIONEN[name] || ["", ""]));
+// der Täter der Klasse „das Feld lebt im Zustand, das Bild liest es nicht“: die Boden-Farbe des Stamms fragt das Korn nie
+const KORN_BLIND = ["const amFluss = (f, s0, z0) => (f > s0 ?", "const amFluss = (f, s0, z0) => (false ?"];
 function kernWandle(p, roh) {
+    if (p === "/stamm/gelaende-boden.js" && KERN_MODUS.blind && roh) {
+        if (String(roh).split(KORN_BLIND[0]).length !== 2) throw new Error("das Korn im Bild: der Selbsttest findet den Korn-Leser `amFluss` nicht in stamm/gelaende-boden.js");
+        return String(roh).replace(...KORN_BLIND);
+    }
     if (p === "/voxel-worker.js" && KERN_MODUS.wald && roh) {
         if (String(roh).split(WALD_REIHE_ZUERST).length !== 2) throw new Error("Teil R: der Selbsttest findet die Zeile „die Reihe zuerst“ nicht in voxel-worker.js");
         let text = String(roh).replace(WALD_REIHE_ZUERST, "");
@@ -765,6 +778,11 @@ const KERN_HILFE = `self.__kern = {
     an: (a) => Array.from(a, (v) => (Object.is(v, -0) ? "-0" : Number.isFinite(v) ? v : String(v))),
     lies: (P, d, sp, ko, fl) => [d, sp, ko, (x, y, z) => ((f) => (f ? f.surfaceY : NaN))(fl(x, z))].map((f) =>
         __kern.an(Array.from({ length: P.length / 3 }, (_, i) => f(P[i * 3], P[i * 3 + 1], P[i * 3 + 2])))),
+    farben: (P, f) => {
+        const [o, c] = [[], [0, 0, 0]];
+        for (let i = 0; i < P.length; i += 3) (f(P[i], P[i + 1], P[i + 2], c), o.push(c[0], c[1], c[2]));
+        return __kern.an(o);
+    },
 }`;
 
 // Der Plan am unveränderten Kern: Kanal, See-Becken und Höhle nächst der Mess-Wiese, 20 Edits und 280 Schnitte über die Chunk-Naht
@@ -800,7 +818,24 @@ async function kernPlan(page, M, N) {
                 const p = wurf[(n / N) | 0](i);
                 if (!r._kellerLage(p[0], p[2])) P.set(p, 3 * n++);
             }
-            return { orte: [hoehle, kanal, see].map((o) => [o.x, o.z]), edits, punkte: __kern.an(P) };
+            // DAS KORN AM UFER: 48 × 48 Punkte (1,5 m) um den Kanal; behalten wird, wo die Boden-Farbe das Korn-Feld fragt —
+            // gezählt am Leser selbst (der Kern-Zugriff des Stamms geht über den Wirt `globalThis.__gelaendeCore`)
+            const [korn, K0] = [[], globalThis.__gelaendeCore];
+            let fragt = 0;
+            globalThis.__gelaendeCore = Object.assign({}, K0, { korn: (...a) => (fragt++, K0.korn(...a)) });
+            try {
+                const c = [0, 0, 0];
+                for (let i = 0; i < 48; i++)
+                    for (let k = 0; k < 48; k++) {
+                        const [x, z] = [kanal.x - 36 + i * 1.5, kanal.z - 36 + k * 1.5];
+                        const [y, f0] = [r._terrainMacroSurfaceY(x, z), fragt];
+                        r._bodenFarbeAt(x, y, z, c);
+                        if (fragt > f0) korn.push(x, y, z);
+                    }
+            } finally {
+                globalThis.__gelaendeCore = K0;
+            }
+            return { orte: [hoehle, kanal, see].map((o) => [o.x, o.z]), edits, punkte: __kern.an(P), korn };
         },
         M.x,
         M.z,
@@ -832,6 +867,16 @@ async function kernLesen(page, plan) {
             r._terrainDensityAt(...plan.punkte.slice(0, 3));
             [globalThis.__gelaendeCore, out.karteNeu[1]] = [G, neu()];
         }
+        out.korn = __kern.farben(plan.korn, r._bodenFarbeAt.bind(r));
+        // der Zug des Bilds im Stamm: dieselben Ufer-Punkte mit dem halben Korn (der Wirt trägt das Feld verändert) — wie viele
+        // Werte der Farbe folgen
+        globalThis.__gelaendeCore = Object.assign({}, G, { korn: (...a) => 0.5 * G.korn(...a) });
+        try {
+            const halb = __kern.farben(plan.korn, r._bodenFarbeAt.bind(r));
+            out.kornZug = halb.reduce((n, v, i) => n + !Object.is(v, out.korn[i]), 0);
+        } finally {
+            globalThis.__gelaendeCore = G;
+        }
         if (karte)
             out.kern = __kern.lies(plan.punkte, (x, y, z) => K.dichte(L, x, y, z, plan.liste ? alle : K.editsAm(karte, x, z)), (x, y, z) => K.wasserSpiegel(L, x, z), (x, y, z) => K.atlasSpiegel(L, x, z, y), (x, z) => K.flussAm(L, x, z));
         const P = plan.punkte;
@@ -846,7 +891,7 @@ async function kernLesen(page, plan) {
     // mit seinem ersten Leser, dieselbe Quelle `_quelleStand().url`, Name „planet“) baut keine Chunks und trägt nie Edits — bis
     // hier wartete die Probe auf sie in ihm und stürzte (`sleep` lebt nicht im Faden: ReferenceError, EXIT 2). Gewartet wird von
     // hier aus mit dem EINEN `sleep` (welt-boot), der Faden antwortet nur auf Fragen
-    seite.faden = [];
+    [seite.faden, seite.fadenKorn] = [[], []];
     for (const w of page.workers()) {
         if (!(await w.evaluate(`typeof terrainDensityAt === "function" && self.name !== "planet" && !!(${KERN_HILFE})`).catch(() => false))) continue;
         for (let t = 0; t < 200 && (await w.evaluate("state.voxelEdits.length")) < plan.edits.length; t++) await sleep(25);
@@ -856,9 +901,11 @@ async function kernLesen(page, plan) {
                 plan.punkte
             )
         );
+        seite.fadenKorn.push(await w.evaluate((b) => __kern.farben(b, bodenFarbe), plan.korn));
     }
     const f64 = (W) => W && W.map((a) => Float64Array.from(a, Number));
-    return Object.assign(seite, { stamm: f64(seite.stamm), kern: f64(seite.kern), faden: seite.faden.map(f64) });
+    const [korn, fadenKorn] = f64([seite.korn, ...seite.fadenKorn]).reduce((a, k, i) => (i ? a[1].push(k) : (a[0] = k), a), [null, []]);
+    return Object.assign(seite, { stamm: f64(seite.stamm), kern: f64(seite.kern), faden: seite.faden.map(f64), korn, fadenKorn });
 }
 
 const karteRot = (n) => `EDIT-KARTE (_voxelEditKarte): ${n} Neubauten — sie baut je Probe neu`;
@@ -874,7 +921,8 @@ function kernGleich(lauf) {
     for (let w = 0; w < 4; w++)
         for (const [wer, a] of [["stamm", lauf.kern && lauf.stamm[w]], ...lauf.faden.map((F) => ["faden", F[w]])])
             if (a) ((v) => ((out[wer] += v.ab), (out.maxDiff = Math.max(out.maxDiff, v.maxDiff))))(kernVergleich(a, (lauf.kern || lauf.stamm)[w]));
-    out.abweichend = out.stamm + out.faden;
+    out.korn = lauf.fadenKorn.reduce((m, F) => m + kernVergleich(F, lauf.korn).ab, 0); // das Bild: Stamm-Farbe ≠ Faden-Farbe
+    out.abweichend = out.stamm + out.faden + out.korn;
     return out;
 }
 
@@ -888,7 +936,7 @@ async function kernProbe(page, url) {
         return plan && kernLesen(page, plan);
     };
     // wie viele Werte die Mutation an jedem Leser zieht (dichte, oder Bezug und Spiegel)
-    const zieht = (W, name) => Math.min(...W.map((a) => (name === "See-Spiegel" ? [1, 2] : [0]).reduce((m, w) => m + kernVergleich(a[w], rein.stamm[w]).ab, 0)), W.length ? Infinity : 0);
+    const zieht = (W, name) => name === "Korn" ? Math.min(...W.map((a) => kernVergleich(a, rein.korn).ab), W.length ? Infinity : 0) : Math.min(...W.map((a) => (name === "See-Spiegel" ? [1, 2] : [0]).reduce((m, w) => m + kernVergleich(a[w], rein.stamm[w]).ab, 0)), W.length ? Infinity : 0);
     console.log("\n========= DIE KERN-PROBE — Stamm-Leser = Worker-Feld = Kern, die Mutation zieht beide =========");
     await lauf();
     await page.evaluate(WASSER_INSTALL);
@@ -899,24 +947,34 @@ async function kernProbe(page, url) {
     const [ho, ka, se] = plan.orte.map((o) => o.map(Math.round));
     console.log(`  Orte: Höhle ${ho} · Kanal ${ka} · See ${se} · ${plan.edits.length} Edits (der Stamm hält ${rein.haelt}) · ${N} Punkte · ${rein.faden.length} Voxel-Fäden`);
     console.log(`  Der Ort wirkt (Höhle, Kanal, See, Edit, Zufall): ${rein.wirkt.join(" · ")} von je ${N / 5} · unverändert ≠ Kern Stamm ${g0.stamm} · Faden ${g0.faden}`);
+    console.log(`  Das Korn im Bild: ${plan.korn.length / 3} von 2 304 Ufer-Punkten am Kanal fragen das Korn-Feld · das halbe Korn zieht ${rein.kornZug} Werte der Stamm-Farbe · Ufer-Farbe Stamm ≠ Faden ${g0.korn}`);
     for (const [rot, b] of [
         [rein.haelt !== plan.edits.length, `EDIT-WAHRHEIT: der Stamm hält ${rein.haelt} von ${plan.edits.length} Edits`],
         [rein.fehlt.length, `KERN: es fehlt ${rein.fehlt} — Dichte und Spiegel sind Abschrift`],
         [!rein.faden.length, "WORKER-FELD: kein Voxel-Faden antwortete"],
         [g0.abweichend, `UNVERÄNDERT: ${g0.abweichend} Werte weichen ab (maxDiff ${g0.maxDiff})`],
         [rein.wirkt.some((w) => w < N / 25), "ORT: ein Ort trägt kein Fünftel seiner Punkte"],
+        [plan.korn.length / 3 < 20, `KORN IM BILD: an ${plan.korn.length / 3} von 2 304 Ufer-Punkten am Kanal fragt die Boden-Farbe (\`_bodenFarbeAt\`) das Korn-Feld des Kerns (\`korn\`) — das Feld lebt im Zustand, das Bild liest es nicht`],
+        [plan.korn.length && !(rein.kornZug > 0), "KORN IM BILD: die Ufer-Farbe des Stamms (`_bodenFarbeAt`) folgt dem halben Korn-Feld an keinem Punkt — das Feld lebt im Zustand, das Bild liest es nicht"],
+        [g0.korn, `KORN-SPIEGEL: ${g0.korn} Werte der Ufer-Farbe Stamm (\`_bodenFarbeAt\`) ≠ Faden (\`bodenFarbe\`)`],
         [rein.karteNeu[0] > 0, karteRot(rein.karteNeu[0])],
         [SELBSTTEST && !(rein.karteNeu[1] > 0), "SELBSTTEST: der Neubau je Probe blieb unentdeckt"],
     ])
         if (rot) befunde.push(b);
     console.log(`  Die Edit-Karte steht: ${rein.karteNeu[0]} Neubauten in ${N} Proben${SELBSTTEST ? ` · Rückfall rot: ${karteRot(rein.karteNeu[1])}` : ""}`);
-    for (const name of ["Edit-Stärke", "Edit-Radius", "Dichte-Versatz", "See-Spiegel"]) {
+    const MUTIERT = ["Edit-Stärke", "Edit-Radius", "Dichte-Versatz", "See-Spiegel", "Korn"];
+    for (const name of MUTIERT) {
         const z = { name, anker: kernQuelle().split(KERN_MUTATIONEN[name][0]).length === 2 };
         const m = z.anker && (await lauf(name));
-        if (m) Object.assign(z, kernGleich(m), { zugStamm: zieht([m.stamm], name), zugFaden: zieht(m.faden, name) });
+        const [st, fa] = name === "Korn" ? ["korn", "fadenKorn"] : ["stamm", "faden"];
+        if (m) Object.assign(z, kernGleich(m), { zugStamm: zieht([m[st]], name), zugFaden: zieht(m[fa], name) });
         mutationen.push(Object.assign(z, { gut: z.anker && z.zugStamm > 0 && z.zugFaden > 0 && z.abweichend === 0 }));
-        console.log(`  ${z.gut ? "✓" : "⛔"} ${name.padEnd(15)} zieht Stamm-Leser ${z.zugStamm} · Worker-Feld ${z.zugFaden} Werte · ≠ Kern ${z.abweichend}`);
-        if (!z.gut) befunde.push(`MUTATION ${name}: ` + (!z.anker ? "kein Anker im Kern" : z.abweichend ? `${z.abweichend} Werte ≠ Kern` : "ein Leser folgt nicht"));
+        console.log(`  ${z.gut ? "✓" : "⛔"} ${name.padEnd(15)} ` + (z.anker ? `zieht Stamm-Leser ${z.zugStamm} · Worker-Feld ${z.zugFaden} Werte · ≠ Kern ${z.abweichend}` : "kein Anker im Kern — ist ROT"));
+        if (!z.gut)
+            befunde.push(
+                `MUTATION ${name}: ` +
+                    (!z.anker ? "kein Anker im Kern" : z.abweichend ? `${z.abweichend} Werte ≠ Kern` : name === "Korn" ? `ein Leser folgt nicht (Stamm \`_bodenFarbeAt\` ${z.zugStamm}, Faden \`bodenFarbe\` ${z.zugFaden}) — das Feld lebt im Zustand, das Bild liest es nicht` : "ein Leser folgt nicht")
+            );
     }
     // der Selbsttest: ein Leser mit eigener (unveränderter) Abschrift MUSS beim Namen rot werden
     const selbsttest = SELBSTTEST && !rein.fehlt.length ? {} : null;
@@ -927,11 +985,25 @@ async function kernProbe(page, url) {
         // Zeile mit dem Wort ROT ohne ✅ als Urteil (scripts/lib/urteil-zeile.cjs) — die Wand stand an der Probe ROT über „✅ PLANET GRÜN“
         console.log(`  ${selbsttest[wer].nennt ? "✅" : "⛔"} SELBSTTEST (${wer} liest den unveränderten Kern): ≠ Kern Stamm ${g.stamm} · Faden ${g.faden} → ${selbsttest[wer].nennt ? "beim Namen ROT" : "BLIEB BLIND"}`);
     }
-    if (selbsttest && !(selbsttest.sieht = selbsttest["WORKER-FELD"].nennt && selbsttest["STAMM-LESER"].nennt)) befunde.push("SELBSTTEST: eine Abschrift blieb unentdeckt");
+    // der Täter der Klasse: das Bild des Stamms ohne Korn-Leser — das halbe Korn MUSS an der Stamm-Farbe ROT werden
+    if (selbsttest && plan.korn.length) {
+        KERN_MODUS.blind = true;
+        let m;
+        try {
+            m = await lauf();
+        } finally {
+            KERN_MODUS.blind = false;
+        }
+        const b = { zug: m.kornZug, spiegel: kernGleich(m).korn };
+        selbsttest.BILD = Object.assign(b, { nennt: b.zug === 0 });
+        console.log(`  ${b.nennt ? "✅" : "⛔"} SELBSTTEST (das Bild ohne Korn-Leser, \`amFluss\` fragt nie): das halbe Korn zieht ${b.zug} Werte der Stamm-Farbe, Ufer-Farbe Stamm ≠ Faden ${b.spiegel} → ${b.nennt ? "ist ROT am BILD" : "BLIEB BLIND"}`);
+    }
+    if (selbsttest && !(selbsttest.sieht = selbsttest["WORKER-FELD"].nennt && selbsttest["STAMM-LESER"].nennt && (!selbsttest.BILD || selbsttest.BILD.nennt)))
+        befunde.push("SELBSTTEST: eine Abschrift oder ein blindes Bild blieb unentdeckt");
     const kern = { punkte: N, edits: plan.edits.length, haelt: rein.haelt, orte: plan.orte, wirkt: rein.wirkt, faeden: rein.faden.length, rein: g0, mutationen, selbsttest,
         sekunden: Math.round((Date.now() - t0) / 1000) };
     for (const b of befunde) console.log("  ⛔", b);
-    console.log(`\n${befunde.length ? "⛔ KERN-PROBE ROT" : "✅ KERN-PROBE GRÜN"}: ${N} Punkte, ${mutationen.filter((z) => z.gut).length}/4 Mutationen ziehen beide Leser · ${kern.sekunden} s\n`);
+    console.log(`\n${befunde.length ? "⛔ KERN-PROBE ROT" : "✅ KERN-PROBE GRÜN"}: ${N} Punkte, ${mutationen.filter((z) => z.gut).length}/${MUTIERT.length} Mutationen ziehen beide Leser · ${kern.sekunden} s\n`);
     if (JSON_AUS) jsonSchreiben(JSON_AUS, { kern });
     return befunde.length ? 1 : 0;
 }

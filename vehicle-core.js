@@ -3802,7 +3802,7 @@
             ebeneTol: 0.5, // m: so nah muss der Grund unter dem Ursprung an einer steilen Ebene liegen (sonst: Kante)
             stufeRad: 0.5, // Anteil radR: die Stufe, die ein Rad in einem Schritt hinaufsteigt (hoeher ist eine Wand)
             radHub: 0.6, // Anteil radR: so weit federt ein Rad einzeln zu seinem Boden (die Ebene der vier ist eine Ebene)
-            luftEps: 0.02, // m: so weit unter der Fallkurve verliert das Rad den Griff (darunter haftet es)
+            luftEps: 0.02, // m: der Reifen ueber dem Federweg (auf.hub): so weit unter der Fallkurve greift das Rad noch
             nickMax: 0.12, // rad: Anschlag der Nick-/Wank-Feder
             hubMax: 0.08, // m: Anschlag der Hub-Feder (der Landestoss schlaegt hier an)
             hubBoden: 1, // Anteil des Boden-Stosses, den die Hub-Feder als Fusspunkt-Erregung traegt (fahrzeug.K5)
@@ -4342,6 +4342,7 @@
             // fahrzeug-medium (rein additiv): das Rad im Boden — die Geometrie aus den Aufstandspunkten, die Last je Rad aus
             // derselben Masse (vier Räder, zwei Läufer); `radImBoden` liest sie
             rad: a.rad ? Object.assign({ W: radLast(masse, a.rad.kufe) }, a.rad) : null,
+            kipp: fahrKippForm(a.quer, d.cgH, a.breite, a.bauch),
         };
     }
     // DIE LAST JE RAD [N] (fahrzeug-gestalt): die EINE Masse des Werks × g durch die Räder, die sie tragen (vier, die Kufe
@@ -4461,6 +4462,53 @@
         const kl = (w) => (traegt ? w : Math.max(-S.ebeneMax, Math.min(S.ebeneMax, w)));
         return { y: y, steig: kl(steig), wank: kl(wank), traegt: traegt };
     }
+    // DIE KIPPGRENZE (mensch.fahrzeug.form#2) — die Form trägt sie: der Schwerpunkt h über dem Boden, die halbe Spur w2 der
+    // Aufstandspunkte (auf.quer, dieselbe, über der fahrEbene den Wank misst). Die statische Formel (NHTSA, Static Stability
+    // Factor, 49 CFR 575.105 / Federal Register 68 FR 59250, 2003): die innere Spur hebt ab, wenn die Querkraft der Reifen je
+    // Masse a_R · h > g_N · w2 — a_R > SSF · g_N, SSF = Spur ÷ 2h; auf dem Kipptisch tan θ = SSF. Das Trägheitsmoment um die
+    // äußere Radlinie je Masse: der Kasten der Spur 2·w2 und der Höhe 2h um seinen Schwerpunkt ((2w2)² + (2h)²)/12 (gemessen
+    // NHTSA VIPD, Heydinger et al. 1999, SAE 1999-01-1336: Pkw I_xx ÷ m ≈ 0,25–0,35 m²; der GT des Kerns 0,29) plus Steiner
+    // h² + w2². Liegt der Wagen auf der Seite, gleitet das Blech: μ 0,35 (Unfall-Rekonstruktion, Fahrzeug auf der Seite auf
+    // Asphalt 0,30–0,40: Fricke, Traffic Accident Reconstruction, Northwestern University 1990, Tafel der Verzögerungen). Die
+    // Flanke des Aufbaus (`b2` die halbe Breite der Hülle, `hb` ihre Unterkante am Bauch) ist die zweite Stütze: wer liegt, liegt
+    // auf ihr (der Leser: die Lage des Bilds, `_wagenLage`).
+    function fahrKippForm(w2, h, breite, bauch) {
+        if (!(w2 > 0) || !(h > 0)) return null;
+        const b2 = breite > 0 ? Math.max(w2, breite / 2) : w2;
+        const hb = bauch > 0 ? bauch : 0;
+        return { w2: w2, h: h, ssf: w2 / h, iP: (4 * w2 * w2 + 4 * h * h) / 12 + h * h + w2 * w2, muSeite: 0.35, b2: b2, hb: hb };
+    }
+    // DER KIPP-SCHRITT: a_R die Querkraft der Reifen je Masse (links +), gedeckelt am Reibkreis aCap = μ · g_N — mehr trägt kein
+    // Reifen, darum kippt nur, wessen μ über dem SSF liegt; wer darunter liegt, rutscht (die Formel und der Reifen zusammen).
+    // Solange beide Spuren tragen und a_R · h ≤ g_N · w2, bleibt alles byte-gleich (z.kipp ruht bei 0). Hebt die innere Spur ab,
+    // dreht der Aufbau um die äußere Radlinie (s = +1: die linke Seite oben, wie wank): der Schwerpunkt liegt dann w2·cos φ −
+    // h·sin φ quer innen und w2·sin φ + h·cos φ hoch über ihr — das Moment der Reifen an der Höhe gegen die Last am Hebel,
+    // I_P · φ̈ = s·a_R · h' − g_N · d'. Fällt φ auf 0, landet die Spur (unelastisch); erreicht φ 90°, liegt der Wagen auf der Seite.
+    function fahrKipp(z, G, aR, aCap, gN, dt) {
+        const K = G.kipp;
+        if (!K) return;
+        const a = Math.max(-aCap, Math.min(aCap, aR));
+        const phi0 = z.kipp || 0;
+        if (phi0 === 0 && !(Math.abs(a) * K.h > gN * K.w2)) return;
+        const s = phi0 !== 0 ? Math.sign(phi0) : Math.sign(a);
+        const phi = Math.abs(phi0);
+        const dq = K.w2 * Math.cos(phi) - K.h * Math.sin(phi),
+            hq = K.w2 * Math.sin(phi) + K.h * Math.cos(phi);
+        let w = (z.kippV || 0) + ((s * a * hq - gN * dq) / K.iP) * dt;
+        let p = phi + w * dt;
+        if (!(p > 0)) {
+            z.kipp = 0;
+            z.kippV = 0;
+            return;
+        }
+        if (p >= Math.PI / 2) {
+            p = Math.PI / 2;
+            w = 0;
+            z.umgekippt = true;
+        }
+        z.kipp = s * p;
+        z.kippV = w;
+    }
     function fahrFeder(z, key, m, k, c, dt, max) {
         const kv = key + "V";
         let v = Number.isFinite(z[kv]) ? z[kv] : 0;
@@ -4498,8 +4546,17 @@
             // seine Steig-Rate ist die JETZIGE Fahrt auf der Ebene des letzten Schritts. Vorher trug z.vy die Rate von gestern:
             // jeder Sprung der Fahrt (der Stoß an den Geparkten, die Antwort der Hülle) ließ die Vertikale zurück — am Gefälle
             // hob der gestoßene GT ab (24 m/s: 0,11 m in der Luft nach 7 Schritten, gate:klang-zensus F „die Vorbeifahrt schweigt").
+            // ZWISCHEN AUFBAU UND BODEN FEDERT DAS RAD (fahrzeug-medium-2): faellt die Ebene unter die Fallkurve, faellt der
+            // Aufbau frei, und jedes Rad folgt seinem Boden um seinen Federweg (`auf.hub`, derselbe, um den es in fahrEbene
+            // einzeln zu seinem Boden federt) und den Reifen (luftEps) — erst darueber verliert es den Griff (`luft`). Im Spalt
+            // traegt der Aufbau seine Vertikale (er liegt nicht auf der Ebene); er landet auf den Federn. Bis hier verlor das
+            // Rad den Griff 2 cm unter der Fallkurve, und die Rate des Bodens ersetzte im Spalt je Schritt den Fall. Nur wo die
+            // Ebene TRAEGT: auf einer Kante (`eb.traegt` false — der Bauch liegt am Rand, die Raeder haengen darueber) federt
+            // kein Rad zu einem Boden, der Griff endet am Reifen (fahr-leben S4: mit dem Federweg auch dort kroch der GT mit
+            // 40 Grad Bug-unten 330 Bilder lang an der Klippe, statt abzuheben).
+            const liegt = !warLuft && !(z.y > z.yBoden);
             const vyAlt = z.vy; // der Boden-Stoss misst die Vertikale des Aufstands gegen den letzten Schritt (unten)
-            if (!warLuft && Number.isFinite(z.steig) && Number.isFinite(z.wank)) z.vy = vBoden(z);
+            if (liegt && Number.isFinite(z.steig) && Number.isFinite(z.wank)) z.vy = vBoden(z);
             const yBall = z.y + z.vy * dt - 0.5 * g * dt * dt; // wohin die Fallkurve den Wagen legt
             // Was ein Rad in einem Schritt hinaufsteigt (die Stufe + die Steig-Rate des Bodens); hoeher ist eine WAND — die
             // Vertikale hebt den Wagen nie hinein (der Kontakt-Loeser des Wirts schiebt ihn heraus). Vorher nahm der Wagen
@@ -4514,10 +4571,11 @@
             const yB0 = Number.isFinite(z.yBoden) ? z.yBoden : eb.y;
             if (yBall >= eb.y) {
                 // DER BODEN FAELLT UNTER DIE FALLKURVE (Kuppe mit v²/R > g, Klippe, Spalt): der Wagen fliegt; die Reifen
-                // greifen nur, solange der Spalt unter luftEps bleibt (eine Bodenwelle hebt ihn nicht aus dem Griff).
+                // greifen, solange der Spalt unter Federweg + Reifen bleibt (auf.hub + luftEps: eine Bodenwelle hebt ihn
+                // nicht aus dem Griff; er faellt frei und landet auf den Federn).
                 z.vy -= g * dt;
                 z.y = yBall;
-                z.luft = z.y - eb.y > S.luftEps;
+                z.luft = z.y - eb.y > S.luftEps + (eb.traegt && G.auf && G.auf.hub > 0 ? G.auf.hub : 0);
             } else if (eb.y - yBall <= stufe) {
                 // DER BODEN TRAEGT: folgen — oder LANDEN, dann schlaegt der Stoss (relativ zum Boden) in die Hub-Feder.
                 // fahrzeug.K5 (rein additiv — auf ebenem Grund byte-gleich): folgt das Rad dem Boden, ist jede Aenderung seiner
@@ -4621,7 +4679,20 @@
             aW = G.luft.kFlanke * wq * Math.abs(wq);
             if (!Number.isFinite(aW)) aW = 0;
         }
-        if (z.luft) {
+        if (z.umgekippt && !z.luft) {
+            // AUF DER SEITE (mensch.fahrzeug.form#2) greift kein Reifen: das Blech gleitet mit μ_Seite · g_N gegen die Fahrt, die
+            // Gier klingt mit derselben Reibung ab; Gas und Lenkung greifen ins Leere
+            const v0 = Math.hypot(z.vlong, z.vlat),
+                dv = G.kipp.muSeite * gN * dt,
+                k = v0 > dv ? (v0 - dv) / v0 : 0;
+            z.aLong = dt > 0 ? (z.vlong * (k - 1)) / dt : 0;
+            z.aLat = dt > 0 ? (z.vlat * (k - 1)) / dt : 0;
+            z.vlong *= k;
+            z.vlat *= k;
+            z.yawRate *= k;
+            z.slipF = 0;
+            z.slipR = 0;
+        } else if (z.luft) {
             // IM FLUG greift kein Reifen: nur der Luftwiderstand; die Gier dreht mit ihrer Rate weiter.
             const aD = -G.dragK * z.vlong * Math.abs(z.vlong);
             z.vlong += (aD + z.vlat * z.yawRate) * dt;
@@ -4661,6 +4732,7 @@
             //    weit, nass 0,7 nur 1,28×), und auf weichem Grund kappte der Reibkreis den Antrieb unter ihm (auf μ 0,4 kaeme der
             //    GT nicht ueber 35 km/h). Jetzt zieht er ueber die Raeder: die Spitze bleibt auf jedem Boden dieselbe, der
             //    Bremsweg ist v² / 2 (μ·g + Rollwiderstand). Gas, Ausrollen und Lenken auf μ 1 byte-gleich. ──
+            // Das Band 100 → 0 trocken: ADAC 2016, über 500 Bremstests, Mittel 36,4 m, Spanne 31,3–47,8 m (Karte 30–50 m).
             let aDrive = 0;
             if (thr > 0) aDrive += Math.min(G.aEngine, G.aLeist / Math.max(0.1, Math.abs(vL))) * thr;
             // DER TRITT IST ANALOG wie das Gas (w16-fahrt-weg): die Bremse verzögert brakeDecel · brk, der Rückwärtsgang zieht
@@ -4774,6 +4846,13 @@
             } else {
                 z.vlong -= g * Math.sin(z.steig || 0) * dt;
             }
+            // ── DIE KIPPGRENZE (mensch.fahrzeug.form#2): die Querkraft der Reifen je Masse dreht den Aufbau um die äußere
+            //    Radlinie (im Wagen-Rahmen heben sich Fliehkraft und Hangabtrieb bis auf sie auf): Fy / m. Unter Schritttempo
+            //    fährt der Wagen kinematisch (dieselbe Blende `low` wie die Gier): dort trägt die Bahn v · ω die Kurve und die
+            //    Haftung hält den Hangabtrieb (−aG, ohne Rutschen). Am Reibkreis μ · g_N; über SSF · g_N hebt die innere Spur
+            //    ab. Die Bahn allein läge im Einlenken über der Kraft der Reifen (die Welt kippte an der Mess-Wiese bei
+            //    0,69–0,95 · SSF · g), Fy allein trüge im Schritttempo den Schräglauf der Blende (der Karren mit 1,6 m/s kippte). ──
+            fahrKipp(z, G, (1 - low) * aLatB + low * (z.vlong * z.yawRate - (rutscht ? 0 : aG)), cap * gN, gN, dt);
         }
         if (tW > 0) {
             // ── DAS WASSER (SCHAU-2): der Widerstand der getauchten Stirn laengs und der Flanke quer, halb-implizit

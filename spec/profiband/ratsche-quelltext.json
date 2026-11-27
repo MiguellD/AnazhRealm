@@ -76,9 +76,9 @@
             "datei": 1
         },
         "scripts/diag-phyto-tree.cjs": {
-            "zweck": "Messung: führt die Glieder _scatterSpeciesForCell/_scatterSpeciesForLayer und _rockGeologyClass des Stamms in node aus, mit Mutanten (Ufer, Wärme, Findling des Eises); dazu phyto-core im Faden (vm) mit zwei Mutanten der Höhenstufe (biome-hoehenstufen: ohne Stufe · ohne Ökoton), beide fallen ROT beim Namen an forestStufe",
+            "zweck": "Messung: führt die Glieder _scatterSpeciesForCell/_scatterSpeciesForLayer und _rockGeologyClass des Stamms in node aus, mit Mutanten (Ufer, Wärme, Findling des Eises); dazu phyto-core im Faden (vm) mit zwei Mutanten der Höhenstufe (biome-hoehenstufen: ohne Stufe · ohne Ökoton), beide fallen ROT beim Namen an forestStufe; dazu die Blöcke des Walds und der Kamm-Krone aus voxel-worker.js im Faden (vm), gewogen von ihrer Kasse aus, mit der Mutante der Kasse, die die Quelle hält (stadt-am-schirm: die Kasse im Faden)",
             "stamm": 2,
-            "datei": 1
+            "datei": 2
         },
         "scripts/diag-profiband.cjs": {
             "zweck": "Struktur: der Selbsttest lädt den gewandelten Stamm als Klasse (Bündel-Reihe am Verhalten)",
