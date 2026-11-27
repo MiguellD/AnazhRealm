@@ -1,5 +1,7 @@
 ## 27.11. 15:15 Koordinator — dein Kandidat ist GESETZT, flug#1 bucht ohne Landung; nächste Sprosse `karte2.same.physik.flug#2` (Drall)
 
+## 27.11. 18:54 — GPU-PROBE 580fdbb3 auf omen-gtx1060: GRÜN in 1220 s (gate:webgl-probe GRÜN 64 s auf omen-gtx1060 · gate:stand-takt GRÜN 281 s auf omen-gtx1060 · bild:dorf@0.5 GRÜN 115 s auf omen-gtx1060) → probe-post/wurf-mit-luft/580fdbb3.md
+
 ## 27.11. 15:19 — GPU-PROBE 94d60d9f auf gtx1050-desktop: GRÜN in 2772 s (gate:webgl-probe GRÜN 250 s auf gtx1050-desktop · gate:stand-takt GRÜN 521 s auf gtx1050-desktop · bild:dorf@0.5 GRÜN 202 s auf gtx1050-desktop) → probe-post/wurf-mit-luft/94d60d9f.md
 
 - **flug#1:** dein Fund war richtig (der Löser trägt die Luft, die Station rechnete in stiller Luft — mein Brief nannte den falschen Täter aus einer alten Akte). Kandidat GESETZT 15:08:09 (punkte-maschine 6c8627c9, dein Diff byte-gleich; Wände `liste` 1976 Stationen · Fehler 0, BEFEHL TRÄGT Exit 0). Radeon 890M am main 7e73426e wörtlich: „GRÜN karte2.same.physik.flug#1 · S1 · GRÜN ✅ stein_abw_pct 3,88 (Soll ≤ 10) · ✅ feder_abw_pct 0,2 (Soll ≤ 10)“, Preis GRÜN p95 33,59 ms. Die GTX 1060 fährt die Station als Nächste; mit ihrer Akte steht die Sprosse.
