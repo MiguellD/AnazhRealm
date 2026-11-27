@@ -1,8 +1,6 @@
-diff --git a/meisterkarte-quelle/punkte/stationen/k2-erleben.js b/meisterkarte-quelle/punkte/stationen/k2-erleben.js
-index e71c177..1197c4b 100644
 --- a/meisterkarte-quelle/punkte/stationen/k2-erleben.js
 +++ b/meisterkarte-quelle/punkte/stationen/k2-erleben.js
-@@ -4,34 +4,472 @@
+@@ -4,34 +4,474 @@
  // aus dem Strom der Sitzung (richter-akte.cjs), an der dichtesten Pose, an der die Probe endet.
  "use strict";
  const { leiter } = require("./k2-same.js").geruest;
@@ -224,7 +222,8 @@ index e71c177..1197c4b 100644
 +        f.k = k;
 +        if (!best || (best.k.kontrast < 0.1 && k.kontrast >= 0.1)) best = f;
 +        if (k.kontrast >= 0.1) break;
-+    }
+     }
+-    return { n13, imBild, treffer: imBild > 0 ? 1 : 0, geladen: (st.architectures || []).length, x: p.x, z: p.z };
 +    if (kontrastFehlt || !best) best = best || offen[0] || null;
 +    hs.sort((u, v) => u - v);
 +    brueche.sort((u, v) => u - v);
@@ -247,7 +246,9 @@ index e71c177..1197c4b 100644
 +                const q = { x, y: y + hMedian, z };
 +                if (!F.containsPoint(new T.Vector3(q.x, q.y, q.z))) continue;
 +                zellen++;
-+                if (strahl(q).verdeckt != null) continue;
++                // nur das OB (landmarken-9, die Frist der 50 Saaten): die Zelle fragt, ob die Gerade frei ist — kein Grund dahinter, keine
++                // Krone vor dem ersten Grund-Treffer (`_landmarkeSicht` mit `nurOb`, dasselbe Urteil wie die volle Frage)
++                if (r._landmarkeSicht(auge, q, { nurOb: true })) continue;
 +                frei++;
 +                const dl = K.landmarke(L2, x, z);
 +                lamFrei += (dl.felsturm + dl.felsbogen) * 0.04;
@@ -265,8 +266,7 @@ index e71c177..1197c4b 100644
 +        // FÜR DEN ZEUGEN AM GERÄT (a.zeugeBild, ZEUGE_MASKE): die Marke, das Auge und der Grund des Gesetzes beim Namen, ungerundet
 +        if (a.zeugeBild && best.k)
 +            w.zeugeBild = { marke: { x: best.q.x, z: best.q.z, fuss: best.q.fuss, h: best.q.h, d: best.q.d, art: best.q.art, seed: best.q.seed }, auge, hinter: best.hinter, punkt: best.punkt || null, k: { kontrast: best.k.kontrast, c0: best.k.c0, yMarke: best.k.yMarke, yGrund: best.k.yGrund, durchlass: best.k.durchlass } };
-     }
--    return { n13, imBild, treffer: imBild > 0 ? 1 : 0, geladen: (st.architectures || []).length, x: p.x, z: p.z };
++    }
 +    if (zeuge) Object.assign(w, zeuge);
 +    return w;
 +};
@@ -496,7 +496,7 @@ index e71c177..1197c4b 100644
  };
  
  // ═══════════════════════════════════════ Perspektive spieler ═══════════════════════════════════════
-@@ -392,10 +830,10 @@ const LANDMARKE_AN = async (r, T, a) => {
+@@ -392,10 +832,10 @@
      // PLANET_ERDE)` wie der Faden, voxel-worker.js:1159) und misst S5: die Mittags-Sonne je Saison-Wort (`_sonnenRichtung`, die Quelle von
      // Licht und Himmel) und die Pol-Höhe der Sternfeld-Achse (`state.starField.rotation`) gegen die Breite des Ankers.
      LEITERN.push(
@@ -510,7 +510,7 @@ index e71c177..1197c4b 100644
              welt: [{ wort: "gestirn_proben", ab: 5, was: "Gestirn-Lagen aus der Welt: die Mittags-Sonne je Saison-Wort und die Achse des Sternfelds" }],
              sprossen: {
                  1: {
-@@ -445,13 +883,254 @@ const LANDMARKE_AN = async (r, T, a) => {
+@@ -445,13 +885,261 @@
                      umfang: { verlangt: 100, einheit: "Saaten der Sitzung", wortlaut: "N = 100 Saaten × 10 Ziele", feld: "richter" },
                  },
              },
@@ -518,8 +518,9 @@ index e71c177..1197c4b 100644
 +            seite: { SAATEN, LANDMARKE_AN, ZEUGE_KLASSE, ZEUGE_MIN, ZEUGE_HIN, ZEUGE_HEIM, ZEUGE_MASKE, ZEUGE_PIXEL, ZEUGE_URTEIL },
              lauf: async function wegfindungLauf(H, P, L) {
                  const path = require("path");
-+                // DIE TEILE (Koordinator 27.11. 08:14; `mitTeilen` oben): 1 die Saaten der Sprosse 1 samt Karten-Zeuge · 2 NUR die Zeugen-Saaten am
-+                // Gerät · 3 die Wiese und S2–S7. Teil 2 und 3 tragen die Sprossen des vorigen Teils aus der Ausgabe weiter (H.AUS: jeder Teil
++                // DIE TEILE (Koordinator 27.11. 08:14; `mitTeilen` oben; die Staffel landmarken-9): 1 die erste Hälfte der Saaten der Sprosse 1
++                // samt der warmen Welt · 2 die zweite Hälfte, das Urteil über alle samt Karten-Zeuge und die Zeugen-Saaten am Gerät · 3 die
++                // Wiese und S2–S7. Teil 2 und 3 tragen die Sprossen und die Saaten des vorigen Teils aus der Ausgabe weiter (H.AUS: jeder Teil
 +                // schreibt sie ganz); ohne PUNKTE_TEIL fährt die Probe alle drei in EINEM Prozess.
 +                const teilT = /^([123])\/3$/.exec(process.env.PUNKTE_TEIL || "");
 +                const teil = teilT ? +teilT[1] : 0;
@@ -540,7 +541,7 @@ index e71c177..1197c4b 100644
 +                        Object.assign(L.j.sprossen, vor.sprossen || {});
 +                        Object.assign(L.j.fehler, vor.fehler || {});
 +                        L.j.zeilen.push(...(vor.zeilen || []));
-+                        if (vor.wegZeuge) L.j.wegZeuge = vor.wegZeuge;
++                        if (vor.saatenTeil1) L.j.saatenTeil1 = vor.saatenTeil1;
 +                    }
 +                }
 +                // DER PULS (Koordinator 27.11., der Deckel): neben jedem langen Ruf (die Saaten in EINEM Ruf, das Wachsen der Wiese in EINEM
@@ -673,12 +674,44 @@ index e71c177..1197c4b 100644
 +                // am Pixel in linearer Leuchtdichte; GRÜN nur, wenn jede Saat ≤ 0,03 liest, sonst ROT mit Zahl je Saat. DER ZEUGE DER KARTE: in jeder betretenen Welt kam der
 +                // Spieler am Stand und mit der Gier des Gesetzes an (`_ankunft`), sonst ROT beim Namen; der Zeuge des Wurfs liest das
 +                // Register des Werfers in der warmen Welt (`_landmarkeWurf`).
-+                if (teil <= 1) await L.je(1, async () => {
++                // DIE STAFFEL DER SAATEN (landmarken-9; die GTX 27.11.: 43 von 50 Saaten in 544 s, je Saat ≈ 12,7 s): in Teilen fährt Teil 1
++                // die Saaten 1 … ⌈N/2⌉ samt der warmen Welt und legt sie in die Ausgabe (`L.j.saatenTeil1`), Teil 2 die übrigen und urteilt
++                // über alle N — je Hälfte die Frist ihres Teils (derselbe Deckel je Teil), die Zahl der Saaten bleibt die der Karte
++                const halbS1 = Math.ceil(P.sprossen[1].umfang.verlangt / 2);
++                const warmeWelt = () => puls("wegfindung S1 die warme Welt", L.ev("return await (" + H.seite.LANDMARKE_AN + ")(r, T, { saat: r.state.worldMeta.seed, zeuge: true });", 20));
++                const saatenVonBis = (von, n) => {
++                    const arg = { stamm: P.leiter + "-s1", von, n, bis: Date.now() + Math.max(0, (L.rest() - 4) * 1000) };
++                    return puls("wegfindung S1 die Saaten " + von + "–" + n, L.ev("return await (" + H.seite.SAATEN + ")(r, T, " + JSON.stringify(arg) + ", (r) => (" + H.seite.LANDMARKE_AN + ")(r, T, { saat: r.state.worldMeta.seed, besucht: true }));", Math.max(5, L.rest() - 2)));
++                };
++                if (teil === 1) {
++                    const t = Date.now();
++                    try {
++                        const heim = await warmeWelt();
++                        const s = await saatenVonBis(1, halbS1);
++                        L.j.saatenTeil1 = { heim, s, ms: Date.now() - t };
++                        L.zeile("wegfindung Teil 1/3: Saaten 1–" + halbS1 + " · " + (s.je ? s.je.length : 0) + " betreten in " + (Date.now() - t) + " ms (je Saat " + ((s.msJe || []).join(" · ") || "—") + " ms" + (s.grund ? ", Ende: " + s.grund : "") + ") → Teil 2");
++                    } catch (e) {
++                        L.j.saatenTeil1 = { fehler: String((e && e.message) || e).split("\n")[0].slice(0, 200) };
++                        L.zeile("wegfindung Teil 1/3: die Saaten 1–" + halbS1 + " brachen: " + L.j.saatenTeil1.fehler);
++                    }
++                    return weiter();
++                }
++                if (teil === 0 || teil === 2) await L.je(1, async () => {
 +                    const v = P.sprossen[1].umfang.verlangt;
 +                    const t1 = Date.now();
-+                    const heim = await puls("wegfindung S1 die warme Welt", L.ev("return await (" + H.seite.LANDMARKE_AN + ")(r, T, { saat: r.state.worldMeta.seed, zeuge: true });", 20));
-+                    const arg = { stamm: P.leiter + "-s1", n: v, bis: Date.now() + Math.max(0, (L.rest() - 4) * 1000) };
-+                    const s = await puls("wegfindung S1 die Saaten", L.ev("return await (" + H.seite.SAATEN + ")(r, T, " + JSON.stringify(arg) + ", (r) => (" + H.seite.LANDMARKE_AN + ")(r, T, { saat: r.state.worldMeta.seed, besucht: true }));", Math.max(5, L.rest() - 2)));
++                    let heim, s;
++                    if (teil === 2) {
++                        const t1v = L.j.saatenTeil1;
++                        if (!t1v || !t1v.s) throw new Error("die Saaten 1–" + halbS1 + " aus Teil 1 fehlen in der Ausgabe (" + ((t1v && t1v.fehler) || "keine Zeile saatenTeil1") + ")");
++                        if (t1v.s.fehler) throw new Error(t1v.s.fehler);
++                        const s2 = await saatenVonBis(halbS1 + 1, v);
++                        if (s2.fehler) throw new Error(s2.fehler);
++                        heim = t1v.heim;
++                        s = { je: t1v.s.je.concat(s2.je), msJe: (t1v.s.msJe || []).concat(s2.msJe || []), heimweg: s2.heimweg, grund: t1v.s.grund || s2.grund };
++                    } else {
++                        heim = await warmeWelt();
++                        s = await saatenVonBis(1, v);
++                    }
 +                    if (s.fehler) throw new Error(s.fehler);
 +                    const je = s.je.map((x) => Object.assign({ saat: x.saat }, x.z)).concat([Object.assign({ saat: "geladen" }, heim)]);
 +                    const fehlt = je.find((w) => w.fehlt);
@@ -726,37 +759,11 @@ index e71c177..1197c4b 100644
 +                    if (wahl.length < Z.saaten) return L.leser(1, "der Zeuge am Gerät: nur " + wahl.length + " von " + s.je.length + " Saaten tragen an der Ankunft eine sichtbare Marke mit Kontrast (verlangt ≥ " + Z.saaten + ") · " + akte, s.je.length);
 +                    const rec = { stempel: Date.now() + "-" + process.pid, kopf: kopfDesBaums(), sitzung: process.env.PUNKTE_SITZUNG_LOG || null, aus: String(H.AUS), probe: process.env.PUNKTE_PROBE || null,
 +                        karte: { besucht: besucht.length, anders: anders.length, verlangt: v }, wahl: wahl.slice(0, Z.saaten), n: s.je.length, w, akte };
-+                    if (teil === 0) return zeugeAmGeraet(rec);
-+                    const gelegt = await L.ev("window.__wegZeuge = " + JSON.stringify(rec) + "; return window.__wegZeuge.stempel;", 10);
-+                    if (gelegt !== rec.stempel) throw new Error("der Karten-Zeuge liegt nicht in der Seite (" + gelegt + ")");
-+                    L.j.wegZeuge = { stempel: rec.stempel, kopf: rec.kopf, karte: rec.karte, wahl: rec.wahl };
-+                    L.zeile("wegfindung Teil 1/3: Karten-Zeuge " + besucht.length + "/" + v + " gleich am Kopf " + String(rec.kopf).slice(0, 8) + " · Zeugen-Saaten " + rec.wahl.join(", ") + " → Teil 2 (Stempel " + rec.stempel + ")");
++                    // DER ZEUGE AM GERÄT im Prozess des Urteils (ohne Teile hier, in Teilen in Teil 2 nach der zweiten Hälfte der Saaten): der
++                    // Karten-Zeuge `rec` dieser Fahrt liegt im Speicher — keine Ablage in der Seite, kein Stempel über die Grenze der Teile
++                    if (teil === 2) L.zeile("wegfindung Teil 2/3: Saaten " + (halbS1 + 1) + "–" + v + " · Karten-Zeuge " + besucht.length + "/" + v + " gleich am Kopf " + String(rec.kopf).slice(0, 8) + " · Zeugen-Saaten " + rec.wahl.join(", "));
++                    return zeugeAmGeraet(rec);
 +                });
-+                // TEIL 2 — NUR die Zeugen-Saaten am Gerät, fail-closed: GRÜN nur am Karten-Zeugen DIESER Fahrt (derselbe Stempel in Seite und
-+                // Ausgabe von Teil 1, dieselbe Sitzung und Ausgabe, derselbe Kopf des Baums, 50/50 gleich) — sonst UNGEMESSEN beim Namen
-+                if (teil === 2 && !L.j.sprossen[1] && !L.j.fehler[1])
-+                    await L.je(1, async () => {
-+                        const rec = await L.ev("const z = window.__wegZeuge || null; delete window.__wegZeuge; return z;", 10);
-+                        const im = L.j.wegZeuge || null;
-+                        const kopf = kopfDesBaums();
-+                        const k = (rec && rec.karte) || {};
-+                        const grund = !rec
-+                            ? "die Seite trägt keinen Karten-Zeugen (window.__wegZeuge fehlt — eine andere Welt als in Teil 1?)"
-+                            : !im
-+                              ? "die Ausgabe von Teil 1 trägt keinen Stempel des Karten-Zeugen"
-+                              : rec.stempel !== im.stempel
-+                                ? "der Karten-Zeuge der Seite (" + rec.stempel + ") ist nicht der von Teil 1 (" + im.stempel + ")"
-+                                : rec.aus !== String(H.AUS) || rec.sitzung !== (process.env.PUNKTE_SITZUNG_LOG || null) || rec.probe !== (process.env.PUNKTE_PROBE || null)
-+                                  ? "der Karten-Zeuge stammt aus einer anderen Fahrt (Sitzung " + rec.sitzung + ", Probe " + rec.probe + ")"
-+                                  : !kopf || rec.kopf !== kopf
-+                                    ? "der Karten-Zeuge las am Kopf " + rec.kopf + ", der Baum steht auf " + kopf
-+                                    : !(k.verlangt === P.sprossen[1].umfang.verlangt && k.besucht === k.verlangt && k.anders === 0)
-+                                      ? "der Karten-Zeuge las nicht " + P.sprossen[1].umfang.verlangt + "/" + P.sprossen[1].umfang.verlangt + " gleich (" + JSON.stringify(k) + ")"
-+                                      : null;
-+                        if (grund) throw new Error("UNGEMESSEN — der Zeuge am Gerät urteilt nur am Karten-Zeugen dieser Fahrt: " + grund);
-+                        L.zeile("wegfindung Teil 2/3: Karten-Zeuge " + k.besucht + "/" + k.verlangt + " gleich (Stempel " + rec.stempel + ", Kopf " + kopf.slice(0, 8) + ") · Zeugen-Saaten " + rec.wahl.join(", "));
-+                        return zeugeAmGeraet(rec);
-+                    });
 +                if (teil === 1 || teil === 2) return weiter();
                  const tOrt = Date.now();
 -                await L.ort("wiese", "ego");
@@ -767,7 +774,7 @@ index e71c177..1197c4b 100644
                  const z = await L.ev(`
                      const st = r.state;
                      const p = st.playerMesh.position;
-@@ -539,31 +1218,56 @@ const LANDMARKE_AN = async (r, T, a) => {
+@@ -539,31 +1227,56 @@
                      L.leser(6, "Mittel der Epoche: die Reise ist ein Sprung der Konsole in eine neue Welt (stamm/feld-leben.js:1278 → `_reiseBetreten` stamm/netz-portal.js:660), keine Fahrt mit Karte, Schiff oder Fahrzeug der Epoche", umfangKm);
                  });
                  await L.je(7, async () => L.umfang(7, 1, "die Sitzung hält eine Saat (" + z.saat + ") und einen Planeten — kein Nachbarplanet, keine Bahn zwischen Planeten"));
@@ -847,3 +854,22 @@ index e71c177..1197c4b 100644
  
      // ─────────── erleben.spieler.zeit — Die Zeit des Spielers: Dehnen, Raffen, Springen ───────────
      // S1 misst die Sonnenbahn der Welt (`_sonnenRichtung`, die Quelle von Licht und Himmel) über den Tag je Saison-Wort gegen die Ephemeride
+--- a/meisterkarte-quelle/punkte/stationen/sitzung-seite.js
++++ b/meisterkarte-quelle/punkte/stationen/sitzung-seite.js
+@@ -401,6 +401,7 @@
+ // vor dem ersten Takt der Seite zählt mit; die Zeit je Saat schätzt die nächste); danach kehrt die
+ // Sitzung in ihre Welt zurück (`switchToWorld`, der Weg von „wechsle zu“) und die besuchten Welten fallen (`deleteWorld`) — die
+ // nächste Station der Sitzung findet keine Welt dieser Schleife. Ergebnis: je Saat { saat, ms, z }, die Zeit je Saat, der Heimweg.
++// `arg.von` (die Staffel, landmarken-9): die Schleife beginnt bei Saat `von` (sonst 1) — zwei Teile fahren 1 … k und k+1 … n.
+ const SAATEN = async (r, T, arg, zaehl) => {
+     const heim = r.state.worldMeta && r.state.worldMeta.worldId;
+     if (!heim) return { fehler: "die Sitzung trägt keine Welt (worldMeta.worldId)" };
+@@ -411,7 +412,7 @@
+     let grund = null;
+     let heimweg = null;
+     try {
+-        for (let i = 1; i <= arg.n; i++) {
++        for (let i = arg.von || 1; i <= arg.n; i++) {
+             const schnitt = je.length ? (performance.now() - t0) / je.length : 0;
+             if (Date.now() + schnitt > arg.bis) {
+                 grund = "die Frist: " + je.length + " Saaten in " + Math.round(performance.now() - t0) + " ms";

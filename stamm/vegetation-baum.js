@@ -2717,8 +2717,10 @@ class AnazhRealm_vegetation_baum {
     // binnen der Nah-Streu `SCATTER.outerM` über der Oberfläche der Voxel-Welt, jenseits über dem Gesetz ohne Detail, nur das Dach),
     // die Krone jeder Art (`_kammKroneArten`). Die Ankunft fragt dasselbe Gesetz im Wald-Faden (`_ankunft`, voxel-worker
     // `ankunftRechnen`); der Wirt liest es für den Kontrast (`_landmarkeKontrast`: verdeckt heißt Kontrast 0) und für die Station.
-    // Die Zellen, die er dabei plant, meldet er (Lehre 14, `_fadenUmgangen`). → null (frei) oder { von: "grund" | <Art>, d }.
-    _landmarkeSicht(auge, q) {
+    // Die Zellen, die er dabei plant, meldet er (Lehre 14, `_fadenUmgangen`). `o.nurOb`: die Frage nur nach dem OB (wie die Wahl der
+    // Ankunft im Faden) — trifft die Gerade den Grund, plant das Gesetz keine Zelle davor (landmarken-9: der Ring der Station 1–3 km,
+    // je Saat ~185 Geraden, 8 592 → 6 928 ms an der teuersten von 6 Saaten, jedes Urteil gleich). → null (frei) oder { von, d }.
+    _landmarkeSicht(auge, q, o = {}) {
         const A = AnazhRealm;
         const K = globalThis.__gelaendeCore;
         const L = this._gelaende();
@@ -2726,6 +2728,7 @@ class AnazhRealm_vegetation_baum {
         const verdeckt = globalThis.__phytoCore.landmarkeSicht({
             auge,
             q,
+            nurOb: !!o.nurOb,
             hoehe: (x, z) => K.hoehe(L, x, z, true),
             stehende: W.stehende,
             arten: W.arten,
