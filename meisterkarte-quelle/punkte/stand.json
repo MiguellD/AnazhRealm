@@ -11248,7 +11248,7 @@
   },
   "karte2.leben.evolution.fremde-physik": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.evolution.fremde-physik#1 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#1 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, planet-core.js, scripts/diag-kreatur-leben.cjs +9) · karte2.leben.evolution.fremde-physik#2 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#2 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#3 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#3 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#4 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#4 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#5 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#5 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#6 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#6 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#7 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.leben.evolution.fremde-physik#1 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#1 gtx: Station seit der Messung geändert · karte2.leben.evolution.fremde-physik#2 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#2 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#3 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#3 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#4 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#4 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#5 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#5 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#6 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#6 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#7 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.evolution.fremde-physik#1",
@@ -11266,9 +11266,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, planet-core.js, scripts/diag-kreatur-leben.cjs +9)",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true,
-     "r6": "konsum",
      "beide": true
     },
     {
@@ -33066,7 +33065,7 @@
   },
   "karte2.same.entfaltung.schirm": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.entfaltung.schirm#1 radeon: Station seit der Messung geändert — zuletzt an 99649186: die Welt der Sitzung trägt nicht mehr (die Welt starb am Messort dorf (Protocol error (Runtime.callFunctionOn): Target closed)) — offen, UNGEMESSEN · karte2.same.entfaltung.schirm#1 gtx: ungemessen (R10) — zuletzt an 031f4700: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild · karte2.same.entfaltung.schirm#2 radeon: ungemessen (R10) · karte2.same.entfaltung.schirm#2 gtx: ungemessen (R10) · karte2.same.entfaltung.schirm#3 radeon: ungemessen (R10) · karte2.same.entfaltung.schirm#3 gtx: ungemessen (R10) · karte2.same.entfaltung.schirm#4 radeon: ungemessen (R10) · karte2.same.entfaltung.schirm#4 gtx: ungemessen (R10) · karte2.same.entfaltung.schirm#5 radeon: ungemessen (R10) · karte2.same.entfaltung.schirm#5 gtx: ungemessen (R10) · karte2.same.entfaltung.schirm#6 radeon: ungemessen (R10) · karte2.same.entfaltung.schirm#6 gtx: ungemessen (R10) · karte2.same.entfaltung.schirm#7 radeon: ungemessen (R10) · karte2.same.entfaltung.schirm#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.same.entfaltung.schirm#1 radeon: Station seit der Messung geändert — zuletzt an 99649186: die Welt der Sitzung trägt nicht mehr (die Welt starb am Messort dorf (Protocol error (Runtime.callFunctionOn): Target closed)) — offen, UNGEMESSEN · karte2.same.entfaltung.schirm#1 gtx: ungemessen (R10) — zuletzt an 031f4700: Deckel 139 s gerissen: Stille seit 15 s nach 167.9 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT wiese-ego-geht 152.4 s) · karte2.same.entfaltung.schirm#2 radeon: ungemessen (R10) · karte2.same.entfaltung.schirm#2 gtx: ungemessen (R10) · karte2.same.entfaltung.schirm#3 radeon: ungemessen (R10) · karte2.same.entfaltung.schirm#3 gtx: ungemessen (R10) · karte2.same.entfaltung.schirm#4 radeon: ungemessen (R10) · karte2.same.entfaltung.schirm#4 gtx: ungemessen (R10) · karte2.same.entfaltung.schirm#5 radeon: ungemessen (R10) · karte2.same.entfaltung.schirm#5 gtx: ungemessen (R10) · karte2.same.entfaltung.schirm#6 radeon: ungemessen (R10) · karte2.same.entfaltung.schirm#6 gtx: ungemessen (R10) · karte2.same.entfaltung.schirm#7 radeon: ungemessen (R10) · karte2.same.entfaltung.schirm#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.entfaltung.schirm#1",
@@ -33084,7 +33083,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 031f4700: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild",
+     "grund": "ungemessen (R10) — zuletzt an 031f4700: Deckel 139 s gerissen: Stille seit 15 s nach 167.9 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT wiese-ego-geht 152.4 s)",
      "ungemessen": true,
      "beide": true
     },
@@ -37507,7 +37506,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 303,
+  "konsum": 302,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37630,10 +37629,10 @@
    "ultiversum.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3364
+  "ohne": 3365
  },
  "kopfVoll": "eef726c747050e60042a4a0c9f65fea3ff3e9077",
- "zeit": "2026-11-27T07:33:46.388Z",
+ "zeit": "2026-11-27T07:41:17.570Z",
  "vorher": "eef726c7",
  "bilanz": {
   "gewinn": [],
