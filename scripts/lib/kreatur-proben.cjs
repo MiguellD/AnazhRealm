@@ -1050,7 +1050,12 @@ async function kreaturProben(r, T, opts) {
         // 1,5 Leinen fort, die Glieder zogen 372 m dorthin und standen 1 040 m vor ihm — die Flucht fand niemanden (vakuös).
         // Gewählt vor jedem Täter (herde-revier deckt `_kreaturRevier`).
         const heim = (() => {
-            if (taeter === "herde-park") return neben(P0.x, P0.z + 70);
+            if (taeter === "herde-park") {
+                // der alte Ort: 70 m nördlich der Plan-Mitte (`_genesisMitte`), auf der Mall — seit Kopf 2 steht der Spieler am
+                // Stand der Landmarke (34/−34), P0 + 70 lag auf der Wildnis und der Täter warf fünf
+                const M = r._genesisMitte() || P0;
+                return neben(M.x, M.z + 70);
+            }
             const seq = s._creatureNetSeq;
             let lt = null;
             const haelt = (o) => {
