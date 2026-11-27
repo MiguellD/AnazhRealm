@@ -474,7 +474,7 @@ async function menschBuehnen() {
         L.forEach((b, i) => (b.visible = sah[i]));
         for (const b of fort) s.scene.add(b);
         const cam = s.camera;
-        const gezeichnet = (b) => b.visible || b.userData._satz === true || r._kzBesitztFeld(b);
+        const gezeichnet = (b) => r._leibGezeichnet(b);
         const blickZaehlen = (sicht, zaehlt) => {
             const auge = new T.Vector3(pm.x, pm.y + 0.9, pm.z);
             if (sicht !== "ego") auge.set(pm.x - ax * THIRD_M, pm.y + 2.6, pm.z - az * THIRD_M);
