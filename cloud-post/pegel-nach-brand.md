@@ -157,3 +157,11 @@ Karte 2 gebucht 155 von 1 718 · Status ZWISCHENSTAND.
 - „Aue über der Krone“ ist meins im Kopf 3 (die Bahn wetter-lagen schneidet sie nicht, Rücknahme 21:08).
 
 Karte 2 gebucht 155 von 1 718 · Status ZWISCHENSTAND.
+
+## 27.11. 22:05 — Lebenszeichen: die Wurzel der drei Roten am Kopf 3 gemessen — der Bezug des Hubs, nicht das Bett
+- **Messung ohne Regen** am breitesten Fluss-Punkt (Playtest V9.43-d, −986,8/1012,7): Sohle 13,171 · Bank 13,971 · Breite 10,60 · D 0,80 — main und Kopf 3 **byte-gleich**; die Lesart „das Bett ändert sich“ fällt. Der Spiegel: main Hub **+0,20** (an der Krone, bordvoll — das alte Gesetz mit dem Klima von wetter-lagen-3), Kopf 3 Hub **−0,37** → Tiefe 0,80 → 0,43 m (< 0,5: V9.43-d rot), der Mess-Bach 0,758 → 0,098 m (keine Furt 0,5–0,75: F rot).
+- **Täter (`laufQ`):** Kopf 3 bezog den Hub auf das Mittel inkl. Regen, und der Basisabfluss trug nur die Erd-Spende (BFI 0,08) — der trockene Tag ließ den Fluss auf 8 % seines Mittels fallen.
+- **Schnitt im Bau:** der Bezug bleibt der Basisabfluss wie im main (trocken = Hub 0 = das geschnitzte Bett), seine Größe folgt dem Klima: g = max(s, r·F̄·bfi/(1−bfi)), `PEGEL.bfi` 0,6 (Base-Flow-Index, Beck et al. 2013); bei F̄ = 0 byte-gleich zum main-Gesetz. Gemessen: breitester Fluss 0,71 m (Hub +0,11), Mess-Bach 0,558 m (Hub 0). Läuft: werk-im-wasser, wetter-wache, S1, kamera-laub, Playtest.
+- Ehrlich: der S3-Kandidat liest damit ×1,197 (< 1,3).
+
+Karte 2 gebucht 156 von 1 718 · Status ZWISCHENSTAND.
