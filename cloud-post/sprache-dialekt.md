@@ -150,14 +150,14 @@ Der Schnitt an der EINEN Wurzel, der Lautung des Satzes:
 Gemessen, node, 24–60 Sätze je Familie:
 - **%V je Familie** (Rede aus Kernen 1,00 →):
 
-  | Familie | %V |
+  | Familie (Seite vor ↔ node nach Regel 7) | %V |
   |---|---|
-  | mitteleuropa | 0,48 |
-  | alpin | 0,544 |
-  | mediterran | 0,654 |
-  | nordisch | 0,541 |
-  | fernost | 0,675 |
-  | antik | 0,506 |
+  | mitteleuropa | 0,48 → 0,480 |
+  | alpin | 0,544 → 0,530 |
+  | mediterran | 0,654 → 0,657 |
+  | nordisch | 0,541 → 0,528 |
+  | fernost | 0,675 → 0,673 |
+  | antik | 0,506 → 0,495 |
 
   Band 0,40–0,54 nach Ramus, Nespor & Mehler 1999; die Klassenmittel 41,2 · 44,2 · 53,1 % hat Dellwo, Abb. 1, gelesen.
 - **Gipfel nach Jongmans Messung** (Mann/Frau im Wechsel): f 7 850 / 7 678 · s 6 800 / 6 882 · v 7 225 / 7 678 · ʃ 3 825 / 3 712 · z 7 250 / 6 882 Hz.
@@ -171,7 +171,8 @@ Linse gate:klang-zensus (Sp):
 - Ganzer Zensus auf der Seite (`--selftest`, 453 s): ✅ S1–S23, S28, S29 · Markt 259 Reden, 0 ohne Silben, L_Aeq 65,35 dB(A). Der Mk-Mutant S29 löschte noch `kerne` und blieb unbemerkt (rc=1). Er trifft jetzt die Fracht `rede`, die Rede wird an ihrem Einsatz erkannt: `--markt --selftest` ✅ S24–S27, S29 („97 von 97 Reden ohne die Silben eines Satzes“), S30, rc=0 (4e782ea).
 
 Ehrlich offen:
-- Vier Familien liegen über dem Band ≤ 0,54: mediterran 0,654, fernost 0,675, alpin 0,544 und nordisch 0,541 (die letzten zwei knapp). Die Wand prüft ≤ 0,70. Klatts Dauern sind Englisch, ein Sprecher. Das Japanische trägt kurze Kurzvokale, das Italienische lange Konsonanten. Messname `Sp %V außer Band`.
+- Regel 7 nach Klatt S. 296: die Segmente der unbetonten Silbe kürzen, das Abglied der betonten nicht mehr (mein Schnitt kürzte es). Damit liegen alpin und nordisch im Band; ΔC mitteleuropa 5,39 cs (Englisch bei Ramus 5,35).
+- Zwei Familien liegen über dem Band ≤ 0,54: mediterran 0,657 und fernost 0,673. Die Wand prüft ≤ 0,70. Fast nur offene CV-Silben treffen Klatts englische Vokale (V 147 ms, C 67 ms); das Tempo heilt das nicht, Klatt S. 297: „most of the rate change is realized by manipulating pause durations“. Klatts Dauern sind Englisch, ein Sprecher. Das Japanische trägt kurze Kurzvokale, das Italienische lange Konsonanten. Messname `Sp %V außer Band`.
 - QUELLE UNGEPRUEFT im Wert:
   - x (velar);
   - die Breite der Rausch-Gipfel;

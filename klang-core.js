@@ -1704,7 +1704,7 @@
             min = z[1];
             if (s.satzEnde && g.teil === "ab") P *= 1.4;              // Regel 2
             if (!(s.anfang && g.teil === "an")) P *= 0.85;            // Regel 6: nicht im Anlaut des Worts
-            if (!(bet && g.teil === "an")) { min /= 2; P *= g.teil === "an" && (g.c.art === "liquid" || g.c.art === "gleit") && nach && nach.v ? 0.1 : 0.7; } // Regel 7
+            if (!bet) { min /= 2; P *= g.teil === "an" && (g.c.art === "liquid" || g.c.art === "gleit") && nach && nach.v ? 0.1 : 0.7; } // Regel 7
             P *= vor && vor.c && nach && nach.c ? 0.5 : (vor && vor.c) || (nach && nach.c) ? 0.7 : 1; // Regel 10: im Cluster
             var d = min + (z[0] - min) * P;
             aus[g.i].segs.push({ art: g.c.art, l: g.c.l, ort: g.c.ort, stimme: g.c.stimme, ms: d });
