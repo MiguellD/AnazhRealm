@@ -1,5 +1,7 @@
 
 
+## 27.11. 23:08 — GPU-PROBE fc0958fb auf omen-gtx1060: GRÜN in 2341 s (gate:pruefbuehne-licht GRÜN 59 s auf omen-gtx1060 · gate:weltbild-frost:echt GRÜN 163 s auf omen-gtx1060 · gate:studio-begehen GRÜN 261 s auf omen-gtx1060 · gate:stand-takt GRÜN 271 s auf omen-gtx1060 · gate:webgl-probe GRÜN 56 s auf omen-gtx1060) → probe-post/kunst-am-leib/fc0958fb.md
+
 ## 27.11. 22:44 — GPU-PROBE 07746140 auf radeon-890m: GRÜN in 880 s (gate:stand-takt GRÜN 233 s auf radeon-890m · gate:mensch-zuege GRÜN 37 s auf radeon-890m · bild:dorf@0.5 GRÜN 87 s auf radeon-890m · gate:webgl-probe GRÜN 55 s auf radeon-890m) → probe-post/kunst-am-leib/07746140.md
 ## 27.11. 22:38 Koordinator — Kopf 5 fc0958fb (kunst#2): Batterie ROT an Prettier, von mir abgebrochen · Kopf 4 ist gestempelt und fährt mit dem Heil-Zug · Vor-Urteil kunst#1
 
