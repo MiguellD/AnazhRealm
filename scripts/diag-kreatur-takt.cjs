@@ -11,7 +11,7 @@
 //   --teil=k/n  Teil k: die längste Probe (DAUER_S) zuerst in den leichtesten Teil, jede in GENAU einem
 "use strict";
 const { statikServer, CODE_OF_SEITE, werkbankRuf, teilAus, ROOT: root, hauptLauf, nullWelt, urteilEnde, argOpt: opt, weltTor, path, SELBSTTEST, jsonLesen } = require("./lib/welt-boot.cjs"); // prettier-ignore
-const { KREATUR_PROBEN_SRC, PROBEN, TAETER, EIN_LAUF, urteil } = require("./lib/kreatur-proben.cjs");
+const { KREATUR_PROBEN_SRC, PROBEN, TAETER, EIN_LAUF, STADT_ORT, urteil } = require("./lib/kreatur-proben.cjs");
 
 const PORT = Number(process.env.KREATUR_TAKT_PORT || 4478);
 const argv = process.argv.slice(2);
@@ -25,49 +25,51 @@ const BUEHNE_DATEI = path.join(root, "spec", "pruefbuehne", "welt.json");
 const RAMPE = jsonLesen("spec/pruefbuehne/stationen.json").stationen.find((s) => s.id === "s2-hang30");
 if (!RAMPE || !Number.isFinite(RAMPE.winkel))
     throw new Error("die Rampe s2-hang30 fehlt in spec/pruefbuehne/stationen.json");
-// Sekunden je Probe samt Täter und fremder Welt, die Zeilen „Sekunden je Probe" ohne --teil (056330d8), unter 1 s zählt 1
+// Sekunden je Probe samt Täter, fremder Welt und dem Wechsel des Messorts (er zählt bei der ersten Probe danach), die Zeilen
+// „Sekunden je Probe" der drei Teile mit --selftest (werk-am-ort-2 Lauf 5, Cloud-Container, 27.11.: 1 416 · 1 458 · 1 092 s), unter
+// 1 s zählt 1. Die Stadt-Proben trugen hier ihr Fünffaches (seuche 60 → 310, zielplan 80 → 330; je Täter-Lauf
+// seuche 88 s, zielplan 29–35 s), die Teile der CI rissen die Frist (Kopf 3: Teil 1 > 1 568 s) — vier Teile
 const DAUER_S = {
     geister: 1,
     sattel: 1,
     reload: 1,
-    huepfer: 1,
+    huepfer: 3,
     wachsen: 1,
-    gier: 5,
-    jagd: 207,
-    herde: 44,
-    schwarm: 4,
+    gier: 6,
+    jagd: 69,
+    herde: 33,
+    schwarm: 12,
     peer: 1,
     zufall: 1,
     nexus: 1,
     temperament: 1,
-    abstand: 1,
-    jagdkreis: 281,
-    // (w4-stationen-schnell-a: an derselben Maschine jagdkreis 50 + 79 s, mahl 11 + 30 s — mahl im Maß von jagdkreis)
-    mahl: 89,
-    // (witterung-windab: headless an der Cloud-Maschine, samt dem Täter — 17 s Uhr der Lauf, die Probe unter 1 s)
+    abstand: 2,
+    jagdkreis: 98,
+    mahl: 14,
     witterung: 1,
-    rudel: 7,
-    querhang: 13,
+    rudel: 8,
+    querhang: 12,
     ferngang: 1,
     gestalt: 1,
     todlage: 1,
-    bewohner: 660,
-    begegnung: 10,
-    tiersatz: 7,
-    furcht: 31,
-    lebensraum: 21,
-    tagesbudget: 15,
-    kaskade: 400,
-    folgen: 59,
-    zielplan: 80,
-    gehege: 70,
-    // (herde-gesetz: headless an der Laptop-Maschine unter fremder Last, eine Saat, ohne Täter — der Bestand liest den Gau)
-    erbe: 26,
-    muster: 62,
-    // (leben-gau C2a: headless an der Laptop-Maschine, samt den vier Tätern in EINEM Lauf)
-    gau: 35,
-    // (oeko-kreislauf: headless an der Laptop-Maschine, samt den zwei Tätern — 33 s Uhr der Lauf, die Probe 6 s)
-    zerfall: 6,
+    bewohner: 878,
+    begegnung: 54,
+    tiersatz: 8,
+    furcht: 29,
+    lebensraum: 18,
+    tagesbudget: 56,
+    kaskade: 519,
+    folgen: 71,
+    zielplan: 330,
+    werkort: 424,
+    mengebild: 380,
+    schreck: 297,
+    seuche: 310,
+    gehege: 63,
+    erbe: 78,
+    muster: 104,
+    gau: 43,
+    zerfall: 2,
 };
 const TEIL = teilAus(argv);
 const gewaehlt = (() => {
@@ -137,8 +139,21 @@ async function headless(laeufe) {
     try {
         await bereit();
         await einschwingen();
+        // der Messort der Stadt (`STADT_ORT`, „stadt" folgt `--ort`): wechselt er, fährt der Lauf in einer frischen Welt —
+        // die Stadt des vorigen bleibt sonst stehen (dieselbe Platte, die der erste Lauf las)
+        let stadt = null;
         // ein Täter mit Teilen liest die Teile seines Grund-Laufs (er lief vor ihm auf derselben Seite)
         for (const l of laeufe) {
+            const o = STADT_ORT[l.proben[0]];
+            const ort = o === "stadt" ? l.ort || o : o;
+            if (ort && stadt && ort !== stadt)
+                await zeit(l.proben[0], async () => {
+                    await page.evaluate(() => localStorage.clear());
+                    await page.reload({ waitUntil: "domcontentloaded", timeout: 120000 });
+                    await bereit();
+                    await einschwingen();
+                });
+            stadt = ort || stadt;
             const grundTeile = l.grundVon != null ? aus[l.grundVon]?.[l.proben[0]]?.__teile : undefined;
             aus.push(await zeit(l.proben[0], () => lauf(grundTeile ? { ...l, grundTeile } : l)));
         }

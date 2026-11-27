@@ -5390,8 +5390,13 @@
         // die Bank vor der Tür (`_bankWende`): höchstens so viele Stunden sitzt er nach der Heimkehr draußen (ANGENOMMEN; Band: die
         // Gänge zu Fuß ab 18 Uhr, NHTS 2017 22 % von 18 bis 6 Uhr — National Academies 2025, „Improving Pedestrian Safety at Night“)
         bankH: 1,
-        // der Markt-Morgen: die Öffnung und der Schluss (Uhr), wie lange er je Erwachsenem seines Haushalts bleibt
-        einkauf: Object.freeze({ auf: 7, schluss: 11, dauerH: 0.5 }),
+        // der Markt-Morgen: die Öffnung und der Schluss (Uhr), wie lange er je Erwachsenem seines Haushalts bleibt; DER GANG ÜBER
+        // DEN MARKT (`tagesEinkaufStaende`, `tagesKette`): die Stände seines Einkaufs [Zahl, Anteil %] — die Geschäfte je
+        // Einkaufsgang (Ribbeck & Notzon 2017, Passantenbefragung Weißwasser/O.L., BTU Cottbus, Abb. 12, n = 247 mit Zahl: 1 22,8 ·
+        // 2 28,8 · 3–5 34,5 · 6 und mehr 1,8; die 3–5 je zu gleichen Teilen) — und der Anteil seiner Zeit, den er an einem Stand
+        // steht (`kaufAnteil`: 20–30 % der Zeit eines Einkaufs sind Erwerb, der Rest Gang — Sorensen, PathTracker, Knowledge@Wharton
+        // 2006 „Tag Team: Tracking the Patterns of Supermarket Shoppers“)
+        einkauf: Object.freeze({ auf: 7, schluss: 11, dauerH: 0.5, staende: Object.freeze([1, 22.8, 2, 28.8, 3, 11.5, 4, 11.5, 5, 11.5, 6, 1.8]), kaufAnteil: 0.25 }), // prettier-ignore
         // die Abfahrten zur Arbeit je Band [von, bis, Anteil %] (ACS 2009 Table B: vor 5 Uhr 4,1 · 5–6 8,3 · 6–7 18,9 · 7–8 28,1 ·
         // 8–9 16,6 · 9–12 10,4; die Abfahrten ab 12 Uhr, 13,8 %, fährt das Band nicht — die späte Schicht tragen nur die Rollen
         // mit Versatz, der Nachtfahrer und der Nachtwächter —, die Anteile gelten normiert über die Bänder bis 12 Uhr)
@@ -5559,7 +5564,11 @@
         // jeder draußen, bei Regen und Sturm jeder drinnen. Bis hier kannte der Tag kein Wetter: im Sturm stand der Markt
         // mittags so voll wie in der Sonne; bis zum Bild am Genesis-Ort (Radeon, Regen um 13:16 Uhr) ging nur die Muße heim —
         // 31 von 77 standen bei der Arbeit im Regen auf dem Platz.
-        regen: Object.freeze({ ab: 0.3, streuH: 0.15 }),
+        // DER WEG MIT ZIEL (absage, mensch.menge.bild#2): wer zum Markt oder zu Besuch geht, sagt im Regen nur so oft ab, wie
+        // das Band der Pendler es misst — Cools, Moons, Creemers & Wets 2010 (TRR 2157, Tab. 3/4, „Rain“, Trip Cancellation,
+        // Erwartung über die Klassen 1–25 · 26–50 · > 50 %): Einkauf 16,2 %, Freizeit 14,4 % — nie jeder. Bis hier ging bei
+        // Niesel 0,2 jeder Einkäufer heim: am Auge stadt-voll (Radeon, 8,05 Uhr) 533 drinnen, 87 im Bild.
+        regen: Object.freeze({ ab: 0.3, streuH: 0.15, absage: Object.freeze({ einkauf: 0.162, besuch: 0.144 }) }),
         // DIE JAGD (rollen-des-tages, mensch.nahrung.tier#2; Leser: `tagesOrte` das Revier, `tagesJagdHaushalte` der Wirt
         // `_bewohnerListe`, `tagesBeute` der Wirt `_bewohnerBeute`): anteil = so viele der Haushalte einer Siedlung tragen einen
         // Jäger (und wo ein Ufer ist, ebenso viele einen Fischer) — die unterste Stufe über null der Abhängigkeit einer
@@ -6130,7 +6139,8 @@
     // ist in seinem Haus (an der Tür ungezeichnet). nass = der Regen am Ort (0–1, der Kanal `rain` des Wetter-Felds; ohne ihn
     // trocken): über der Schwelle des Menschen (TAGES_GESETZ.regen) bleibt er daheim, außer am Posten seiner Arbeit
     // (`regenfest`). krank = das Feld seines Lebenslaufs an diesem Tag (mensch.menge.seuche#1, der Satz `b.krank`): jede Stunde,
-    // die ihn fortführte — Werk, Markt, Mahl, Besuch, Treff —, sitzt er vor seiner Tür im Akt des Abends; der Posten hält seine
+    // die ihn fortführte — Werk, Markt, Mahl, Besuch, Treff, drinnen wie draußen —, sitzt er vor seiner Tür im Akt des Abends
+    // (bis werk-am-ort-2 ging er zum Werk unter Dach: an stadt-voll 4 von 121 Kranken am Tag der Spitze); der Posten hält seine
     // Schicht wie im Regen (`regenfest`: die Wache, der Fahrer). Bis hier stand die Krankheit als Zweig im Wirt (`_bewohnerSoll`)
     // neben diesem Plan: die Linse des Tags las den Plan ohne ihn (Soll-Orte 0,567 statt ≥ 0,9), der kranke Fahrer stieg nie ein.
     // DIE WENDEN DES TAGS EINES MENSCHEN (rein aus Same und Rolle, in den Stunden seiner Rolle — ohne den Versatz `versatzH`): die
@@ -6267,6 +6277,17 @@
         for (var i = 0; i < glieder.length; i++) if (!(TAGES_GESETZ.rollen[glieder[i].rolle] || {}).spiel) n++;
         return n;
     }
+    // WIE VIELE STÄNDE SEIN EINKAUF BESUCHT (der Wirt `_bewohnerListe` stellt ihm so viele Stände am Markt, `orte.einkaufRunde`):
+    // die Zahl aus dem Band `TAGES_GESETZ.einkauf.staende` nach dem Samen des Einkäufers
+    function tagesEinkaufStaende(same) {
+        var B = TAGES_GESETZ.einkauf.staende,
+            summe = 0,
+            u;
+        for (var i = 1; i < B.length; i += 2) summe += B[i];
+        u = _tagZahl(same, "staende") * summe;
+        for (var k = 0; k < B.length; k += 2) if ((u -= B[k + 1]) < 0) return B[k];
+        return B[B.length - 2];
+    }
     function tagesEinkaeufer(glieder) {
         var b = -1,
             bw = -Infinity;
@@ -6357,10 +6378,12 @@
     // DIE ANKUNFT ZUR STUNDE (mensch.menge.bild#2, Entscheid des Koordinators 25.11.): der Plan (`tagesPlan`) nennt, wo ein Mensch
     // zu einer Stunde IST; wer dorthin geht, bricht um die Gehzeit seines Wegs davor auf. `tagesKette` legt die Abschnitte seines
     // Tags (die Wenden wie `tagesGaenge`, je Abschnitt der Plan seiner Mitte) ab dem Schlaf hintereinander; je Abschnitt
-    // `geh(von, nach)` = die Gehzeit in Stunden vom Ort des vorigen zum Ort dieses (der Wirt: die Länge seines Wegs über das Netz,
-    // `tagesWege`, ÷ das Tempo seines Gangs ÷ die Sekunden der Stunde) — der Aufbruch liegt um sie vor der Wende, nie vor der
+    // `geh(von, nach, P0, P1)` = die Gehzeit in Stunden vom Ort des vorigen zum Ort dieses (von, nach: ihr Wo; P0, P1: die Pläne
+    // beider — der Wirt misst den Weg, den sein Leib zwischen ihren Ständen geht, `_bewohnerPfad`, ÷ das Tempo seines Gangs ÷ die
+    // Sekunden der Stunde) — der Aufbruch liegt um sie vor der Wende, nie vor der
     // eigenen Ankunft am vorigen Ort (monoton): ist der Weg länger als der Aufenthalt davor, schrumpft dieser (`eng` zählt die
-    // Abschnitte, bei denen das geschieht). `tagesZiel(K, stunde)` = der Plan des Abschnitts, zu dem er zur Stunde unterwegs ist
+    // Abschnitte, bei denen das geschieht); je Abschnitt `an` = seine Ankunft (Aufbruch + Gehzeit, Stunden ab dem Anker wie `auf`
+    // — die Probe misst den Gehenden an ihr). `tagesZiel(K, stunde)` = der Plan des Abschnitts, zu dem er zur Stunde unterwegs ist
     // oder an dem er steht — der EINE Leser der Ziel-Kette im Wirt (`_bewohnerSoll`, und darüber die Wende und die Ankunft). Bis
     // hier brach jeder zur Wende auf: der Tag dauert 60 min, die Stunde 150 s, der Weg zum Platz an stadt-voll bis 300 m (≈ 214 s)
     // — um 8 Uhr sah der Plan 287 Menschen am Markt, 93 standen dort, 193 gingen noch (131 davon ≥ 50 m fort).
@@ -6407,11 +6430,25 @@
             aus = 0,
             nachAus = null,
             gehSumme = 0;
+        // DER GANG ÜBER DEN MARKT (menge-gang, mensch.menge.bild#2): wer einkauft, steht nicht seine ganze Zeit an EINEM Stand —
+        // von seinem Stand am Platz geht er die Punkte vor den Buden ab, die der Wirt seinem Haus stellt (`orte.einkaufRunde`, je
+        // Bude des Markts einer, in der Folge seines Samens), jeden HÖCHSTENS EINMAL: die ersten `tagesEinkaufStaende` − 1 sind die
+        // Buden, an denen er kauft (Weißwasser: Geschäfte je Weg), jede weitere geht er ab, solange die Gänge den Anteil des
+        // Gehens an seiner Zeit am Markt (1 − `kaufAnteil` von morgenH ab der Ankunft; Sorensen: 20–30 % der Zeit im Laden ist
+        // Kauf) nicht übersteigen; an jedem Punkt steht er gleich lang, den Rest seiner Zeit (die Gehzeit misst `geh`, der Pfad
+        // seines Leibs). Je Besuch ein Abschnitt der Kette mit dem Punkt als Ort — ein Gang über den Markt ist kein Weg des Tags
+        // (`tagesGaenge` zählt ihn nicht). Bis hier stand der Einkäufer morgenH (0,5 h je Erwachsenem) an EINEM Stand: an
+        // stadt-voll um 8 Uhr 78 von 99 Menschen im Bild stehend, 43 davon im Einkauf (Probe gate:kreatur-takt mengebild). Die
+        // Kauf-Buden im Kreis, bis die Zeit um ist, pendelten zwischen zwei Buden 2–3 m auseinander bis zu 58-mal (Probe bewohner)
+        var R = orte.einkaufRunde || [],
+            kauf = tagesEinkaufStaende(same),
+            kA = G.einkauf.kaufAnteil,
+            einkaufAn = 0;
         for (var j = 0; j <= n; j++) {
             var e = ab[(s0 + j) % n],
                 rel = j === n ? 24 : (((e.ab - A) % 24) + 24) % 24;
             var vor = kette.length ? kette[kette.length - 1].p : e.p;
-            var g = j && vor.ort !== e.p.ort ? Math.max(0, geh(vor.wo, e.p.wo) || 0) : 0;
+            var g = j && vor.ort !== e.p.ort ? Math.max(0, geh(vor.wo, e.p.wo, vor, e.p) || 0) : 0;
             // DIE RUNDE BEGINNT AM POSTEN (rollen-des-tages): eine Runde der Streife geht nur, wer zu ihrem Aufbruch am Posten
             // steht — kehrt er aus der vorigen später zurück, als er zur nächsten aufbrechen müsste, lässt er sie aus (`aus`) und
             // geht die nächste zu ihrer Stunde: die Verspätung einer Runde trägt höchstens bis zur nächsten, nie in den Abend.
@@ -6439,10 +6476,31 @@
             // Ankunft (morgenH) — ist der Weg zum Werk länger als die Zeit bis zum Werk, beginnt das Werk später. Bis hier fraß der
             // Weg den Kauf (der Tag dauert 60 min, die Stunde 150 s, der Weg zum Platz bis 1,4 Spielstunden): an stadt-voll standen
             // um 8 Uhr 49 Einkäufer am Platz, 88 im Akt einkauf von 294 (Kern-Spike: am Platz 87 → 110)
-            if (j && vor.akt === "einkauf") auf = Math.max(auf, ank + T.morgenH);
+            if (j && vor.akt === "einkauf") auf = Math.max(auf, einkaufAn + T.morgenH);
             ank = auf + g;
             gehSumme += g;
-            kette.push({ auf: auf, p: e.p });
+            kette.push({ auf: auf, an: ank, p: e.p });
+            if (e.p.akt !== "einkauf") continue;
+            einkaufAn = ank;
+            if (!(j < n && R.length && e.p.wo === "einkauf" && !e.p.drinnen)) continue;
+            // die Besuche: sein Stand am Platz, dann je Punkt der Runde der Gang dorthin — eine Kauf-Bude, solange die Gänge in
+            // seiner Zeit am Markt bleiben, jede weitere, solange sie im Anteil des Gehens bleiben
+            var B = [{ p: e.p, g: 0 }],
+                weg = 0;
+            for (var r = 0; r < R.length; r++) {
+                var pkt = { ort: R[r], wo: "einkauf", akt: "einkauf", drinnen: false },
+                    gq = Math.max(0, geh("einkauf", "einkauf", B[B.length - 1].p, pkt) || 0);
+                if (weg + gq > (r + 1 < kauf ? 1 : 1 - kA) * T.morgenH) break;
+                weg += gq;
+                B.push({ p: pkt, g: gq });
+            }
+            var steh = (T.morgenH - weg) / B.length;
+            for (r = 1; r < B.length; r++) {
+                var vonA = ank + steh;
+                ank = vonA + B[r].g;
+                gehSumme += B[r].g;
+                kette.push({ auf: vonA, an: ank, p: B[r].p });
+            }
         }
         return { A: A, v: v, kette: kette, eng: eng, aus: aus, gehH: gehSumme };
     }
@@ -6473,8 +6531,10 @@
         var aus = function (wo, akt, drinnen, an) {
             var posten = (akt === "arbeit" || akt === "streife") && R.regenfest;
             var o = an || orte[wo];
-            if (regen && !drinnen && !posten) return { ort: heim, wo: "heim", akt: akt, drinnen: true };
-            if (krank && !drinnen && !posten && (o || heim) !== heim) return { ort: heim, wo: "heim", akt: "abend", drinnen: false };
+            var weg = W.absage[akt];
+            if (regen && !drinnen && !posten && (weg == null || _tagZahl(same, "regen" + akt) < weg))
+                return { ort: heim, wo: "heim", akt: akt, drinnen: true };
+            if (krank && !posten && (o || heim) !== heim) return { ort: heim, wo: "heim", akt: "abend", drinnen: false };
             return { ort: o || heim, wo: o ? wo : "heim", akt: akt, drinnen: !!drinnen };
         };
         // (der Häusliche ohne Besuch außer Haus empfängt am Abend, drinnen — zuege `empfaengt`, `tagesBindung`)
@@ -6609,6 +6669,205 @@
             brett: Object.freeze({ teil: Object.freeze([2, 2]), mass: "reihe", sieg: "gross", feld: 9, reihe: 5, zugS: 8, tische: 4 }),
         }),
     });
+    // DER SCHRECK WANDERT (mensch.menge.kollektiv#2; Leser: der Wirt `_bewohnerSchreckTakt`): eine Tat ist eine Gefahr für jeden,
+    // der in ihrer öffentlichen Distanz steht — Hall 1966 (The Hidden Dimension, „public distance, close phase“ 12–25 ft = 3,7–7,6 m:
+    // hier kann ein Wacher ausweichen oder sich wehren, wenn er bedroht wird): gefahrM 7,6. Wer sie sieht, setzt sich nach seiner
+    // Reaktionszeit in Gang — Rio, Rhea & Warren 2014 (J Vision 14(2):4, der Folgende auf den Wechsel des Vorderen: Verzögerung im
+    // Mittel 420 ms, SD 373 ms): reaktS · streuS je Samen, nie unter minS. Ein Fliehender ist selbst die Gefahr, sobald er sichtbar
+    // flieht (`fortM`: so weit fort von seinem Stand beim Schreck — dasselbe Maß, an dem die Front gemessen wird); so wandert der
+    // Schreck von Nachbar zu Nachbar, die Front ≈ gefahrM ÷ (Reaktion + Anlauf). Bis hier erinnerte jeder draußen binnen 25 m die
+    // Tat im selben Takt (Front 51,72 m/s an stadt-voll, Flucht 0,777).
+    // Wer die Tat nicht sieht, HÖRT sie: der Schrei steht gegen den Grund des Platzes — Pearsons, Bennett & Fidell 1977
+    // (EPA-600/1-77-025, die gerufene Stimme 89 dBA in 1 m); der Grund 50 dBA ist der Richtwert der WHO für den Tag im Freien
+    // (Berglund, Lindvall & Schwela 1999, Guidelines for Community Noise: 50 dB LAeq, mäßige Belästigung — ANGENOMMEN als Pegel
+    // des Platzes). Die Punkt-Quelle fällt −6 dB je Verdopplung (klang-core, das EINE Pegel-Gesetz), n Schreiende addieren sich
+    // inkohärent (+10·lg n): die Hörweite `schreckHoerweite(n)` = 10^((schreiDb + 10·lg n − grundDb) ÷ 20), ein Schrei ≈ 89 m.
+    // Wer hört und nicht erschrickt, bleibt stehen und schaut (der Wirt `_bewohnerGehen`), bis der Schreck endet. Wer erschrickt,
+    // läuft zuerst gerade fort von der Tat, bis er eine Gefahr-Distanz (gefahrM) weiter steht als beim Schreck — dann sein Weg.
+    // Bis hier folgte er sofort seinem Weg durch die Gassen: an stadt-voll war er erst 1,5–2,3 s nach dem Schreck 0,5 m weiter
+    // fort, 23 von 122 Zeugen erschraken und flohen nicht.
+    var SCHRECK_GESETZ = Object.freeze({ gefahrM: 7.6, reaktS: 0.42, streuS: 0.373, minS: 0.15, fortM: 0.5, schreiDb: 89, grundDb: 50 });
+    // die Hörweite (m) von n Schreienden auf dem Grund des Platzes
+    function schreckHoerweite(n) {
+        var G = SCHRECK_GESETZ;
+        return Math.pow(10, (G.schreiDb + 10 * Math.log10(Math.max(1, n)) - G.grundDb) / 20);
+    }
+    // die Reaktionszeit des Samens same (s)
+    function schreckZeit(same) {
+        var G = SCHRECK_GESETZ;
+        return Math.max(G.minS, G.reaktS + G.streuS * _spielNormal(same >>> 0, "schreck"));
+    }
+    // DIE SEUCHE (mensch.menge.seuche#2; Leser: der Wirt `_bewohnerSeuche`, sein Kranker `_bewohnerLauf` „krank“ → `tagesPlan`
+    // daheim): der Erreger der Epoche ist die Influenza — Mills, Robins & Lipsitch 2004 (Nature 432:904, 1918 in 45 Städten): R
+    // 2–3, Latenz 1,9 d, ansteckend 4,1 d (hier je Tag des Takts: latentT 2, ansteckT 4); Symptome trägt 66,9 % der Infizierten
+    // (Carrat et al. 2008, Am J Epidemiol 167:775) — wer sie trägt, geht seinen kranken Tag (`tagesPlan` krank: daheim, der Posten
+    // am Posten) und steckt an, wer dort steht; wer ohne sie ansteckt, geht seinen gesunden Tag. Die Kontakte sind die Ketten des
+    // Tags (`tagesKette` je Bewohner, gezeichnet oder nicht, gesund und krank) je Viertelstunde: zwei, die im selben Schritt am
+    // selben Ort stehen — drinnen im selben Haus, draußen in derselben Zelle zellM. Die Ansteckung
+    // je Kontakt-Stunde (β) folgt aus dem Band: der Erwartungswert der Folgefälle über die Stadt trifft seine Mitte (Bisektion);
+    // der gemessene R0 (die Folgefälle der frühen Fälle, bis `fruehAnteil` der Stadt infiziert ist) und die Form S-I-R entstehen
+    // aus dem Netz. Ein Ausbruch je `zyklusT` Tage, sein Beginn und seine `einschleppung` Indexfälle aus dem Samen des Orts
+    // (ANGENOMMEN: drei Reisende tragen ihn herein — ein einzelner erlischt bei R 2–3 oft im ersten Haus). Bis hier kannte der Satz
+    // nur den Wurf der Woche (LEBENSLAUF.krank): keiner steckte einen anderen an.
+    var SEUCHE_GESETZ = Object.freeze({ erreger: "Influenza", r0: Object.freeze([2, 3]), latentT: 2, ansteckT: 4, symptom: 0.669, zellM: 4, einschleppung: 3, fruehAnteil: 0.1, zyklusT: 365, beginnT: 60 }); // prettier-ignore
+    // die Kontakte der Stadt: je Bewohner seine Orts-Schlüssel des gesunden Tags (`stunden`) und des kranken (`krank`), je
+    // gleich viele Schritte über 24 h (null = nirgends) → je Bewohner { geht: [[j, Stunden]], liegt: [[j, Stunden]] } — geht: wer im
+    // selben Schritt am selben Ort steht wie er gesund; liegt: wer (gesund) dort steht, wo er krank ist (sein Haus, oder der Posten,
+    // den er auch krank hält)
+    function seucheKontakte(stunden, krank) {
+        var n = stunden.length,
+            geht = [],
+            liegt = [],
+            i,
+            h;
+        var schritte = n ? stunden[0].length : 0,
+            w = schritte ? 24 / schritte : 0;
+        for (i = 0; i < n; i++) (geht.push(new Map()), liegt.push(new Map()));
+        var dazu = function (M, j) {
+            M.set(j, (M.get(j) || 0) + w);
+        };
+        for (h = 0; h < schritte; h++) {
+            var orte = new Map();
+            for (i = 0; i < n; i++) {
+                var k = stunden[i][h];
+                if (k == null) continue;
+                var L = orte.get(k);
+                if (!L) orte.set(k, (L = []));
+                L.push(i);
+            }
+            orte.forEach(function (L) {
+                for (var a = 0; a < L.length; a++) for (var c = a + 1; c < L.length; c++) (dazu(geht[L[a]], L[c]), dazu(geht[L[c]], L[a]));
+            });
+            for (i = 0; i < n; i++) {
+                var D = krank[i][h] == null ? null : orte.get(krank[i][h]);
+                if (!D) continue;
+                for (var d = 0; d < D.length; d++) if (D[d] !== i) dazu(liegt[i], D[d]);
+            }
+        }
+        var liste = function (m) {
+            var r = [];
+            m.forEach(function (v, j) {
+                r.push([j, v]);
+            });
+            return r;
+        };
+        return geht.map(function (g, j) {
+            return { geht: liste(g), liegt: liste(liegt[j]) };
+        });
+    }
+    // der Ausbruch k (0, 1, …) einer Stadt aus ihren Kontakten (seucheKontakte) und ihrem Samen: je Bewohner der Tag der Ansteckung
+    // (−1 nie), ob er Symptome trägt, von wem er es hat; die Kurve S-E-I-R je Tag ab dem Beginn; R0 gemessen; ob die Form S-I-R ist
+    function seucheAusbruch(K, same, k) {
+        var G = SEUCHE_GESETZ,
+            n = K.length,
+            s0 = (same ^ Math.imul((k | 0) + 1, 0x9e3779b1)) >>> 0,
+            i,
+            t;
+        var symptom = [];
+        for (i = 0; i < n; i++) symptom.push(_tagZahl(s0 ^ Math.imul(i + 1, 0x85ebca6b), "symptom") < G.symptom);
+        // β: die Mitte des Bands als Erwartung der Folgefälle eines Falls über die Stadt (je Kontakt die Wahrscheinlichkeit über
+        // seine ansteckT Tage — mit Symptomen am Ort seines kranken Tags, ohne sie auf seinem Weg). Der Spektralradius der nächsten
+        // Generation (Diekmann, Heesterbeek & Metz 1990) eicht an der dichtesten Traube der Stadt: an stadt-voll erlosch der
+        // Ausbruch dann bei 50 Fällen (R0 der frühen 0,94)
+        var R = function (b) {
+            var r = 0;
+            for (var q = 0; q < n; q++) {
+                var L = symptom[q] ? K[q].liegt : K[q].geht;
+                for (var c = 0; c < L.length; c++) r += 1 - Math.exp(-b * G.ansteckT * L[c][1]);
+            }
+            return r / Math.max(1, n);
+        };
+        var ziel = (G.r0[0] + G.r0[1]) / 2,
+            lo = 0,
+            hi = 1;
+        while (R(hi) < ziel && hi < 64) hi *= 2;
+        for (var it = 0; it < 30; it++) (R((lo + hi) / 2) < ziel ? (lo = (lo + hi) / 2) : (hi = (lo + hi) / 2));
+        var beta = (lo + hi) / 2;
+        var tag = [],
+            von = [];
+        for (i = 0; i < n; i++) (tag.push(-1), von.push(-1));
+        var mit = [];
+        for (i = 0; i < n; i++) if (K[i].geht.length || K[i].liegt.length) mit.push(i);
+        if (!mit.length) return null;
+        var index = [];
+        for (i = 0; index.length < Math.min(G.einschleppung, mit.length) && i < 64; i++) {
+            var x = mit[Math.floor(_tagZahl(s0, "index:" + i) * mit.length)];
+            if (index.indexOf(x) < 0) (index.push(x), (tag[x] = 0));
+        }
+        var kurve = [],
+            offen = true;
+        for (t = 0; offen && t < 400; t++) {
+            var S = 0,
+                E = 0,
+                I = 0,
+                Rr = 0;
+            for (i = 0; i < n; i++) {
+                var a = tag[i];
+                if (a < 0 || a > t) S++;
+                else if (t < a + G.latentT) E++;
+                else if (t < a + G.latentT + G.ansteckT) I++;
+                else Rr++;
+            }
+            kurve.push([S, E, I, Rr]);
+            offen = E + I > 0;
+            for (i = 0; i < n; i++) {
+                var ai = tag[i];
+                if (ai < 0 || ai > t || t < ai + G.latentT || t >= ai + G.latentT + G.ansteckT) continue;
+                var Li = symptom[i] ? K[i].liegt : K[i].geht;
+                for (var c2 = 0; c2 < Li.length; c2++) {
+                    var j = Li[c2][0];
+                    if (tag[j] >= 0) continue;
+                    var p = 1 - Math.exp(-beta * Li[c2][1]);
+                    if (_tagZahl((s0 ^ Math.imul(i + 1, 0x27d4eb2d) ^ Math.imul(j + 1, 0x165667b1) ^ Math.imul(t + 1, 0x9e3779b1)) >>> 0, "an") < p) [tag[j], von[j]] = [t, i]; // prettier-ignore
+                }
+            }
+        }
+        // R0 gelesen, wie es definiert ist (Anderson & May 1991: die Folgefälle EINES Falls in einer ganz empfänglichen Menge): der
+        // Baum der Ansteckung (`von`) liegt offen, also zählt R0 die Folgefälle der frühen Fälle, bis `fruehAnteil` der Stadt
+        // infiziert ist. Das Wachstum r (die Steigung des Logarithmus der kumulierten Fälle zwischen 1 % und fruehAnteil) bleibt
+        // Befund: Mills schätzt R aus r, weil die Städte von 1918 keinen Baum tragen — in 1 356 Bewohnern mit Häusern streut r je
+        // Ausbruch zwischen 1,3 und 9,9 (Mills' Formel, β der Mitte), der Baum trägt 2,0–2,5
+        var pts = [],
+            kum = 0,
+            inz = [],
+            faelle = [];
+        for (i = 0; i < n; i++) if (tag[i] >= 0) (faelle.push(i), (inz[tag[i]] = (inz[tag[i]] || 0) + 1));
+        for (t = 0; t < inz.length; t++) {
+            kum += inz[t] || 0;
+            if (kum >= 0.01 * n && kum <= G.fruehAnteil * n) pts.push([t, Math.log(kum)]);
+        }
+        var wachstum = null;
+        if (pts.length >= 3) {
+            var mx = 0,
+                my = 0,
+                cv = 0,
+                vx = 0;
+            for (i = 0; i < pts.length; i++) (mx += pts[i][0] / pts.length), (my += pts[i][1] / pts.length);
+            for (i = 0; i < pts.length; i++) (cv += (pts[i][0] - mx) * (pts[i][1] - my)), (vx += (pts[i][0] - mx) * (pts[i][0] - mx));
+            wachstum = cv / vx;
+        }
+        var folge = [];
+        for (i = 0; i < n; i++) folge.push(0);
+        for (i = 0; i < n; i++) if (von[i] >= 0) folge[von[i]]++;
+        faelle.sort(function (x, y) {
+            return tag[x] - tag[y];
+        });
+        var frueh = faelle.slice(0, Math.max(1, Math.floor(G.fruehAnteil * n))),
+            folgeR = 0;
+        for (i = 0; i < frueh.length; i++) folgeR += folge[frueh[i]] / frueh.length;
+        // die Form S-I-R: die Infektiösen steigen zu EINER Spitze im Innern und fallen auf 0, S fällt nie, R steigt nie ab
+        var spitze = 0;
+        for (t = 1; t < kurve.length; t++) if (kurve[t][2] > kurve[spitze][2]) spitze = t;
+        var mono = true;
+        for (t = 1; t < kurve.length; t++) if (kurve[t][0] > kurve[t - 1][0] || kurve[t][3] < kurve[t - 1][3]) mono = false;
+        var sir = mono && spitze > 0 && spitze < kurve.length - 1 && kurve[kurve.length - 1][2] === 0 && faelle.length >= 2;
+        return { tag: tag, von: von, symptom: symptom, kurve: kurve, beta: beta, r0: folgeR, wachstum: wachstum, sir: sir, spitze: spitze, faelle: faelle.length, index: index }; // prettier-ignore
+    }
+    // der Beginn des Ausbruchs k einer Stadt (Tag der Prozesse) und, für einen Tag d, welcher Ausbruch ihn trägt
+    function seucheBeginn(same, k) {
+        var G = SEUCHE_GESETZ;
+        return k * G.zyklusT + Math.floor(_tagZahl((same ^ Math.imul((k | 0) + 1, 0x9e3779b1)) >>> 0, "beginn") * G.beginnT);
+    }
     // die Normal-Zahl des Samens zu einem Wort (Box-Muller über zwei Zahlen aus `_tagZahl`)
     function _spielNormal(same, wort) {
         var u = Math.max(1e-12, _tagZahl(same, wort + ":u")),
@@ -12209,9 +12468,19 @@
         tagesKette: tagesKette,
         tagesEinkaeufer: tagesEinkaeufer,
         tagesEinkaufFuer: tagesEinkaufFuer,
+        tagesEinkaufStaende: tagesEinkaufStaende,
         tagesZiel: tagesZiel,
         tagesZug: tagesZug,
         tagesHaltung: tagesHaltung,
+        // kollektiv#2 — DER SCHRECK WANDERT: die Distanz der Gefahr und die Reaktionszeit des Samens (Leser: _bewohnerSchreckTakt)
+        SCHRECK_GESETZ: SCHRECK_GESETZ,
+        schreckHoerweite: schreckHoerweite,
+        schreckZeit: schreckZeit,
+        // seuche#2 — DIE SEUCHE: der Erreger, die Kontakte der Ketten, der Ausbruch (Leser: _bewohnerSeuche, _bewohnerLauf krank)
+        SEUCHE_GESETZ: SEUCHE_GESETZ,
+        seucheKontakte: seucheKontakte,
+        seucheAusbruch: seucheAusbruch,
+        seucheBeginn: seucheBeginn,
         // rollen-des-tages — die Tat der Rolle: das Revier der Streife, die Haushalte mit Jäger, die Beute des Tags (Leser: _bewohnerListe, _bewohnerBeute)
         tagesStreife: tagesStreife,
         tagesJagdHaushalte: tagesJagdHaushalte,
