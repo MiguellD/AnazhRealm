@@ -230,6 +230,7 @@ mit GPU, sein Wegweiser steht in `cloud-post/landmarken-geologie-8-station/zeuge
 | # | Ursache | Schnitt | Zahl vorher → nachher |
 | --- | --- | --- | --- |
 | Z-1 | Der Kontrast der drei stärksten Saaten stand nirgends (das Gerät nennt nur den Median). | Der WebGL2-Rückfall liest den Himmel auch in der Wolke zurück (23,8 s nach dem Weltbild): `_landmarkeKontrast` je Saat. | s1-4: 0,584 · s1-41: 0,565 · s1-12: 0,520 (12 von 50 gelesen) |
+| H-1 | In der Wolke maß S1 an 38 von 50 Saaten vor der Lesung des Himmels der neuen Welt. | Kandidat: LANDMARKE_AN wartet ≤ 3 s auf `_himmelFrisch` (stamm/bild-himmel.js, das Versprechen des Spiels). | gelesen 12 → 50 von 50 · Median 0,431 · ≥ 0,1: 45 von 51 = 0,882 (s1-27 Durchlass 0: Nebel; 5 vor gleich hellem Grund) |
 | G-1 | wegfindung#2 hatte keinen Leser des Ziel-Gangs. | WIP: stamm/koerper-bewegung.js `_zielGangBeginn` · `_zielGangSchritt` im EINEN Sim-Schritt, `_landmarkeFuss` (stamm/vegetation-baum.js), die Ankunft beginnt den Gang; der Kandidat geht von der Wiese zu jeder Landmarke in 1 km. | S2 LESER → gemessen: Erfolg 1 (2 von 2), Umweg 1,0000 (Felsturm 519 m und 897 m) |
 
 ## Offen (Grund · Messname · Adresse)
@@ -244,5 +245,5 @@ mit GPU, sein Wegweiser steht in `cloud-post/landmarken-geologie-8-station/zeuge
 7. Das Bogen-Band N = 2 · `gate:phyto-core`.
 8. Der Testspieler von wegfindung#2 ist ein Peil-Gänger, kein Mensch (die Sprosse nennt „menschlicher Testspieler“; das Panel R11
    setzt der Schöpfer) · S2 `karte2.erleben.spieler.wegfindung#2`.
-9. In der Wolke (WebGL2) lag nach dem Weltwechsel an 38 von 50 Saaten noch keine neue Himmels-Lesung, als S1 maß · S1
-   „Kontrast … ungelesen“; die Radeon las alle 50.
+9. Die Ankunft wählt die tragende Marke nach dem Winkel Höhe/Weg, nie nach ihrem Kontrast: mit frischem Himmel 6 von 50 Saaten unter
+   0,1 (Wolke, WebGL2; Anteil 0,882) · S1 `anteil_landmarke` · stamm/gelaende-chunks.js `_ankunft`.

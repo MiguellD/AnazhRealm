@@ -19,6 +19,12 @@ WIP (Zweig `landmarken-geologie-8-wip`, Kopf 6, auf Kopf 5 b32c6773; Koordinator
 - Die Wand des Gangs: in der Welt tragen 6 von 423 Einträgen Blocker, alle 6 Landmarken (4 Felsturm, 2 Felsbogen) — Bäume blocken
   den Spieler nicht; das Gelände ist Gesetz (`getTerrainHeightAt`). Der Sim-Schritt ohne Takt verpasst keinen gestreamten Blocker.
   Tempo 1,58 m/s = das volle Gehen: kein Hang drosselte.
+- Der Himmel der Stunde (S1): LANDMARKE_AN wartet vor dem Kontrast ≤ 3 s auf `_himmelFrisch` (stamm/bild-himmel.js — die Umgebung
+  frisch gemalt und gelesen, ein Versprechen). Wolke WebGL2: gelesen 12 → 50 von 50 Saaten; Median 0,431; ≥ 0,1 an 44 + die warme Welt
+  = 45 von 51 = 0,882. Unter 0,1: s1-27 Durchlass 0 in 1 407 m (das Wetter des Moments), s1-2 · s1-22 · s1-23 · s1-29 · s1-44 vor
+  fast gleich hellem Grund (C₀ 0,002–0,10). Die Radeon las an Kopf 5 „zu schwach 0“ — ihr Lauf ist schneller, das Wetter des Moments ein
+  anderes. Der nächste Schnitt (benannt, nicht gebaut): die Ankunft wählt die tragende Marke nach dem Winkel Höhe/Weg (`_ankunft`),
+  nie nach ihrem Kontrast.
 - Ehrlich offen: der Testspieler ist ein Peil-Gänger, kein Mensch (die Sprosse nennt „menschlicher Testspieler"; das Panel R11 setzt
   der Schöpfer) · die Wiese-Route kreuzt kein Wasser und keinen Steilhang — die Station misst die Wiese, die die Sprosse nennt.
 
