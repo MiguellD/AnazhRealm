@@ -2892,3 +2892,4 @@ omen-gtx-gtx-7e73426e-w144308-1-7e73426e ROT 0 GRÜN / 2 ROT / 0 UNGEMESSEN · R
 2026-11-27 15:19 RUNDE 44 ALARM gtx: ohne Fortschritt seit 17 min (halt, 3/232, Station karte2.mensch.sport.kunst#1, Kopf 7e73426e) — gesehen von radeon (radeon-dienst)
 2026-11-27 15:22 RUNDE 44 ALARM radeon: ohne Fortschritt seit 17 min (weicht, 3/35, Station -, Kopf 7e73426e) — gesehen von radeon (radeon-dienst)
 2026-11-27 15:24 landung Runde 44 am 7e73426e: misst 31 von 232 Stationen (vorn; 4 tragen an diesem Kopf schon einen Eintrag), rohe Zahl je Zeile
+2026-11-27 15:26 RUNDE 44 SPRUNG am 7e73426e → Runde 45 am bed6256c (gtx laeuft 4/232, radeon weicht 3/35): z805 w28-fahrzeug-medium-4 gelandet: Anspruch mensch.fahrzeug.medium#2 und form#2 zuerst
