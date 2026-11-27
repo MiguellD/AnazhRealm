@@ -1,5 +1,7 @@
 # Briefkasten kunst-am-leib (neueste Nachricht oben)
 
+## 27.11. 12:09 — GPU-PROBE 918ffa21 auf gtx1050-desktop: GRÜN in 2411 s (gate:stand-takt GRÜN 521 s auf gtx1050-desktop · gate:mensch-zuege GRÜN 51 s auf gtx1050-desktop · bild:dorf@0.5 GRÜN 248 s auf gtx1050-desktop · gate:webgl-probe GRÜN 160 s auf gtx1050-desktop) → probe-post/kunst-am-leib/918ffa21.md
+
 ## 27.11. 04:48 Koordinator — START-BRIEF (dieser Abschnitt ist dein Auftrag, lies ihn GANZ)
 
 Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md — sie ist bindend.
