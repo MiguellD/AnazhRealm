@@ -1,147 +1,147 @@
 {
  "sha": "b3740dd5566793ae66152d955e5a55d9c272884c",
  "geraet": "radeon",
- "zeit": "2026-11-27T20:21:43.451Z",
+ "zeit": "2026-11-27T21:11:21.079Z",
  "host": "MiguellD",
  "je": {
   "profiband.K4#1": {
    "gruen": true,
-   "zahl": "Gehen 67 Bilder · max 75.42 ms · 59.70 % > 33 ms · Fahrt 49 Bilder · max 108.71 ms · 93.88 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 59.70 % > 33 ms | Fahrt: 1 Bild(er) > 100 ms (max 108.71), 93.88 % > 33 ms",
+   "zahl": "Gehen 65 Bilder · max 75.24 ms · 69.23 % > 33 ms · Fahrt 9 Bilder · max 66.97 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 69.23 % > 33 ms | Fahrt: blind (9 Bilder in 2.5 s), 100.00 % > 33 ms, nicht aus- und eingestiegen (Sattel 1)",
    "exit": 0,
-   "minuten": 0.84,
+   "minuten": 0.81,
    "mass": [
     {
-     "wort": "Gehen Frame max ms",
-     "wert": 75.42,
+     "wort": "Fahrt Frame max ms",
+     "wert": 66.97,
      "soll": 100
     }
    ],
    "gpu": "amd/rdna-3",
-   "konsum": "k4d904a5fd3a5",
+   "konsum": "k601bc43bd307",
    "konsumN": 29,
    "konsumSeite": false,
    "konsumGanz": {
     "gelesen": 2
    },
-   "konsumBoot": "k6d997372cecd",
-   "s": 49.4,
+   "konsumBoot": "kff06e4f5a2ae",
+   "s": 48,
    "fremd": {
-    "s": 54,
+    "s": 52.7,
     "takte": 21,
-    "fremdS": 84.97,
-    "kerne": 1.573,
-    "fensterKerne": 1.878,
+    "fremdS": 70.45,
+    "kerne": 1.336,
+    "fensterKerne": 1.492,
     "namen": [
      [
       "bash.exe scratchpad/wache-0331.sh",
-      15.59
-     ],
-     [
-      "bash.exe werkzeug/gpu-lauf.sh --waechter 1632694 claude/gpu-schloss.wache.1632694",
-      8.5
+      15.72
      ],
      [
       "sh.exe dienst/radeon-dienst.sh",
-      6.72
-     ]
-    ],
-    "dienerS": 43.7,
-    "diener": [
-     [
-      "dwm.exe",
-      17.06
+      7.89
      ],
      [
-      "System",
-      16.11
+      "bash.exe werkzeug/gpu-lauf.sh --waechter 1652832 claude/gpu-schloss.wache.1652832",
+      7.86
      ]
     ],
-    "geraetS": 70.67,
+    "dienerS": 49.64,
+    "diener": [
+     [
+      "System",
+      26.3
+     ],
+     [
+      "dwm.exe",
+      14.55
+     ]
+    ],
+    "geraetS": 60.63,
     "geraet": [
      [
       "MsMpEng.exe",
-      25.81
-     ],
-     [
-      "SearchIndexer.exe",
-      19.55
+      21.78
      ],
      [
       "svchost.exe",
-      18.52
+      20.91
+     ],
+     [
+      "SearchProtocolHost.exe",
+      8.17
      ]
     ],
-    "eigenS": 278.95,
+    "eigenS": 274.59,
     "rechnerKerne": 24,
     "spannen": {
-     "vor": 1.069,
-     "nach": 1.203,
-     "station": 2.408
+     "vor": 1.381,
+     "nach": 1.886,
+     "station": 2.005
     }
    },
    "referenz": {
     "vor": {
-     "ein": 107.6,
-     "alle": 306.1,
-     "cpuEin": 94,
+     "ein": 107.2,
+     "alle": 324.1,
+     "cpuEin": 110,
      "tor": {
       "ruhig": true,
-      "kerne": 3.21,
+      "kerne": 1.49,
       "s": 0,
       "soll": 6,
       "reihe": [
-       0.31,
-       0.89,
-       5.48,
-       6.5,
-       1.86,
-       0.94
+       1.08,
+       3.94,
+       8.06,
+       2.56,
+       1.02,
+       0.82
       ]
      },
      "spanne": [
-      1795807943568,
-      1795807944147
+      1795812029983,
+      1795812030604
      ]
     },
     "nach": {
-     "ein": 102.5,
-     "alle": 305.8,
+     "ein": 113.8,
+     "alle": 280.3,
      "cpuEin": 94,
      "tor": {
       "ruhig": true,
-      "kerne": 4.56,
+      "kerne": 4.16,
       "s": 0,
       "soll": 6,
       "reihe": [
-       3.87,
-       3.79,
-       3.76,
-       4.6,
-       3.94,
-       5.12
+       3.63,
+       4.13,
+       4.49,
+       3.72,
+       3.86,
+       4.93
       ]
      },
      "spanne": [
-      1795807994302,
-      1795807994868
+      1795812079316,
+      1795812079883
      ]
     },
     "ruhe": {
      "ein": 83.5,
-     "alle": 259.2,
+     "alle": 260,
      "n": 1192,
      "von": "2026-11-16"
     },
-    "f": 1.289,
-    "fEin": 1.289,
-    "fAlle": 1.181,
-    "verdraengt": 1,
+    "f": 1.363,
+    "fEin": 1.363,
+    "fAlle": 1.247,
+    "verdraengt": 1.038,
     "schwankt": false,
     "rechner": "win32 · 24 Kerne · AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
     "umfeld": "sitzung"
    },
-   "grund": "GRÜN trotz Last: Referenz f 1,289 (Faden 1,289 · alle Kerne 1,181; vor 107,6/306,1 ms, nach 102,5/305,8 ms, Ruhe 83,5/259,2 ms seit 2026-11-16) · fremd: bash.exe scratchpad/wache-0331.sh 15,6 CPU-s · bash.exe werkzeug/gpu-lauf.sh --waechter 1632694 claude/gpu-schloss.wache.1632694 8,5 CPU-s · sh.exe dienst/radeon-dienst.sh 6,7 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 25,8 CPU-s · SearchIndexer.exe 19,6 CPU-s · svchost.exe 18,5 CPU-s",
-   "zeit": "2026-11-27T19:32:23.565Z",
+   "grund": "GRÜN trotz Last: Referenz f 1,363 (Faden 1,363 · alle Kerne 1,247; vor 107,2/324,1 ms, nach 113,8/280,3 ms, Ruhe 83,5/260 ms seit 2026-11-16) · fremd: bash.exe scratchpad/wache-0331.sh 15,7 CPU-s · sh.exe dienst/radeon-dienst.sh 7,9 CPU-s · bash.exe werkzeug/gpu-lauf.sh --waechter 1652832 claude/gpu-schloss.wache.1652832 7,9 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 21,8 CPU-s · svchost.exe 20,9 CPU-s · SearchProtocolHost.exe 8,2 CPU-s",
+   "zeit": "2026-11-27T20:40:29.981Z",
    "abdruck": "67957095b356",
    "port": 7804,
    "bahn": "sitzung",
@@ -706,10 +706,289 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.mensch.fahrzeug.form#3": {
+   "gruen": false,
+   "zahl": "S3 ROT: Umfang nicht erzeugbar: Rumpf, Segel, Flügel aus Teilen: kein Floß und kein Gleiter steht in der Welt (gemessen 0, Soll 2 Werke mit gebauter Hülle (Floß, Gleiter)) · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.33,
+   "grund": "ROT: S3 ROT: Umfang nicht erzeugbar: Rumpf, Segel, Flügel aus Teilen: kein Floß und kein Gleiter steht in der Welt (gemessen 0, Soll 2 Werke mit gebauter Hülle (Floß, Gleiter)) · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "konsum": "kbb4a708ac9a5",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kff06e4f5a2ae",
+   "s": 19.9,
+   "fremd": {
+    "s": 22,
+    "takte": 9,
+    "fremdS": 32.98,
+    "kerne": 1.497,
+    "fensterKerne": 1.548,
+    "namen": [
+     [
+      "bash.exe scratchpad/wache-0331.sh",
+      6.06
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh --waechter 1652832 claude/gpu-schloss.wache.1652832",
+      3.09
+     ]
+    ],
+    "dienerS": 10.89,
+    "diener": [
+     [
+      "System",
+      5.06
+     ],
+     [
+      "WmiPrvSE.exe",
+      3.34
+     ]
+    ],
+    "geraetS": 26.81,
+    "geraet": [
+     [
+      "svchost.exe",
+      9.25
+     ],
+     [
+      "MsMpEng.exe",
+      7.28
+     ],
+     [
+      "SearchProtocolHost.exe",
+      4.55
+     ]
+    ],
+    "eigenS": 47.16,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-27T20:49:56.868Z",
+   "abdruck": "96199f17d957",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.leben.tiere.masse#1": {
+   "gruen": false,
+   "zahl": "(a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.998 über 570 Takte, letzter Flüchter 0.32 s (4 aus zweiter Hand), Fluchtweg 31 m, ID 600 s hält (Flucht 5 / 4 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 11.1 m: 46.5 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (246 px) · 42.9 m 5/5 fliehen ABNAHME ROT [Ziel Herde nicht gezeichnet: tier:wesen 0 UNGEZEICHNET, tier:wesen 1 UNGEZEICHNET, tier:wesen 2 UNGEZEICHNET, tier:wesen 3 UNGEZEICHNET, tier:wesen 4 UNGEZEICHNET] · beweis · Sicht 0.0 % · Ziel Herde im Bild frei 51.02 m · Luma 101.5 σ 38.3 schwarz 0.0 % weiß 0.0 % · Stand 18.546.458 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 14 Posen · ROT-Bild C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\b3740dd5-radeon\\karte2.leben.tiere.masse_1-herde-2-rot.png · 46.4 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (310 px) · Glieder im Pulk je Schuss 5/0/5 (Umfang ≥ 10) · [linse-gpu] amd/rdna-3",
+   "exit": 1,
+   "minuten": 0.93,
+   "grund": "ROT: (a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.998 über 570 Takte, letzter Flüchter 0.32 s (4 aus zweiter Hand), Fluchtweg 31 m, ID 600 s hält (Flucht 5 / 4 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 11.1 m: 46.5 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (246 px) · 42.9 m 5/5 fliehen ABNAHME ROT [Ziel Herde nicht gezeichnet: tier:wesen 0 UNGEZEICHNET, tier:wesen 1 UNGEZEICHNET, tier:wesen 2 UNGEZEICHNET, tier:wesen 3 UNGEZEICHNET, tier:wesen 4 UNGEZEICHNET] · beweis · Sicht 0.0 % · Ziel Herde im Bild frei 51.02 m · Luma 101.5 σ 38.3 schwarz 0.0 % weiß 0.0 % · Stand 18.546.458 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 14 Posen · ROT-Bild C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\b3740dd5-radeon\\karte2.leben.tiere.masse_1-herde-2-rot.png · 46.4 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (310 px) · Glieder im Pulk je Schuss 5/0/5 (Umfang ≥ 10) · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "konsum": "kfc9a315e81ef",
+   "konsumN": 34,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 3
+   },
+   "konsumBoot": "kff06e4f5a2ae",
+   "s": 55.6,
+   "fremd": {
+    "s": 58.7,
+    "takte": 23,
+    "fremdS": 159.48,
+    "kerne": 2.715,
+    "fensterKerne": 3.247,
+    "namen": [
+     [
+      "bash.exe scratchpad/wache-0331.sh",
+      24.81
+     ],
+     [
+      "node.exe punkte/punkte.cjs buchen --kopf b3740dd5566793ae66152d955e5a55d9c272884c",
+      18.59
+     ],
+     [
+      "git stash create",
+      11.7
+     ]
+    ],
+    "dienerS": 37.95,
+    "diener": [
+     [
+      "System",
+      17.7
+     ],
+     [
+      "WmiPrvSE.exe",
+      10.05
+     ]
+    ],
+    "geraetS": 70.98,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      26.53
+     ],
+     [
+      "svchost.exe",
+      25.52
+     ],
+     [
+      "SearchProtocolHost.exe",
+      8.48
+     ]
+    ],
+    "eigenS": 125.58,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-27T20:54:39.934Z",
+   "abdruck": "5f316e994d1d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.macht.recht#1": {
+   "gruen": false,
+   "zahl": "S1 ROT an Umfang 3 < 20 Regelbrüche in Sicht der Wache — Täter: stamm/siedlung-bewohner.js `_bewohnerZeuge`: die Wache weicht wie jeder Zeuge · Antwort der Wache 0 (Soll ≥ 0.8) · Umfang 3 (Soll ≥ 20 Regelbrüche in Sicht der Wache) · 6 Wächter in der Welt; 3 Taten in ihrer Sicht · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 1.23,
+   "grund": "ROT: S1 ROT an Umfang 3 < 20 Regelbrüche in Sicht der Wache — Täter: stamm/siedlung-bewohner.js `_bewohnerZeuge`: die Wache weicht wie jeder Zeuge · Antwort der Wache 0 (Soll ≥ 0.8) · Umfang 3 (Soll ≥ 20 Regelbrüche in Sicht der Wache) · 6 Wächter in der Welt; 3 Taten in ihrer Sicht · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "konsum": "k638004991033",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kff06e4f5a2ae",
+   "s": 73.5,
+   "fremd": {
+    "s": 77.4,
+    "takte": 32,
+    "fremdS": 119.13,
+    "kerne": 1.539,
+    "fensterKerne": 1.735,
+    "namen": [
+     [
+      "bash.exe scratchpad/wache-0331.sh",
+      20.27
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh --waechter 1652832 claude/gpu-schloss.wache.1652832",
+      11.17
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      7.42
+     ]
+    ],
+    "dienerS": 28.03,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      10.5
+     ],
+     [
+      "System",
+      9.11
+     ]
+    ],
+    "geraetS": 87.53,
+    "geraet": [
+     [
+      "svchost.exe",
+      34.67
+     ],
+     [
+      "MsMpEng.exe",
+      31.47
+     ],
+     [
+      "SearchIndexer.exe",
+      13.72
+     ]
+    ],
+    "eigenS": 185.27,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-27T21:04:16.710Z",
+   "abdruck": "2c9130abcfb3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.nahrung.frucht#1": {
+   "gruen": false,
+   "zahl": "S1 auge: Bild karte2.mensch.nahrung.frucht_1-S1-rot.png an Pose 3 m vor der Kante des nächsten Ackers, Ego 1,7 m, Blick auf seine Mitte gegen Vorbild Foto eines realen Getreideackers in Reihen (Weizen, BBCH 30–60): Reihen im Bildspektrum ≥ 3σ, Blindurteil ≤ 65 % · 429 Pflanzen im Acker (weizen in 429 Strecken · Wildwuchs 0) — GRÜN erst mit dem Urteil am Gerät (Blindpaar) · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.79,
+   "grund": "ROT: S1 auge: Bild karte2.mensch.nahrung.frucht_1-S1-rot.png an Pose 3 m vor der Kante des nächsten Ackers, Ego 1,7 m, Blick auf seine Mitte gegen Vorbild Foto eines realen Getreideackers in Reihen (Weizen, BBCH 30–60): Reihen im Bildspektrum ≥ 3σ, Blindurteil ≤ 65 % · 429 Pflanzen im Acker (weizen in 429 Strecken · Wildwuchs 0) — GRÜN erst mit dem Urteil am Gerät (Blindpaar) · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "konsum": "k7dccc9c2096c",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kff06e4f5a2ae",
+   "s": 47.2,
+   "fremd": {
+    "s": 50.3,
+    "takte": 19,
+    "fremdS": 145.61,
+    "kerne": 2.893,
+    "fensterKerne": 3.46,
+    "namen": [
+     [
+      "node scripts/diag-altlasten.cjs",
+      51.38
+     ],
+     [
+      "bash.exe scratchpad/wache-0331.sh",
+      13.83
+     ],
+     [
+      "sh.exe dienst/radeon-dienst.sh",
+      9.7
+     ]
+    ],
+    "dienerS": 30.31,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      11.08
+     ],
+     [
+      "System",
+      9.14
+     ]
+    ],
+    "geraetS": 61.52,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      25.84
+     ],
+     [
+      "svchost.exe",
+      21.3
+     ],
+     [
+      "SearchIndexer.exe",
+      7.59
+     ]
+    ],
+    "eigenS": 234.98,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-27T21:11:21.079Z",
+   "abdruck": "c23e51a638e2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
-  "k4d904a5fd3a5": "bVVdb6MwEPwvebweXT6LsdQHp0RKpPaU/oQ1rIGGQGSTUOV0//0ECUmA7iszntnZtfm7OGCyw4yev0xdLfji1+L3wuCJLEP6RPr5yyz4IkoclzwuPkVXIIR462CJLg6NgbKQgLLCfE/WUTdUlM9JT1MvaAeSQ7sS2RZAwRni9vV1Si0lpbXVoKKBaJMXMOJT4NFkKMnCo+rFruDAj+jF4dAXi8VHDLf6ZkJsW2i3bD05TGKVjt06ToQvIRft5k2Iz6nLtEBqrLKozKDrpGGkbH7Taj9mHI2tdUbKS9JXEjHH8eVgdtnF2UUzIaryaMxIjHlp4DIOEE2xGZkiyRvroGtJ1RUuIzd0kC/naWeHo6UeHaGUyOQ06xypykiPPNheoi5Bq96+cbeqC3gppiI73JNGq8L8So1sL3TlPSsAWM+9lX0jveTQiO8xlzkjYjdkOHWBp2JU2/5jNqBUO3xIbpBMzERNkhd6P45P+eTaHn+fWzQ5pqStXW2aG9qj0Lcl7wU2MVy8sOWUeW9umCkisocFAgZizWaKtWpa1GRlh+OwRD4FYcCF2MzADe73N1seQ4+LWa1+YFXpyJobqSDwOcDT5TLNg7hcHetMRUm33U5CL5pu0knj3kKZ6UKpYRtkkKjop2VuqWwsWdfN4MOz7SToIqoeF+BPP9rNQ09x9uk35bJdjVvdzFazV6h1M5iWKD3f5yqLGQBTU3ShG6vFJB/goSeJPA7fszmdSZeU0ShG5Tjophzay4WBc/cchdfnQj2Nlvo8P7GgLuDKHM2QcIK+DPgPI2lJ7yRWu9ubyGRE/F0IsfwQ23sgy0ys3rLuasCJwTir+HRZj9X6ml0sRMzUVehACRx0rYru5YQcjybHsrn/Nv79Bw==",
   "k6d997372cecd": "lZXdcpswEIXfxZdNifgNQjO5UEymSTtu3b7BClZAjIGRIOq403fvgA02kJvuFeM5qz18e5D/bBpIDpDh/Zuuqw3bfNp83mh4R0ujekd1/6Y3bBMljose4+cinPMvvSxRRdNqUhaCgKggP6LVqRaL8j4Z2uQD2IFgxDzzbE+IJCcSGz7Vlj8+Lo8pBaa11YLE8RAbvYAiWwo7nYFACzo5DL6IAz/CB4eRoWjMdzGZyiSc7w0xe/qyOExAlc6dO04EDyHj5pVz/nPpMi0AW6ssKj3OddIwkja7ztqtehQY6wSYl6guTUgdxxej2aceSY9p0SjLTuvZMOqlgUsZIdFSm6Eukry1GlULrC5yEbmhA+zJrGhnTWfJW0cgBFCxZJ0DVhmqmQfbS2QP+jddHnqAIyqwKsgv0sj2Qldc2RBCXtZeysH4MGI07nvUpc6ssV/qGXDKZ7Uffs1GlZxilkySbB03neSFOs5xSR9d21sy0DmkqKxDrdtJ6WHo2+L8VbzG5OyDPi07ry827g8A6E1YCCX8ZcVR17I1oNDKmm4MjI9BGDCerdKlWzgeJ1sehfULtH3Ib224kQwCnxFyd0G6wnP+JKwTFiVOmU1CL2Lb2F+K3xUcLRCZKqQcNy+CREYfBdVg2VqirtvRi2fbScCIR6rbZX83fMv57mbPcfnLb8uvd8/z9X/jXz+aUKt2NC5AeL7PpIkpIVQu1YVqLQNJPspDTyCuIJ5QlZjhDKN0HHBTNlwvk0t/fLibhfe02vKpwB5wpTs9Ek7AF8E5HZcUv86Ta1AdBFSH6c6jIkLGeZzxHd/fUPnB+VsjDf+Pyrb9oAYT0qhaFv3NSHLodA5le/2L+PsP",
   "k4982589b0620": "bVXRjpswEPyXPPbKGTAcxtI9OMe1F6mpcp+whjWQEEA2hCpV/72ChCTA+QEePMuOZ8bL31UN8QFSfN6bqlzx1bfV95WBE1oG9Qn1896s+CqMHRcpF5dFhBBvPSzWed0YUuSSgCwhO6LV6gbz4jkeytQL2L7kpHsX6Y4QRc4k6l5f56WFxKSyGlA4FtpIfYZ8DmxNChItaNXQ7Ar2vRBfHE6GxSKxjchtdbEQu450O/Yx+5iEMpmydZwQXgIuuo0Q4nPOMskBG6vISzP2dZIgVDa/99ouajR01hkwK1Bfi5A5jidHsutezl6aWaEqWmMmzRhNfJdxQsI5NkWTx1lj1bqSWF7hMnQDB/h6qXZat5Z6ZARSApNzrTPAMkU94WDTWPVC/2Hzjx7giBqsErIrNLRp4Mq7NoSQjyWXYiA+tBiJe5S5zJkU9qaSUy9wIiZrN2ymI0p140Z8g6Ri0dTEWa6PU7mUh65N+a8lRZNBgto6VKa5oSkGni0vt2ETkQsXtp5X3g83eggA7CEwhBHxsdDSVKrpQKOV1u0YGg/9wOdCbBbgBo7HGy3KgM6NNE0f9Ecabqh83+OEPF0uyvLQl2thnTEv8JbbOKAhf4vEHHzScLRApjpXanRf+rEKvwprh0VjyapqRi7UtmOfE0rKR8N/D1ZuHryO0k9v+0N079MIbBZ0hg6VbkbiEiT1PK7SiBHC1Byd68bqIM5GeEAlIuV95mbQM+oCU5xIqRwH3IQPY2Zg2SchuI4D9TQJ8Xnh9DnHXuTStGZUOQZP+vwLWzrUBwnl4TbzmAxxiOB6K3ZTUfZ1fxXIiZGpVtFpeG9/jvjo8rjMuhpjUutK5f1kJBm0JoOiuf8W/v0H",
   "k678c3a0875a4": "bVXBbqMwEP2XHLfrGjAUY6kHp1TbSJtV+gljGAMNgciGUGW1/76ChDRA58LBbzzP780Mf1dHSPaQ4eOHrauVWP1Y/VxZOCGxaE5oHj/sSqyixPWQCXkJKqV86WGJKY6NpWWhKKgK8gOS1jRYlI/JkKafwAmUoN2rzHaUanqmcff8PE8tFaY1aUDjmOggCziKObC1GSgk0Oqh2BUc+BE+uYIOwWO5jektPrmUu452O/42u0xBlU7Zum4ET6GQ3UZK+T5nmRaADSmLyo513TSMtCNutbrtIsdAR86AeYnmmoTcdX01kl33cvbSzBJ12Vo7KcZZGnhcUBrNsRnaIskbcjS1wuoKV5EXuiDWS7WzY0v0PSNQCriaa50DVhmaCQeHJboX+pPPL93DAQ2QCvIrNHJY6KkvbSilb0su5UB8KDES9xn3uDtJ7E2lp17gVE5iNxxmI0p340Fyg2RyUdQmeWEOU7m0j57DxO8lRZtDiobsa9vc0AxD31GXadjE9MKFr+eZX48bPQQAftcwlFP5ttDS1rrpwCDJju3YND4GYSCk3CzADRwON1qMA5sbaZu+0e9peJEOAl9Q+nAZlOWjL2NBzliUeOvbJGTR/PKTgQMBlZlC69F5FSQ6+q5ROywbouq6GXkwx0kCQRmt7s3+M9i4ufM5zt79plx3r1P7N3LOe6hQm2YkrUAx3xc6izmlXM/RhWlIB0k+wkOmEJno+20GPaMpMcOJjNp1wUsF7fSF97lfNeF1FeiHSQOfFy6fC+wFrmxrR4UT8FUgvrGkQ7NXUO1v+46rCIf2W2/lbqLJ60vWjwE9cTrVKj4N3+2v3VW7WMqY62uhIyb0aGpd9FuR5tDaHMrm65fw7z8=",
@@ -717,302 +996,1135 @@
   "kff06e4f5a2ae": "lZXdcpswEIXfxZdNifgNQjO5kE2mSTpu3L7BSqyAGAMjQei403fvYBtsIDfdK8ZzVnv49iD/WdUg95Di/bupyhVbfVl9XRn4QMug/kB9/25WbBVJx0WP8XMRzvm3XiZ1XjeGFLkgIErIDmi1usG8uJenNvUAdiAY6Z54uiNEkSOJOz7Whj8+zo8pBCaV1YDC4RAbvYAimwtbk4JAC1p1GnwRB36EDw4jp6Ix38ZkrE5yvutIt6PPs8MElMnUueNE8BAy3r1wzn/OXSY5YGMVeWmGuU4SRspm11nbRY+GzjoCZgXqSxNSx/HFYHbdI+kxzRpV0RozGUa9JHApIySaa1M0ucwaq9aVwPIiF5EbOsDW3YJ2WreWunUEQgAVc9YZYJminniwPal60L/p/NA9HFCDVUJ2kUa2F7riyoYQ8rz0UpyMn0YMxn2PutSZNPZLPQNO+KR2p1/TQaXGmMlRki7jZmSW68MUl/LRtb05A5NBgtraV6YZlR6Gvi3OX8VLTM4+6HreeX2xYX8AQG/CQijhzwuOplJNBxqttG6HwPgYhAHj6SJdpoHDYbTlUVi+QNOH/NaGG6kg8BkhdxekCzznT8I6Yl7gmFkZehHbxP5c/KHhYIFIda7UsHkRSBV9FtQOi8YSVdUMXjzblgEjHilvl/2j4xvOt9c1v8XFL78pXu+epuv/zl8/m1DpZjAuQHi+z1QXU0Komqtz3VgdyGyQh55AXEA8oi4wxQlG5TjgJux0vQwV+8PD3SS8x8WWjzn2gEvTmoGwBF8E53RcUvwyTW6Hei+g3I93HhURMs7jlG/57obKG+fvter4f1S66QfVKEmtK5X3NyPJoDUZFM31L+LvPw==",
   "k944b9262f963": "bVXRjpswEPyXPPbKGTAcxtI9OMe1F6mpcp+whjWQEEA2hCpV/72ChCTA+QEePMuOZ2bN31UN8QFSfN6bqlzx1bfV95WBE1oG9Qn1896s+CqMHRcpF5dFhBBvPSzWed0YUuSSgCwhO6LV6gbz4jkeytQL2L7kpHsX6Y4QRc4k6l5f56WFxKSyGlA4FtpIfYZ8DmxNChItaNXQ7Ar2vRBfHE6GxSKxjchtdbEQu450O/Yx+5iEMpmydZwQXgIuuo0Q4nPOMskBG6vISzP2dZIgVDa/99ouajR01hkwK1Bfi5A5jidHsutezl6aWaEqWmMmzRhNfJdxQsI5NkWTx1lj1bqSWF7hMnQDB/h6qXZat5Z6ZARSApNzrTPAMkU94WDTWPVC/2Hzjx7giBqsErIrNLRp4Mq7NoSQjyWXYiA+tBiJe5S5zJkU9qaSUy9wIiZrN2ymI0p140Z8g6Ri0dTEWa6PU7mUh65N+a8lRZNBgto6VKa5oSkGni0v07CJyIULW88r74cbPQQA9hAYwoj4WGhpKtV0oNFK63YMjYd+4HMhNgtwA8fjjRZlQOdGmqYP+iMNN1S+73FCni6Dsjz0ZSysM+YF3nIbBzTkb5GYg08ajhbIVOdKje5LP1bhV2HtsGgsWVXNyIXaduxzQkn5aPjvwcrNg9dR+ultf4jufRqBzYLO0KHSzUhcgqSex1UaMUKYmqNz3VgdxNkID6hEpLzP3Ax6Rl1gihMpleOAm/DhmhlY9kkIrteBepqE+Lxw+pxjL3JpWjOqHIMnff6FLR3qg4TycLvzmAxxiOB6K3ZTUfZ1PwrkxMhUq+g0vLc/R3x0eVwa1RiTWlcq729GkkFrMiia+2/h338=",
   "kf1333416ee2e": "bVXbbqMwEP0XHrdLh2sxlvrglGobabtKP2FsxsCGQGQgVFntv68gIQ2w84jPeI7PmRn+WEdUe8zo8XdTVxa3vlnfrWOJFbW2qs3w2eJWqLxUKl458ADdDqB3M7HJnq3vVoMnshsyJzIXaKxcj3wuLgFCiJcBpkxxbBsoCwkoK8wPZHempaJ8VGOafkInlBz6V5HtADScIemfn5eppaS0tlvUNCU65IeM+BLYNRlKsrHTY7ErOAxienI5jMES8Z7ALT6ZELse+h17W1wmsUrnbF03xqeIi377IsTHkmVaILV2WVTNVNdNo1g7/Farf1/lGOztM1JekrkmEXPdQE5kN4OcgzSLRF12TTMrxvw09BgHiJfYjJpC5a19NLWk6gqXsRe5yDdrtbNjZ+t7RiglMrnUOkeqMjIzDo6v9CD0J1teuscDGbQrzK/Q2PEjT35pAwBvay7lSHwsMREPfOYxd5Y4mAqnQeBUzGI3HmYTSvfTgbpBMrEq2qi8MIe5XDogz/H5zzXFJseUjL2vm/aG9ikKHHmZhm0CFy5ss8z8etzkISKyu4YBBuJtpWVT67ZHQ3Z27KamCSiMQi7EdgVu8XC40fIZ+ksjm3Zo9HsaXqzDMOAAD5dBWT/6Mhb2mYqSbn2rIj9eXn4yeLBRZqbQenJehkrH/2vUnsrWlnXdTjx8x1EhBx+qe7N/jTZu73xOso+gLTf969z+rVjyHivUpp1IS5R+EHCdJQyA6SW6MK3do8oneORLIp8P/baAnsmUlNFMRu266KUcen3hfR5WTXRdBfph1sDnlcvnggaBq6ZrJoUVBjLk/7GkJ7OXWO1v+47JmMb227yL3UyT15dsGAM4MZhrlZyEeBHi/cfuql0iRML0tdCRFBxNrYthK0KOXZNj2X79Pf7+Aw==",
-  "k3c3ab549c707": "bVXbbqMwEP2XPG6XmmsxlvrghEjNaitlP2EMY6AhENkQV1ntv6+AQAN0XjnjOXPOzPB3c4HkBBk+f+i62rDNj83PjYYrWhrVFdXzh96wTZQ4LnqMD0E457sOlqji0mhSFoKAqCA/o9WqBovyOenT5AvYgWDE7Hl2JESSG4kNn2LPX1+Xz5QC09pqQOL4iI1eQJEtga3OQKAFrewL38GBH+GLw0gfNObvMZnik3J+NMQc6Rs/+mS7ri6gSucdOE4ELyHj5sA5/7PEpwVgY5VFpcf6ThpG0mZTTfO+ylFgrBtgXqK6JyF1HF+MpLedNJ1ci0RZtlrPilEvDVzKCImW2Ax1keSNdVG1wOoOF5EbOsC2ZtV3dmkt+cgIhAAqlprngFWGasbB9hLZCf5Jl4+e4IwKrAryOzSyvdAVX9oQQt7WXMqeeF9iJO571KXOLLEzl1w7gVM+i2P/MRtRchq3ZIJka+N1khfqPJdL+ujaHvu9pqhzSFFZp1o3E9rD0LfFsCGHmAxc6HaZ+dXc6CEA0IeBIZTwt5WWupaNAYVWdmnHofExCAPG+WEFbuB8nmh5FLylkbrpBv2RhhvJIPAZIU/DwqybHtbCumFR4jS3SehFbBf7S/BVwdkCkalCytF9ESQy+m5YDZaNJeq6Gbl4tp0EnSTVo+HH3srDg9dx9sdvyq3Zz0fgEBu5trivUqtmJC9AeL7PZBZTQqhcogvVWAaSfISHnkD0WDd3C+gNVYkZzuSUjgNuyoiRA/dbd3rC+0mQT7NBvq3cvhXYCV3pVo9KJ+CLgH1jjUF1ElCdpvtHRYTsF+d8+86PM132u6xbh35tFsH5jmf6acAfeMx5TKUZ7t0FE3JRtSy660hyaHUOZfP1u/j3Hw=="
+  "k3c3ab549c707": "bVXbbqMwEP2XPG6XmmsxlvrghEjNaitlP2EMY6AhENkQV1ntv6+AQAN0XjnjOXPOzPB3c4HkBBk+f+i62rDNj83PjYYrWhrVFdXzh96wTZQ4LnqMD0E457sOlqji0mhSFoKAqCA/o9WqBovyOenT5AvYgWDE7Hl2JESSG4kNn2LPX1+Xz5QC09pqQOL4iI1eQJEtga3OQKAFrewL38GBH+GLw0gfNObvMZnik3J+NMQc6Rs/+mS7ri6gSucdOE4ELyHj5sA5/7PEpwVgY5VFpcf6ThpG0mZTTfO+ylFgrBtgXqK6JyF1HF+MpLedNJ1ci0RZtlrPilEvDVzKCImW2Ax1keSNdVG1wOoOF5EbOsC2ZtV3dmkt+cgIhAAqlprngFWGasbB9hLZCf5Jl4+e4IwKrAryOzSyvdAVX9oQQt7WXMqeeF9iJO571KXOLLEzl1w7gVM+i2P/MRtRchq3ZIJka+N1khfqPJdL+ujaHvu9pqhzSFFZp1o3E9rD0LfFsCGHmAxc6HaZ+dXc6CEA0IeBIZTwt5WWupaNAYVWdmnHofExCAPG+WEFbuB8nmh5FLylkbrpBv2RhhvJIPAZIU/DwqybHtbCumFR4jS3SehFbBf7S/BVwdkCkalCytF9ESQy+m5YDZaNJeq6Gbl4tp0EnSTVo+HH3srDg9dx9sdvyq3Zz0fgEBu5trivUqtmJC9AeL7PZBZTQqhcogvVWAaSfISHnkD0WDd3C+gNVYkZzuSUjgNuyoiRA/dbd3rC+0mQT7NBvq3cvhXYCV3pVo9KJ+CLgH1jjUF1ElCdpvtHRYTsF+d8+86PM132u6xbh35tFsH5jmf6acAfeMx5TKUZ7t0FE3JRtSy660hyaHUOZfP1u/j3Hw==",
+  "k601bc43bd307": "bVVdb6MwEPwvebweXT6LsdQHp0RKpPaU/oQ1rIGGQGSTUOV0//0ECUmA7iszntnZtfm7OGCyw4yev0xdLfji1+L3wuCJLEP6RPr5yyz4IkoclzwuPkVXIIR462CJLg6NgbKQgLLCfE/WUTdUlM9JT1MvaAeSQ7sS2RZAwRni9vV1Si0lpbXVoKKBaJMXMOJT4NFkKMnCo+rFruDAj+jF4dAXi8VHDLf6ZkJsW2i3bD05TGKVjt06ToQvIRft5k2Iz6nLtEBqrLKozKDrpGGkbH7Taj9mHI2tdUbKS9JXEjHH8eVgdtnF2UUzIaryaMxIjHlp4DIOEE2xGZkiyRvroGtJ1RUuIzd0kC/naWeHo6UeHaGUyOQ06xypykiPPNheoi5Bq96+edqqLuClmIrscE8arQrzKzWyvdCV96wAYD33VvaN9JJDI77HXOaMiN2Q4dQFnopRbfuP2YBS7fAhuUEyMRM1SV7o/Tg+5ZNre/x9btHkmJK2drVpbmiPQt+WvBfYxHDxwpZT5r25YaaIyB4WCBiINZsp1qppUZOVHY7DEvkUhAEXYjMDN7jf32x5DD0uZrX6gVWlI2tupILA5wBPl8s0D+JydawzFSXddjsJvWi6SSeNewtlpgulhm2QQaKin5a5pbKxZF03gw/PtpOgi6h6XIA//Wg3Dz3F2afflMt2NW51M1vNXqHWzWBaovR8n6ssZgBMTdGFbqwWk3yAh54k8jh8z+Z0Jl1SRqMYleOgm3JoLxcGzt1zFF6fC/U0Wurz/MSCuoArczRDwgn6MuA/jKQlvZNY7W5vIpMR8XchxPJDbO+BLDOxequ7qwEnBuOs4tNlPVbra3axEDFTV6EDJXDQtSq6lxNyPJocy+b+2/j3Hw==",
+  "kbb4a708ac9a5": "bVXRjpswEPyXPPbKGTAcxtI9OOHai9RUuU9Ywxq4EEA2hCpV/72ChCTA+YEXz3rHM+Pl76qG+AApPn+aqlzx1bfV95WBE1oG9Qn186dZ8VUYOy5SLi6LCCE2PSzWed0YUuSSgCwhO6LV6gbz4jkeytQL2L7kpHsT6Z4QRc4k6l5f56WFxKSyGlA4FtpIfYZ8DmxNChItaNXQ7Ar2vRBfHE6GxSKxi8htdbEQ+450e/Y+O0xCmUzZOk4ILwEX3XYjxMecZZIDNlaRl2bs6yRBqGx+77Vb1GjorDNgVqC+FiFzHE+OZNe9nL00s0JVtMZMmjGa+C7jhIRzbIomj7PGqnUlsbzCZegGDvD1Uu20bi31yAikBCbnWmeAZYp6wsGmseqF/sPmhx7giBqsErIrNLRp4Mq7NoSQ9yWXYiA+tBiJe5S5zJkU9qaSUy9wIiZrP2ymI0p140Z8g6Ri0dTEWa6PU7mUh65N+a8lRZNBgto6VKa5oSkGni0vr2EbkQsXtp5X3i83eggA7CEwhBHxvtDSVKrpQKOV1u0YGg/9wOdCbBfgBo7HGy3KgM6NNE0f9Ecabqh83+OEPF0eyvLSl2dhnTEv8JbbOKAh30RiDj5pOFogU50rNbov/ViFX4W1w6KxZFU1Ixdq27HPCSXlo+G/Byu3D15H6Ye3+yG6t2kEtlH3VYdKNyNxCZJ6HldpxAhhao7OdWN1EGcjPKASkfI+czPoGXWBKU6kVI4DbsKHMTOw7JMQXMeBepqE+Lxw+pxjL3JpWjOqHIMnff6FLR3qg4TycJt5TIY4RHC9E/upKJ91/xTIiZGZVkSIjRC7nyM+unwus67GmNS6Unk/GUkGrcmgaO6/hX//AQ==",
+  "kfc9a315e81ef": "tVZNj6M4EP0vOW4vbT4bY2kOJkTq7G5L6eMcy1AGOgQi2zSjrPa/r4CQBOiRRitt3aK8cr16Va+SvzdnSI+Q4/OHbuoN2/y2+X2j4RMtjeoT1fOH3rBNlDoueoyPQTjn2x6WqvJsNMlKyK2jQjCtsioUWD+nQ1omXoSMGPk/otv1VN75FAnf8l3Mf0bLwNFcWUmMArBZnHPe8W/fHjKqUhAQNRQntFplsKymlBewA8H6ovmBEEkuJOlupfnui2cqgVljGZA4PWKjF1BkS2CrcxBoQSuHwldw4Ef44lylowl/S+6t/6CcHzrSHegr5/wpXlcXUGfzDhwngpeQ8W6/5fx9ic9KQGNVZa2n+k4WRtK+j657W+Uo6KwLYFGhuiYhdRxfTKTjXpperkWirFqtZ8WolwUuZYRES2yOukwLY51Vc18rEbmhAyzuVn3n59aSj4xACKBiqXkBWOeoZhxsL5W94D/o8tEjnFCBVUNxhUa2F7pittavay7T5p2w1umU6ngS/fQ/OILKnzw/U4bK0PFTxn81trNP8S/n9YPlu+8LStUwqkHUiZDvUZc6i35pQj77lcrmLx6GL/MJJW8GSx+KrmTWaVGq01wG6aNre+yv9VB0ARkq69hoc0N7GPq2GEXbJ2TkQuNl5r25SWwAoA8WIZTw19X26EaaDhRa+bmdbOJjEAaM8/0KbOB0utHyKHhfzjLnKzdq01v+kZ4bySDwGSFP4+lYizEeCOuCZYU3B6ehF7Ft4i/BnwpOFohclVJOPhBBOpz3lW07rIwlmmY6ua5n22nQS1U/LsJhGPH+obMkf/dNFY/H/R5/xq9y3fNQpVFmIi9AeL7PZJfQLwzTlcpYHaTFBA89geixfh8X0AuqCnOcySkdB9yMkU6O3C/9EQ6vx1E+zRb8stqCS4m90LVu9aR0Cr4I2Bej6VAdBdTH2y8BFRGyP3qDvvHDTJfdx7m3yWCnRQzm1k8jfs8TzhMqu/HynzElZ9XIsv+dIAW0uoDKzP4BjJAWpWixqLHfL1M2NdZ31D//Ag==",
+  "k638004991033": "bVVdj5swEPwveWzLLZ+HsXQPznHVRWqq3E9Ywxq4EEA2CVWq/vcKEpIAtw+8eNYzHs+av6sGkz1m9PRp6mrFV99WP1YGT2QZ0ifST59mxVdR4rjkcXEpEEK89rBEF01roCwkoKwwP5B11C0V5VMytKlntAPJoXsT2Q5AwRni7uVl3lpKSmurRUVjo01ewIjPgUeToSQLj2ogu4IDP6Jnh8NQLBbbGG7VJULsOuh27H22mcQqnap1nAifQy66jRDiY64yLZBaqywqM/I6aRgpm9+5tosejZ11RspL0tcmYo7jy1Hsurezt2bWqMqjMRMy5qWByzhANMdmZIokb61G15KqK1xGbuggXy/dzpqjpR4VoZTI5NzrHKnKSE802F6ieqP/sPmmezyQRqvC/AqNbC905d0bAHhfaikH4QPFKNz3mMucSWN/qXDqDU7FpHbDYjaiVDcuJDdIJhakJskLfZjapXxybY//Wko0OaakrX1t2hvao9C35WUaNjFctLD1vPN+uPEOEZE9BAYYiPeFl6ZWbYearKw5jqHxKQgDLsRmAW7xcLjJ8hjehnRSmVhk07T9ADzKcyMVBD4H+H4ZoKUZl3GxzlSUdMtzEnoRf43FHHzSeLBQZrpQakyFDBIVfRXijsrWknXdjlo8204CDh5Uj0H4PVzx5uFkcfbhb3+K7m164M1afMVQ63YULlF6vs9VFjMApuboQrdWh0k+wkNPEnm8z+IMeiZdUkYTK5XjoJvy4fkZVPYJCa/PhPo+Cfd5kYBzQb3JlTma0eUEfRnwL66lI72XWO1vbyGTEQ0ZWG/FbmrKZ9OPCJym/ABwEuJVCHMY8fHlcyFqKIFG16roX0zI8WhyLNv77+Lffw==",
+  "k7dccc9c2096c": "bVXRjpswEPyXPPbqM2A4jKV7cJqrLlUj5T5hDWvgQiCyIVSp+u8VJJAAt0+RmN0dz+xu/q5OEB8gxedPW5Ursfq2+r6ycEZi0ZzRPH/alVhFseshE/IaVEr5o4PFJj/Vlha5oqBKyI5IGlNjXjzHfZp+ASdQgrZvMt1TqumFblo5xpt8fZ2XKRQmFalB41DEQRZwFHNgY1NQSKDRfeMbOPAjfHEF7YNv5G5Dx2hjKfctbff8XUr5tF52V1Am0xe4bgQvoZDtVkr5MccnOWBNiry0Q383CSPtiHvP3SLHQEsugFmB5paE3HV9NZBed9J0cs0SddFYO2nGWRJ4XFAazbEp2jzOanIylcLyBleRF7og1u3i3empIfqRESgFXM01zwDLFM2Eg8Ni3Qn+h8+LHuCIBkgJ2Q0aOSz01F0bSun7kkvRE+9bDMR9xj3uThI7c+m5EziRk9j3H9MBpcdxi0dIujTexllujlO5tI+ew8TvJUWbQYKGHCpbj2iGoe+o64ZsN/TKha/nmffHDR4CAH8YGMqpfF9oaStdt2CQpKdmGBofgzAQUm4X4BqOx5EW48DmRtq6G/RHGl6kg8AXlD5dF2b56OtakAvmBY5zG4csmhc/GzgSUKnJtR6cV0Gso68GtcWiJqqq6oEHc5w46OQoH83e9zZuH3zepB/+7qdM36b2b+Wcd9+hMvVAWoFivi90uuGUcj1H56YmLcTZAA+ZQmRfzfcFTYEpTmTUrgteIvpTMzL1hx9PkwG+LCvm2Alc2sYOCsfgq0B8YUmL5qCgPIx3j6sIxS8p5Xon91NRfqTdGvTrMo1z/9n29/AhrnfuhDE9mUrn3VWkGTQ2g6K+/038+w8="
  },
  "ungemessen": {
   "profiband.K4#2": {
    "gruen": false,
-   "zahl": "Last: Referenz f 1,317 (Faden 1,275 · alle Kerne 1,317; vor 106,5/342,3 ms, nach 105/309 ms, Ruhe 83,5/259,9 ms seit 2026-11-16) · fremd: node scripts/diag-altlasten.cjs 36,9 CPU-s · node scripts/diag-altlasten.cjs --selftest 23,3 CPU-s · bash.exe scratchpad/wache-0331.sh 13,6 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 30,1 CPU-s · svchost.exe 24,2 CPU-s · SearchIndexer.exe 8,9 CPU-s — unscharf unter Last: Gehen Frame max ms roh 109, entlastet ≥ 54,51 (÷ 2, Karte), Schwelle ≤ 100 · Fahrt Frame max ms roh 125,6, entlastet ≥ 62,8 (÷ 2, Karte), Schwelle ≤ 100 — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 54 Bilder · max 109.02 ms · 87.04 % > 33 ms · Fahrt 45 Bilder · max 125.61 ms · 91.11 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 3 Bild(er) > 100 ms (max 109.02), 87.04 % > 33 ms | Fahrt: )",
+   "zahl": "Last: Referenz f 1,363 (Faden 1,363 · alle Kerne 1,247; vor 107,2/324,1 ms, nach 113,8/280,3 ms, Ruhe 83,5/260 ms seit 2026-11-16) · fremd: bash.exe scratchpad/wache-0331.sh 15,7 CPU-s · sh.exe dienst/radeon-dienst.sh 7,9 CPU-s · bash.exe werkzeug/gpu-lauf.sh --waechter 1652832 claude/gpu-schloss.wache.1652832 7,9 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 21,8 CPU-s · svchost.exe 20,9 CPU-s · SearchProtocolHost.exe 8,2 CPU-s — kein Maß reißt (2 gemessen): das ROT liegt in einer Bedingung ohne Zahl — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 65 Bilder · max 75.24 ms · 69.23 % > 33 ms · Fahrt 9 Bilder · max 66.97 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 69.23 % > 33 ms | Fahrt: blind (9 Bilder in 2.5 s), 100.00 % )",
    "exit": 0,
-   "minuten": 0.87,
-   "grund": "Last: Referenz f 1,317 (Faden 1,275 · alle Kerne 1,317; vor 106,5/342,3 ms, nach 105/309 ms, Ruhe 83,5/259,9 ms seit 2026-11-16) · fremd: node scripts/diag-altlasten.cjs 36,9 CPU-s · node scripts/diag-altlasten.cjs --selftest 23,3 CPU-s · bash.exe scratchpad/wache-0331.sh 13,6 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 30,1 CPU-s · svchost.exe 24,2 CPU-s · SearchIndexer.exe 8,9 CPU-s — unscharf unter Last: Gehen Frame max ms roh 109, entlastet ≥ 54,51 (÷ 2, Karte), Schwelle ≤ 100 · Fahrt Frame max ms roh 125,6, entlastet ≥ 62,8 (÷ 2, Karte), Schwelle ≤ 100 — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 54 Bilder · max 109.02 ms · 87.04 % > 33 ms · Fahrt 45 Bilder · max 125.61 ms · 91.11 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 3 Bild(er) > 100 ms (max 109.02), 87.04 % > 33 ms | Fahrt: )",
+   "minuten": 0.81,
+   "grund": "Last: Referenz f 1,363 (Faden 1,363 · alle Kerne 1,247; vor 107,2/324,1 ms, nach 113,8/280,3 ms, Ruhe 83,5/260 ms seit 2026-11-16) · fremd: bash.exe scratchpad/wache-0331.sh 15,7 CPU-s · sh.exe dienst/radeon-dienst.sh 7,9 CPU-s · bash.exe werkzeug/gpu-lauf.sh --waechter 1652832 claude/gpu-schloss.wache.1652832 7,9 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 21,8 CPU-s · svchost.exe 20,9 CPU-s · SearchProtocolHost.exe 8,2 CPU-s — kein Maß reißt (2 gemessen): das ROT liegt in einer Bedingung ohne Zahl — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 65 Bilder · max 75.24 ms · 69.23 % > 33 ms · Fahrt 9 Bilder · max 66.97 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 69.23 % > 33 ms | Fahrt: blind (9 Bilder in 2.5 s), 100.00 % )",
    "mass": [
     {
      "wort": "Gehen Frame max ms",
-     "wert": 109.02,
+     "wert": 75.24,
      "soll": 100
     },
     {
      "wort": "Fahrt Frame max ms",
-     "wert": 125.61,
+     "wert": 66.97,
      "soll": 100
     }
    ],
    "gpu": "amd/rdna-3",
-   "konsum": "k4d904a5fd3a5",
+   "konsum": "k601bc43bd307",
    "konsumN": 29,
    "konsumSeite": false,
    "konsumGanz": {
     "gelesen": 2
    },
    "konsumBoot": "kff06e4f5a2ae",
-   "s": 51.4,
+   "s": 48,
    "fremd": {
-    "s": 56.6,
-    "takte": 22,
-    "fremdS": 143.47,
-    "kerne": 2.535,
-    "fensterKerne": 2.991,
+    "s": 52.7,
+    "takte": 21,
+    "fremdS": 70.45,
+    "kerne": 1.336,
+    "fensterKerne": 1.492,
     "namen": [
      [
-      "node scripts/diag-altlasten.cjs",
-      36.92
-     ],
-     [
-      "node scripts/diag-altlasten.cjs --selftest",
-      23.27
-     ],
-     [
       "bash.exe scratchpad/wache-0331.sh",
-      13.56
+      15.72
+     ],
+     [
+      "sh.exe dienst/radeon-dienst.sh",
+      7.89
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh --waechter 1652832 claude/gpu-schloss.wache.1652832",
+      7.86
      ]
     ],
-    "dienerS": 45.36,
+    "dienerS": 49.64,
     "diener": [
      [
-      "dwm.exe",
-      16.69
+      "System",
+      26.3
      ],
      [
-      "System",
-      16.61
+      "dwm.exe",
+      14.55
      ]
     ],
-    "geraetS": 73.42,
+    "geraetS": 60.63,
     "geraet": [
      [
       "MsMpEng.exe",
-      30.08
+      21.78
      ],
      [
       "svchost.exe",
-      24.16
+      20.91
      ],
      [
-      "SearchIndexer.exe",
-      8.89
+      "SearchProtocolHost.exe",
+      8.17
      ]
     ],
-    "eigenS": 285.27,
+    "eigenS": 274.59,
     "rechnerKerne": 24,
     "spannen": {
-     "vor": 2.218,
-     "nach": 2.536,
-     "station": 3.461
+     "vor": 1.381,
+     "nach": 1.886,
+     "station": 2.005
     }
    },
    "referenz": {
     "vor": {
-     "ein": 106.5,
-     "alle": 342.3,
-     "cpuEin": 109,
-     "tor": {
-      "ruhig": true,
-      "kerne": 1.43,
-      "s": 0,
-      "soll": 6,
-      "reihe": [
-       0.72,
-       4.3,
-       7.98,
-       2.48,
-       1.16,
-       0.7
-      ]
-     },
-     "spanne": [
-      1795810287353,
-      1795810287995
-     ]
-    },
-    "nach": {
-     "ein": 105,
-     "alle": 309,
+     "ein": 107.2,
+     "alle": 324.1,
      "cpuEin": 110,
      "tor": {
       "ruhig": true,
-      "kerne": 3.94,
+      "kerne": 1.49,
       "s": 0,
       "soll": 6,
       "reihe": [
-       4.28,
-       3.83,
-       4.81,
-       2.66,
-       3.05,
-       6.08
+       1.08,
+       3.94,
+       8.06,
+       2.56,
+       1.02,
+       0.82
       ]
      },
      "spanne": [
-      1795810340150,
-      1795810340725
+      1795812029983,
+      1795812030604
+     ]
+    },
+    "nach": {
+     "ein": 113.8,
+     "alle": 280.3,
+     "cpuEin": 94,
+     "tor": {
+      "ruhig": true,
+      "kerne": 4.16,
+      "s": 0,
+      "soll": 6,
+      "reihe": [
+       3.63,
+       4.13,
+       4.49,
+       3.72,
+       3.86,
+       4.93
+      ]
+     },
+     "spanne": [
+      1795812079316,
+      1795812079883
      ]
     },
     "ruhe": {
      "ein": 83.5,
-     "alle": 259.9,
+     "alle": 260,
      "n": 1192,
      "von": "2026-11-16"
     },
-    "f": 1.317,
-    "fEin": 1.275,
-    "fAlle": 1.317,
-    "verdraengt": 1,
+    "f": 1.363,
+    "fEin": 1.363,
+    "fAlle": 1.247,
+    "verdraengt": 1.038,
     "schwankt": false,
     "rechner": "win32 · 24 Kerne · AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
     "umfeld": "sitzung"
    },
    "ungemessen": true,
-   "zeit": "2026-11-27T20:11:27.351Z",
+   "zeit": "2026-11-27T20:40:29.981Z",
    "abdruck": "464abdde1514",
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "profiband.K4#1",
    "modus": "session"
   },
-  "profiband.K4#1": {
+  "karte2.planet.kosmos.himmelsmechanik#1": {
    "gruen": false,
-   "zahl": "Last: Referenz f 1,317 (Faden 1,275 · alle Kerne 1,317; vor 106,5/342,3 ms, nach 105/309 ms, Ruhe 83,5/259,9 ms seit 2026-11-16) · fremd: node scripts/diag-altlasten.cjs 36,9 CPU-s · node scripts/diag-altlasten.cjs --selftest 23,3 CPU-s · bash.exe scratchpad/wache-0331.sh 13,6 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 30,1 CPU-s · svchost.exe 24,2 CPU-s · SearchIndexer.exe 8,9 CPU-s — unscharf unter Last: Gehen Frame max ms roh 109, entlastet ≥ 54,51 (÷ 2, Karte), Schwelle ≤ 100 — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 54 Bilder · max 109.02 ms · 87.04 % > 33 ms · Fahrt 45 Bilder · max 125.61 ms · 91.11 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 3 Bild(er) > 100 ms (max 109.02), 87.04 % > 33 ms | Fahrt: )",
-   "exit": 0,
-   "minuten": 0.87,
-   "grund": "Last: Referenz f 1,317 (Faden 1,275 · alle Kerne 1,317; vor 106,5/342,3 ms, nach 105/309 ms, Ruhe 83,5/259,9 ms seit 2026-11-16) · fremd: node scripts/diag-altlasten.cjs 36,9 CPU-s · node scripts/diag-altlasten.cjs --selftest 23,3 CPU-s · bash.exe scratchpad/wache-0331.sh 13,6 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 30,1 CPU-s · svchost.exe 24,2 CPU-s · SearchIndexer.exe 8,9 CPU-s — unscharf unter Last: Gehen Frame max ms roh 109, entlastet ≥ 54,51 (÷ 2, Karte), Schwelle ≤ 100 — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 54 Bilder · max 109.02 ms · 87.04 % > 33 ms · Fahrt 45 Bilder · max 125.61 ms · 91.11 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 3 Bild(er) > 100 ms (max 109.02), 87.04 % > 33 ms | Fahrt: )",
-   "mass": [
-    {
-     "wort": "Gehen Frame max ms",
-     "wert": 109.02,
-     "soll": 100
-    }
-   ],
-   "gpu": "amd/rdna-3",
-   "konsum": "k4d904a5fd3a5",
-   "konsumN": 29,
-   "konsumSeite": false,
-   "konsumGanz": {
-    "gelesen": 2
-   },
-   "konsumBoot": "kff06e4f5a2ae",
-   "s": 51.4,
+   "ungemessen": true,
+   "zahl": "Deckel 440 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /umstellen {\"ort\":\"genesis\",\"sicht\":\"third\"} · 16.1 s · 394.6 s)",
+   "exit": 1,
+   "minuten": 7.34,
+   "grund": "Deckel 440 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /umstellen {\"ort\":\"genesis\",\"sicht\":\"third\"} · 16.1 s · 394.6 s)",
+   "s": 440.5,
    "fremd": {
-    "s": 56.6,
-    "takte": 22,
-    "fremdS": 143.47,
-    "kerne": 2.535,
-    "fensterKerne": 2.991,
+    "s": 446.5,
+    "takte": 181,
+    "fremdS": 673.92,
+    "kerne": 1.509,
+    "fensterKerne": 2.895,
     "namen": [
      [
-      "node scripts/diag-altlasten.cjs",
-      36.92
-     ],
-     [
-      "node scripts/diag-altlasten.cjs --selftest",
-      23.27
-     ],
-     [
       "bash.exe scratchpad/wache-0331.sh",
-      13.56
+      84.91
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh --waechter 1652832 claude/gpu-schloss.wache.1652832",
+      69.3
+     ],
+     [
+      "sh.exe dienst/radeon-dienst.sh",
+      54.22
      ]
     ],
-    "dienerS": 45.36,
+    "dienerS": 212.11,
     "diener": [
      [
-      "dwm.exe",
-      16.69
+      "System",
+      114.63
      ],
      [
-      "System",
-      16.61
+      "WmiPrvSE.exe",
+      66.92
      ]
     ],
-    "geraetS": 73.42,
+    "geraetS": 481.66,
     "geraet": [
      [
-      "MsMpEng.exe",
-      30.08
-     ],
-     [
       "svchost.exe",
-      24.16
+      194.69
      ],
      [
-      "SearchIndexer.exe",
-      8.89
+      "MsMpEng.exe",
+      143.59
+     ],
+     [
+      "SearchProtocolHost.exe",
+      67.16
      ]
     ],
-    "eigenS": 285.27,
+    "eigenS": 627.63,
     "rechnerKerne": 24,
     "spannen": {
-     "vor": 2.218,
-     "nach": 2.536,
-     "station": 3.461
+     "vor": 2.146,
+     "nach": 1.617,
+     "station": 4.373
     }
    },
    "referenz": {
     "vor": {
-     "ein": 106.5,
-     "alle": 342.3,
-     "cpuEin": 109,
-     "tor": {
-      "ruhig": true,
-      "kerne": 1.43,
-      "s": 0,
-      "soll": 6,
-      "reihe": [
-       0.72,
-       4.3,
-       7.98,
-       2.48,
-       1.16,
-       0.7
-      ]
-     },
-     "spanne": [
-      1795810287353,
-      1795810287995
-     ]
-    },
-    "nach": {
-     "ein": 105,
-     "alle": 309,
+     "ein": 108.9,
+     "alle": 284.6,
      "cpuEin": 110,
      "tor": {
       "ruhig": true,
-      "kerne": 3.94,
+      "kerne": 5.85,
       "s": 0,
       "soll": 6,
       "reihe": [
-       4.28,
-       3.83,
-       4.81,
-       2.66,
-       3.05,
-       6.08
+       9.09,
+       5.86,
+       5.62,
+       7.56,
+       6.5,
+       3.52
       ]
      },
      "spanne": [
-      1795810340150,
-      1795810340725
+      1795812101697,
+      1795812102257
+     ]
+    },
+    "nach": {
+     "ein": 109.5,
+     "alle": 278.4,
+     "cpuEin": 109,
+     "tor": {
+      "ruhig": true,
+      "kerne": 0.91,
+      "s": 0,
+      "soll": 6,
+      "reihe": [
+       1.13,
+       0.9,
+       0.96,
+       0.97,
+       1,
+       0.78
+      ]
+     },
+     "spanne": [
+      1795812542775,
+      1795812543337
      ]
     },
     "ruhe": {
      "ein": 83.5,
-     "alle": 259.9,
-     "n": 1192,
+     "alle": 260,
+     "n": 1194,
      "von": "2026-11-16"
     },
-    "f": 1.317,
-    "fEin": 1.275,
-    "fAlle": 1.317,
+    "f": 1.311,
+    "fEin": 1.311,
+    "fAlle": 1.095,
     "verdraengt": 1,
     "schwankt": false,
     "rechner": "win32 · 24 Kerne · AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
     "umfeld": "sitzung"
    },
-   "ungemessen": true,
-   "zeit": "2026-11-27T20:11:27.351Z",
-   "abdruck": "67957095b356",
+   "zeit": "2026-11-27T20:41:41.696Z",
+   "abdruck": "c2532e791c76",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.same.preis.ausdauer#1": {
+   "gruen": false,
+   "zahl": "die Dauer misst nie über ein Neuladen: die Seite lud vor dem Grund neu (profiband.K4#1: Last: Referenz f 1,363 (Faden 1,363 · alle Kerne 1,247; vor 107,2/324,1 ms, nach 113,8/280,3 ms, Ruhe 83,5/260 ms seit 2026-11-16) · fremd: bash.exe scratchpad/) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Dauer misst nie über ein Neuladen: die Seite lud vor dem Grund neu (profiband.K4#1: Last: Referenz f 1,363 (Faden 1,363 · alle Kerne 1,247; vor 107,2/324,1 ms, nach 113,8/280,3 ms, Ruhe 83,5/260 ms seit 2026-11-16) · fremd: bash.exe scratchpad/) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-27T20:49:31.850Z",
+   "abdruck": "f7f6385a7cbf",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "25352@mwzg13a2"
+  },
+  "karte2.mensch.kultur.verstaendigung#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 40 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 40 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.67,
+   "grund": "Frist der Probe 40 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 40 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 40.1,
+   "fremd": {
+    "s": 43.7,
+    "takte": 18,
+    "fremdS": 83.56,
+    "kerne": 1.912,
+    "fensterKerne": 2.448,
+    "namen": [
+     [
+      "bash.exe scratchpad/wache-0331.sh",
+      10.81
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh --waechter 1652832 claude/gpu-schloss.wache.1652832",
+      5.94
+     ],
+     [
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… nachher Exit $?/\"; grep -E \"Puls-Fris",
+      5.91
+     ]
+    ],
+    "dienerS": 29.73,
+    "diener": [
+     [
+      "System",
+      19.31
+     ],
+     [
+      "WmiPrvSE.exe",
+      6.09
+     ]
+    ],
+    "geraetS": 57.17,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      22.2
+     ],
+     [
+      "svchost.exe",
+      20.48
+     ],
+     [
+      "SearchIndexer.exe",
+      6.67
+     ]
+    ],
+    "eigenS": 74.69,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-27T21:01:37.236Z",
+   "abdruck": "55183cc3768b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.fahrzeug.lenker#1": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 60 s von karte2.mensch.fahrzeug.lenker#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 60 s von karte2.mensch.fahrzeug.lenker#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-27T21:09:40.111Z",
+   "abdruck": "1fee50cfa72d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "25352@mwzg13a2"
+  },
+  "karte2.mensch.nahrung.tier#2": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 174 s von karte2.mensch.nahrung.tier#2) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 174 s von karte2.mensch.nahrung.tier#2) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-27T21:09:40.200Z",
+   "abdruck": "dd0fb912caa9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "25352@mwzg13a2"
+  },
+  "karte2.leben.tiere.wanderung#3": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 225 s von karte2.leben.tiere.wanderung#3) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 225 s von karte2.leben.tiere.wanderung#3) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-27T21:09:40.245Z",
+   "abdruck": "16f429f7446d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "25352@mwzg13a2"
+  },
+  "karte2.planet.wasser.gezeiten#2": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 265 s von karte2.planet.wasser.gezeiten#2) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 265 s von karte2.planet.wasser.gezeiten#2) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-27T21:09:40.286Z",
+   "abdruck": "4498aea7e369",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "25352@mwzg13a2"
+  },
+  "karte2.same.kopplung.aufwaerts#2": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 395 s von karte2.same.kopplung.aufwaerts#2) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 395 s von karte2.same.kopplung.aufwaerts#2) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-27T21:09:40.793Z",
+   "abdruck": "83e3a9705219",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "25352@mwzg13a2"
+  },
+  "karte2.same.kopplung.ereignis#2": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 395 s von karte2.same.kopplung.aufwaerts#2) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 395 s von karte2.same.kopplung.aufwaerts#2) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-27T21:09:40.793Z",
+   "abdruck": "90ba0955651f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.aufwaerts#2",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "25352@mwzg13a2"
+  },
+  "karte2.same.kopplung.gewalt#1": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 395 s von karte2.same.kopplung.aufwaerts#2) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 395 s von karte2.same.kopplung.aufwaerts#2) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-27T21:09:40.793Z",
+   "abdruck": "2b9db5348a37",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.aufwaerts#2",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "25352@mwzg13a2"
+  },
+  "karte2.same.kopplung.kohaerenz#1": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 395 s von karte2.same.kopplung.aufwaerts#2) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 395 s von karte2.same.kopplung.aufwaerts#2) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-27T21:09:40.793Z",
+   "abdruck": "5344fc44e9fd",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.aufwaerts#2",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "25352@mwzg13a2"
+  },
+  "karte2.same.kopplung.terraform#1": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 395 s von karte2.same.kopplung.aufwaerts#2) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 395 s von karte2.same.kopplung.aufwaerts#2) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-27T21:09:40.793Z",
+   "abdruck": "60d98052c42d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.aufwaerts#2",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "25352@mwzg13a2"
+  },
+  "karte2.leben.oeko.netz#2": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 171 s von karte2.leben.oeko.netz#2) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 171 s von karte2.leben.oeko.netz#2) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-27T21:09:40.835Z",
+   "abdruck": "0c828a4a0f6c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "25352@mwzg13a2"
+  },
+  "karte2.leben.evolution.fremde-physik#1": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 360 s von karte2.leben.evolution.fremde-physik#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 360 s von karte2.leben.evolution.fremde-physik#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-27T21:09:40.878Z",
+   "abdruck": "a79890cfe53f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "25352@mwzg13a2"
+  },
+  "karte2.erleben.klang.stimme#1": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 45 s von karte2.erleben.klang.stimme#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 45 s von karte2.erleben.klang.stimme#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-27T21:09:40.914Z",
+   "abdruck": "2a841240456c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "25352@mwzg13a2"
+  },
+  "karte2.erleben.kopplung.wahrnehmung#2": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 333 s von karte2.erleben.kopplung.wahrnehmung#2) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 333 s von karte2.erleben.kopplung.wahrnehmung#2) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-27T21:09:40.950Z",
+   "abdruck": "1d2c38853aec",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "25352@mwzg13a2"
+  },
+  "karte2.same.physik.feuer#2": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 60 s von karte2.same.physik.feuer#2) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 60 s von karte2.same.physik.feuer#2) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-27T21:09:40.985Z",
+   "abdruck": "7b30f40cd9b8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "25352@mwzg13a2"
+  },
+  "karte2.erleben.spieler.hand#1": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 60 s von karte2.erleben.spieler.hand#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 60 s von karte2.erleben.spieler.hand#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-27T21:09:41.232Z",
+   "abdruck": "94ecb21f3b9a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "25352@mwzg13a2"
+  },
+  "karte2.leben.wasser.bild#1": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 75 s von karte2.leben.wasser.bild#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 75 s von karte2.leben.wasser.bild#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-27T21:09:41.265Z",
+   "abdruck": "e38bd742790e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "25352@mwzg13a2"
+  },
+  "karte2.leben.kopplung.evolution-planet#1": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 326 s von karte2.leben.kopplung.evolution-planet#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 326 s von karte2.leben.kopplung.evolution-planet#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-27T21:09:41.300Z",
+   "abdruck": "a02b0a823867",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "25352@mwzg13a2"
+  },
+  "karte2.leben.kopplung.stadt-im-netz#2": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 326 s von karte2.leben.kopplung.evolution-planet#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 326 s von karte2.leben.kopplung.evolution-planet#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-27T21:09:41.300Z",
+   "abdruck": "6da080f7de54",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.leben.kopplung.evolution-planet#1",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "25352@mwzg13a2"
+  },
+  "karte2.same.entfaltung.schirm#1": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 35 s unter dem Grund-Deckel 114 s von karte2.same.entfaltung.schirm#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 35 s unter dem Grund-Deckel 114 s von karte2.same.entfaltung.schirm#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-27T21:09:41.338Z",
+   "abdruck": "0b389cec986f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "25352@mwzg13a2"
+  },
+  "karte2.planet.relief.grossform#1": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 35 s unter dem Grund-Deckel 180 s von karte2.planet.relief.grossform#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 35 s unter dem Grund-Deckel 180 s von karte2.planet.relief.grossform#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-27T21:09:41.379Z",
+   "abdruck": "562950e4c769",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "25352@mwzg13a2"
   }
+ },
+ "sitzung": {
+  "start": "2026-11-27T20:38:13.128Z",
+  "ordner": "sitzung-20261127-213813",
+  "port": 7804,
+  "warten": 1.99,
+  "bootS": 7.2,
+  "grundstellungS": [
+   0.2,
+   25.5,
+   3.4,
+   4,
+   4.8,
+   24.3
+  ],
+  "proben": 6,
+  "freigaben": [],
+  "geraet": {
+   "name": "Radeon 890M",
+   "adapter": "AMD Radeon(TM) 890M Graphics",
+   "preis": true
+  },
+  "offen": [
+   "karte2.mensch.fahrzeug.lenker#1",
+   "karte2.mensch.nahrung.frucht#1",
+   "karte2.mensch.nahrung.tier#2",
+   "karte2.leben.tiere.wanderung#3",
+   "karte2.planet.wasser.gezeiten#2",
+   "karte2.same.kopplung.aufwaerts#2",
+   "karte2.same.kopplung.ereignis#2",
+   "karte2.same.kopplung.gewalt#1",
+   "karte2.same.kopplung.kohaerenz#1",
+   "karte2.same.kopplung.terraform#1",
+   "karte2.leben.oeko.netz#2",
+   "karte2.leben.evolution.fremde-physik#1",
+   "karte2.erleben.klang.stimme#1",
+   "karte2.erleben.kopplung.wahrnehmung#2",
+   "karte2.same.physik.feuer#2",
+   "karte2.erleben.spieler.hand#1",
+   "karte2.leben.wasser.bild#1",
+   "karte2.leben.kopplung.evolution-planet#1",
+   "karte2.leben.kopplung.stadt-im-netz#2",
+   "karte2.same.entfaltung.schirm#1",
+   "karte2.planet.relief.grossform#1"
+  ],
+  "orte": [
+   {
+    "ort": "genesis",
+    "vor": "karte2.planet.kosmos.himmelsmechanik#1",
+    "s": 16.9,
+    "takte": 531,
+    "chunks": 81,
+    "nach": "der Grundstellung"
+   },
+   {
+    "ort": "wiese",
+    "vor": "karte2.mensch.fahrzeug.form#3",
+    "s": 20.6,
+    "takte": 806,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "wiese",
+    "vor": "karte2.leben.tiere.masse#1",
+    "s": 19.7,
+    "takte": 796,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "stadt-voll",
+    "vor": "karte2.mensch.kultur.verstaendigung#1",
+    "s": 115.4,
+    "takte": 1630,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "stadt-voll",
+    "vor": "karte2.mensch.macht.recht#1",
+    "s": 91.3,
+    "takte": 1465,
+    "chunks": 81,
+    "nach": "der Tür"
+   }
+  ],
+  "wegeTueren": [],
+  "felder": [
+   {
+    "probe": "profiband.K4#1",
+    "weg": [
+     "0",
+     "__ortZeit",
+     "__weltaktSpionBuch",
+     "__wetterSpionBuch",
+     "__buehneUhr",
+     "__impostorRttBaked",
+     "__flussBibliothekS",
+     "__zensusCalls",
+     "__k4"
+    ]
+   },
+   {
+    "probe": "karte2.planet.kosmos.himmelsmechanik#1",
+    "weg": [
+     "__linse___aufnahmeRuhig",
+     "__imSchuss",
+     "__ruheBilder",
+     "__wegProbe",
+     "__abbruchEpoche"
+    ]
+   },
+   {
+    "probe": "karte2.leben.tiere.masse#1",
+    "weg": [
+     "__nahSpeicher",
+     "__imSchuss",
+     "__letzteSpiegel",
+     "__letzteTeilung"
+    ]
+   }
+  ],
+  "wirt": [
+   {
+    "probe": "profiband.K4#1",
+    "anders": [
+     "r._bildZeit",
+     "r._wolkenZeit",
+     "r._weltaktGehalten",
+     "r._setWeather",
+     "r._feuchteLeser",
+     "r._knotenRate",
+     "r.state.weather",
+     "window.__ortSchritt"
+    ],
+    "wie": {
+     "r._bildZeit": "getauscht: () => S.T → der Wert 12.5",
+     "r._wolkenZeit": "getauscht: () => S.T → der Wert 12.5",
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
+     "r._feuchteLeser": "neu: (px, pz, py) => this._feuchteAt(px, pz, py)",
+     "r._knotenRate": "neu: function (N, ro) { const t0 = performance.now(); const s = kr.apply(this, argume",
+     "r.state.weather": "getauscht: () => wert → der Wert sunny",
+     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+    },
+    "haelt": [],
+    "heap": [
+     null,
+     302.5
+    ],
+    "ungemessen": null
+   },
+   {
+    "probe": "karte2.planet.kosmos.himmelsmechanik#1",
+    "anders": [
+     "window.__tagKurve",
+     "window.__wieseMessen",
+     "window.__wieseUrteil",
+     "window.__ortSchritt",
+     "window.__aufnahmeRuhig",
+     "window.__linse___tagKurve"
+    ],
+    "wie": {
+     "window.__tagKurve": "getauscht: function tagKurve(o) { return (async () => { const T = window.THREE; const rend ",
+     "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
+     "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
+     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit",
+     "window.__aufnahmeRuhig": "neu: function ausgabeAufnahme(W, H, warm, opt) { return (async () => { const T = wind",
+     "window.__linse___tagKurve": "neu: function tagKurve(o) { return (async () => { const T = window.THREE; const rend "
+    },
+    "haelt": [],
+    "heap": [
+     251.1,
+     840.2
+    ],
+    "ungemessen": null
+   },
+   {
+    "probe": "karte2.mensch.fahrzeug.form#3",
+    "anders": [
+     "window.__wieseMessen",
+     "window.__wieseUrteil",
+     "window.__ortSchritt"
+    ],
+    "wie": {
+     "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
+     "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
+     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+    },
+    "haelt": [],
+    "heap": [
+     229.7,
+     280.4
+    ],
+    "ungemessen": null
+   },
+   {
+    "probe": "karte2.leben.tiere.masse#1",
+    "anders": [
+     "window.r",
+     "window.st",
+     "window.pm",
+     "window.halt",
+     "window.__handTakt",
+     "window.aufsteigend",
+     "window.addiere",
+     "window.rang",
+     "window.__uebergangFaellt",
+     "window.rahmen",
+     "window.__png",
+     "window.__bundlesNeu",
+     "window.sleep",
+     "window.leihe",
+     "window.__fremd",
+     "window.__loopBild",
+     "window.__zielLesen",
+     "window.__messZiel",
+     "window.__pufferLesen",
+     "window.jsonKlon",
+     "window.fehlerText",
+     "window.fehlerStapel",
+     "window.__seitenTakt",
+     "window.__bedienung2",
+     "window.__takte",
+     "window.__streuTakte",
+     "window.__bildAus",
+     "window.__eichMs",
+     "window.__weltStehtNach",
+     "window.__gebautNach",
+     "window.__deckel",
+     "window.__weltDa",
+     "window.__abdruck",
+     "window.__farben",
+     "window.__lin",
+     "window.__stand",
+     "window.__standJson",
+     "window.__werkPutz",
+     "window.__bautenLeer",
+     "window.__bautenSeit",
+     "window.__peersWeg",
+     "window.__rufe",
+     "window.__ortSchritt",
+     "window.__codeOf",
+     "window.__dokuOf",
+     "window.__fehlt"
+    ],
+    "wie": {
+     "window.r": "getauscht: () => window.anazhRealm",
+     "window.st": "getauscht: () => window.anazhRealm && window.anazhRealm.state",
+     "window.pm": "getauscht: () => st && st.playerMesh",
+     "window.halt": "getauscht: () => st && st.verbTafel.gehalten",
+     "window.__handTakt": "getauscht: function handTakt() { try { r._gameLoopTick(performance.now()); } catch (e) { r.",
+     "window.aufsteigend": "getauscht: (a, b) => a - b",
+     "window.addiere": "getauscht: (a, b) => a + b",
+     "window.rang": "getauscht: (s, q = 0.5) => s[Math.min(s.length - 1, Math.floor(q * s.length))]",
+     "window.__uebergangFaellt": "getauscht: function uebergangFaellt(r) { r.state.weatherTransition = null; r.requestWeather",
+     "window.rahmen": "getauscht: (b) => b.obb || { cx: (b.minX + b.maxX) / 2, cz: (b.minZ + b.maxZ) / 2, c: 1, s:",
+     "window.__png": "getauscht: function png(u8, W, H) { const cv = Object.assign(document.createElement(\"canvas",
+     "window.__bundlesNeu": "getauscht: () => st.scene.traverse((o) => o.isBundleGroup && (o.needsUpdate = true))",
+     "window.sleep": "getauscht: (ms) => { const e = globalThis.__abbruchEpoche; return new Promise((r, f) => set",
+     "window.leihe": "getauscht: function leihe(o, tausch) { const alt = Object.keys(tausch).map((k) => [k, Objec",
+     "window.__fremd": "getauscht: async function fremd() { const { privateKey: k } = await crypto.subtle.generateK",
+     "window.__loopBild": "getauscht: function loopBild() { st.renderer._nodes?.nodeFrame?.update(); r._loopRender(); ",
+     "window.__zielLesen": "getauscht: async function zielLesen(ziel, W, H, renderer = st.renderer) { const px = await ",
+     "window.__messZiel": "getauscht: function messZiel(W, H, o, T = window.THREE, art = \"RenderTarget\") { return art ",
+     "window.__pufferLesen": "getauscht: function pufferLesen(puffer, wer, renderer = st.renderer) { const q = puffer?.is",
+     "window.jsonKlon": "getauscht: (x) => JSON.parse(JSON.stringify(x))",
+     "window.fehlerText": "getauscht: (e) => e?.message || String(e)",
+     "window.fehlerStapel": "getauscht: (e) => e?.stack || String(e)",
+     "window.__seitenTakt": "getauscht: async function seitenTakt() { const e = globalThis.__abbruchEpoche; const vor = ",
+     "window.__bedienung2": "getauscht: async function bedienung2(vor) { const taste = (code, art) => window.dispatchEve",
+     "window.__takte": "getauscht: async function takte(n, ms) { for (let i = 0; i < n; i++) { __handTakt(); await ",
+     "window.__streuTakte": "getauscht: async function streuTakte(n, ms) { for (let i = 0; i < n; i++) { st._frameOverBu",
+     "window.__bildAus": "getauscht: function bildAus() { if (st.renderer) { st.renderer.render = function () {}; if ",
+     "window.__eichMs": "getauscht: function eichMs(n) { const a = eichMs.puffer || (eichMs.puffer = new Float64Arra",
+     "window.__weltStehtNach": "getauscht: async function weltStehtNach(takt, max) { const W = () => r._weltStand || {}; co",
+     "window.__gebautNach": "getauscht: async function gebautNach(e, { takt, fertig, bau, max, offen, warum } = {}) { co",
+     "window.__deckel": "getauscht: function deckel(name, max, offen) { let n = 0, k = 0, still = 0, vor = \"\"; retur",
+     "window.__weltDa": "getauscht: async function weltDa(bed) { window.__weltDaWartet = bed ? String(bed).replace(/",
+     "window.__abdruck": "getauscht: function abdruck(x, alle) { let [h, n] = [0x811c9dc5, 0]; const ein = (a) => { c",
+     "window.__farben": "getauscht: function farben(g) { const set = new Set(); g?.traverse((o) => { const c = o.geo",
+     "window.__lin": "getauscht: (hx) => [(hx >> 16) & 255, (hx >> 8) & 255, hx & 255] .map((c) => Math.f16round(",
+     "window.__stand": "getauscht: async function stand() { await r._speicherStill(); return (await r._idbGetWorld(",
+     "window.__standJson": "getauscht: async function standJson() { const roh = await window.__stand(); try { return JS",
+     "window.__werkPutz": "getauscht: function werkPutz() { r.closeAllDrawers(); st.yaw = 0; if (st.playerMesh) st.pla",
+     "window.__bautenLeer": "getauscht: function bautenLeer() { r._bautenLeeren(); }",
+     "window.__bautenSeit": "getauscht: function bautenSeit() { const vor = new Set(st.architectures); return () => st.a",
+     "window.__peersWeg": "getauscht: function peersWeg() { for (const pid of Array.from(st.p2p.peers.keys())) r._p2pR",
+     "window.__rufe": "getauscht: function rufe(wer, methode, lieferer, name, args) { const echt = lieferer[name];",
+     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit",
+     "window.__codeOf": "neu: (f) => oK(String(f))",
+     "window.__dokuOf": "neu: (f) => String(f)",
+     "window.__fehlt": "neu: (f, re) => [].concat(f).every((g, i) => { if (typeof g !== \"function\") throw new"
+    },
+    "haelt": [],
+    "heap": [
+     237.3,
+     290.3
+    ],
+    "ungemessen": null
+   },
+   {
+    "probe": "karte2.mensch.kultur.verstaendigung#1",
+    "anders": [
+     "window.__ortSchritt"
+    ],
+    "wie": {
+     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+    },
+    "haelt": [],
+    "heap": [
+     502.6,
+     567.8
+    ],
+    "ungemessen": null
+   },
+   {
+    "probe": "karte2.mensch.macht.recht#1",
+    "anders": [
+     "window.__ortSchritt"
+    ],
+    "wie": {
+     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+    },
+    "haelt": [],
+    "heap": [
+     500.9,
+     551.3
+    ],
+    "ungemessen": null
+   }
+  ],
+  "messHalt": [
+   {
+    "probe": "profiband.K4#1",
+    "halt": -1000000000,
+    "zurueck": 0
+   },
+   {
+    "probe": "karte2.planet.kosmos.himmelsmechanik#1",
+    "gehalten": [
+     "skala",
+     "spiegel"
+    ],
+    "offen": []
+   },
+   {
+    "probe": "karte2.mensch.fahrzeug.form#3",
+    "gehalten": [
+     "tiere"
+    ],
+    "offen": []
+   },
+   {
+    "probe": "karte2.leben.tiere.masse#1",
+    "gehalten": [
+     "skala",
+     "spiegel",
+     "tiere"
+    ],
+    "offen": []
+   },
+   {
+    "probe": "karte2.mensch.macht.recht#1",
+    "gehalten": [
+     "tiere"
+    ],
+    "offen": []
+   }
+  ],
+  "dauerOhneStueck": [
+   {
+    "probe": "karte2.same.preis.ausdauer#1",
+    "weil": "die Dauer misst nie über ein Neuladen: die Seite lud vor dem Grund neu (profiband.K4#1: Last: Referenz f 1,363 (Faden 1,363 · alle Kerne 1,247; vor 107,2/324,1 ms, nach 113,8/280,3 ms, Ruhe 83,5/260 ms seit 2026-11-16) · fremd: bash.exe scratchpad/)"
+   }
+  ],
+  "anOrt": [
+   {
+    "vor": "karte2.leben.tiere.masse#1",
+    "anders": [
+     "creatures"
+    ],
+    "wie": {
+     "creatures": {
+      "vorher": 6,
+      "nachher": 6,
+      "fehlt": [],
+      "neu": [],
+      "anders": [
+       "Skara:verband/bestand/bestandOrt",
+       "Orin:verband/bestand/bestandOrt",
+       "Quin:verband/bestand/bestandOrt",
+       "Thal:verband/bestand/bestandOrt"
+      ]
+     }
+    }
+   },
+   {
+    "vor": "karte2.mensch.kultur.verstaendigung#1",
+    "anders": [
+     "creatures"
+    ],
+    "wie": {
+     "creatures": {
+      "vorher": 6,
+      "nachher": 6,
+      "fehlt": [],
+      "neu": [],
+      "anders": [
+       "Skara:verband/bestand/bestandOrt",
+       "Orin:verband/bestand/bestandOrt",
+       "Quin:verband/bestand/bestandOrt",
+       "Thal:verband/bestand/bestandOrt"
+      ]
+     }
+    }
+   }
+  ],
+  "wanderung": [
+   {
+    "probe": "karte2.leben.tiere.masse#1",
+    "ort": "wiese",
+    "m": 315.71,
+    "dreh": 0
+   }
+  ],
+  "ciBlicke": 8,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 6454,
+   "frameP95": 41.85,
+   "taktP95": 27.44,
+   "vramMax": 240.1,
+   "seiten": 7,
+   "marken": 1,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "karte2.planet.kosmos.himmelsmechanik#1",
+     "m": 1083,
+     "ringVor": 4,
+     "ringMin": -1
+    },
+    {
+     "probe": "karte2.leben.tiere.masse#1",
+     "m": 323,
+     "ringVor": 4,
+     "ringMin": -1
+    }
+   ],
+   "zapfen": 1552,
+   "luecken": 12,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+  },
+  "fahrtS": 1764.5,
+  "grund": "die Fahrt riss 1800 s am Grund-Deckel von karte2.mensch.fahrzeug.lenker#1, karte2.mensch.nahrung.frucht#1, karte2.mensch.nahrung.tier#2, karte2.leben.tiere.wanderung#3, karte2.planet.wasser.gezeiten#2, karte2.same.kopplung.aufwaerts#2, karte2.leben.oeko.netz#2, karte2.leben.evolution.fremde-physik#1, karte2.erleben.klang.stimme#1, karte2.erleben.kopplung.wahrnehmung#2, karte2.same.physik.feuer#2, karte2.erleben.spieler.hand#1, karte2.leben.wasser.bild#1, karte2.leben.kopplung.evolution-planet#1, karte2.same.entfaltung.schirm#1, karte2.planet.relief.grossform#1 — offen: karte2.mensch.fahrzeug.lenker#1, karte2.mensch.nahrung.frucht#1, karte2.mensch.nahrung.tier#2, karte2.leben.tiere.wanderung#3, karte2.planet.wasser.gezeiten#2, karte2.same.kopplung.aufwaerts#2, karte2.same.kopplung.ereignis#2, karte2.same.kopplung.gewalt#1, karte2.same.kopplung.kohaerenz#1, karte2.same.kopplung.terraform#1, karte2.leben.oeko.netz#2, karte2.leben.evolution.fremde-physik#1, karte2.erleben.klang.stimme#1, karte2.erleben.kopplung.wahrnehmung#2, karte2.same.physik.feuer#2, karte2.erleben.spieler.hand#1, karte2.leben.wasser.bild#1, karte2.leben.kopplung.evolution-planet#1, karte2.leben.kopplung.stadt-im-netz#2, karte2.same.entfaltung.schirm#1, karte2.planet.relief.grossform#1",
+  "minuten": 31.65
  }
 }

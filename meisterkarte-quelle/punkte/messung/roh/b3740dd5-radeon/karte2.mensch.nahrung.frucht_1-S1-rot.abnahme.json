@@ -1,0 +1,102 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.458",
+  "sha": "b3740dd5566793ae66152d955e5a55d9c272884c"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 828,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0.1385,
+  "taeter": {
+   "Laub baum_tanne": 0.1385
+  },
+  "vordergrund": {
+   "radius": 4.09,
+   "deckung": 0.328,
+   "taeter": {
+    "Laub baum_tanne": 0.2376,
+    "Gelände": 0.0556,
+    "siedlung-acker": 0.0174,
+    "siedlung-frucht": 0.0122
+   },
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 8.18,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -635.13,
+   45.25,
+   -805.91
+  ],
+  "blick": [
+   -0.77417,
+   -0.2177,
+   -0.59437
+  ]
+ },
+ "seitenfehler": 0,
+ "leiber": {
+  "nahM": 6,
+  "n": 1,
+  "halb": 0,
+  "teile": 6,
+  "ganz": true,
+  "fehlt": []
+ },
+ "bild": {
+  "w": 1280,
+  "h": 720,
+  "mittel": 74.7,
+  "sigma": 40.9,
+  "schwarz": 0.0002,
+  "weiss": 0
+ },
+ "ok": false,
+ "zeile": "ABNAHME ROT [Sicht verdeckt 13.9 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Laub baum_tanne 13.9 % · Vordergrund 32.8 % näher als 4.09 m (der halbe Ziel-Abstand): Laub baum_tanne 23.8 %, Gelände 5.6 %, siedlung-acker 1.7 %] · beweis · Sicht 13.9 % (Laub baum_tanne 13.9 %) · Leiber näher als 6 m: 1 von 1 ganz (6 Teile) · Ziel Blickziel im Bild frei 8.18 m · Luma 74.7 σ 40.9 schwarz 0.0 % weiß 0.0 % · Stand 18.546.458 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+ "rot": [
+  {
+   "feld": "sicht.deckung",
+   "grund": "Sicht verdeckt 13.9 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Laub baum_tanne 13.9 %"
+  },
+  {
+   "feld": "sicht.vordergrund.deckung",
+   "grund": "Vordergrund 32.8 % näher als 4.09 m (der halbe Ziel-Abstand): Laub baum_tanne 23.8 %, Gelände 5.6 %, siedlung-acker 1.7 %"
+  }
+ ],
+ "urteil": "ROT"
+}
