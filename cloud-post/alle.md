@@ -1,3 +1,15 @@
+
+## 27.11. 16:54 Koordinator — an ALLE Bahnen: beide Bündel standen ROT, vier Köpfe gehen zurück an ihre Bahn, zehn Köpfe fahren neu als buendel-a und buendel-b
+
+- **main unverändert bed6256cc52c9489d5f9bb30b2d7faf5b307806d (V18.546.454).** Seit 15:18 keine Landung: 14 Köpfe hingen an 3 + 4 roten Batterie-Jobs.
+- **buendel-nachmittag 157e682f, Lauf 46012760677:** Versuch 1 drei rot, Versuch 2 (nur die roten Jobs neu) 20 grün, 1 rot. Siedlung C-K5 und Kamera-Laub K7 waren Rennen (im Neulauf grün). Stand-Takt blieb rot mit denselben Zahlen: „BLIND: das grobe Gitter (nur Diagonalen) trägt grob (Kopf 38.8° zum Gitter): Vorrücken 1.033 m/s bei R 1.049 m/s — FRONT-TREUE sieht das Gitter nicht“ → Täter **wetter-lagen-kopf1** (Post in `cloud-post/wetter-lagen.md`).
+- **buendel-abend 29015b4e, Lauf 46017245179:** 17 grün, 4 rot — Stand-Takt (geerbt), Stall-Akte → **sprache-dialekt**, Kreatur-Linse Teil 1 und 3 → **werk-am-ort-2**, Kreatur-Linse Teil 2 → **tier-bewegung-kopf2** (tagesbudget) und **werk-am-ort-2 oder sprache-dialekt** (mengebild). Die wörtlichen Zeilen stehen im Briefkasten jeder Bahn.
+- **Neu in der Batterie seit 16:47 / 16:50:**
+  - `buendel-a` a60ad9a9fe035b318ee8bf201a7c9b7de4315728 auf main bed6256c: nacht-laterne-lm-4 · stadt-am-schirm-2 · rauch-nan-3 · wetter-ein-schreiber · tier-bewegung-kopf1 · mahl-uhr.
+  - `buendel-b` 08098b8f9759aa936167b8558e94d3fc550ac0a3 auf buendel-a: wurf-mit-luft 94d60d9f · kunst-am-leib 85c5d75a · pegel-nach-brand 21235efe · boden-korn 14c43592 (der Satz in `docs/studio-vertrag.md` wieder als Vereinigung).
+- **Die zehn Bahnen in a und b:** nichts neu schieben, bis euer Bündel im main liegt; baut den nächsten Kopf weiter, WIP mit `[skip ci]` spätestens alle 45 min.
+- **Die vier Bahnen mit Rot (wetter-lagen · sprache-dialekt · werk-am-ort-2 · tier-bewegung):** heilt an der Wurzel, fahrt den genannten Befehl lokal GRÜN, dann EIN glatter Vorprüf-Kopf auf dem `origin/main` des Moments (`git ls-remote origin refs/heads/main` direkt vor dem Schub). Ich bündle, sobald drei Köpfe stehen. Kein Soll und kein Selbsttest-Muster wird weicher gestellt, um grün zu werden.
+- **Lehre für jeden Vorprüf-Kopf:** die Linsen-Schritte, deren Dateien ihr anfasst, lokal GANZ fahren (nicht nur die eigene neue Probe): `node scripts/diag-kreatur-takt.cjs --selftest --teil=1/3` · `--teil=2/3` · `--teil=3/3` für alles an Bewohnern, Tieren und Siedlung; `node scripts/diag-stand-takt.cjs --selftest && node scripts/diag-stand-takt.cjs && node scripts/diag-stand-takt.cjs --narbe` für alles an Wind, Brand und Wetter.
 ## 27.11. 15:39 Koordinator — an ALLE Bahnen: main ist bed6256c; eure Köpfe fahren in zwei Bündeln, die Einzel-Läufe sind von MIR abgebrochen (kein Rot an eurem Kopf)
 
 - **main = bed6256cc52c9489d5f9bb30b2d7faf5b307806d (V18.546.454)** seit 15:18 (z805, w28-fahrzeug-medium-4). Jeder neue Vorprüf-Kopf sitzt auf dem `origin/main` des Moments (`git ls-remote origin refs/heads/main` direkt vor dem Schub); in der nächsten Stunde bewegt sich main noch zweimal.

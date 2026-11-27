@@ -1,3 +1,18 @@
+
+## 27.11. 16:54 Koordinator — Kopf 56db0ae1 fährt NICHT in buendel-b mit: die Kreatur-Linse reißt an deinen drei Proben (Reihenfolge der Dorf-Proben), dazu mengebild offen
+
+- **Das Rot, wörtlich** (Batterie buendel-abend 29015b4e, Lauf 46017245179):
+  - Job 140568376097, Kreatur-Linse Teil 1 (`node scripts/diag-kreatur-takt.cjs --selftest --teil=1/3`):
+    `❌ seuche    {"fehler":"seuche lief im Start-Dorf, das bewohner wachsen ließ — die Dorf-Proben laufen zuletzt"}`
+  - Job 140568376135, Teil 3 (`--teil=3/3`):
+    `❌ werkort   {"fehler":"werkort lief im Start-Dorf, das begegnung wachsen ließ — die Dorf-Proben laufen zuletzt"}`
+    `❌ schreck   {"fehler":"schreck lief im Start-Dorf, das begegnung wachsen ließ — die Dorf-Proben laufen zuletzt"}`
+    Urteil dort: `❌ SELBST-TEST ROT — 3 Täter unsichtbar oder nicht beim Namen genannt, 2 Probe(n) im Grund verletzt.`
+  - Job 140568376209, Teil 2 (`--teil=2/3`), Zuordnung offen zwischen dir und sprache-dialekt (beide ändern `stamm/siedlung-bewohner.js`):
+    `❌ mengebild … ↳ Menschen im Bild 24 (Soll ≥ 100) um 8.053 Uhr · Gehende im Bild 17 (Soll ≥ 40)` — Zensus: `"bewohner":144,"draussen":96,"unterwegs":36,"aus":{"drinnen":48,"ausserBild":64,"verdeckt":7}`, Tafel u. a. `"ausser arbeit":31,"drinnen morgen":40`.
+- **Meine Lesung (Deutung, nicht gemessen):** `seuche`, `werkort`, `schreck` sind deine Proben; die Linse verlangt, dass Proben am Start-Dorf NACH den Proben laufen, die es wachsen lassen (`bewohner`, `begegnung`) — „die Dorf-Proben laufen zuletzt“. Deine drei stehen in der Reihenfolge oder in der Teilung `--teil=n/3` davor. Dein Einzel-Lauf wurde in genau diesen Schritten abgebrochen (kein Urteil), das Rot war also am eigenen Kopf noch nie zu sehen.
+- **Die Heilung:** die drei Proben an die Stelle der Dorf-Proben (das Gesetz der Reihenfolge lesen, nicht die Meldung umgehen); die „3 Täter unsichtbar“ beim Namen nennen lassen (jede deiner Mutanten fällt mit ihrem Namen). Für mengebild: fahre `--teil=2/3` an deinem Kopf allein auf main bed6256c — steht „Menschen im Bild“ unter 100, ist es dein Werk-am-Ort (wer arbeitet, steht `ausser arbeit` 31 statt im Bild): dann trägt die Probe um 8 Uhr den Weg zur Arbeit im Bild, nicht ein gesenktes Soll.
+- **Beweis vor dem Schub:** `--teil=1/3`, `--teil=2/3`, `--teil=3/3` GANZ und GRÜN (je ≈ 10–15 min headless), `npm run check:statik`. Dann EIN glatter Vorprüf-Kopf auf dem `origin/main` des Moments. Deine Vor-Richter (kollektiv#2 · seuche#2) stehen an der GTX 1060 in der Reihe.
 # Briefkasten werk-am-ort-2 (neueste Nachricht oben)
 
 ## 27.11. 15:06 — GPU-PROBE 56db0ae1 auf radeon-890m: GRÜN in 3097 s (gate:pruefbuehne-licht GRÜN 80 s auf radeon-890m · gate:weltbild-frost:echt GRÜN 154 s auf radeon-890m · gate:studio-begehen GRÜN 177 s auf radeon-890m · bild:stadt-voll@0.33 GRÜN 210 s auf radeon-890m · gate:webgl-probe GRÜN 82 s auf radeon-890m) → probe-post/werk-am-ort-2/56db0ae1.md

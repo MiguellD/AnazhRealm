@@ -1,3 +1,14 @@
+
+## 27.11. 16:54 Koordinator — Kopf 1 (484a8c99) fährt in buendel-a; Kopf 2 (bdc74fb5) geht zurück: Kreatur-Linse Teil 2, tagesbudget
+
+- **Kopf 1** stand in der Batterie von buendel-nachmittag grün (alle Kreatur-Schritte) und fährt jetzt in `buendel-a` a60ad9a9 auf main bed6256c.
+- **Kopf 2, das Rot wörtlich** (Batterie buendel-abend 29015b4e, Lauf 46017245179, Job 140568376209, `node scripts/diag-kreatur-takt.cjs --selftest --teil=2/3`):
+  `❌ tagesbudget {"budget":{"deer":{"ruhen":0.4,"nahrung":0.501,"ziehen":0.1,"stehen":null},"bear":{"ruhen":0.448,"nahrung":0.401,"ziehen":0.151},"fox":{"ruhen":0.601,"nahrung":0,"ziehen":0.399},"wolf":{"ruhen":0.598,"nahrung":0,"ziehen":0.402}} … "truenke":[4,8,0,7,9,10,1,1,0,0,0,0],"amWasser":40 …}`
+  `↳ kein Tier trinkt aus Durst: Trünke 4,8,0,7,9,10,1,1,0,0,0,0 (je Art 12,26,2,0), 40 am Wasser`
+  Das Budget selbst liegt im Soll; es reißt am Durst: je Art 12 · 26 · 2 · 0 — eine Art trinkt nie.
+- **Zuordnung (aus dem Diff, nicht gemessen):** dein Kopf 2 ist der einzige im Bündel, der `stamm/kreatur-fauna.js` ändert; pegel-nach-brand ändert `stamm/wasser-hydro.js`, meldet aber „ohne Brand byte-gleich“. Fahre `--teil=2/3` an Kopf 2 allein auf main bed6256c und schreib „Trünke je Art“ ins Stand-Blatt: steht dort 0 für eine Art, ist es deins; steht alles > 0, schreib es sofort — dann suche ich bei pegel-nach-brand.
+- **Die Heilung:** an der Wurzel der Bewegung (dein Schnitt an Gang oder Körperwelle hält eine Art vom Wasser fern oder verkürzt ihren Weg) — nicht am Soll der Probe. Beweis vor dem Schub: `--teil=1/3`, `--teil=2/3`, `--teil=3/3` GANZ und GRÜN, `gate:tier-gang`, `gate:tier-anatomie`, `npm run check:statik`.
+- **Der neue Kopf 2:** EIN glatter Commit auf dem `origin/main` des Moments — nach der Landung von buendel-a trägt main deinen Kopf 1, dann sitzt Kopf 2 ohne Vorgänger-Konflikt. Der Ruf mit KOMMA zwischen den Proben. Der Vor-Richter bewegung#2 fährt an der GTX 1050 am Kopf bdc74fb5 nach.
 ## 27.11. 15:15 Koordinator — Kopf 1 fährt im Bündel `buendel-nachmittag`; dein Ruf wurde am Einlass ABGEWIESEN (Leerzeichen statt Komma)
 
 - Kopf 1 (484a8c99) liegt ohne Anspruch im Bündel `buendel-nachmittag` 157e682f (sieben Köpfe, EINE Batterie statt sieben); `gate:tier-gang` und `gate:tier-anatomie` richtet dort die Batterie.
