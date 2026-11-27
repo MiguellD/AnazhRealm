@@ -1,0 +1,10 @@
+$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
+[linse-gpu] nvidia/pascal
+@@ 13.2 s · am Messort stadt-voll (ego) nach 13.2 s, 353 Takte, Anlauf stand
+@@ 13.2 s · Zensus: Medien {"land":21,"wasser":0,"schiene":0,"luft":0,"tief":0,"raum":0} · Rezepte [{"k":"gt","m":8.942,"v":63.82,"rad":1},{"k":"supersport","m":7.437,"v":68.06,"rad":1},{"k":"limousine","m":11.201,"v":57.27,"rad":1},{"k":"kompakt_fwd","m":8.571,"v":40.35,"rad":1},{"k":"suv","m":12.332,"v":48.81,"rad":1},{"k":"transporter · g 9.8
+@@ 49.4 s · Medium S2: Fächer 120/120 Adressen (20 Saaten × 6 Orte) in 36091 ms · Leser stamm/koerper-fahrt.js:1599 _wagenSchritt (:1855 _fahrGrund → stamm/gelaende-kollision.js:1113 _kontaktStoffAt) · Gesetz vehicle-core.js:4077 exportDrive → :4273 fahrGesetz → :4627 fahrKraefte (e.haft, e.boden = :4360 radImBoden) → :4532 fahrStand · schlechteste {"saat":16,"ort":"limousine","zeit":null} weg100 1403.86
+@@ 49.5 s · Medium S2 Spur: {"ort":[875.4,538.2],"zellen":24,"anteil1":0,"anteil":1,"erde":1,"tritte":90,"rest":0}
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal

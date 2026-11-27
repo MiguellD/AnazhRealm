@@ -1,0 +1,81 @@
+{
+ "sha": "bed6256cc52c9489d5f9bb30b2d7faf5b307806d",
+ "geraet": "gtx",
+ "zeit": "2026-11-27T14:37:07.281Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "karte2.mensch.fahrzeug.medium#2": {
+   "gruen": true,
+   "zahl": "S2 GRÜN · Anteil der Saaten mit Bremsweg 100 → 0 × (μ + f_r) auf dem Boden der Saat in 30–50 m 1 (Soll ≥ 1) · Anteil der Saaten mit Bremsweg 50 → 0 × (μ + f_r) auf dem Boden der Saat in 7,5–12,5 m 1 (Soll ≥ 1) · Anteil der Saaten mit Kurvengrenze a_quer ÷ μ·g im Kreis in 0,95–1,01 1 (Soll ≥ 1) · Welt-Fahrten 100 → 0, die ohne Kuppe abheben (der Boden fiel nie weiter als den Federweg unter den Wagen) 0 (Soll ≤ 0) · Spurrinne nach 10 Durchfahrten in m 0.006 (Soll > 0) · Anteil der Zellen der Spur, die die Wege-Karte nach 10 Durchfahrten als Pfad malt 1 (Soll ≥ 1) · Umfang 20 (Soll ≥ 20 Saaten bis 130 km/h mit eigener Physik) · 20 Fahrten je Rezept über 20 Saaten · Prüfstand auf dem Boden der Saat (eben, 49 CFR 571.135 S6.2.2): Weg × (μ + f_r) im Band 100→0 100 % (38.14–45.26 m), 50→0 100 % · die Kurvengrenze im Kreis 0.992–0.997 μ·g (μ 0.4–0.8), im Band 0,95–1,01 100 % · die Welt: Bremsweg 100→0 58.08–1403.86 m am Ort (Ge · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.84,
+   "gpu": "nvidia/pascal",
+   "konsum": "k3234d4bce37c",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k7a102ef6857b",
+   "s": 49.7,
+   "fremd": {
+    "s": 52.6,
+    "takte": 24,
+    "fremdS": 35.64,
+    "kerne": 0.678,
+    "fensterKerne": 0.971,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.72
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      4.53
+     ],
+     [
+      "claude.exe --output-format stream-json --verbose --input-format stream-json --effort=xhigh",
+      3.34
+     ]
+    ],
+    "dienerS": 14.48,
+    "diener": [
+     [
+      "dwm.exe",
+      5.11
+     ],
+     [
+      "System",
+      5.08
+     ]
+    ],
+    "geraetS": 40.2,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      28.14
+     ],
+     [
+      "svchost.exe",
+      11.27
+     ],
+     [
+      "SearchIndexer.exe",
+      0.34
+     ]
+    ],
+    "eigenS": 88.14,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-27T14:37:07.281Z",
+   "abdruck": "91208d8698f9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "k3234d4bce37c": "bVXbjpswEP2XPHbrNdcAlvbB2Wy1kZo2+wljMzZsCEQ2hCpV/72ChCTA+gnJZ2bOnDNj/i6OIPeg8fnTVuWCLb4tvi8snJBYNCc0z592wRaJdD30Gb8cyjl/7WDS5Mfa0iIXFEQJ2QFJY2rMi2fZh6klOKFgtH3jekepome6bl9epqGFwLQiNSgcAh30wxjZFNhYDQIJNKovdgWHQYJLl9H+xGu+XdPbaSXnu5a2u/h9kkxAmY7Zum4Cy4jxdsM5/5iyTHPAmhR5aYe6bholymH3WttZjIGWnAGzAs01CGPXDcRAdtXJ2UkzCVRFY+2oWOynoRczSpMpVqPNZVaTo6kElle4SLzIBbaaq62PDVGPjEAIiMVU6wyw1GhGHBxfqk7oP/E06R4OaICUkF2hieNHnrhrQyl9n3MpeuJ9iYF4EngidUaBnan01Amc8tHZ9Zd6QKl2uJA3iOazolZmuTmM5VIBeo7Pfs4p2gxSNGRf2fqG9jEKHHHZhs2aXrjEq2nkvbnBQwCIH3uLKX+faWkrVbdgkOhjMwxNgGEUMs43M3ANh8ONlh+DPzXS1t2gP9LwEhWGAaP06bIo86Yva0HOmBd4m1sZ+ck0+cnAgYDQJldqMFCEUiVfDWqLRU1EVdUDXzeKfJ9Rn5aPZv/qbdw8+LzWH8H2B9dvY/s3fMq7r1CZeiAtQPhBwJRex5TGaorOTU1akNm9xxSE99V8n9EUqHEko3Jd8FLWPzE3psHw8TQa4PM8Y46dwKVt7FBdQiBC9oUlLZq9gHJ/BUp3CdLrx2+15buxKK+6WwN6iulYq5Xfr8Nvvu4SH1HSo6lU3r2CNIPGZlDU91/Av/8=",
+  "k7a102ef6857b": "jVVdc5swEPwvfmyqiE8DmsmDHDJN0nHr9B+cxAmIMTAShI47/e8dsLEN5KH3xDB72r29RfxZ1SD3kOL9u6nKFVt9WX1dGfhAYlB/oL5/Nyu2iqTtoMv4qSjn/FsPkzqvG0OLXFAQJWQHJK1uMC/u5dCm1mD5gtHuiac7ShU90rjjl3rkDw/zYwqBSUUaUDgeYqHrh8jmwNakIJBAqwbiM9j3IlzbjA4Vxnwb00t1kvNdR7td+Dw7TECZTJXbdgTrgPHuhXP+NleZ5IANKfLSjLx2EkTKYleu7aJHQ0eOgFmB+tyEoW17YhS76S3pbZo1qqI1ZkIWuonvhIzSaI5N0eQya0itK4HlGS4iJ7CBbbqF22ndEnWrCISAUMy9zgDLFPVEg+VK1Rv9O5wfuocDaiAlZGdoZLmBI67eUEqfl1qKQfhAMQqPPEck1qSxX+rJ4IRPaje8TUeUusRMXiDpMm5GZrk+TO1SHjqWO/fAZJCgJvvKNBeki4FnidNX8RLTk45wM++8DjbuDwDC27lCyp8XPppKNR1oJGndjoHx0A98xtNFukwDh8NFlhvCcoCmD/mtDCdSvu8xSu/Oli7sOX0S5Ih5gZfMysCN2GPszcEfGg4ERKpzpcYFCl+q6LOgdlg0RFRVM2q2g8B1GXVpebvsHx1/5Hx7c2XExS+vKV7vnqbr/85fP2OodDMKFyBcz2Oqi0NKQzVH57ohHcjsOmcCwpmbeERdYIoTG5Vtg5Ow4XoZK/bGh7tJeI+LLR9z7A0uTWtGZgme8E/pOKf4ZZrcDvVeQLk/N0h7DdJhnMcp3/LdjSs/OX+vVcf/u942fCCqUdJaVyrvb0aaQWsyKJrrL+LvPw=="
+ }
+}
