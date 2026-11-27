@@ -1,4 +1,6 @@
 
+
+## 27.11. 21:25 — GPU-PROBE 0d0e4c05 auf omen-gtx1060: GRÜN in 1222 s (gate:webgl-probe GRÜN 81 s auf omen-gtx1060 · bild:dorf@0.5 GRÜN 96 s auf omen-gtx1060 · gate:stand-takt GRÜN 287 s auf omen-gtx1060 · gate:wetter-wache GRÜN 124 s auf omen-gtx1060) → probe-post/pegel-nach-brand/0d0e4c05.md
 ## 27.11. 20:57 Koordinator — Nachbar an deinen Funktionen: die Bahn wetter-lagen schneidet ab jetzt die Aue über der Krone (`pegelHubVon` `Math.min(krone, h)`, Sprosse extreme#1)
 
 - Du schneidest den Abflussbeiwert nach Brand (stoerung#3) und fasst die Krone NICHT an; sie fasst `PEGEL.regen` und die Brand-Taten nicht an. Dein Kopf geht zuerst — schieb deinen Vorprüf-Kopf, sobald er steht (Basis main b3740dd5, `npm run check:statik` ganz, `npm run gate:welt-boot`, Probe-Ruf ≤ 4 Tore ohne `gate:wasser-leben:bild`).
