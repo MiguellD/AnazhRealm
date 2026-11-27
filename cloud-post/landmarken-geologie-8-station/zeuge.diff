@@ -1,0 +1,525 @@
+diff --git a/meisterkarte-quelle/punkte/stationen/k2-erleben.js b/meisterkarte-quelle/punkte/stationen/k2-erleben.js
+index cc8f5e1..714d5af 100644
+--- a/meisterkarte-quelle/punkte/stationen/k2-erleben.js
++++ b/meisterkarte-quelle/punkte/stationen/k2-erleben.js
+@@ -4,6 +4,13 @@
+ // aus dem Strom der Sitzung (richter-akte.cjs), an der dichtesten Pose, an der die Probe endet.
+ "use strict";
+ const { leiter } = require("./k2-same.js").geruest;
++// DIE TEILE EINER LEITER (Koordinator 27.11. 08:14, wegfindung: der Zeuge am Gerät als eigener Lauf derselben Sprosse — die 60-s-Regel
++// gilt je Teil): `probe.teile` der EINEN Probe aller Sprossen der Leiter (punkte.cjs fahreGruppe: je Teil ein Prozess in DERSELBEN Welt,
++// PUNKTE_TEIL „i/N“, der nächste nur nach `@@PUNKTE@@ TEIL WEITER`, EIN Urteil über die Ausgabe aller Teile)
++const mitTeilen = (n, stationen) => {
++    stationen[0].probe.teile = n;
++    return stationen;
++};
+ const { SAATEN } = require("./sitzung-seite.js");
+ const LEITERN = [];
+ 
+@@ -198,11 +205,227 @@ const LANDMARKE_AN = async (r, T, a) => {
+         Object.assign(w, { art: best.q.art, d: +best.q.d.toFixed(1), hoehe: +best.q.h.toFixed(2), durchlass: +T0[1].toFixed(4), durchlassRgb: T0.map((t) => +t.toFixed(4)), hinter: best.hinter, vorHimmel: best.hinter === "himmel" });
+         if (best.k) Object.assign(w, { c0: +best.k.c0.toFixed(4), sonne: +best.k.sonne.toFixed(3), albedo: best.k.albedo.map((a) => +a.toFixed(3)) });
+         if (best.punkt) Object.assign(w, { dHinter: best.dh, durchlassHinter: +r._luftDurchlass(auge, best.punkt)[1].toFixed(4) });
++        // FÜR DEN ZEUGEN AM GERÄT (a.zeugeBild, ZEUGE_MASKE): die Marke, das Auge und der Grund des Gesetzes beim Namen, ungerundet
++        if (a.zeugeBild && best.k)
++            w.zeugeBild = { marke: { x: best.q.x, z: best.q.z, fuss: best.q.fuss, h: best.q.h, d: best.q.d, art: best.q.art, seed: best.q.seed }, auge, hinter: best.hinter, punkt: best.punkt || null, k: { kontrast: best.k.kontrast, c0: best.k.c0, yMarke: best.k.yMarke, yGrund: best.k.yGrund, durchlass: best.k.durchlass } };
+     }
+     if (zeuge) Object.assign(w, zeuge);
+     return w;
+ };
+ 
++// ─────────── DER ZEUGE AM GERÄT (erleben.spieler.wegfindung#1, Koordinator 27.11. 04:5x) ───────────
++// |Kontrast Gesetz − Kontrast Pixel| ≤ 0,03 an ≥ 3 Saaten mit Bild und Maske. Der Weg der Maschine, kein zweiter: je Saat betritt die
++// Station die Welt mit dem Satz des Spielers wie `SAATEN` („neue welt saat <s>“, die Ankunft des Spiels setzt Stand und Blick),
++// schießt an der Kamera der Ankunft EIN Bild des Ausgabe-Pfads mit der Klassen-Maske der Werkbank (`/bild --klasse`, wahl 0, nurPixel,
++// Mittag · Sonne · Sommer: die Bühne des Bilds) und rechnet DANACH das Gesetz unter derselben Bühne (`LANDMARKE_AN`, `_landmarkeKontrast`).
++// Die Maske der Marke: die Pixel der Klasse (die Teilung des Schusses `__letzteTeilung`; die Marke in 1–3 km zeichnet der Welt-March
++// `feld-pass`, nah ihr Satz `f:felsturm|felsbogen`), deren Welt-Punkt (die Tiefe DESSELBEN Schusses `__letzteSpiegel`, `punkt`) im
++// Zylinder der Marke steht — der March und das Panorama tragen denselben Klassen-Namen, der Ort trennt sie. Der Grund: die Pixel um
++// den Punkt ein halbes Grad über dem Gipfel (wie das Gesetz: Himmel dort; ein Hang dahinter dort, wo er hinter der Marke sichtbar wird).
++// Der Kontrast am Pixel liest in DEMSELBEN Raum wie das Gesetz: lineare Leuchtdichte (Y nach Rec. 709) — das PNG zurück durch die
++// sRGB-Kurve (`srgbLin`, scripts/lib/abnahme-urteil.cjs) und die Tonkurve der Ausgabe (welt-licht.js `tonKurve`, Khronos PBR Neutral mit
++// Fuß, Schulter und dem Weg zu Weiß; die Parameter liest die Seite aus `AnazhRealm.BELICHTUNG` und `__weltLicht.tonStufen()`). Fail-closed:
++// kein Bild, keine Teilung, leere Maske, zu wenige Pixel der Marke oder des Grunds, gesättigte Pixel → ROT beim Namen.
++// (die Seite der Probe trägt nur Funktionen: Klasse und Mindestmaße als Funktionen). Die Marke in 1–3 km steht jenseits des
++// Cull-Radius NUR im Feld-Pass des Welt-Marchs, nie als Szenen-Objekt: EINE Klasse, ein Teil-Schuss (die Frist der Leiter)
++const ZEUGE_KLASSE = () => "^feld-pass$";
++const ZEUGE_MIN = () => ({ marke: 25, grund: 12, abstand: 0.03, saaten: 3 });
++// die Seite: die Saat betreten (der Satz des Spielers, wie `SAATEN`), die Kamera der Ankunft zurück; die Heimat merkt der erste Ruf
++const ZEUGE_HIN = async (r, T, arg) => {
++    const st = r.state;
++    const Z = (window.__zeugeWelten = window.__zeugeWelten || { heim: st.worldMeta && st.worldMeta.worldId, besucht: [], spieler: st.playerMesh ? st.playerMesh.visible : null });
++    if (!Z.heim) return { fehlt: "die Sitzung trägt keine Welt (worldMeta.worldId)" };
++    const vor = r.activeWorldGet();
++    r.processChatCommand("neue welt saat " + arg.saat);
++    if (r.activeWorldGet() === vor) return { fehlt: "der Satz „neue welt saat " + arg.saat + "“ erschuf keine Welt am Ort" };
++    Z.besucht.push(r.activeWorldGet());
++    if (!(await r.erwacht)) return { fehlt: "die Welt der Saat " + arg.saat + " erwachte nicht" };
++    // der Wechsel am Ort setzt einen NEUEN Zustand (`_weltAmOrt`): `st` von oben ist der der verlassenen Welt — wie `SAATEN` frisch lesen
++    // (GTX 27.11. 07:2x am b32c6773: „die Welt trägt die Saat <vorige> statt <diese>“ an allen drei Saaten, um eine versetzt)
++    const sn = r.state;
++    if (!sn.worldMeta || sn.worldMeta.seed !== arg.saat) return { fehlt: "die Welt trägt die Saat " + (sn.worldMeta && sn.worldMeta.seed) + " statt " + arg.saat };
++    r._genesisAnkunft();
++    r._loopCamera(performance.now());
++    const c = sn.camera;
++    return { kamera: [...c.position.toArray(), ...c.getWorldDirection(new T.Vector3()).multiplyScalar(20).add(c.position).toArray()], fov: c.fov };
++};
++// die Seite: die Heimat der Sitzung zurück (der Weg von „wechsle zu“ wie `SAATEN`), die Welten des Zeugen fallen
++const ZEUGE_HEIM = async (r) => {
++    const Z = window.__zeugeWelten;
++    if (!Z) return { zurueck: true, geloescht: 0 };
++    delete window.__zeugeWelten;
++    const zurueck = !Z.besucht.length || (r.switchToWorld(Z.heim, { reload: true }) && (await r.erwacht));
++    let fort = 0;
++    for (const w of Z.besucht) if (zurueck && r.deleteWorld(w)) fort++;
++    if (r.state.playerMesh && Z.spieler != null) r.state.playerMesh.visible = Z.spieler;
++    return { zurueck: !!zurueck && r.state.worldMeta.worldId === Z.heim, geloescht: fort };
++};
++// die Seite, NACH dem Schuss: das Gesetz unter der Bühne des Bilds (`gesetz` = LANDMARKE_AN mit zeugeBild), die Maske der Marke und der
++// Grund als Pixel-Listen des Bilds (Index y·W + x), die Parameter der Tonkurve. Die Projektion ist die Kamera DES Schusses (`vp`).
++const ZEUGE_MASKE = async (r, T, arg, gesetz) => {
++    const st = r.state;
++    const S = window.__letzteSpiegel, TL = window.__letzteTeilung;
++    if (!S || !S.tiefe || typeof S.punkt !== "function" || !S.vp) return { fehlt: "die Tiefe des Schusses (`__letzteSpiegel` der Werkbank /bild --klasse) fehlt" };
++    if (!TL || !TL.teil || !TL.W) return { fehlt: "die Teilung des Schusses (`__letzteTeilung` der Werkbank /bild --klasse) fehlt" };
++    const w = await gesetz(r);
++    if (w.fehlt) return { fehlt: w.fehlt };
++    if (w.kontrastFehlt) return { fehlt: "das Gesetz unter der Bühne des Bilds: " + w.kontrastFehlt };
++    const G = w.zeugeBild;
++    if (!G) return { fehlt: "unter der Bühne des Bilds trägt das Gesetz keine sichtbare Marke mit Kontrast (Ursache " + w.ursache + ")" };
++    // die Marke in 1–3 km steht NUR im Feld-Pass des Welt-Marchs (jenseits des Cull-Radius, zeuge.md der Bahn): zeichnet er nicht
++    // (`_weltMarchGezeichnet` = `_gpuComputeFaehig`, ohne WebGPU-Backend), fehlt sie im Bild — beim Namen, nie als leere Maske
++    if (typeof r._weltMarchGezeichnet !== "function" || !r._weltMarchGezeichnet()) return { fehlt: "der Welt-March zeichnet nicht (`_weltMarchGezeichnet` falsch: Backend ohne WebGPU-Compute) — die Marke in 1–3 km steht nur im Feld-Pass" };
++    const B = r.constructor.BELICHTUNG, WL = globalThis.__weltLicht;
++    if (!B || !B.weiss || !(B.schulter > 0) || !WL || typeof WL.tonStufen !== "function") return { fehlt: "die Tonkurve der Ausgabe als Zahl: `AnazhRealm.BELICHTUNG` (schulter, weiss) oder `__weltLicht.tonStufen` fehlt" };
++    if (B.kurve !== "CustomToneMapping" || st.renderer.toneMapping !== T.CustomToneMapping) return { fehlt: "die Tonkurve der Ausgabe ist nicht `tonKurve` (welt-licht.js): " + B.kurve + " / " + st.renderer.toneMapping };
++    const [W, H, teil, tiefe, tw, th, M] = [TL.W, TL.H, TL.teil, S.tiefe, S.tw, S.th, S.vp];
++    const auge = new T.Vector3().fromArray(S.auge);
++    const kameraAbstand = auge.distanceTo(new T.Vector3(G.auge.x, G.auge.y, G.auge.z));
++    if (!(kameraAbstand <= 0.05)) return { fehlt: "die Kamera des Bilds steht " + kameraAbstand.toFixed(2) + " m neben dem Auge des Gesetzes" };
++    const proj = (x, y, z) => {
++        const q = M[3] * x + M[7] * y + M[11] * z + M[15];
++        if (!(q > 0)) return null;
++        return [(((M[0] * x + M[4] * y + M[8] * z + M[12]) / q + 1) / 2) * W, ((1 - (M[1] * x + M[5] * y + M[9] * z + M[13]) / q) / 2) * H];
++    };
++    const tj = (x, y) => ((((y + 0.5) * th) / H) | 0) * tw + ((((x + 0.5) * tw) / W) | 0);
++    const m = G.marke, oben = m.fuss + m.h, R = Math.max(20, 1.5 * m.h);
++    // der Eintrag der Marke im Register ihres Chunks (`_landmarkeWurf`, `spawnArchitecture`): zeichnet ihr Feld im March?
++    let feld = "kein Eintrag im Register";
++    for (const l of r._landmarkeWurf ? r._landmarkeWurf.values() : [])
++        for (const e of l || [])
++            if (e && e.position && Math.hypot(e.position.x - m.x, e.position.z - m.z) < 1.5)
++                feld = !e._ziegelSlot ? "Eintrag ohne Feld-Slot" : r._weltFeldZeichnet(e._ziegelSlot) ? "ihr Feld zeichnet" : "ihr Feld-Slot zeichnet nicht";
++    // der Kasten der Marke im Bild: die Ecken ihres Zylinders projiziert
++    let [x0, y0, x1, y1] = [W, H, 0, 0];
++    for (const dx of [-R, R]) for (const dz of [-R, R]) for (const y of [m.fuss - 3, oben + 3]) {
++        const p = proj(m.x + dx, y, m.z + dz);
++        if (!p) continue;
++        [x0, y0, x1, y1] = [Math.min(x0, p[0]), Math.min(y0, p[1]), Math.max(x1, p[0]), Math.max(y1, p[1])];
++    }
++    [x0, y0, x1, y1] = [Math.max(0, Math.floor(x0)), Math.max(0, Math.floor(y0)), Math.min(W - 1, Math.ceil(x1)), Math.min(H - 1, Math.ceil(y1))];
++    if (!(x1 > x0 && y1 > y0)) return { fehlt: "die Marke " + m.art + "#" + m.seed + " steht nicht im Bild (Kasten leer)" };
++    const istMarke = new Uint8Array(W * H);
++    let nKlasse = 0, nMaske = 0;
++    for (let y = y0; y <= y1; y++)
++        for (let x = x0; x <= x1; x++) {
++            const p = y * W + x;
++            if (!teil[p]) continue;
++            nKlasse++;
++            const P = S.punkt(tj(x, y));
++            if (!P || Math.hypot(P.x - m.x, P.z - m.z) > R || P.y < m.fuss - 3 || P.y > oben + 3) continue;
++            istMarke[p] = 1;
++            nMaske++;
++        }
++    // das Innere der Maske (die Kante mischt im Bild Marke und Grund: Zeitliche Auflösung, Nach-Schärfe)
++    const marke = [];
++    for (let y = Math.max(1, y0); y <= Math.min(H - 2, y1); y++)
++        for (let x = Math.max(1, x0); x <= Math.min(W - 2, x1); x++) {
++            const p = y * W + x;
++            if (istMarke[p] && istMarke[p - 1] && istMarke[p + 1] && istMarke[p - W] && istMarke[p + W]) marke.push(p);
++        }
++    // der Grund wie das Gesetz: die Gerade zum Gipfel, ein halbes Grad gehoben; dort ein Fenster 9 × 5 Pixel ohne Marke (und ihren Saum)
++    const g = { x: m.x - auge.x, y: oben - auge.y, z: m.z - auge.z };
++    const gl = Math.hypot(g.x, g.y, g.z), fl = Math.hypot(g.x, g.z) || 1;
++    const el = Math.asin(g.y / gl) + (0.5 * Math.PI) / 180;
++    const pg = proj(auge.x + (g.x / fl) * Math.cos(el) * 5000, auge.y + Math.sin(el) * 5000, auge.z + (g.z / fl) * Math.cos(el) * 5000);
++    if (!pg) return { fehlt: "der Grund über dem Gipfel steht hinter der Kamera" };
++    const grund = [];
++    const himmel = G.hinter === "himmel";
++    for (let y = Math.round(pg[1]) - 2; y <= Math.round(pg[1]) + 2; y++)
++        for (let x = Math.round(pg[0]) - 4; x <= Math.round(pg[0]) + 4; x++) {
++            if (x < 1 || y < 1 || x > W - 2 || y > H - 2) continue;
++            const p = y * W + x;
++            if (istMarke[p] || istMarke[p - 1] || istMarke[p + 1] || istMarke[p - W] || istMarke[p + W]) continue;
++            const j = tj(x, y);
++            if (himmel) {
++                if (teil[p] || !(tiefe[j] >= 0.99999)) continue;
++            } else {
++                const P = S.punkt(j);
++                if (!P || Math.hypot(P.x - auge.x, P.z - auge.z) < m.d + 30) continue;
++            }
++            grund.push(p);
++        }
++    const pm = proj(m.x, m.fuss + m.h * 0.5, m.z);
++    return {
++        marke,
++        grund,
++        ton: { schulter: B.schulter, kappe: B.weiss.kappe, stufen: B.weiss.stufen, n: WL.tonStufen().n },
++        k: st.renderer.toneMappingExposure,
++        gesetz: G.k,
++        d: m.d,
++        h: m.h,
++        art: m.art,
++        hinter: G.hinter,
++        nKlasse,
++        nMaske,
++        kasten: [x0, y0, x1, y1],
++        mitte: pm ? pm.map((v) => Math.round(v)) : null,
++        ueber: pg.map((v) => Math.round(v)),
++        kameraAbstand: +kameraAbstand.toFixed(3),
++        feld,
++        W,
++        H,
++    };
++};
++// der Pixel-Leser (rein, Node): Y nach Rec. 709 in linearer Leuchtdichte (× Belichtung k, sie kürzt sich im Kontrast) je Liste, das PNG
++// zurück durch sRGB (`srgbLin` der Maschine, abnahme-urteil.cjs) und die Tonkurve (`tonKurve`, welt-licht.js: Fuß 6,25·x² unter 0,08 am
++// kleinsten Kanal, Schulter am größten ab `schulter`, darüber der Weg zu Weiß). `o.ohneTon`: die Mutante des Selbsttests liest die
++// sRGB-Werte als Licht (die Tonkurve ungerechnet). Ein Kanal ≥ 253 ist gesättigt (die Schulter ist dort nicht umkehrbar).
++const ZEUGE_PIXEL = (bild, marke, grund, ton, o = {}) => {
++    const lin = (u) => (u <= 10.31475 ? u / 3294.6 : ((u / 255 + 0.055) / 1.055) ** 2.4);
++    if (o.jeLin) return { jeLin: Array.from({ length: 256 }, (_, u) => lin(u)) };
++    const S = ton.schulter, d = 1 - S, mal = 2 ** ton.n, teil = 2 ** -ton.n;
++    const umkehr = (aus) => {
++        const m = Math.max(aus[0], aus[1], aus[2]);
++        let c1 = aus;
++        if (m >= S) {
++            const p = (d * d) / (1 - m) - d + S;
++            const s = Math.log2(Math.max(p, 1)) / ton.stufen;
++            const w = ton.kappe * (1 - 2 ** -(s * s));
++            c1 = aus.map((v) => ((v - w * m) / (1 - w)) * (p / m));
++        }
++        const xs = Math.max(0, Math.min(c1[0], c1[1], c1[2])) * teil;
++        const x = xs < 0.04 ? Math.sqrt(xs / 6.25) : xs + 0.04;
++        const sub = (x < 0.08 ? x - 6.25 * x * x : 0.04) * mal;
++        return c1.map((v) => v + sub);
++    };
++    const lies = (liste) => {
++        let s = 0, n = 0, satt = 0;
++        for (const p of liste) {
++            const i = p * 4, u = [bild.u8[i], bild.u8[i + 1], bild.u8[i + 2]];
++            if (u[0] >= 253 || u[1] >= 253 || u[2] >= 253) {
++                satt++;
++                continue;
++            }
++            const a = u.map(lin), c = o.ohneTon ? a : umkehr(a);
++            s += 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
++            n++;
++        }
++        return { y: n ? s / n : null, n, satt };
++    };
++    const [M, G] = [lies(marke), lies(grund)];
++    const kontrast = M.y != null && G.y > 0 ? Math.abs(M.y - G.y) / G.y : null;
++    return { yMarke: M.y, yGrund: G.y, kontrast, nMarke: M.n, nGrund: G.n, sattMarke: M.satt, sattGrund: G.satt };
++};
++// das Urteil des Zeugen (rein): je Saat { saat, fehlt } oder { saat, gesetz, pixel, d, hinter, … } → { gruen, zeile }
++const ZEUGE_URTEIL = (je, min) => {
++    const f = (x, n = 3) => (typeof x === "number" && Number.isFinite(x) ? String(+x.toFixed(n)).replace(".", ",") : "—");
++    const ab = (z) => Math.abs(z.gesetz - z.pixel);
++    const zeilen = je.map((z) =>
++        z.fehlt
++            ? z.saat + ": " + z.fehlt
++            : z.saat + " Gesetz " + f(z.gesetz) + " · Pixel " + f(z.pixel) + " · Abstand " + f(ab(z)) + " · d " + f(z.d, 0) + " m (" + z.hinter + ", " + z.art + ", Marke " + z.nMarke + " px, Grund " + z.nGrund + " px" +
++              (z.lMarke != null ? ", L Marke Gesetz " + f(z.gesetz_yMarke, 4) + " ↔ Pixel " + f(z.lMarke, 4) + ", L Grund " + f(z.gesetz_yGrund, 4) + " ↔ " + f(z.lGrund, 4) : "") + ")"
++    );
++    const fehlt = je.filter((z) => z.fehlt), weit = je.filter((z) => !z.fehlt && !(ab(z) <= min.abstand));
++    const gruen = je.length >= min.saaten && !fehlt.length && !weit.length;
++    const kopf = "der Zeuge am Gerät |Kontrast Gesetz − Kontrast Pixel| ≤ 0,03 an ≥ 3 Saaten mit Bild und Maske: ";
++    const zeile = gruen
++        ? kopf + "GRÜN an " + je.length + " Saaten — " + zeilen.join(" · ")
++        : kopf + (weit.length ? weit.length + " von " + je.length + " Saaten lesen am Pixel anders als das Gesetz (> 0,03, ein Befund am Spiel) — " : "") + (fehlt.length ? fehlt.length + " ohne Lesung — " : "") + (je.length < min.saaten ? "nur " + je.length + " Saaten — " : "") + zeilen.join(" · ");
++    return { gruen, zeile, fehlt: fehlt.length, weit: weit.length };
++};
++
+ // ═══════════════════════════════════════ Perspektive spieler ═══════════════════════════════════════
+ {
+     // ─────────── erleben.spieler.praesenz — Präsenz: der Leib antwortet ───────────
+@@ -561,10 +784,10 @@ const LANDMARKE_AN = async (r, T, a) => {
+     // PLANET_ERDE)` wie der Faden, voxel-worker.js:1159) und misst S5: die Mittags-Sonne je Saison-Wort (`_sonnenRichtung`, die Quelle von
+     // Licht und Himmel) und die Pol-Höhe der Sternfeld-Achse (`state.starField.rotation`) gegen die Breite des Ankers.
+     LEITERN.push(
+-        leiter({
++        mitTeilen(3, leiter({
+             leiter: "erleben.spieler.wegfindung",
+-            sek: 45,
+-            pfad: ["scripts/werkbank.cjs", "spec/profiband/haushalt.json", "stamm/vegetation-baum.js", "stamm/siedlung-satz.js", "stamm/siedlung-bewohner.js", "stamm/siedlung-wege.js", "stamm/bild-himmel.js", "welt-licht.js", "stamm/dirigent-takt.js", "stamm/gelaende-chunks.js", "voxel-worker.js", "planet-core.js", "stamm/feld-leben.js", "stamm/netz-portal.js", "gelaende-core.js", "stamm/bau-vorlagen.js", "stamm/gelaende-boden.js", "stamm/gelaende-fern.js", "stamm/gelaende-kollision.js", "stamm/studio-bruecke.js", "foundry-core.js", "phyto-core.js", "stamm/bild-sicht.js", "stamm/koerper-bewegung.js", "stamm/siedlung-ort.js"],
++            sek: 60,
++            pfad: ["scripts/werkbank.cjs", "spec/profiband/haushalt.json", "stamm/vegetation-baum.js", "stamm/siedlung-satz.js", "stamm/siedlung-bewohner.js", "stamm/siedlung-wege.js", "stamm/bild-himmel.js", "welt-licht.js", "stamm/dirigent-takt.js", "stamm/gelaende-chunks.js", "voxel-worker.js", "planet-core.js", "stamm/feld-leben.js", "stamm/netz-portal.js", "gelaende-core.js", "stamm/bau-vorlagen.js", "stamm/gelaende-boden.js", "stamm/gelaende-fern.js", "stamm/gelaende-kollision.js", "stamm/studio-bruecke.js", "foundry-core.js", "phyto-core.js", "stamm/bild-sicht.js", "stamm/koerper-bewegung.js", "stamm/siedlung-ort.js", "scripts/lib/abnahme-urteil.cjs", "scripts/lib/ausgabe-aufnahme.cjs", "stamm/bild-kosten.js", "stamm/dirigent-regler.js"],
+             welt: [{ wort: "gestirn_proben", ab: 5, was: "Gestirn-Lagen aus der Welt: die Mittags-Sonne je Saison-Wort und die Achse des Sternfelds" }],
+             sprossen: {
+                 1: {
+@@ -614,9 +837,34 @@ const LANDMARKE_AN = async (r, T, a) => {
+                     umfang: { verlangt: 100, einheit: "Saaten der Sitzung", wortlaut: "N = 100 Saaten × 10 Ziele", feld: "richter" },
+                 },
+             },
+-            seite: { SAATEN, LANDMARKE_AN },
++            seite: { SAATEN, LANDMARKE_AN, ZEUGE_KLASSE, ZEUGE_MIN, ZEUGE_HIN, ZEUGE_HEIM, ZEUGE_MASKE, ZEUGE_PIXEL, ZEUGE_URTEIL },
+             lauf: async function wegfindungLauf(H, P, L) {
+                 const path = require("path");
++                // DIE TEILE (Koordinator 27.11. 08:14; `mitTeilen` oben): 1 die Saaten der Sprosse 1 samt Karten-Zeuge · 2 NUR die Zeugen-Saaten am
++                // Gerät · 3 die Wiese und S2–S7. Teil 2 und 3 tragen die Sprossen des vorigen Teils aus der Ausgabe weiter (H.AUS: jeder Teil
++                // schreibt sie ganz); ohne PUNKTE_TEIL fährt die Probe alle drei in EINEM Prozess.
++                const teilT = /^([123])\/3$/.exec(process.env.PUNKTE_TEIL || "");
++                const teil = teilT ? +teilT[1] : 0;
++                const kopfDesBaums = () => {
++                    const g = require("child_process").spawnSync("git", ["rev-parse", "HEAD"], { encoding: "utf8", windowsHide: true });
++                    return g.status === 0 ? g.stdout.trim() : null;
++                };
++                const weiter = () => console.log("@@PUNKTE@@ TEIL WEITER");
++                if (teil > 1) {
++                    let vor = null;
++                    try {
++                        vor = JSON.parse(require("fs").readFileSync(H.AUS, "utf8"));
++                    } catch (e) {
++                        vor = { unlesbar: String((e && e.message) || e).split("\n")[0].slice(0, 120) };
++                    }
++                    if (vor.leiter !== P.leiter) L.zeile("wegfindung Teil " + teil + "/3: die Ausgabe des vorigen Teils fehlt (" + (vor.unlesbar || "Leiter " + vor.leiter) + ") — seine Sprossen bleiben ohne Ergebnis");
++                    else {
++                        Object.assign(L.j.sprossen, vor.sprossen || {});
++                        Object.assign(L.j.fehler, vor.fehler || {});
++                        L.j.zeilen.push(...(vor.zeilen || []));
++                        if (vor.wegZeuge) L.j.wegZeuge = vor.wegZeuge;
++                    }
++                }
+                 // DER PULS (Koordinator 27.11., der Deckel): neben jedem langen Ruf (die Saaten in EINEM Ruf, das Wachsen der Wiese in EINEM
+                 // `/umstellen`) liest die Station je ≤ 5 s den Stand der Seite (die Saat der Welt, die Ankunft, die Zahl der Chunks) und schreibt
+                 // ihn als Zeile — die Probe hört je Schritt ein Lebenszeichen, auch nach dem Deckel; ein Stand, der nicht kommt, steht beim Namen.
+@@ -632,6 +880,107 @@ const LANDMARKE_AN = async (r, T, a) => {
+                     }
+                     return ende;
+                 };
++                // DER ZEUGE AM GERÄT (ZEUGE_HIN · /bild --klasse · ZEUGE_MASKE · ZEUGE_PIXEL · ZEUGE_URTEIL) über den Karten-Zeugen `rec` (Teil 1):
++                // die Zeugen-Saaten, je EIN Bild samt Maske; GRÜN nur, wenn jede |Gesetz − Pixel| ≤ 0,03 liest
++                const zeugeAmGeraet = async (rec) => {
++                    const fs = require("fs");
++                    const { w, akte, wahl } = rec;
++                    const AU = require(path.resolve("scripts/lib/abnahme-urteil.cjs"));
++                    const Z = H.seite.ZEUGE_MIN();
++                    // die sRGB-Kurve des Lesers ist die der Maschine (abnahme-urteil `srgbLin`): ein Byte, das anders liest, bricht beim Namen
++                    const lin1 = H.seite.ZEUGE_PIXEL(null, [], [], null, { jeLin: true });
++                    if (lin1.jeLin.some((v, u) => Math.abs(v - AU.srgbLin(u)) > 1e-12)) return L.leser(1, "der Zeuge am Gerät: die sRGB-Kurve des Lesers ist nicht `srgbLin` der Maschine (scripts/lib/abnahme-urteil.cjs) · " + akte, s.je.length);
++                    const jeZ = [];
++                    const tZ = Date.now();
++                    let heimZ = null;
++                    // JEDE LÜCKE EINE ZEILE (zeuge2 27.11.: zwei Bilder auf der Platte, keine Zeile — die Lücke einer Saat schwieg bis zum Urteil)
++                    let tS = tZ, langS = 0;
++                    const fehltZ = (x) => {
++                        jeZ.push(x);
++                        L.zeile("wegfindung S1 Zeuge " + x.saat + ": fehlt nach " + (Date.now() - tS) + " ms — " + x.fehlt);
++                    };
++                    try {
++                        for (const [i, saat] of wahl.slice(0, Z.saaten).entries()) {
++                            if (i > 0) langS = Math.max(langS, (Date.now() - tS) / 1000);
++                            tS = Date.now();
++                            // je Saat ≈ 24 s an der GTX (zeuge2 27.11.: das Bild wartet, bis die gewechselte Welt steht, A9 — 717 Takte): die
++                            // Schranke ist die längste Saat bisher + 3 s (vor der ersten 17 + 3 s) — die Radeon trägt so alle drei in ihrem Teil
++                            if (L.rest() < (langS || 17) + 3) {
++                                fehltZ({ saat, fehlt: "die Frist der Leiter (Rest " + Math.round(L.rest()) + " s vor dem Schuss, je Saat bis " + Math.round(langS || 17) + " s)" });
++                                break;
++                            }
++                            const t0 = Date.now();
++                            const hin = await puls("wegfindung S1 Zeuge " + saat + " hin", L.ev("return await (" + H.seite.ZEUGE_HIN + ")(r, T, " + JSON.stringify({ saat }) + ");", 30));
++                            if (hin.fehlt) {
++                                fehltZ({ saat, fehlt: hin.fehlt });
++                                continue;
++                            }
++                            const tHin = Date.now() - t0;
++                            const k = hin.kamera;
++                            let b;
++                            try {
++                                b = await puls("wegfindung S1 Zeuge " + saat + " Bild", L.wb("/bild", { px: k[0], py: k[1], pz: k[2], lx: k[3], ly: k[4], lz: k[5], fov: hin.fov, w: 1920, h: 1080, wahl: 0, uhr: 0.5, wetter: "sunny", saison: "sommer", klasse: H.seite.ZEUGE_KLASSE(), nurPixel: true, datei: path.join(L.D, P.leiter + "-S1-zeuge-" + (i + 1) + ".png") }, 90));
++                            } catch (e) {
++                                fehltZ({ saat, fehlt: "kein Bild: " + String((e && e.message) || e).split("\n")[0].slice(0, 200) });
++                                continue;
++                            }
++                            const tBild = Date.now() - t0 - tHin;
++                            const m = await puls("wegfindung S1 Zeuge " + saat + " Maske", L.ev("return await (" + H.seite.ZEUGE_MASKE + ")(r, T, {}, (r) => (" + H.seite.LANDMARKE_AN + ")(r, T, { saat: r.state.worldMeta.seed, zeugeBild: true }));", 30));
++                            if (m.fehlt) {
++                                fehltZ({ saat, fehlt: m.fehlt, datei: b && b.datei });
++                                continue;
++                            }
++                            if (!(b && b.datei && fs.existsSync(b.datei))) {
++                                fehltZ({ saat, fehlt: "kein Bild auf der Platte (" + (b && b.datei) + ")" });
++                                continue;
++                            }
++                            if (m.marke.length < Z.marke) {
++                                fehltZ({ saat, fehlt: "zu wenige Pixel der Marke: " + m.marke.length + " im Inneren (Soll ≥ " + Z.marke + "; Maske " + m.nMaske + " von " + m.nKlasse + " Klassen-Pixeln im Kasten " + m.kasten.join("/") + ", " + m.art + " " + Math.round(m.d) + " m; " + m.feld + ")", datei: b.datei });
++                                continue;
++                            }
++                            if (m.grund.length < Z.grund) {
++                                fehltZ({ saat, fehlt: "zu wenige Pixel des Grunds (" + m.hinter + ") ½° über dem Gipfel: " + m.grund.length + " (Soll ≥ " + Z.grund + ", Punkt " + m.ueber.join("/") + ")", datei: b.datei });
++                                continue;
++                            }
++                            const bild = AU.pngLesen(fs.readFileSync(b.datei));
++                            if (bild.W !== m.W || bild.H !== m.H) {
++                                fehltZ({ saat, fehlt: "das Bild misst " + bild.W + "×" + bild.H + ", die Teilung " + m.W + "×" + m.H, datei: b.datei });
++                                continue;
++                            }
++                            const px = H.seite.ZEUGE_PIXEL(bild, m.marke, m.grund, m.ton);
++                            const satt = px.sattMarke + px.sattGrund;
++                            if (px.kontrast == null || px.sattMarke > 0.2 * m.marke.length || px.sattGrund > 0.2 * m.grund.length) {
++                                fehltZ({ saat, fehlt: "das Pixel ist nicht lesbar: Marke " + px.nMarke + " (gesättigt " + px.sattMarke + "), Grund " + px.nGrund + " (gesättigt " + px.sattGrund + ")", datei: b.datei });
++                                continue;
++                            }
++                            jeZ.push({
++                                saat,
++                                datei: b.datei,
++                                maske: b.klasse && b.klasse.maske,
++                                gesetz: m.gesetz.kontrast,
++                                pixel: px.kontrast,
++                                d: m.d,
++                                hinter: m.hinter,
++                                art: m.art,
++                                nMarke: px.nMarke,
++                                nGrund: px.nGrund,
++                                satt,
++                                gesetz_yMarke: m.gesetz.yMarke,
++                                gesetz_yGrund: m.gesetz.yGrund,
++                                lMarke: m.k > 0 ? px.yMarke / m.k : null,
++                                lGrund: m.k > 0 ? px.yGrund / m.k : null,
++                                ms: [tHin, tBild, Date.now() - t0 - tHin - tBild],
++                            });
++                            L.zeile("wegfindung S1 Zeuge " + saat + ": Bild " + b.datei + " · Maske " + (b.klasse && b.klasse.maske) + " · " + JSON.stringify(jeZ[jeZ.length - 1]).slice(0, 600) + " · Kasten " + m.kasten.join("/") + " · Mitte " + m.mitte + " · über dem Gipfel " + m.ueber + " · Klassen-Pixel " + m.nKlasse + ", Maske " + m.nMaske + " (" + m.feld + ") · Tonkurve " + JSON.stringify(m.ton) + " · k " + m.k);
++                        }
++                    } finally {
++                        heimZ = await puls("wegfindung S1 Zeuge heim", L.ev("return await (" + H.seite.ZEUGE_HEIM + ")(r, T);", 30)).catch((e) => ({ fehler: String((e && e.message) || e).split("\n")[0].slice(0, 160) }));
++                    }
++                    const U = H.seite.ZEUGE_URTEIL(jeZ, Z);
++                    L.zeile("wegfindung S1 Zeuge am Gerät in " + (Date.now() - tZ) + " ms (je Saat hin/Bild/Gesetz ms: " + jeZ.map((x) => (x.ms || []).join("/")).join(" · ") + ") · Heimweg " + JSON.stringify(heimZ) + " · " + U.zeile);
++                    if (!U.gruen) return L.leser(1, U.zeile + " — gemessen nach dem Gesetz " + w.anteil_landmarke + " (Kontrast Median " + w.kontrast_median + ") · " + akte, rec.n);
++                    L.gemessen(1, { anteil_landmarke: w.anteil_landmarke }, { erzeugt: rec.n, welt: { saaten: rec.n }, beleg: U.zeile, taeter: "sichtbare Landmarke ≥ 0,1 Kontrast im ersten Blick der Ankunft in 1–3 km: Anteil " + w.anteil_landmarke + " · " + U.zeile + " · " + akte });
++                };
+                 // S1 ZUERST (Koordinator 27.11., der Deckel): die Saaten verlassen die Welt der Sitzung und kehren heim — danach wächst die Wiese
+                 // EINMAL (`L.ort`, ihr Stand ist die Preis-Pose, an der der Rahmen nach dem Lauf nur noch ankommt). Bis hier wuchs sie zweimal:
+                 // vor den Saaten und still nach ihnen im Rahmen (Radeon: „Stille seit 15 s nach 74.3 s“).
+@@ -641,11 +990,12 @@ const LANDMARKE_AN = async (r, T, a) => {
+                 // nach `_genesisAnkunft`): die sichtbaren Landmarken im Kegel in 1–3 km, ihren Kontrast gegen den Grund (`_landmarkeKontrast`,
+                 // der Leser des Spiels) und den Durchlass (`_luftDurchlass`). Der Anteil der Adressen mit einer sichtbaren Marke ≥ 0,1 Kontrast
+                 // ist der Wert; unter dem Soll urteilt er ROT beim Namen, mit der Ursache je Adresse. Darüber entscheidet der Zeuge am Gerät
+-                // (|Kontrast Gesetz − Kontrast Pixel| ≤ 0,03 an ≥ 3 Saaten mit Bild und Maske) — er hat noch keinen Leser: die Sprosse
+-                // bleibt dort beim Namen offen. DER ZEUGE DER KARTE: in jeder betretenen Welt kam der
++                // (|Kontrast Gesetz − Kontrast Pixel| ≤ 0,03 an ≥ 3 Saaten mit Bild und Maske, `ZEUGE_*` oben): die ersten drei Saaten mit
++                // sichtbarer Marke noch einmal betreten, je EIN Bild samt Klassen-Maske, das Gesetz unter der Bühne des Bilds, der Kontrast
++                // am Pixel in linearer Leuchtdichte; GRÜN nur, wenn jede Saat ≤ 0,03 liest, sonst ROT mit Zahl je Saat. DER ZEUGE DER KARTE: in jeder betretenen Welt kam der
+                 // Spieler am Stand und mit der Gier des Gesetzes an (`_ankunft`), sonst ROT beim Namen; der Zeuge des Wurfs liest das
+                 // Register des Werfers in der warmen Welt (`_landmarkeWurf`).
+-                await L.je(1, async () => {
++                if (teil <= 1) await L.je(1, async () => {
+                     const v = P.sprossen[1].umfang.verlangt;
+                     const t1 = Date.now();
+                     const heim = await puls("wegfindung S1 die warme Welt", L.ev("return await (" + H.seite.LANDMARKE_AN + ")(r, T, { saat: r.state.worldMeta.seed, zeuge: true });", 20));
+@@ -689,8 +1039,47 @@ const LANDMARKE_AN = async (r, T, a) => {
+                     if (ohne.length) return L.leser(1, "Kontrast ≥ 0,1 der Landmarke gegen ihren Grund: an " + ohne.length + " von " + je.length + " Adressen ungelesen — " + ohne[0].kontrastFehlt + "; gemessen die Obergrenze (sichtbar) " + w.anteil_sichtbar + " und der Durchlass min " + w.durchlass_min + " · " + akte, s.je.length);
+                     if (w.anteil_landmarke < P.sprossen[1].soll[0].wert)
+                         return L.gemessen(1, { anteil_landmarke: w.anteil_landmarke }, { erzeugt: s.je.length, welt: { saaten: s.je.length }, taeter: "sichtbare Landmarke ≥ 0,1 Kontrast im ersten Blick der Ankunft in 1–3 km: Anteil " + w.anteil_landmarke + " · ohne: zu schwach " + w.kontrast_zu_klein + ", verdeckt " + w.verdeckt + ", keine im Kegel " + w.keine_im_kegel + " · die Erde trägt " + w.erde_erwartet + " · " + akte });
+-                    L.leser(1, "der Zeuge am Gerät |Kontrast Gesetz − Kontrast Pixel| ≤ 0,03 an ≥ 3 Saaten mit Bild und Maske: kein Leser (die Station schießt kein Bild der Ankunft mit der Maske der Marke) — gemessen nach dem Gesetz " + w.anteil_landmarke + " (Kontrast Median " + w.kontrast_median + ") · " + akte, s.je.length);
++                    // DER ZEUGE AM GERÄT (ZEUGE_HIN · /bild --klasse · ZEUGE_MASKE · ZEUGE_PIXEL · ZEUGE_URTEIL): die ersten Saaten der Sprosse
++                    // mit sichtbarer Marke an der Ankunft, je EIN Bild samt Maske; GRÜN nur, wenn jede |Gesetz − Pixel| ≤ 0,03 liest
++                    // DER ZEUGE AM GERÄT: die ersten Saaten mit sichtbarer Marke an der Ankunft — ohne Teile gleich hier, in Teilen in Teil 2;
++                    // Teil 1 legt den Karten-Zeugen dieser Fahrt (Stempel, Kopf, Sitzung, Ausgabe, 50/50) in die Seite UND in die Ausgabe
++                    const Z = H.seite.ZEUGE_MIN();
++                    const wahl = s.je.filter((x) => x.z && x.z.sichtbarTreffer === 1 && x.z.kontrast != null).map((x) => x.saat);
++                    if (wahl.length < Z.saaten) return L.leser(1, "der Zeuge am Gerät: nur " + wahl.length + " von " + s.je.length + " Saaten tragen an der Ankunft eine sichtbare Marke mit Kontrast (verlangt ≥ " + Z.saaten + ") · " + akte, s.je.length);
++                    const rec = { stempel: Date.now() + "-" + process.pid, kopf: kopfDesBaums(), sitzung: process.env.PUNKTE_SITZUNG_LOG || null, aus: String(H.AUS), probe: process.env.PUNKTE_PROBE || null,
++                        karte: { besucht: besucht.length, anders: anders.length, verlangt: v }, wahl: wahl.slice(0, Z.saaten), n: s.je.length, w, akte };
++                    if (teil === 0) return zeugeAmGeraet(rec);
++                    const gelegt = await L.ev("window.__wegZeuge = " + JSON.stringify(rec) + "; return window.__wegZeuge.stempel;", 10);
++                    if (gelegt !== rec.stempel) throw new Error("der Karten-Zeuge liegt nicht in der Seite (" + gelegt + ")");
++                    L.j.wegZeuge = { stempel: rec.stempel, kopf: rec.kopf, karte: rec.karte, wahl: rec.wahl };
++                    L.zeile("wegfindung Teil 1/3: Karten-Zeuge " + besucht.length + "/" + v + " gleich am Kopf " + String(rec.kopf).slice(0, 8) + " · Zeugen-Saaten " + rec.wahl.join(", ") + " → Teil 2 (Stempel " + rec.stempel + ")");
+                 });
++                // TEIL 2 — NUR die Zeugen-Saaten am Gerät, fail-closed: GRÜN nur am Karten-Zeugen DIESER Fahrt (derselbe Stempel in Seite und
++                // Ausgabe von Teil 1, dieselbe Sitzung und Ausgabe, derselbe Kopf des Baums, 50/50 gleich) — sonst UNGEMESSEN beim Namen
++                if (teil === 2 && !L.j.sprossen[1] && !L.j.fehler[1])
++                    await L.je(1, async () => {
++                        const rec = await L.ev("const z = window.__wegZeuge || null; delete window.__wegZeuge; return z;", 10);
++                        const im = L.j.wegZeuge || null;
++                        const kopf = kopfDesBaums();
++                        const k = (rec && rec.karte) || {};
++                        const grund = !rec
++                            ? "die Seite trägt keinen Karten-Zeugen (window.__wegZeuge fehlt — eine andere Welt als in Teil 1?)"
++                            : !im
++                              ? "die Ausgabe von Teil 1 trägt keinen Stempel des Karten-Zeugen"
++                              : rec.stempel !== im.stempel
++                                ? "der Karten-Zeuge der Seite (" + rec.stempel + ") ist nicht der von Teil 1 (" + im.stempel + ")"
++                                : rec.aus !== String(H.AUS) || rec.sitzung !== (process.env.PUNKTE_SITZUNG_LOG || null) || rec.probe !== (process.env.PUNKTE_PROBE || null)
++                                  ? "der Karten-Zeuge stammt aus einer anderen Fahrt (Sitzung " + rec.sitzung + ", Probe " + rec.probe + ")"
++                                  : !kopf || rec.kopf !== kopf
++                                    ? "der Karten-Zeuge las am Kopf " + rec.kopf + ", der Baum steht auf " + kopf
++                                    : !(k.verlangt === P.sprossen[1].umfang.verlangt && k.besucht === k.verlangt && k.anders === 0)
++                                      ? "der Karten-Zeuge las nicht " + P.sprossen[1].umfang.verlangt + "/" + P.sprossen[1].umfang.verlangt + " gleich (" + JSON.stringify(k) + ")"
++                                      : null;
++                        if (grund) throw new Error("UNGEMESSEN — der Zeuge am Gerät urteilt nur am Karten-Zeugen dieser Fahrt: " + grund);
++                        L.zeile("wegfindung Teil 2/3: Karten-Zeuge " + k.besucht + "/" + k.verlangt + " gleich (Stempel " + rec.stempel + ", Kopf " + kopf.slice(0, 8) + ") · Zeugen-Saaten " + rec.wahl.join(", "));
++                        return zeugeAmGeraet(rec);
++                    });
++                if (teil === 1 || teil === 2) return weiter();
+                 const tOrt = Date.now();
+                 await puls("wegfindung die Wiese wächst", L.ort("wiese", "ego"));
+                 L.preisPose("wiese", "ego");
+@@ -785,8 +1174,54 @@ const LANDMARKE_AN = async (r, T, a) => {
+                 await L.je(7, async () => L.umfang(7, 1, "die Sitzung hält eine Saat (" + z.saat + ") und einen Planeten — kein Nachbarplanet, keine Bahn zwischen Planeten"));
+ 
+             },
+-        })
++        }))
+     );
++    // DER SELBSTTEST DES ZEUGEN AM GERÄT (punkte.cjs selbsttest, die Wand PROBEN der Sprosse 1): ein gestelltes Bild — Marke und Grund in
++    // linearem Licht durch die Tonkurve der Ausgabe VORWÄRTS (welt-licht.js `tonKurve` als Zahl: Fuß, Schulter, Weg zu Weiß; die Parameter
++    // von `BELICHTUNG`: schulter 0,76, weiss 0,14/2, am Tag n = 0), sRGB und eine Dither-Rundung wie `_ausgabeDither` — der Leser
++    // (`ZEUGE_PIXEL`) muss den Kontrast zurückgeben, das Urteil (`ZEUGE_URTEIL`) GRÜN; die gepflanzte Mutante liest die sRGB-Werte als Licht
++    // (die Tonkurve ungerechnet) und muss ROT urteilen. Die ferne Marke im Dunst steht vor hellem Himmel: beide über der Schulter, dort
++    // staucht die Kurve den Unterschied (gestellt: Kontrast 0,333, der Leser liest 0,343 — die 8-Bit-Stufe an der Schulter, Himmel
++    // 0,95 —, die Mutante 0,019); die dunkle Marke unter der Schulter 0,650 ↔ 0,651, die tiefe vor hellem Himmel 0,925 ↔ 0,926.
++    {
++        const S1 = LEITERN[LEITERN.length - 1].find((st) => st.staffel === 1);
++        const TON = { schulter: 0.76, kappe: 0.14, stufen: 2, n: 0 };
++        const tonVor = (c) => {
++            const d = 1 - TON.schulter;
++            const x = Math.min(...c) * 2 ** -TON.n;
++            const c1 = c.map((v) => v - (x < 0.08 ? x - 6.25 * x * x : 0.04) * 2 ** TON.n);
++            const sp = Math.max(...c1), p = Math.max(sp, TON.schulter);
++            const aus = c1.map((v) => v * (sp >= TON.schulter ? (1 - (d * d) / (p + d - TON.schulter)) / p : 1));
++            const s = Math.log2(Math.max(sp, 1)) / TON.stufen, w = TON.kappe * (1 - 2 ** -(s * s)), mx = Math.max(...aus);
++            return aus.map((v) => v * (1 - w) + mx * w);
++        };
++        const srgb = (v) => (v <= 0.0031308 ? 12.92 * v : 1.055 * v ** (1 / 2.4) - 0.055);
++        const Y = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
++        const gestellt = (cM, cG) => {
++            const [W, H] = [24, 16], u8 = new Uint8Array(W * H * 4), marke = [], grund = [];
++            for (let p = 0; p < W * H; p++) {
++                const ist = p % W < 12, o = tonVor(ist ? cM : cG), dither = ((p * 7) % 5) / 5 - 0.4;
++                for (let k = 0; k < 3; k++) u8[p * 4 + k] = Math.max(0, Math.min(255, Math.round(255 * srgb(o[k]) + dither)));
++                (ist ? marke : grund).push(p);
++            }
++            return { bild: { W, H, u8 }, marke, grund, wahr: Math.abs(Y(cM) - Y(cG)) / Y(cG) };
++        };
++        const FAELLE = [gestellt([0.9, 1.0, 1.1], [1.3, 1.5, 1.8]), gestellt([0.3, 0.27, 0.22], [0.62, 0.8, 1.05]), gestellt([0.12, 0.11, 0.1], [1.3, 1.5, 1.8])];
++        const lese = (o) => FAELLE.map((f, i) => ({ saat: "probe-" + (i + 1), gesetz: f.wahr, pixel: ZEUGE_PIXEL(f.bild, f.marke, f.grund, TON, o).kontrast, d: 2000, hinter: "himmel", art: "felsturm", nMarke: f.marke.length, nGrund: f.grund.length }));
++        const AD = "[linse-gpu] amd/rdna-3.5 Radeon 890M (Probe)";
++        const alsJ = (U) => ({ hw: AD, sprossen: { 1: U.gruen ? { art: "gemessen", werte: { anteil_landmarke: 0.9 }, erzeugt: 50, welt: { saaten: 50 }, beleg: U.zeile } : { art: "leser", fehlt: U.zeile, erzeugt: 50 } } });
++        const MIN = ZEUGE_MIN();
++        const ehrlich = lese({});
++        S1.proben.push(
++            { name: "ZEUGE ehrlich: drei gestellte Saaten (Dunst vor hellem Himmel über der Schulter, dunkle Marke, tiefe Marke) → GRÜN", j: alsJ(ZEUGE_URTEIL(ehrlich, MIN)), gruen: true },
++            { name: "ZEUGE gepflanzte Mutante: die Tonkurve ungerechnet (sRGB als Licht) → ROT", j: alsJ(ZEUGE_URTEIL(lese({ ohneTon: true }), MIN)), gruen: false, zahl: /Leser fehlt: der Zeuge am Gerät .*lesen am Pixel anders als das Gesetz .*probe-1 Gesetz 0,333 · Pixel 0,019/ },
++            { name: "ZEUGE gepflanzt: das Pixel liest 0,031 über dem Gesetz → ROT", j: alsJ(ZEUGE_URTEIL(ehrlich.map((z, i) => (i ? z : { ...z, pixel: z.gesetz + 0.031 })), MIN)), gruen: false, zahl: /1 von 3 Saaten lesen am Pixel anders/ },
++            { name: "ZEUGE kein Bild → ROT beim Namen", j: alsJ(ZEUGE_URTEIL([{ saat: "probe-1", fehlt: "kein Bild: /bild warf" }, ...ehrlich.slice(1)], MIN)), gruen: false, zahl: /1 ohne Lesung .*probe-1: kein Bild/ },
++            { name: "ZEUGE leere Maske → ROT beim Namen", j: alsJ(ZEUGE_URTEIL([{ saat: "probe-1", fehlt: "zu wenige Pixel der Marke: 0 im Inneren (Soll ≥ 25)" }, ...ehrlich.slice(1)], MIN)), gruen: false, zahl: /zu wenige Pixel der Marke: 0/ },
++            { name: "ZEUGE nur zwei Saaten → ROT", j: alsJ(ZEUGE_URTEIL(ehrlich.slice(0, 2), MIN)), gruen: false, zahl: /nur 2 Saaten/ },
++            { name: "ZEUGE gesättigt: der Leser zählt den Grund 255 nicht", j: alsJ(ZEUGE_URTEIL(((p) => [{ saat: "probe-1", ...(p.nGrund === 0 && p.sattGrund === FAELLE[0].grund.length ? { fehlt: "das Pixel ist nicht lesbar: Grund gesättigt " + p.sattGrund } : { gesetz: 0, pixel: 1 }) }, ...ehrlich.slice(1)])(ZEUGE_PIXEL({ ...FAELLE[0].bild, u8: FAELLE[0].bild.u8.map((v, i) => (FAELLE[0].grund.includes(i >> 2) && i % 4 < 3 ? 255 : v)) }, FAELLE[0].marke, FAELLE[0].grund, TON)), MIN)), gruen: false, zahl: /Grund gesättigt/ }
++        );
++    }
+ 
+     // ─────────── erleben.spieler.zeit — Die Zeit des Spielers: Dehnen, Raffen, Springen ───────────
+     // S1 misst die Sonnenbahn der Welt (`_sonnenRichtung`, die Quelle von Licht und Himmel) über den Tag je Saison-Wort gegen die Ephemeride
