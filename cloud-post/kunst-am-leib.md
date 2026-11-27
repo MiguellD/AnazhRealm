@@ -13,7 +13,15 @@
   gate:mensch-zuege 34 s · bild:dorf@0.5 86 s (ABNAHME GRÜN, Inhalt bauSatz 17,0 %) · gate:webgl-probe 56 s. Kopf 3 wartet auf den
   Koordinator (Kandidat 2 setzen, Blatt an der OMEN).
 
-## kunst#2 — das Werkstück trägt die Hand (WIP über Kopf 3, der flache Kopf 4 folgt mit dem vollen Prüf-Satz)
+## kunst#2 — das Werkstück trägt die Hand: Kopf 5 fc0958fb auf main b3740dd5 (trägt Kopf 4 adc95977 des Koordinators)
+
+- Post 21:27 (Kopf 4 adc95977 heilt den Daten-Vertrag v7, kein eigener Kopf 4) und 21:41 (die Klassen-Zeile gehört in jeden
+  Kandidaten) gelesen: kunst#2 steht auf adc95977, Kandidat 3 trägt `auge-klasse-3.diff`, am pm-Baum `punkte.cjs liste` Exit 0.
+- Vor dem Schub am Baum des Kopfs: check:statik · gate:welt-boot · gate:daten-contract (koerper 94d4f918958c byte-treu) ·
+  gate:fachwerk-contract · gate:asset-contract · gate:koerper-kern (75/75) · gate:betriebsgesetz — alle Exit 0; Kreatur-Linse mit
+  Stoppuhr 1010 · 808 · 663 s, je SELBST-TEST GRÜN (54 Täter); merge-tree Exit 0 gegen main, werk-am-ort-2 173e764b und
+  sprache-dialekt 3c73df4a (beide fassen stamm/siedlung-bewohner.js an). PROBE-TAG OK; die Probe-Liste trägt, was der Zug für
+  stamm/siedlung-bewohner.js verlangt (pruefbuehne-licht, weltbild-frost:echt, studio-begehen) und gate:stand-takt.
 
 - **Geschnitten (EIN Chokepoint je Gesetz, additiv):** schmiede `gueteAnteil(rezeptId, ov, hand)` — die EINE Güte eines
   Schmiede-Geräts mal 1 − `handFehler(hand)`; das Band: der Fehler fällt wie 1/Können (das Potenzgesetz der Übung, Newell &
