@@ -133,3 +133,5 @@ w28-nacht-boden-licht karte2.erleben.bild.nacht#1
 w28-wander-spieltag karte2.leben.tiere.wanderung#2
 # z797 (main 1336dcb8, 27.11. 02:23): Sprache: Namen und Sätze aus den Saaten der Kulturen
 w28-sprache-saaten-2 karte2.mensch.kultur.sprache#2
+# z798 (main 031f4700, 27.11. 02:55): z798 gelandet 03:17 (w28-bahn-klima-2 72d56e4e → main 031f4700): Lücken-Sprosse bahn-klima#2 im main, Buchungs-Läufe an Radeon und OMEN folgen
+w28-bahn-klima-2 karte2.planet.kopplung.bahn-klima#2
