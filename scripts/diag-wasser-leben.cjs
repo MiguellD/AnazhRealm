@@ -532,6 +532,8 @@ function urteil(b) {
             else {
                 if (!(g.kantenVerhaeltnis <= S.kantenVerhaeltnis) || !(z.ruhig.kantenDichte <= S.kantenRuhig)) rot("B2 ZEBRA", g);
                 if (!(g.sturmVerhaeltnis >= S.sturm)) rot("B3 STURM", g);
+                // die Mutante „Wind ohne Wirkung" (derselbe Sturm-Frame, der Stoff liest den Wind nicht) fällt unter dieselbe Schwelle
+                if (!(g.sturmWindlos < S.sturm)) rot("B3 SELBSTTEST: der Stoff ohne Wind fällt nicht", g.sturmWindlos);
                 if (!(a.ruhig.hellAnteil <= S.hellRuhig)) rot("B1 SCHAUM", a.ruhig);
                 if (!(a.schnelle.hellAnteil >= S.schaumSchnelle)) rot("B1 LEER", a.schnelle);
             }
@@ -817,6 +819,7 @@ function selbsttest() {
             uhr3600: { ruhig: { kantenDichte: 1 }, schnelle: { kantenDichte: 21 } },
             kantenVerhaeltnis: 1.05,
             sturmVerhaeltnis: 1.8,
+            sturmWindlos: 1,
             fragmente: 1,
             lecks: [],
             kamm: { ruhig: { hellAnteil: 0, pixel: 147456 }, sturm: { hellAnteil: 0.024, pixel: 147456 } },
@@ -987,6 +990,12 @@ function selbsttest() {
         ["B1 SCHAUM", ["bild.uhr60.ruhig.hellAnteil=", 0.6]],
         ["B1 LEER", ["bild.uhr60.schnelle.hellAnteil=", 0.02]],
         ["B3 STURM", ["bild.sturmVerhaeltnis=", 1]],
+        // die Mutante ohne Wind: fällt sie nicht unter die Schwelle, misst B3 nicht den Wind; fehlt sie, lief sie nicht
+        ["B3 SELBSTTEST", ["bild.sturmWindlos=", 1.5]],
+        ["B3 SELBSTTEST", ["bild.sturmWindlos"]],
+        // B3 an der Radeon (seegang-spiegel 3): der erste Ruf der Probe las eine nie gezeichnete Himmels-Sicht (die Pipeline von Ψ_ms
+        // übersetzte noch) — der Fluss ohne Spiegel, sturmVerhaeltnis 1,196; heute treibt die Probe den Takt und nennt ihn beim Namen
+        ["B: B HIMMEL", ["bild", { fehler: "B HIMMEL: die Himmels-Sicht der Probe stand nach 200 Takten nicht (Tafeln frisch false, Himmels-Sicht v0)" }]],
         ["B2 ZEBRA:", ["bild.uhr3600.ruhig.kantenDichte=", 63.4]],
         ["B LEER", ["bild.uhr60.schnelle.pixel=", 0]],
         // B7 an w4-licht-baustein e09ca48e: `_horizontSicht` baute den Wasser-Punkt erst in ihrem Zweig — 10 Lecks, u. a.

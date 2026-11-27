@@ -1435,6 +1435,24 @@ async function wasserBild(o = {}) {
         r._ensureSkyEnvironment(true);
     };
     himmelMittag(0.5, 0.5);
+    // DER HIMMEL DER PROBE STEHT, ehe sie misst (B3 an der Radeon, seegang-spiegel 3): das Wasser spiegelt die Himmels-Sicht der
+    // Tafeln (`_wasserBlick` → `himmelFarbe`), und die zeichnet `_atmoTakt` erst, wenn ihre Pipelines stehen (`_atmoZeichne` false →
+    // zurück, der NÄCHSTE Takt zeichnet; Ψ_ms übersetzt an der Radeon nach dem Boot noch). Die Probe TREIBT den Takt wie die des
+    // Regens, bis die Tafeln frisch sind und die Himmels-Sicht die Sonne der Probe trägt. Bis hier las der erste Ruf eine nie
+    // gezeichnete Himmels-Sicht (Version 0): der ruhige Fluss ohne Spiegel, Mittel 1,5 statt 5,5 von 255, Kanten 0,069 statt 0,209,
+    // sturmVerhaeltnis 1,196 statt 1,989 — ein zweiter Ruf derselben Seite maß wie die GTX 1060 (1,97). Steht er nach 200 Takten
+    // nicht, wirft die Probe beim Namen (B HIMMEL), nie misst sie ohne ihn.
+    const A = r._atmoLutBau();
+    const himmelSteht = () =>
+        !!A.tafelnFrisch && String(A.himmelSchluessel).startsWith(`${st._sonne ? st._sonne.winkel : 0}:`);
+    let himmelTakte = 0;
+    for (; himmelTakte < 200 && !himmelSteht(); himmelTakte++) {
+        await sleep(30);
+        r._applyDayNightToScene();
+    }
+    const himmelFehler = himmelSteht()
+        ? null
+        : `B HIMMEL: die Himmels-Sicht der Probe stand nach ${himmelTakte} Takten nicht (Tafeln frisch ${!!A.tafelnFrisch}, Himmels-Sicht v${A.himmelVersion}, Schlüssel ${A.himmelSchluessel})`;
     // Das Gefühl der Welt ruht (uEmotion hebt den Schaum, der Takt schreibt es aus dem Feld, je nach Boot-Dauer).
     const gefuehlAlt = U.emotion ? U.emotion.value : null;
     if (U.emotion) U.emotion.value = 0;
@@ -1587,7 +1605,7 @@ async function wasserBild(o = {}) {
             U.sunDir.value.copy(alt[4]);
         }
     };
-    let a, b, sturm, kamm, sonne;
+    let a, b, sturm, windlos, kamm, sonne;
     // B7: das Fragment-WGSL, das r184 dem Bogen baut (sein Render-Objekt mit dem Wasser-Stoff) — die Leck-Linse liest es
     const fragmente = new Set();
     const holen = renderer._objects.get;
@@ -1602,12 +1620,17 @@ async function wasserBild(o = {}) {
     // Welle L trug das Material keinen Wind — dann ist beides dasselbe Bild.
     const windAlt = U.wind ? U.wind.value : null;
     try {
+        if (himmelFehler) return { fehler: himmelFehler }; // der finally stellt die Welt zurück
         // zwei Uhren, die keine ganze Zahl von Phasen trennt (sonst verglichen beide dieselbe Phase)
         if (U.wind) U.wind.value = 0.06;
         a = await mess(o.t0 || 61.3);
         b = await mess(o.t1 || 3601.7);
         if (U.wind) U.wind.value = 1.0;
         sturm = await mess(o.t0 || 61.3);
+        // DIE MUTANTE „WIND OHNE WIRKUNG" (B3 SELBSTTEST): derselbe Sturm-Frame mit einem Stoff, den der Wind nicht bewegt (der Wind
+        // bleibt 0,06) — ihr Verhältnis muss unter der Schwelle bleiben, sonst misst B3 etwas anderes als den Wind
+        if (U.wind) U.wind.value = 0.06;
+        windlos = await mess(o.t0 || 61.3);
         if (U.wind) kamm = { ruhig: await kammMess(0.06), sturm: await kammMess(0.8) };
         if (U.wind && U.sunDir) sonne = await sonneMess();
     } finally {
@@ -1639,6 +1662,9 @@ async function wasserBild(o = {}) {
         kantenVerhaeltnis: R(a.schnelle.kantenDichte > 0 ? b.schnelle.kantenDichte / a.schnelle.kantenDichte : 0),
         // der Sturm am ruhigen Fluss: Kanten-Dichte bei Wind 1,0 gegen 0,06 (dieselbe Uhr)
         sturmVerhaeltnis: R(a.ruhig.kantenDichte > 0 ? sturm.ruhig.kantenDichte / a.ruhig.kantenDichte : 0),
+        // … dasselbe Verhältnis der Mutante ohne Wind (B3 SELBSTTEST), und die Takte, bis der Himmel der Probe stand
+        sturmWindlos: R(a.ruhig.kantenDichte > 0 ? windlos.ruhig.kantenDichte / a.ruhig.kantenDichte : 0),
+        himmelTakte,
         fragmente: [...fragmente],
         // die Weißkappe (B8): der Anteil der See, den der Schaum hebt, in der Flaute und bei Wind 0,8
         kamm: kamm && {
