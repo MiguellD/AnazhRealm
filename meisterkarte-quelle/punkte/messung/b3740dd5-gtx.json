@@ -1,7 +1,7 @@
 {
  "sha": "b3740dd5566793ae66152d955e5a55d9c272884c",
  "geraet": "gtx",
- "zeit": "2026-11-27T22:19:50.600Z",
+ "zeit": "2026-11-27T22:23:29.196Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "profiband.K4#1": {
@@ -1653,6 +1653,70 @@
    },
    "zeit": "2026-11-27T22:19:50.600Z",
    "abdruck": "55183cc3768b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.fahrzeug.lenker#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 181.1 s · S1 warf: eine Spielstunde Verkehr nicht erreicht: 76.2 von 2500000000000 s in 8565 Takten, 171.9 s Wand (20.1 ms je Takt)",
+   "exit": 0,
+   "minuten": 3.02,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 181.1 s · S1 warf: eine Spielstunde Verkehr nicht erreicht: 76.2 von 2500000000000 s in 8565 Takten, 171.9 s Wand (20.1 ms je Takt)",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 181.3,
+   "fremd": {
+    "s": 184.6,
+    "takte": 85,
+    "fremdS": 71.72,
+    "kerne": 0.389,
+    "fensterKerne": 0.825,
+    "namen": [
+     [
+      "bash.exe sk/wacht6.sh",
+      10.52
+     ],
+     [
+      "bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \"",
+      9.64
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      6.44
+     ]
+    ],
+    "dienerS": 41.92,
+    "diener": [
+     [
+      "System",
+      20.75
+     ],
+     [
+      "dwm.exe",
+      9.53
+     ]
+    ],
+    "geraetS": 116.63,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      84.69
+     ],
+     [
+      "svchost.exe",
+      27.41
+     ],
+     [
+      "svchost.exe -k UnistackSvcGroup -s WpnUserService",
+      1.53
+     ]
+    ],
+    "eigenS": 287.58,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-27T22:23:29.196Z",
+   "abdruck": "1fee50cfa72d",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
