@@ -1043,30 +1043,34 @@ async function wasserGraben(tor) {
             throw new Error("der Zeiger ist nach dem Klick nicht gefangen: die Attrappe von requestPointerLock griff nicht (der Hörer des Spiels las einen anderen Stand)");
     };
     const zeigerLos = () => page.evaluate(() => (window.__zeigerDerProbe && document.pointerLockElement ? (document.exitPointerLock(), 1) : 0));
-    // die Ufer-Punkte am Fluss nächst Genesis (die Saaten der Bahn: je ein Punkt des Laufs, nie im See)
+    // die Ufer-Punkte am Fluss nächst Genesis (die Saaten der Bahn: je ein Punkt des Laufs, nie im See); `graben` am Fluss der Mess-Wiese
+    // im warmen Ring, je Saat ein Punkt stromab (nächst Genesis: 1,6 km, 2 912 Takte, Radeon 27.11.)
+    const nurGraben = tor.arg[1] === "graben";
+    const anker = nurGraben ? await page.evaluate(async () => (await window.__wasserOrte({})).fluss) : null;
     const SAATEN = [11, 23, 37, 51, 73];
-    const punkte = await page.evaluate((saaten) => {
+    const punkte = await page.evaluate((saaten, anker) => {
         const r = window.anazhRealm;
-        const g = typeof r._genesisMitte === "function" ? r._genesisMitte() : r.state.playerMesh.position;
+        const g = anker || (typeof r._genesisMitte === "function" ? r._genesisMitte() : r.state.playerMesh.position);
         const fn = window.__wasserFlussNah(r, g.x, g.z);
-        if (!fn.p) return { fehler: "kein Fluss nächst Genesis" };
+        if (!fn.p) return { fehler: anker ? "kein Fluss an der Mess-Wiese" : "kein Fluss nächst Genesis" };
         const rv = fn.fluesse.find((f) => f.points.includes(fn.p));
         const k0 = rv.points.indexOf(fn.p);
         return saaten.map((s, i) => {
             let x = (s * 2654435761) >>> 0;
             x ^= x >>> 13;
-            let k = k0 + (i - 2) * 9 + ((x % 5) - 2);
+            let k = anker ? k0 + 2 + i : k0 + (i - 2) * 9 + ((x % 5) - 2);
             if (k < 1) k = 1 + (1 - k) + 40;
             if (k > rv.points.length - 2) k = rv.points.length - 2 - (k - rv.points.length) - 40;
             k = Math.max(1, Math.min(rv.points.length - 2, k));
             const a = rv.points[k];
             return { saat: s, k, a: { x: a.x, z: a.z }, seite: x & 1 ? 1 : -1 };
         });
-    }, SAATEN);
+    }, SAATEN, anker);
     if (punkte.fehler) throw new Error(punkte.fehler);
-    const graben = async (P, abstand, sicht) => {
+    const graben = async (P, abstand, sicht, ganz) => {
+        const tG = Date.now();
         const g = await page.evaluate(
-            async (P, abstand, sicht) => {
+            async (P, abstand, sicht, ganz) => {
                 const r = window.anazhRealm;
                 const st = r.state;
                 const { p: q, vor: b } = window.__wasserFlussNah(r, P.a.x, P.a.z);
@@ -1090,16 +1094,21 @@ async function wasserGraben(tor) {
                 // DIE WELT STEHT am Graben: das EINE Einschwingen (`__weltStehtNach` hält den Regler, solange sie schwingt — ein atmender
                 // Regler weckt die Takte ohne Ende), sein Deckel beim Namen. Bis 30.10. eine eigene Schleife ohne gehaltenen Regler und
                 // mit stiller 30-s-Frist: auch nach 2 m Weg 119–151 Takte (Radeon 379e5f56)
-                const takte = await window.__weltStehtNach();
+                // `graben` ab dem 2. Graben: nur Chunks und Wasser-Sheets (der Fege-Takt der Streu hielt je Edit 175–416 Takte)
+                const takte = ganz ? await window.__weltStehtNach() : await (async () => {
+                    let n = 0;
+                    while (n < 300 && (r._weltOffen().chunks || (st.pendingWaterIso && st.pendingWaterIso.size))) n++, await new Promise((f) => requestAnimationFrame(f));
+                    return n;
+                })();
                 window.__gp = { px, pz };
                 const ziel = () => window.__zielen({ x: px, y: r._voxelSurfaceY(px, pz), z: pz });
                 await ziel();
                 const o = { px: +px.toFixed(2), pz: +pz.toFixed(2), krone: +krone.toFixed(2), sicht, takte };
-                if (sicht !== "first") return Object.assign(o, { spieler });
+                // Third prüft nur Bau und Blüte am Fadenkreuz (sonst abbau statt graben)
                 const stand = [];
                 for (const w of [0, 15, -15, 30, -30, 45, -45, 60, -60, 90, -90]) {
                     if (w) (spieler = stellen(w)), await ziel();
-                    const rot = window.__abnahmeUrteil(window.__abnahmeMessen({})).rot.filter((u) => !u.feld.startsWith("bild."));
+                    const rot = sicht !== "first" ? [] : window.__abnahmeUrteil(window.__abnahmeMessen({})).rot.filter((u) => !u.feld.startsWith("bild."));
                     const bau = r._pickArchitectureAtCrosshair();
                     if (bau && bau.entry) rot.push({ grund: "Bauwerk am Fadenkreuz " + (bau.entry.type || bau.entry.id) });
                     if (r._ernteZiel()) rot.push({ grund: "Blüte am Fadenkreuz" });
@@ -1111,13 +1120,16 @@ async function wasserGraben(tor) {
             },
             P,
             abstand,
-            sicht
+            sicht,
+            ganz
         );
+        const tSteht = Date.now();
         // der Zeiger gefangen wie beim Spieler, ehe die Spur auf den Klick wartet (sein Klick ist kein Graben-Klick)
         await zeigerFangen();
         // je präsentiertem Bild die gezeichneten Wasser-Flächen über ±4,5 m (je Netz die oberste, wie wasser-linse `wasserGraben`)
         await page.evaluate(() => {
             const r = window.anazhRealm;
+            const st = r.state;
             const span = r._voxelChunkConfig(0).span;
             const G = window.__gp;
             const flaechen = (x, z) => {
@@ -1151,21 +1163,41 @@ async function wasserGraben(tor) {
             window.__gSpur = [];
             window.__gT0 = null;
             window.__gVor = messen();
+            // DER AKT DES SPIELERS: unter dem Mess-Halt verweigert das Spiel jeden Welt-Akt (`_weltaktGehalten`, der Klick grub nie) —
+            // getaut für GENAU den Akt, zurück mit dem Edit
+            const E = () => (st.worldMeta && st.worldMeta.voxelEdits ? st.worldMeta.voxelEdits.length : 0);
+            const halt = { uhr: st.weatherEffectTime, n0: E(), zu: false };
+            const zu = () => halt.zu || ((halt.zu = true), (st.weatherEffectTime = halt.uhr));
+            window.__gHalt = halt;
             window.addEventListener("mousedown", () => window.__gT0 == null && (window.__gT0 = performance.now()), { once: true, capture: true });
-            // DAS ENDE DER SPUR ist ein Ereignis (`__gFertig`: das letzte Bild vor 3 s nach dem Klick), nie eine Uhr danach
+            // DAS ENDE DER SPUR ist ein Ereignis (`__gFertig`): Edit steht, Welt ruht, Wasser 6 Bilder gleich — sonst 3 s; ohne Edit 0,5 s
             window.__gFertig = new Promise((fertig) => {
+                let gleich = 0;
+                let letzt = -1;
                 const f = () => {
-                    if (window.__gT0 != null && performance.now() - window.__gT0 < 3000) (window.__gSpur.push([+(performance.now() - window.__gT0).toFixed(1), messen()]), requestAnimationFrame(f));
-                    else if (window.__gT0 == null) requestAnimationFrame(f);
-                    else fertig(window.__gSpur.length);
+                    if (window.__gT0 == null) return requestAnimationFrame(f);
+                    const t = performance.now() - window.__gT0;
+                    const n = E() - halt.n0;
+                    if (n > 0) zu();
+                    const m = messen();
+                    window.__gSpur.push([+t.toFixed(1), m]);
+                    gleich = m.nass === letzt ? gleich + 1 : 0;
+                    letzt = m.nass;
+                    const ruht = n > 0 && !r._weltOffen().chunks && !(st.pendingWaterIso && st.pendingWaterIso.size) && gleich >= 6;
+                    if (t < 3000 && !ruht && !(n === 0 && t > 500)) return requestAnimationFrame(f);
+                    zu();
+                    fertig({ bilder: window.__gSpur.length, edit: n, ms: +t.toFixed(1), ruht });
                 };
                 requestAnimationFrame(f);
             });
+            st.weatherEffectTime = 0;
         });
         await klick();
-        await warte(2000);
+        const tKlick = Date.now();
+        // `graben` ohne Schuss (Staffel 1 liest keinen; er wartete 2,4–13 s je Edit), Staffel 2 urteilt das Bild 2 s nach dem Klick
+        if (!nurGraben) await warte(2000);
         g.bild = [];
-        const frei = !g.stand || !g.stand[g.stand.length - 1].rot.length;
+        const frei = !nurGraben && (!g.stand || !g.stand[g.stand.length - 1].rot.length);
         if (frei)
             try {
                 const url = await page.evaluate(async () => {
@@ -1177,13 +1209,22 @@ async function wasserGraben(tor) {
             } catch (e) {
                 g.bildFehler = String((e && e.message) || e).split("\n")[0].slice(0, 200);
             }
-        // die Spur endet 3 s nach dem Klick: auf ihr Ende warten (bis 30.10. 1,2 s Uhr nach dem Bild, das selbst Zeit trug); die
-        // Frist 4 s fängt nur einen Klick, den kein mousedown erreichte — dann bleibt die Spur leer, ROT beim Namen (`leer`)
-        await Promise.race([page.evaluate(() => window.__gFertig), warte(4000)]);
-        const sp = await page.evaluate(() => ({ spur: window.__gSpur, vor: window.__gVor, verb: window.anazhRealm.state.player._mausVerb }));
+        // das Ende der Spur; 4 s fängt einen Klick ohne mousedown (ROT `leer`); danach steht der Halt
+        const ende = await Promise.race([page.evaluate(() => window.__gFertig), warte(4000).then(() => null)]);
+        const sp = await page.evaluate(() => {
+            const H = window.__gHalt;
+            if (H && !H.zu) (H.zu = true), (window.anazhRealm.state.weatherEffectTime = H.uhr);
+            return { spur: window.__gSpur, vor: window.__gVor, verb: window.anazhRealm.state.player._mausVerb };
+        });
         const end = sp.spur.length ? sp.spur[sp.spur.length - 1][1].nass : 0;
         const voll = sp.spur.find((x) => x[1].nass >= 0.9 * end && end > sp.vor.nass);
+        // ein Lebenszeichen je Schritt (s ab Beginn): Welt steht, Klick, Ende
+        const s = (t) => +((t - tG) / 1000).toFixed(1);
         const z = Object.assign({ saat: P.saat, abstand }, g, {
+            edit: ende ? ende.edit : null,
+            spurMs: ende ? ende.ms : null,
+            ruht: ende ? ende.ruht : null,
+            schritte: { steht: s(tSteht), klick: s(tKlick), ende: s(Date.now()) },
             verb: sp.verb,
             bilder: sp.spur.length,
             nassVor: sp.vor.nass,
@@ -1193,7 +1234,7 @@ async function wasserGraben(tor) {
             ueberMax: Math.max(0, ...sp.spur.map((x) => x[1].ueber)),
             ueberMaxM: Math.max(0, ...sp.spur.map((x) => x[1].ueberM)),
         });
-        console.log("  GRABEN " + JSON.stringify({ sicht, saat: z.saat, abstand, verb: z.verb, bild: z.bild.join("+"), nassVor: z.nassVor, nassEnde: z.nassEnde, gefuelltMs: z.gefuelltMs, doppeltMax: z.doppeltMax, ueberMax: z.ueberMax, bilder: z.bilder }));
+        console.log("  GRABEN " + JSON.stringify({ sicht, saat: z.saat, abstand, verb: z.verb, edit: z.edit, bild: z.bild.join("+"), nassVor: z.nassVor, nassEnde: z.nassEnde, gefuelltMs: z.gefuelltMs, spurMs: z.spurMs, doppeltMax: z.doppeltMax, ueberMax: z.ueberMax, bilder: z.bilder, takte: z.takte, s: z.schritte }));
         return z;
     };
     // (d) die Ferne, dann (b) der Damm ZUERST (w4-stationen-schnell-b; GTX b4bcf19c 64,1 s): ihr Fluss ist der der Mess-Wiese (90 m von
@@ -1208,8 +1249,9 @@ async function wasserGraben(tor) {
         if (window.__wetterSetzen("sunny") !== "sunny") throw new Error("das Wetter der Probe gilt nicht: sunny (es gilt " + st.weather + ")");
         return (r._naesseTakt(1e6), 1);
     });
-    const fluss = await page.evaluate(async () => (await window.__wasserOrte({})).fluss);
-    for (const [teil, ferne] of [["ferne", true], ["damm", false]])
+    // DER GRABEN ALLEIN (`graben`, gelaende.K2#1): nur (a) — der Wurf der Ferne (d) beendete die Probe, ehe (a) grub
+    const fluss = nurGraben ? null : await page.evaluate(async () => (await window.__wasserOrte({})).fluss);
+    for (const [teil, ferne] of nurGraben ? [] : [["ferne", true], ["damm", false]])
         try {
             erg[teil] = await page.evaluate((f, ferne) => window.__wasserDamm({ fluss: f, ferne }), fluss, ferne);
         } catch (e) {
@@ -1231,10 +1273,10 @@ async function wasserGraben(tor) {
             [erg.third, erg.ego] = [{ graeben: [], fehler }, { graeben: [], fehler }];
             console.log("  (a) FEHLER " + fehler);
         }
-        for (const [teil, sicht, idx] of erg.third ? [] : [["third", "third", [0, 2]], ["ego", "first", [1]]]) {
+        for (const [teil, sicht, idx] of erg.third ? [] : nurGraben ? [["third", "third", [0, 2]]] : [["third", "third", [0, 2]], ["ego", "first", [1]]]) {
             const liste = [];
             try {
-                for (const i of idx) for (const abstand of [1, 3]) liste.push(await graben(punkte[i], abstand, sicht));
+                for (const i of idx) for (const abstand of [1, 3]) liste.push(await graben(punkte[i], abstand, sicht, !nurGraben || !liste.length));
                 erg[teil] = { graeben: liste };
             } catch (e) {
                 erg[teil] = { graeben: liste, fehler: String((e && e.message) || e).split("\n")[0] };
