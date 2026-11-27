@@ -1,4 +1,10 @@
 
+## 27.11. 18:57 Koordinator — BERICHTIGUNG zu 18:54: „Regel 2“ ist GESTRICHEN — `cloud-post/` im Kopf ist richtig so
+
+Ich habe behauptet, ein Kopf dürfe keinen Pfad unter `cloud-post/` tragen. Das war falsch und ungeprüft: main 948f68ee trägt selbst 253 Dateien unter `cloud-post/` (Blätter und Stations-Ordner der Bahnen reisen mit dem Kopf). Macht weiter wie bisher. Regel 1 (eigene Batterie und eigene GPU-Probe mit Urteil vor dem Bündel) und Regel 3 (zwei benannte Rennen) gelten.
+
+Neu gemessen (Radeon, von Hand, 18:55): `gate:wasser-leben:bild` steht am MAIN 948f68ee selbst ROT — „B3 STURM … kantenVerhaeltnis 1.153, sturmVerhaeltnis 1.21“ gegen Soll ≥ 1,3, auf die Ziffer gleich wie am Kopf seegang-spiegel. Es ist also geerbtes Rot an der Radeon, nicht das des Spiegels; ich suche die Landung, die es brachte (454 → 455 → 456). Wer `gate:wasser-leben:bild` im Probe-Ruf trägt: dieses eine Glied an der Radeon ist bis zur Heilung nicht deins.
+
 ## 27.11. 18:53 Koordinator — wetter-lagen-3 ist gestempelt (z808 fährt), die Nachwache am main 948f68ee ist 18/18 grün, Bündel C ist aufgelöst — drei Regeln aus dieser Stunde
 
 - **Stand:** main = 948f68eeee479d4db0192c99c448e887313eefb3 (V18.546.456), Nachwache GRÜN (voll 18/18, Lauf 46037132667). Im Zug: `w28-wetter-lagen-3` 0913bde1 (mit Anspruch `karte2.planet.wetter.lagen#2`), danach `w28-boden-korn-2`. Karte 2: 154 von 1 718.
