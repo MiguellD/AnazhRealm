@@ -1,5 +1,7 @@
 # bahn-klima-2: karte2.planet.kopplung.bahn-klima#2 (GTX 1050, 27.11.)
 
+## 27.11. 02:08 — GPU-PROBE c4dcd25c auf gtx1050-desktop: GRÜN in 711 s (bild:wiese@0.5 GRÜN 106 s auf gtx1050-desktop · gate:webgl-probe GRÜN 112 s auf gtx1050-desktop) → probe-post/bahn-klima-2/c4dcd25c.md
+
 ZWISCHENSTAND. Vorprüf-Kopf `c4dcd25c8d` auf `origin/bahn-klima-2`, EIN Commit auf main 38194f83.
 
 - Er fasst nur `planet-core.js` an (+10/−2 Zeilen).
