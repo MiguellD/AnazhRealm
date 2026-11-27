@@ -1,13 +1,13 @@
 {
   "stand": "2026-11-27",
-  "kopf": "eef726c7",
-  "version": "V18.546.450",
+  "kopf": "52937c92",
+  "version": "V18.546.451",
   "skala": "2.0",
   "summe": 219,
   "max": 330,
   "maschine": {
-    "kopf": "eef726c7",
-    "zeit": "2026-11-27T11:02:02.984Z",
+    "kopf": "52937c92",
+    "zeit": "2026-11-27T11:09:16.515Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -3794,7 +3794,7 @@
           "punkte": 1,
           "staffel": "1 = eine Bewegungsart an einem Gerät in ≥ 3 von 4 Sitzungen ohne Frame > 100 ms · 2 = 0 Frames > 100 ms und ≤ 1 % > 33 ms über Gehen und Fahrt (mit Sicht-Wechsel, Einsteigen) an beiden Geräten",
           "messung": "`werkbank haenger 60 --regler frei --wandern bahn` plus Fahrt-Bahn, 4 Sitzungen je Gerät; jeder Frame > 100 ms beim Namen (`scripts/lib/haenger-linse.cjs`). Der Regler ist der des Spielers (R8): ohne Angabe fährt `haenger` voll; `--wandern kreis` kennt der Kopf nicht.",
-          "beleg": "Maschine: Gehen 58 Bilder · max 92.38 ms · 81.03 % > 33 ms · Fahrt 43 Bilder · max 150.54 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 81.03 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 150.54), 100.00 % > 33 ms an eef726c7 radeon · Gehen 78 Bilder · max 83.36 ms · 21.79 % > 33 ms · Fahrt 35 Bilder · max 183.33 ms · 91.43 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 21.79 % > 33 ms | Fahrt: 7 Bild(er) > 100 ms (max 183.33), 91.43 % > 33 ms an eef726c7 gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an eef726c7: Last: Referenz f 1,381 (Faden 1,381 · alle Kerne 1,148; vor 107,1/297,5 ms, nach 115,3/289,6 ms, Ruhe 83,5/259,2 ms seit 2026-11-16) · fremd: node.exe --expose-gc wald-beweis2.cjs alt 120 0,9216;300,9 · profiband.K4#2 gtx: ROT: Gehen 76 Bilder · max 91.67 ms · 26.32 % > 33 ms · Fahrt 45 Bilder · max 133.38 ms · 95.56 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 26.32 % > 33 ms | Fahrt: 6 Bild(er) > 100 ms (max 133.38), 95.56 % > 33 ms an eef726c7",
+          "beleg": "Maschine: gehalten: Gehen 58 Bilder · max 92.38 ms · 81.03 % > 33 ms · Fahrt 43 Bilder · max 150.54 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 81.03 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 150.54), 100.00 % > 33 ms an eef726c7 radeon · gehalten: Gehen 78 Bilder · max 83.36 ms · 21.79 % > 33 ms · Fahrt 35 Bilder · max 183.33 ms · 91.43 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 21.79 % > 33 ms | Fahrt: 7 Bild(er) > 100 ms (max 183.33), 91.43 % > 33 ms an eef726c7 gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an eef726c7: Last: Referenz f 1,381 (Faden 1,381 · alle Kerne 1,148; vor 107,1/297,5 ms, nach 115,3/289,6 ms, Ruhe 83,5/259,2 ms seit 2026-11-16) · fremd: node.exe --expose-gc wald-beweis2.cjs alt 120 0,9216;300,9 · profiband.K4#2 gtx: Konsum seit der Messung geändert (R6: stamm/bild-himmel.js, stamm/dirigent-kern.js) — zuletzt an eef726c7: Last: Referenz f 1,202 (Faden 1,202 · alle Kerne 1,165; vor 93,3/226,3 ms, nach 103,4/256,2 ms, Ruhe 88,6/219,9 ms seit 2026-11-26) · fremd: bash.exe sk/wacht5.sh 6,1 CPU-s · Claude.exe --type=gpu-pro",
           "schlupfloch": "Hänger in ungemessene Übergänge legen (Sicht-Wechsel, Einsteigen, Tor): die Bahn enthält jeden Übergang, jeder Frame zählt; den Regler auf voll stellen, um den Spieler-Takt zu meiden: R8 fährt den Regler des Spielers.",
           "aenderung": "Gemessen 0 → 1 (M29, e5003509, GTX, Regler des Spielers): kein Schnitt, die Messung am Kopf; nach R6 (fahrt-takt 36ef06e6) 22.10. 1 → 0; an b0b2d8ed gemessen (M34) 22.10. 0 → 1.; nach R6 (stadt-takt, fahrt-takt-Folge-Morphs, 16dd81d0) 23.10. 1 → 0.",
           "maschine": true
@@ -4388,8 +4388,8 @@
     "art": {
       "linse": 1,
       "ungemessen": 11,
-      "rot": 1,
-      "anderes": 36
+      "rot": 0,
+      "anderes": 37
     }
   },
   "ohneHebel": [
@@ -4606,7 +4606,7 @@
     },
     {
       "stand": "2026-11-27",
-      "kopf": "eef726c7",
+      "kopf": "52937c92",
       "summe": 219,
       "max": 330,
       "skala": "2.0",
@@ -4614,7 +4614,7 @@
     }
   ],
   "text": {
-    "titel": "MEISTERKARTE 2.0 des Ultiversums — Stand 27.11.2026, Kopf main eef726c7 (V18.546.450)",
+    "titel": "MEISTERKARTE 2.0 des Ultiversums — Stand 27.11.2026, Kopf main 52937c92 (V18.546.451)",
     "einleitung": [
       "Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md — sie ist bindend.",
       "",
