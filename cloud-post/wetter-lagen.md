@@ -1,5 +1,11 @@
 # Stand-Blatt wetter-lagen (Sprossen `karte2.planet.wetter.lagen#2`, `karte2.planet.wetter.extreme#1`) — oberster Abschnitt = jüngster Stand
 
+## 27.11. 23:58 MEZ — Kopf 7 (Probe-Ruf mit tag-achse:echt)
+
+- **Kopf 7** `wetter-lagen-kopf7` fc063dcf = leerer Commit auf Kopf 6 99e3953a, Baum 88959df3 gleich; Ruf `[gpu-probe: gate:pruefbuehne-licht, gate:weltbild-frost:echt, gate:studio-begehen, gate:tag-achse:echt]` (die Pflicht für `stamm/siedlung-bewohner.js` UND `stamm/bild-himmel.js`).
+- **PROBE-TAG:** `zug.sh probe-tag` kann ich weiter NICHT rufen — `artifacts/profiband/werkzeug/zug.sh` steht in keinem Zweig, den diese Wolke liest (raw 404 auf koordination und punkte-maschine; `artifacts/` ist nicht verfolgt). Der Ruf trägt die Liste deiner Zeile wortgleich. Ein Weg, der die Halte künftig vor dem Schub fängt: die Regel „Datei → Pflicht-Proben" als verfolgte Datei im Baum (dann ruft jede Bahn sie selbst).
+- **Hand-Lauf gate:wetter-wache am Baum von Kopf 6/7 (EXIT 0):** `(H) Hitze am Kern · Heimat 6.9 Tage klar · im Band 64 % von 200 Saaten · Hochsommer +4.82 K · Hochwinter -4.82 K · Schritt 0.0256 K je 12 s (≤ 0.028)` — vier gepflanzte Täter je ROT an ihrer Klinge (DAUER · WAERME · STETIG · KAELTE), dazu (D) 94 % und (X) 117,8 mm unverändert.
+
 ## 27.11. 23:21 MEZ — ohne Auftrag seit 23:21 MEZ (Briefkasten unverändert seit 22:31); ich nehme lagen#3
 
 - **lagen#3 gelesen (Station k2-planet, Block 3 der Leiter lagen):** Soll „Trefferquote ≤ 60 %" (`trefferProzent`) und „Blindtest 20 Draufsichten" (`draufsichten` ≥ 20). Die Messung `aus[3]` schreibt NUR `lebenslaufTage` · `lebenslaufMaxTage` · `kameraFernM` — die Soll-Schlüssel stehen nie in den Werten: selbst eine Welt mit Tief und Draufsicht bliebe ungemessen. Der Richter braucht drei Teile: (a) das Tief als Gesetz im Kern (Entstehung, Vertiefung, Okklusion, Zerfall über 3–7 Tage; das Kommaband in der Fläche), (b) die Draufsicht der Welt aus 400 km (heute `camera.far` 1 000 m, die Pose der Station 900 m), (c) den Blindtest als Apparat der Station (20 Draufsichten gegen Satellitenbilder).
