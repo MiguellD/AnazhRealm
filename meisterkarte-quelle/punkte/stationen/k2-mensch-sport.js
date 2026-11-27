@@ -736,6 +736,78 @@ const UEBUNG = async (r, T, arg) => {
     };
 };
 
+// DER LEIB ZEIGT SEIN KÖNNEN (kunst S1, koerper LEIB_SATZ.koennen · `leibKunst`): je Kunst (Werk · Zweikampf · Brett) der Meister
+// (Können ≥ 1) und der Anfänger (< 0,5) der Stadt — der höchste und der niedrigste ihrer Kunst, `b.uebung` — über
+// `_bewohnerGemuet` im Akt der Kunst an das Rig eines nahen Leibs der Stadt (`_animateHumanoidRig`, 3 Zyklen des Stands à 30 Hz).
+// Der Zug ist der Anteil des Tuns an der Schulter (das Rig mit ↔ ohne `leibStandTun`), das Schwanken die Hüfte. Je Paar: Züge, CV
+// des Ausschlags je Seite, Teilbewegungen je Zug, Hüfte (SD, mrad); dazu die Pose des Blicks auf den nächsten nahen Leib im Akt
+// einer Kunst, 3 m vor ihm, Augenhöhe
+const KUNST = async (r, T, arg) => {
+    const KC = window.__koerperCore;
+    const U = r.constructor.LEBENSLAUF && r.constructor.LEBENSLAUF.uebung;
+    if (!KC || !KC.LEIB_SATZ || !KC.LEIB_SATZ.koennen || typeof KC.leibStandTun !== "function" || !U) return { fehler: "der Kern trägt kein Gesetz des Könnens am Leib (koerper LEIB_SATZ.koennen · leibStandTun)" };
+    const L = [];
+    for (const S of (r._bewohnerSiedlungen || new Map()).values()) for (const b of S.liste || []) L.push(b);
+    const nah = L.filter((b) => b.leib && b.leib.userData && b.leib.userData.rig && b.leib.userData.rig.hips && b.leib.userData.rig.armL);
+    if (!nah.length) return { fehler: "kein naher Leib mit Rig in der Stadt" };
+    const rig = nah[0].leib.userData.rig;
+    const FPS = 30, N = Math.round(3 * KC.STAND.zyklus * FPS);
+    const mw = (a) => a.reduce((s, x) => s + x, 0) / (a.length || 1);
+    const sdv = (a) => Math.sqrt(mw(a.map((x) => (x - mw(a)) ** 2)));
+    const zeige = (akt, b) => {
+        const gem = r._bewohnerGemuet({ akt, rolle: b.rolle, krank: false, uebung: b.uebung, leib: null });
+        const sig = [[], []], hz = [], roh = KC.leibStandTun;
+        for (let i = 0; i < N; i++) {
+            r._animateHumanoidRig(rig, i / FPS, 0, false, false, gem);
+            const mit = [rig.armL.shoulder.rotation.x, rig.armR.shoulder.rotation.x];
+            hz.push(rig.hips.rotation.z);
+            KC.leibStandTun = () => null;
+            try {
+                r._animateHumanoidRig(rig, i / FPS, 0, false, false, gem);
+            } finally {
+                KC.leibStandTun = roh;
+            }
+            sig[0].push(rig.armL.shoulder.rotation.x - mit[0]);
+            sig[1].push(rig.armR.shoulder.rotation.x - mit[1]);
+        }
+        const gipfel = [], teile = [];
+        for (const d of sig) {
+            const hoch = Math.max(1e-9, ...d), seg = [];
+            for (let i = 0, an = null; i <= d.length; i++) {
+                const oben = i < d.length && d[i] > 0.02 * hoch;
+                if (oben && an === null) an = i;
+                if (!oben && an !== null) (an > 0 && i < d.length && seg.push([an, i]), (an = null));
+            }
+            const g = [];
+            for (const [a, e] of seg) {
+                let m = a, n = 0;
+                for (let j = a; j < e; j++) if (d[j] > d[m]) m = j;
+                for (let j = a + 1; j < e - 1; j++) if (d[j] > d[j - 1] && d[j] >= d[j + 1] && d[j] > 0.15 * d[m]) n++;
+                g.push(d[m]);
+                teile.push(n);
+            }
+            if (g.length) gipfel.push(g);
+        }
+        return { name: gem.haltung, koennen: +b.uebung[akt === "arbeit" ? "handwerk" : akt === "zweikampf" ? "kampf" : "brett"].koennen.toFixed(3), zuege: gipfel.reduce((s, g) => s + g.length, 0), cv: +mw(gipfel.map((g) => sdv(g) / mw(g))).toFixed(4), teile: +mw(teile).toFixed(3), huefte: +(1000 * sdv(hz)).toFixed(3) };
+    };
+    const paare = {};
+    for (const [kunst, akt] of [["handwerk", "arbeit"], ["kampf", "zweikampf"], ["brett", "brett"]]) {
+        const K = L.filter((b) => b.uebung && b.uebung[kunst] && (kunst !== "handwerk" || b.uebung.haupt === "handwerk"));
+        const m = K.filter((b) => b.uebung[kunst].koennen >= 1).sort((a, c) => c.uebung[kunst].koennen - a.uebung[kunst].koennen)[0];
+        const a = K.filter((b) => b.uebung[kunst].koennen < 0.5).sort((x, c) => x.uebung[kunst].koennen - c.uebung[kunst].koennen)[0];
+        paare[kunst] = m && a ? { meister: zeige(akt, m), anfaenger: zeige(akt, a) } : null;
+    }
+    // der Blick: der nächste nahe Leib im Akt einer Kunst (LEIB_SATZ.kunst), 3 m vor ihm in seiner Blickrichtung, Augenhöhe
+    const pm = r.state.playerMesh.position;
+    const imAkt = nah.filter((b) => !b.drinnen && KC.LEIB_SATZ.kunst[b.akt]).sort((a, c) => Math.hypot(a.x - pm.x, a.z - pm.z) - Math.hypot(c.x - pm.x, c.z - pm.z))[0];
+    let pose = null;
+    if (imAkt) {
+        const g = imAkt.leib.position, y = imAkt.leib.rotation.y, ex = g.x + Math.sin(y) * 3, ez = g.z + Math.cos(y) * 3;
+        pose = { px: +ex.toFixed(2), py: +(r.getTerrainHeightAt(ex, ez) + 1.6).toFixed(2), pz: +ez.toFixed(2), lx: +g.x.toFixed(2), ly: +(g.y + 1.5).toFixed(2), lz: +g.z.toFixed(2), wer: imAkt.akt + " " + (imAkt.gemuet && imAkt.gemuet.haltung) };
+    }
+    return { paare, pose, nah: nah.length };
+};
+
 const PFAD = ["stamm/siedlung-bewohner.js", "koerper-core.js", "fachwerk-core.js", "stamm/siedlung-ort.js"];
 const { STADT } = require("./k2-mensch-geist.js");
 // DAS SPIEL DES ABENDS an der Stadt des Messorts stadt-voll (die Seite SPIEL mit der STADT): die Uhr 18,55 Uhr — im dritten Lauf
@@ -1045,23 +1117,28 @@ module.exports = (F) => [
     F.leiter("mensch.sport.kunst", {
         sek: 30,
         pfad: [...PFAD, "schmiede-core.js"],
-        seite: { SPORT, UEBUNG },
+        seite: { SPORT, UEBUNG, KUNST },
         messe: async (H, K) => {
             await K.messort("stadt-voll");
             const z = await K.welt("return await (" + H.seite.SPORT + ")(r, T, {});", 30000);
             H.zeile("Kunst: " + z.n + " Bewohner · mit Können-Profil " + z.koennen + " · Akte " + JSON.stringify(z.akte));
-            // S1: Meister und Anfänger stehen im Lebenslauf (`b.uebung`, je Kunst), aber kein Leib liest ihr Können — Haltung, Gang und
-            // Geste sind f(Akt, Rolle, Gemüt); der Blindtest hätte nichts zu trennen
+            // S1: der Leib zeigt sein Können (koerper LEIB_SATZ.koennen · `leibKunst`): je Kunst der Meister und der Anfänger der Stadt
+            // an einem nahen Rig (`KUNST`) — der Anfänger greift seltener, streut im Ausschlag ≥ 2×, setzt nach (Teilbewegungen ≥ +0,5)
+            // und schwankt ≥ 1,5× in der Hüfte; der Blindtest am Bild „Meister oder Anfänger?“ (Fächer, ≥ 80 %) urteilt
             await K.schritt(1, async () => {
                 const u = await K.welt("return await (" + H.seite.UEBUNG + ")(r, T, {});", 20000);
                 if (!u || u.fehler) throw new Error("die Übung der Stadt: " + ((u && u.fehler) || "ohne Antwort"));
-                const paare = Object.keys(u.meister).filter((a) => u.meister[a] > 0 && u.anfaenger[a] > 0).length;
-                H.zeile("S1 Meister " + JSON.stringify(u.meister) + " · Anfänger " + JSON.stringify(u.anfaenger) + " · Künste mit Paar " + paare + " von 3");
-                K.leser(1, {
-                    n: paare,
-                    fehlt: "der Anfänger ist nicht sichtbar ungeschickt: Meister " + JSON.stringify(u.meister) + " und Anfänger " + JSON.stringify(u.anfaenger) + " in " + paare + " von 3 Künsten stehen im Lebenslauf (b.uebung), kein Leib liest ihr Können — Haltung (koerper-core tagesHaltung: Akt, Rolle), Gang und Geste gleich",
-                    wo: "koerper-core.js tagesHaltung · stamm/siedlung-bewohner.js _bewohnerGemuet",
-                });
+                const k = await K.welt("return await (" + H.seite.KUNST + ")(r, T, {});", 30000);
+                if (!k || k.fehler) throw new Error("der Leib der Kunst: " + ((k && k.fehler) || "ohne Antwort"));
+                const zeile = (P) => P.meister.name + " ↔ " + P.anfaenger.name + ": Züge " + P.meister.zuege + " ↔ " + P.anfaenger.zuege + " · CV " + P.meister.cv + " ↔ " + P.anfaenger.cv + " · Teile " + P.meister.teile + " ↔ " + P.anfaenger.teile + " · Hüfte " + P.meister.huefte + " ↔ " + P.anfaenger.huefte + " mrad";
+                const trennt = (P) => !!P && P.meister.zuege > 0 && P.anfaenger.zuege > 0 && P.anfaenger.zuege < P.meister.zuege && P.anfaenger.cv >= 2 * P.meister.cv && P.meister.teile <= 1.05 && P.anfaenger.teile >= P.meister.teile + 0.5 && P.anfaenger.huefte >= 1.5 * P.meister.huefte;
+                const kuenste = Object.keys(k.paare), ja = kuenste.filter((a) => trennt(k.paare[a]));
+                const mass = "Meister " + JSON.stringify(u.meister) + " · Anfänger " + JSON.stringify(u.anfaenger) + " · " + kuenste.map((a) => a + " " + (k.paare[a] ? zeile(k.paare[a]) : "kein Paar")).join(" · ") + " · Künste, deren Leib trennt: " + ja.length + " von " + kuenste.length;
+                H.zeile("S1 " + mass);
+                if (ja.length < 3) return K.leser(1, { n: ja.length, fehlt: "der Anfänger ist nicht sichtbar ungeschickt: " + mass, wo: "koerper-core.js leibKunst · leibStandTun · leibTunWert · leibSatzProfil" });
+                if (!k.pose) return K.nicht(1, { n: 0, fehlt: "kein naher Leib im Akt einer Kunst am Messort (" + k.nah + " nahe Leiber)" });
+                const b = await K.bild(1, k.pose);
+                K.auge(1, { bild: b.datei, pose: "stadt-voll: " + k.pose.wer + ", 3 m vor ihm, Augenhöhe", mass });
             });
             await K.schritt(2, async () => K.leser(2, { n: z.koennen, fehlt: "die Güte des Werks liest Rezept und Prägung (gueteFaktor), nie die Hand, die es schmiedet", wo: "schmiede-core.js:4064" }));
             await K.schritt(3, async () => K.leser(3, { n: z.sport, fehlt: "kein Tanz-Akt, keine Musik, der ein Schritt folgt", wo: "koerper-core.js:5126" }));
@@ -1070,7 +1147,7 @@ module.exports = (F) => [
             await K.schritt(6, async () => K.nicht(6, { n: 0, fehlt: "neue Künste fremder Kulturen und Körper: 0" }));
         },
         sprossen: {
-            1: { auge: { pose: "stadt-voll: ein Meister und ein Anfänger derselben Kunst, 3 m vor ihnen, Augenhöhe", vorbild: "Videos von Meister und Anfänger in 3 Künsten (Blindtest ≥ 80 %)" }, erwartet: "nicht", fehlt: "kein sichtbar ungeschickter Anfänger: das Können im Lebenslauf liest kein Leib" },
+            1: { auge: { pose: "stadt-voll: ein Meister und ein Anfänger derselben Kunst, 3 m vor ihnen, Augenhöhe", vorbild: "Videos von Meister und Anfänger in 3 Künsten (Blindtest ≥ 80 %)" } },
             2: { umfang: { soll: 10, wort: "Werkstücke" }, masse: [{ key: "r2", wort: "R² Werk-Güte ↔ Können-Profil", soll: 0.7, richtung: "≥" }], erwartet: "leser", fehlt: "die Güte liest nie die Hand", wo: "schmiede-core.js:4064" },
             3: { umfang: { soll: 20, wort: "Tänzer zur Musik" }, masse: [{ key: "takt", wort: "Schritt-Takt-Abstand (ms)", soll: 50, richtung: "≤" }], erwartet: "leser", fehlt: "kein Tanz", wo: "koerper-core.js:5126" },
             4: { auge: { pose: "keine: keine Stile", vorbild: "10 Kampf- und Tanzstile einer Kultur (Fremde ordnen ≥ 70 %)" }, erwartet: "nicht", fehlt: "10² Stile je Kultur" },

@@ -179,6 +179,7 @@ const KLASSE = {
     "mensch.macht.stand#2": [P, "Stand aus dem Nah-Bild"],
     "mensch.macht.wehrbau#7": [P, "Sitz der Macht aus der Vogelschau"],
     "mensch.menge.bild#3": [P, "Bildpaar gegen Foto eines vollen Bahnsteigs"],
+    "mensch.sport.kunst#1": [P, "Blindtest Anfänger ↔ Meister ≥ 80 %"],
     "mensch.stadt.breite#1": [P, "Region einer Stadt aus 6 erkannt"],
     "mensch.stadt.form#6": [P, "Verwechslung gegen Street-View"],
     "mensch.stadt.groesse#1": [P, "Panel-2AFC"],
