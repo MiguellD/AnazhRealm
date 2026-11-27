@@ -957,7 +957,7 @@ function durchzugRot(D) {
 }
 const DURCHZUG_TAETER = [
     ["STIMMT", "die drei Sinus-Wellen ohne Lage (main 52937c92)", /var f = pr\.g \+ \(pr\.a \* b\) \/ sw;/, "var f = 0.5 + (0.5 * b) / sw;"], // prettier-ignore
-    ["DRUCK", "die Zeile ohne Druck", /druck: p \+ bl \* \(lageDruck\(hoch\[0\]\) - p\), /, ""],
+    ["DRUCK", "die Zeile ohne Druck", /druck: p \+ bl \* \(lageDruck\(hoch\[0\]\) - p\),\s*/, ""],
     ["STIMMT", "die Richtung blind für die Lage", /w\.dreh \* Math\.sin\(w\.drehW \* tt \+ w\.drehPh\);/, "0;"],
 ];
 function durchzugSelbsttest() {

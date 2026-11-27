@@ -5126,9 +5126,7 @@
             var blockiert = 0;
             for (var d = 0; d < B.bis && !blockiert; d++) if (l[m - d - m0 + B.bis - 1] > d) blockiert = 1;
             var dt = (m === n ? u : 1) * L.zyklusS;
-            w = blockiert
-                ? W.kelvin + (w - W.kelvin) * Math.exp(-dt / W.aufS)
-                : w * Math.exp(-dt / W.abS);
+            w = blockiert ? W.kelvin + (w - W.kelvin) * Math.exp(-dt / W.aufS) : w * Math.exp(-dt / W.abS);
         }
         return w;
     }
@@ -5370,7 +5368,14 @@
         else if (f >= st.bewoelkt) zeile = "bewoelkt";
         else if (feuchte >= stNebel) zeile = "nebel";
         var p = lageDruck(ze);
-        return { zeile: zeile, front: f, feuchte: feuchte, druck: p + bl * (lageDruck(hoch[0]) - p), lage: ze, block: bl };
+        return {
+            zeile: zeile,
+            front: f,
+            feuchte: feuchte,
+            druck: p + bl * (lageDruck(hoch[0]) - p),
+            lage: ze,
+            block: bl,
+        };
     }
     var _lageAus = { g: 0, a: 0 },
         _stauAus = { ze: 0, kern: 0 };

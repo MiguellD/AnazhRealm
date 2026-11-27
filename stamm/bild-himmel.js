@@ -3370,7 +3370,10 @@ class AnazhRealm_bild_himmel {
         const P = globalThis.__phytoCore,
             W = P.WETTER_LAGE.block.waerme,
             tau = traegTage > 0 ? traegTage * this._kalender().normS : 0;
-        return P.lageWaerme(AnazhRealm._saatVon(this.state.worldMeta || {}), x, z, this.state.spielZeit) / (1 + tau / W.aufS);
+        return (
+            P.lageWaerme(AnazhRealm._saatVon(this.state.worldMeta || {}), x, z, this.state.spielZeit) /
+            (1 + tau / W.aufS)
+        );
     }
 
     // DER TRITT IN DIE SCHNEE-DECKE (wetter.K4): wie tief ein Körper an (x, z) auf der gezeichneten Fläche y in die Decke sinkt —

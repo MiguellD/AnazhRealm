@@ -8,11 +8,12 @@
 - **Stations-Kandidat** `cloud-post/wetter-lagen-station/kandidat.diff` + `BEGRUENDUNG.txt` (gegen punkte-maschine 429560b6, `git apply --check` GRÜN).
 - **Linse (H) HITZE** in `gate:wetter-wache`: Heimat 6,9 Tage · im Band 64 % von 200 · Luftmasse +4,82 K · Schritt 0,0256 ≤ 0,028 K; gepflanzt: „kein Hoch steht (main b3740dd5)" → ROT an (H) DAUER · „die Luftmasse ohne Gedächtnis" → ROT an (H) WAERME · „jede Lage des Blocks beginnt kalt" → ROT an (H) STETIG.
 - **Gegenlauf, benannt:** der Block nimmt Regen — nasser Anteil der Takte über 200 Saaten 0,389 → 0,348, Heimat nasse Takte 796 → 707 (−11 %), Nebel 0,149 → 0,133; extreme#1 bleibt (regenMax 117,8 mm unverändert, Median 43,8 → 41,3 mm), lagen#2 (D) 92 → 94 %.
+- **Abgabe:** `wetter-lagen-kopf4` ddc4aeff auf main b3740dd5 (EIN Commit, 6 Dateien; merge-tree gegen pegel-nach-brand 0d0e4c05 konfliktfrei). Lokal grün: check:statik · gate:welt-boot · gate:fachwerk-contract · gate:wetter-wache · format:check · diag-atlas --check · stamm:lint. Probe-Ruf: gate:wetter-wache, gate:tag-achse:echt, gate:stand-takt, bild:wiese@0.5.
 - **Ehrlich offen:** die Station misst die Amplitude erst mit dem Kandidaten (bis dahin ROT an amplitudeK); der Preis der Sprosse am Gerät (GPU-Probe des Kopfs).
 
 ## 27.11. 21:33 MEZ — Vor-Richter S1 extreme#1 am Kopf der Nachbar-Bahn `pegel-nach-brand` 0d0e4c05 (auf main b3740dd5)
 
-- FLUT_AN wortgleich (punkte-maschine `k2-planet.js`, um 21:30 erneut gelesen, byte-gleich), 20 Saaten × 30 Jahre + die Welt = 601 Adressen, echte Welt (Null-Renderer), Ort (0, 0):
+- FLUT_AN wortgleich (die Station k2-planet im Zweig punkte-maschine, um 21:30 erneut gelesen, byte-gleich), 20 Saaten × 30 Jahre + die Welt = 601 Adressen, echte Welt (Null-Renderer), Ort (0, 0):
     - **regenMaxMm 117,8 mm** (Soll ≥ 100 ✓) · **ueberAueM 0,3 m** (Soll > 0 ✓) · stark 4 (s0/j23 · s0/j29 · s6/j16 · s8/j5, je hub 0,5 m = Krone 0,2 + 0,3) · bordvoll 361 von 601 · hubMax 0,5 m · Krone 0,2 m.
     - Das gewöhnliche Jahr (< 100 mm, 597 Adressen): unter der Krone 240 (40 %), an der Krone (0 m) 289, **über der Aue 68 (11 %, je +0,3 m)**; das Median-Jahr 43,8 mm steht AN der Krone (0 m), nicht unter ihr.
 - Damit trägt der Kopf die Zahl von extreme#1 (beide Soll grün). Zwei Zeilen wörtlich für die Nachbar-Bahn:
@@ -26,7 +27,7 @@
 - 18:26 Kopf 3 im main gelandet (`w28-wetter-lagen-3`, V18.546.457 = main 9a75d61c); `wetter-lagen` trägt den main, Unterschied nur dieses Blatt. Briefkasten unverändert.
 - 17:44 Wartezimmer: Briefkasten unverändert seit 16:59, main 948f68ee, Kopf 3 31678001 wartet auf den Stempel `w28-wetter-lagen-3`.
 - Kopf 3 31678001 (Rang statt Hand-Median, Zeile 830) ist in `wetter-lagen` gemergt (4d933e1), Basis jeder Folge-Arbeit. Gelernt: wer `scripts/diag-*.cjs` anfasst, fährt die Stall-Akte `npm run gate:welt-boot` lokal — am gemergten Baum Exit 0.
-- S1, FLUT_AN wortgleich aus `k2-planet.js` (punkte-maschine), 20 Saaten × 30 Jahre + die Welt = 601 Adressen, in der echten Welt (Null-Renderer, `_wetterAmOrt` → `pegelLauf` → `pegelTafel` → `pegelHub`):
+- S1, FLUT_AN wortgleich aus der Station k2-planet (Zweig punkte-maschine), 20 Saaten × 30 Jahre + die Welt = 601 Adressen, in der echten Welt (Null-Renderer, `_wetterAmOrt` → `pegelLauf` → `pegelTafel` → `pegelHub`):
     - main 948f68ee (ohne `WETTER_LAGE`): regenMaxMm **17,6 mm**, Median 13,8 mm, stark 0, ueberAueM ungemessen, bordvoll 601/601, hubMax 0,2 m = Krone 0,2 m.
     - main 948f68ee + Kopf 3: regenMaxMm **117,8 mm** (Soll ≥ 100 ✓), Median 43,8 mm, stark 4 (s0/j23 100,5 · s0/j29 100,5 · s6/j16 117,8 · s8/j5 100,5 mm, je 20 Takte), ueberAueM **0 m** (Soll > 0 ✗), bordvoll 601/601, hubMax 0,2 m = Krone.
 - Das Spiel liest dieselbe Zahl wie der Kern (117,8 / 43,8 / 4 — byte-gleich zur Rechnung am Kern). Mein Teil trägt: der Regen kommt ungekappt beim Pegel an.
