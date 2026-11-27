@@ -1932,13 +1932,20 @@ function bodenHoehe(x, z) {
     const vy = voxelSurfaceY(x, z);
     return typeof vy === "number" && Number.isFinite(vy) ? vy : state.baseHeight || 0;
 }
-function bodenSteilheit(x, z) {
+// `aus` (optional): das Gefälle selbst ({ gx, gz }, dy/dx und dy/dz) — der Fels-Stoff der Ferne liest daraus seine Normale.
+function bodenSteilheit(x, z, aus) {
     const yE = bodenHoehe(x + 2, z);
     const yW = bodenHoehe(x - 2, z);
     const yN = bodenHoehe(x, z - 2);
     const yS = bodenHoehe(x, z + 2);
-    if (!Number.isFinite(yE) || !Number.isFinite(yW) || !Number.isFinite(yN) || !Number.isFinite(yS)) return 0;
-    return Math.hypot((yE - yW) / 4, (yS - yN) / 4);
+    const ok = Number.isFinite(yE) && Number.isFinite(yW) && Number.isFinite(yN) && Number.isFinite(yS);
+    const gx = ok ? (yE - yW) / 4 : 0;
+    const gz = ok ? (yS - yN) / 4 : 0;
+    if (aus) {
+        aus.gx = gx;
+        aus.gz = gz;
+    }
+    return Math.hypot(gx, gz);
 }
 // DIE LESER DER STREU (B-Streu): die Felder der Region (phyto-core `streuRegion`) an DIESEM Zustand — dieselben Leser wie der Bake
 // des Haupt-Fadens (`_streuLeser`); die Byte-Wand Main = Faden fährt gate:scatter-slice (checkBandScatterScheibe).
@@ -3721,10 +3728,12 @@ function attachFieldColors(positions) {
 // ohne sie färbt der Faden nicht (laut, kein stiller Ersatz). Die Sichtbarkeit der Feuchte und die Flechte sind hardkodiert
 // (V17.100-Lehre: bit-Vertrag mit \`AnazhRealm.FEUCHTE\` · \`AnazhRealm.LICHEN\`, bei Änderung beide mit-ziehen).
 const BODEN_FARBE_TMP = new Float64Array(3);
+const BODEN_FEUCHTE = { x: NaN, y: NaN, z: NaN, fussM: NaN, f: 0 };
 const KAHL_TMP = [0, 0, 0];
 function bodenFarbe(x, y, z, out, fussM) {
-    const P = state.bodenPalette;
-    if (!P) throw new Error("bodenFarbe: die Boden-Palette fehlt im Worker-Zustand (bodenPalette)");
+    if (!state.bodenPalette) throw new Error("bodenFarbe: die Boden-Palette fehlt im Worker-Zustand (bodenPalette)");
+    // die Erde in der Farbe des Klimas (gelaende-core `ortErde`, gemerkt je Ort): DIESELBE Funktion wie der Main
+    const P = G.ortErde(state.bodenPalette, state);
     const WG = state.wiesenGrund;
     if (!WG || !state.noise)
         throw new Error("bodenFarbe: der Wiesen-Grund (wiesenGrund) oder das Rauschen fehlt im Worker-Zustand");
@@ -3744,6 +3753,12 @@ function bodenFarbe(x, y, z, out, fussM) {
     mix(P.mead, ss(0.25, 0.85, f.lebendig));
     // DER BODEN ATMET: nach earth, vor lava/snow/sed/strand; y ist die Oberfläche
     const feuchte = feuchteAt(x, z, y, fussM);
+    // gemerkt für den Fels-Stoff der Ferne am selben Punkt (`fernFarbeTeile` → gelaende-core `felsStoffPunkt`)
+    BODEN_FEUCHTE.x = x;
+    BODEN_FEUCHTE.y = y;
+    BODEN_FEUCHTE.z = z;
+    BODEN_FEUCHTE.fussM = fussM;
+    BODEN_FEUCHTE.f = feuchte;
     const nass = ss(0.3, 0.85, feuchte);
     mix(P.wet, nass);
     // Kein Kronendach im Vertex (wie Main, 06.10.): die Streu unter den echten Kronen legt der Boden-Stoff auf.
@@ -4661,21 +4676,41 @@ function fernSchuttVon(aus) {
     const w = aus.wand > 0 ? 1 / fernK().geoSchutt : 0;
     return w > s ? w : s;
 }
-const FERN_SCHUTT_AUS = { hang: 0, schutt: 0, wand: 0 };
-function fernSchuttAt(x, z) {
-    G.hoehe(state, x, z, false, FERN_SCHUTT_AUS);
-    return fernSchuttVon(FERN_SCHUTT_AUS);
+// DER SCHUTTHANG EINES HÖHEN-RUFS (das Schicht-Gesetz, `hoehe(…, aus).schutt`): was der Fels-Stoff der Ferne vom Rufer liest —
+// die Wand des Erdbaus und den Fächer fragt er selbst (`felsStoffPunkt`).
+function fernSchutthang(aus) {
+    return aus.schutt > 0 ? aus.schutt : 0;
 }
-// DER SCHUTT DER FERNE (K17-2): der Boden zum Mittel des Fels-Stoffs gemischt und × das Mittel des Gerölls.
-function fernSchutt(s, out) {
-    if (typeof s !== "number" || s !== s) throw new Error("fernSchutt: das Gewicht des Schutts fehlt (" + s + ")");
-    if (!(s > 0)) return out;
-    const K = fernK();
-    const ws = K.geoSchutt * s;
-    const M = K.felsMittel;
-    const k = 1 + (G.schuttMittel() - 1) * (s < 1 ? s : 1);
-    for (let c = 0; c < 3; c++) out[c] = (out[c] + (M[c] - out[c]) * ws) * k;
-    return out;
+const FERN_SCHUTT_AUS = { hang: 0, schutt: 0, wand: 0 };
+function fernSchutthangAt(x, z) {
+    G.hoehe(state, x, z, false, FERN_SCHUTT_AUS);
+    return fernSchutthang(FERN_SCHUTT_AUS);
+}
+// DER FELS-STOFF DER FERNE (boden#1, die Naht Nah-Erde ↔ Fern-Mittel): DERSELBE Punkt des Gesetzes wie die Nähe (gelaende-core
+// `felsStoffPunkt` mit `fern`): das Moos der feuchten Erde, der Fächer unter der Wand, der Anschnitt des Erdbaus in seiner Erde und
+// der Schutthang — Moos-Fleck und Fels-Ton als ihr Mittel über die Kante der Abtastung (`fussM`). Bis hier mischte der Faden nur
+// den Schutt zum Fels-Mittel (`fernSchutt`, K17-2): Anschnitt, Fächer und Moos fehlten der Ferne (an 16 von 29 Posen eine Naht).
+const FERN_FELS_GEFAELLE = { gx: 0, gz: 0 };
+let fernFelsO = null;
+function fernFelsStoff(x, y, z, out, fussM, schutthang) {
+    const FS = state.felsStoff;
+    if (!FS) throw new Error("Fern-Farbe: der Fels-Stoff fehlt im Worker-Zustand (felsStoff)");
+    if (!fernFelsO || fernFelsO.netz !== FS.netz) fernFelsO = { netz: FS.netz, o: Object.assign({}, FS.netz) };
+    const o = fernFelsO.o;
+    o.fuss = fussM > 0 ? fussM : FS.netz.fuss;
+    const sl = bodenSteilheit(x, z, FERN_FELS_GEFAELLE);
+    const ny = 1 / Math.sqrt(1 + sl * sl);
+    const nz = -FERN_FELS_GEFAELLE.gz * ny;
+    const fm = fussM > 0 ? fussM : 0;
+    const fe = (px, pz, py) =>
+        px === BODEN_FEUCHTE.x &&
+        pz === BODEN_FEUCHTE.z &&
+        py === BODEN_FEUCHTE.y &&
+        fm === (BODEN_FEUCHTE.fussM > 0 ? BODEN_FEUCHTE.fussM : 0)
+            ? BODEN_FEUCHTE.f
+            : feuchteAt(px, pz, py, fm);
+    G.felsStoffPunkt(state, FS.basis, o, x, y, z, ny, out, fe, null, nz, schutthang);
+    return sl;
 }
 
 // DER FLUSS IN DER MASCHE (K16): der Anteil einer Masche (halbe Kante `hs` m; 0 = ein Punkt), den das Wasser eines Flusses
@@ -4742,7 +4777,7 @@ function fernNischeCtx() {
 // 0], wie das Dach × Selbstbeschattung; der Leser legt Präsenz und Tönung darüber (phyto-core `kroneImJahr`).
 const FERN_KRONEN = [];
 function fernFarbeTeile(x, y, z, out, fuss, fussM, schutt, jahr) {
-    if (schutt == null) schutt = fernSchuttAt(x, z);
+    if (schutt == null) schutt = fernSchutthangAt(x, z);
     if (fuss) return fernFlussTeil(x, z, fernFarbeMasche(x, y, z, out, fuss, schutt, jahr), Math.max(fuss.ht, fuss.hr));
     if (fussM === undefined) return fernFlussTeil(x, z, fernFarbeTeile(x, y, z, out, null, 0, schutt, jahr), 0);
     const core = self.__phytoCore;
@@ -4755,7 +4790,7 @@ function fernFarbeTeile(x, y, z, out, fuss, fussM, schutt, jahr) {
         throw new Error("Fern-Farbe: phyto-core forestNische/forestBestand/forestKronenDeckung fehlen (KERN-PFLICHT)");
     if (!fernLaub) throw new Error("Fern-Farbe: die Studio-Laubfarbe der Arten fehlt im Auftrag (laub)");
     bodenFarbe(x, y, z, out, fussM);
-    fernSchutt(schutt, out);
+    const steil = fernFelsStoff(x, y, z, out, fussM, schutt);
     const K = fernK();
     const ctx = fernNischeCtx();
     const B = core.forestBestand(ctx.fbm, x, z, fussM > 0 ? fussM : 0);
@@ -4783,7 +4818,7 @@ function fernFarbeTeile(x, y, z, out, fuss, fussM, schutt, jahr) {
         waldSchnee(x, z, y),
         waldOrt(x, z),
         state.ort.wuchs.wald,
-        bodenSteilheit(x, z)
+        steil
     );
     const S = K.kronenSchatten;
     let summe = 0;
@@ -5230,6 +5265,7 @@ function fernAuftrag(msg) {
             const z = p[k * 2 + 1];
             let L = G.hoehe(state, x, z, false, aus);
             const s = fernSchuttVon(aus);
+            const sh = fernSchutthang(aus);
             const zone = msg.zone[k] === 1;
             // die Krone der Füll-Edits in der Masche hebt das Gesetz; der Ring legt sie auch über Naht und Feld (`_fernRingY`)
             krone[k] = fernKrone(msg.ax, msg.az, msg.rad[k], msg.ang[k], msg.ht[k], msg.q[k], kronen);
@@ -5253,7 +5289,7 @@ function fernAuftrag(msg) {
             flussSp[k] = fl.spiegel;
             // die Farbe des Bodens trägt jeder Punkt, den eine Stunde der Gezeit freilegt (nur der immer nasse spart sie)
             if (!zone && nass.y < G.spiegelNiedrigst(spiegelTeile, k * TS, nass.y, wl)) continue;
-            const f = fernRingTeile(x, z, L, fuss, s, msg.memo | 0);
+            const f = fernRingTeile(x, z, L, fuss, sh, msg.memo | 0);
             teile.set(f.subarray(0, 8), k * 8);
             jahr.set(f.subarray(8, 16), k * 8);
         }
@@ -5293,7 +5329,7 @@ function fernAuftrag(msg) {
             const masche = dist - msg.naht < 2 * msg.hr ? 0 : Math.sqrt(4 * fuss.ht * msg.hr);
             // die Höhe und der Schutt in f32, wie das Feld sie trägt
             const law = Math.fround(G.hoehe(state, px, pz, false, aus, masche));
-            const s = Math.fround(fernSchuttVon(aus));
+            const s = Math.fround(fernSchutthang(aus));
             const wet = fernNass(px, pz, law, wl, nass);
             const y = wet ? nass.spiegel : nass.y;
             let r = R[0];
@@ -5331,7 +5367,7 @@ function fernAuftrag(msg) {
             const o = k * 4;
             // Wasser trägt keine Krone (der Ring: Deckung 0 auf dem Spiegel)
             if (fernNass(x, z, G.hoehe(state, x, z, false, aus), wl, nass)) continue;
-            fernFarbeTeile(x, nass.y, z, t, undefined, undefined, fernSchuttVon(aus), tj);
+            fernFarbeTeile(x, nass.y, z, t, undefined, undefined, fernSchutthang(aus), tj);
             rgba[o] = sRGB(t[3]);
             rgba[o + 1] = sRGB(t[4]);
             rgba[o + 2] = sRGB(t[5]);
@@ -5370,9 +5406,10 @@ function fernAuftrag(msg) {
                 fuss.ht = msg.ht[k];
                 fuss.hr = msg.hr[k];
             }
-            if (msg.roh && fuss) fernFarbeMasche(x, y, z, t, fuss, s, tj);
-            else if (msg.roh) fernFarbeTeile(x, y, z, t, null, 0, s, tj);
-            else fernFarbeTeile(x, y, z, t, fuss, undefined, s, tj);
+            const sh = fernSchutthang(aus);
+            if (msg.roh && fuss) fernFarbeMasche(x, y, z, t, fuss, sh, tj);
+            else if (msg.roh) fernFarbeTeile(x, y, z, t, null, 0, sh, tj);
+            else fernFarbeTeile(x, y, z, t, fuss, undefined, sh, tj);
             teile.set(t, k * 8);
             jahrA.set(tj, k * 8);
         }
