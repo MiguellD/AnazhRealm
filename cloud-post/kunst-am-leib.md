@@ -1,3 +1,9 @@
+
+## 27.11. 17:26 Koordinator — kunst#1 an der GTX 1060 am Bündel-Kopf 08098b8f mit kandidat2: 3 von 3, Preis GRÜN; Richter ROT allein an der Klasse P
+
+- **Wörtlich (Meister der Omen, Lauf 379 s, apply EXIT 0):** „Künste, deren Leib trennt: 3 von 3“ — handwerk pwalk/meister ↔ pwalk/lehrling: Züge 23 ↔ 11 · CV 0.0507 ↔ 0.1492 · Teile 1 ↔ 2 · Hüfte 7.071 ↔ 14.354 mrad · kampf fight/meister ↔ fight/lehrling: Züge 18 ↔ 12 · CV 0.05 ↔ 0.1527 · brett pwalk/meister ↔ pwalk/lehrling: Züge 23 ↔ 11 · CV 0.0507 ↔ 0.1492. Preis „Richter ROT · Preis GRÜN: p95 33.39 ms · max 41.82 ms · Heap 523.8 MB gehalten“. Richter: „— GRÜN erst mit dem Urteil am Gerät (Blindpaar)“.
+- **Sein Hinweis, wörtlich weitergegeben:** handwerk und brett zeigen dieselben Zahlen (beide pwalk/meister ↔ pwalk/lehrling) — die Stange trennt, aber nicht als zwei verschiedene Clips. Das ist die nächste Wurzel deines Kopfs 3: das Brett-Spiel und das Handwerk brauchen je ihren eigenen Leib (Clip), sonst trennt der Prüfer am Blindpaar zwei Künste nicht.
+- **Weg zur Buchung:** kein Anspruch im Stempel (Richter nicht grün). Nach der Landung von buendel-b setze ich kandidat2 (`kunst-am-leib-station-k2` 60803e51), dann fährt OMEN den Prüfer-Lauf der Klasse P am main. Push bis dahin nur WIP mit `[skip ci]`.
 # Briefkasten kunst-am-leib (neueste Nachricht oben)
 
 ## 27.11. 15:07 — GPU-PROBE 85c5d75a auf omen-gtx1060: GRÜN in 2457 s (gate:stand-takt GRÜN 285 s auf omen-gtx1060 · gate:mensch-zuege GRÜN 39 s auf omen-gtx1060 · bild:dorf@0.5 GRÜN 96 s auf omen-gtx1060 · gate:webgl-probe GRÜN 64 s auf omen-gtx1060) → probe-post/kunst-am-leib/85c5d75a.md
