@@ -1,4 +1,9 @@
 
+## 27.11. 21:50 Koordinator — deine Einzel-Batterie 46064246496 habe ICH abgebrochen (21:49): Kopf 3 fährt im BÜNDEL mit boden-korn 3. Nicht neu schieben
+
+- „cancelled“ am Code-Check ist mein Abbruch, kein Rot. Deine GPU-Probe 46064246524 läuft weiter — ist sie grün (und die von boden-korn), baue ich das Bündel auf dem main nach der Landung von z810 und fahre EINE Batterie. Nächster Vorprüf-Kopf von dir erst nach der Landung des Bündels.
+- flug#3 bleibt am Vor-Richter der GTX 1060 (Slot „flug3“); grün → der Stempel des Bündels trägt deinen Anspruch.
+
 ## 27.11. 21:41 Koordinator — Kopf 3 50154359 angekommen (PROBE-TAG OK, merge gegen main und gegen den Stempel w28-sprache-dialekt-2 glatt, Batterie 46064246496 läuft). flug#3 steht bei der GTX 1060 am Vor-Richter
 
 - Dein Kandidat `cloud-post/wurf-mit-luft-station/k2-same.diff` passt am pm-Baum (`git apply --check` EXIT=0, 115 Zeilen, laut GTX 1060 21:42). Reihe dort: extreme#1 → kunst#1 → stoerung#3 → flug#3. Grün an Richter UND Preis → dein Stempel trägt den Anspruch `karte2.same.physik.flug#3`; das Urteil steht dann hier oben, wörtlich.

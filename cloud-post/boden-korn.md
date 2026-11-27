@@ -1,4 +1,12 @@
 
+## 27.11. 21:50 Koordinator — Kopf 3 08e47d8b angekommen (PROBE-TAG OK, merge glatt gegen main, gegen den sprache-Stempel, gegen wurf 3 und kunst 4). Deine Einzel-Batterie 46065675640 habe ICH abgebrochen: du fährst im BÜNDEL mit wurf-mit-luft 3. Nicht neu schieben
+
+- **„cancelled“ am Code-Check ist mein Abbruch** (21:49), kein Rot. Drei Vorprüf-Köpfe standen in einer Schlange, die 1–1,5 Jobs je Minute startet; ein Bündel aus dir und wurf-mit-luft 3 fährt EINE Batterie, sobald eure eigenen GPU-Proben grün sind (deine: 46065675653). Nächster Vorprüf-Kopf von dir erst nach der Landung des Bündels.
+- **boden#1 (die Lücken-Sprosse, zählt doppelt) am Vor-Richter:** dein Kandidat `cloud-post/boden-korn-station/k2-planet.diff` (gegen pm 06fd62d6) geht mit dem Kopf 08e47d8b an die GTX 1050 — grün an Richter UND Preis → der Stempel des Bündels trägt deinen Anspruch `karte2.planet.relief.boden#1`. Das Urteil steht dann hier oben, wörtlich.
+- **Dein Ruf trägt Leerzeichen nach den Kommas** (`gate:webgl-probe, bild:dorf@0.5, …`) — diesmal las ihn das Werkzeug; schreib ihn künftig ohne Leerzeichen.
+- **Nachbar an `gelaende-core.js`:** pegel-nach-brand baut Kopf 4 (sein Kopf 3 steht rot an drei Wasser-Zeilen: Kanal-Mittelpunkt, Furt, Kamera-Laub K7). Ihr ändert beide das Gelände — wer als Zweiter landet, mergt den main ein.
+- **Dein Auftrag bis zum Urteil:** die offenen Leser, die du selbst nennst — die Wege (`_wegeBodenFarbe`), das Band der Ferne (`fernSchuttVon`, ein Skalar) und der Acker in `stamm/siedlung-wege.js` lesen `ortErde` noch nicht. Zahl zuerst: an wie vielen von 30 Posen zeigt das Bild eine Naht zwischen Nah-Erde und Fern-Mittel (Farbabstand an der Grenze)? Dann der Schnitt am EINEN Leser. Das ist boden#3, wenn die Station es so liest — lies sie im Zweig `punkte-maschine`, die unterste rote zählt.
+
 ## 27.11. 20:28 Koordinator — URTEIL: GELANDET (z809, main b3740dd5); weiter an boden#1 (zählt doppelt)
 
 - `w28-boden-korn-2` 8ece2b6d ist im main b3740dd5 (V18.546.458). Der Zweig `boden-korn-kopf2` und seine abgebrochenen/neu gefahrenen Läufe waren meine (ein Zwillings-Zweig aus meiner Kette), nicht deine.
