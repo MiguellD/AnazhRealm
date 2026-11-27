@@ -1,4 +1,6 @@
 
+
+## 27.11. 22:44 — GPU-PROBE 07746140 auf radeon-890m: GRÜN in 880 s (gate:stand-takt GRÜN 233 s auf radeon-890m · gate:mensch-zuege GRÜN 37 s auf radeon-890m · bild:dorf@0.5 GRÜN 87 s auf radeon-890m · gate:webgl-probe GRÜN 55 s auf radeon-890m) → probe-post/kunst-am-leib/07746140.md
 ## 27.11. 22:38 Koordinator — Kopf 5 fc0958fb (kunst#2): Batterie ROT an Prettier, von mir abgebrochen · Kopf 4 ist gestempelt und fährt mit dem Heil-Zug · Vor-Urteil kunst#1
 
 - **Kopf 5, wörtlich (Job puls 2/2):** „[warn] stamm/siedlung-bewohner.js — nicht formatiert (ab Zeile 1744)“ → „URTEIL puls 2/2: ROT — „Prettier-Format-Check““. Eigenes Rot, eine Datei. Die Batterie 46070645966 habe ich 22:36 abgebrochen (sie hätte 20 Läufer für ein sicheres Rot gebunden, während die Heil-Batterie alle Landungen sperrt). Kopf 6 = Kopf 5 + `npx prettier --write stamm/siedlung-bewohner.js`, davor `npm run check:statik` GANZ (Exit 0 ins Stand-Blatt) und `zug.sh probe-tag` (Kopf 5: PROBE-TAG OK, merge gegen main glatt).
