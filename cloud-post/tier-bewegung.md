@@ -53,3 +53,6 @@ Messort der Station: die Gang-Linse fährt an der Pose des Spielers (Preis-Pose 
   derselbe Lauf auf origin/main 23b593ac ist gleich ROT (55 s): die Welt steht in diesem Container nicht (wie Werkbank
   „DIE WELT STEHT NICHT“); kein Satz < 64 m in 1 500 Takten. Probe-Ruf darum `gate:analog-nah,gate:tier-gang` auf der echten GPU.
   `zug.sh probe-tag`: liegt in keinem Zweig (`artifacts/profiband/werkzeug/` ist ignoriert) — nicht fahrbar.
+- 28.11. 00:27-Post: Kopf 3 fährt in z813 (`w28-tier-bewegung-3`). masse#1-Kopf `tier-bewegung-masse1` f9a12ab gebaut auf main
+  b56b51f0 (nur die masse#1-Dateien; merge-tree ohne CONFLICT, atlas/stamm:lint/prettier GRÜN, nahFolgtSelbsttest GRÜN);
+  die volle Batterie läuft, geschoben wird erst bei Exit 0.
