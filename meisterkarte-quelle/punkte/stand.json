@@ -3064,7 +3064,7 @@
   },
   "profiband.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Gehen 69 Bilder · max 83.79 ms · 59.42 % > 33 ms · Fahrt 9 Bilder · max 58.65 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 59.42 % > 33 ms | Fahrt: blind (9 Bilder in 2.5 s), 100.00 % > 33 ms, nicht aus- und eingestiegen (Sattel 1) an 45bad33f radeon · gehalten: Gehen 92 Bilder · max 83.25 ms · 13.04 % > 33 ms · Fahrt 5 Bilder · max 75.02 ms · 80.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 13.04 % > 33 ms | Fahrt: blind (5 Bilder in 2.5 s), 80.00 % > 33 ms, nicht aus- und eingestiegen (Sattel 1) an 99649186 gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an 45bad33f: Last: Referenz f 1,266 (Faden 1,266 · alle Kerne 1,082; vor 102,4/261,9 ms, nach 105,7/281,7 ms, Ruhe 83,5/260,3 ms seit 2026-11-16) · fremd: git stash create 6,7 CPU-s · bash.exe werkzeug/gpu-lauf.sh · profiband.K4#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, koerper-core.js +32)",
+   "beleg": "Maschine: gehalten: Gehen 69 Bilder · max 83.79 ms · 59.42 % > 33 ms · Fahrt 9 Bilder · max 58.65 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 59.42 % > 33 ms | Fahrt: blind (9 Bilder in 2.5 s), 100.00 % > 33 ms, nicht aus- und eingestiegen (Sattel 1) an 45bad33f radeon · gehalten: Gehen 92 Bilder · max 83.25 ms · 13.04 % > 33 ms · Fahrt 5 Bilder · max 75.02 ms · 80.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 13.04 % > 33 ms | Fahrt: blind (5 Bilder in 2.5 s), 80.00 % > 33 ms, nicht aus- und eingestiegen (Sattel 1) an 99649186 gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an 45bad33f: Last: Referenz f 1,267 (Faden 1,267 · alle Kerne 1,203; vor 105,8/313 ms, nach 100,6/246,9 ms, Ruhe 83,5/260,2 ms seit 2026-11-16) · fremd: bash.exe werkzeug/gpu-lauf.sh --waechter 1197453 claude/gpu- · profiband.K4#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, koerper-core.js +32)",
    "stationen": [
     {
      "id": "profiband.K4#1",
@@ -3092,7 +3092,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 45bad33f: Last: Referenz f 1,266 (Faden 1,266 · alle Kerne 1,082; vor 102,4/261,9 ms, nach 105,7/281,7 ms, Ruhe 83,5/260,3 ms seit 2026-11-16) · fremd: git stash create 6,7 CPU-s · bash.exe werkzeug/gpu-lauf.sh",
+     "grund": "Station seit der Messung geändert — zuletzt an 45bad33f: Last: Referenz f 1,267 (Faden 1,267 · alle Kerne 1,203; vor 105,8/313 ms, nach 100,6/246,9 ms, Ruhe 83,5/260,2 ms seit 2026-11-16) · fremd: bash.exe werkzeug/gpu-lauf.sh --waechter 1197453 claude/gpu-",
      "ungemessen": true
     },
     {
@@ -37760,7 +37760,7 @@
   "ohne": 3278
  },
  "kopfVoll": "38194f8373828ba681647f1fb6c41255c41f7fd1",
- "zeit": "2026-11-27T00:10:10.602Z",
+ "zeit": "2026-11-27T00:16:42.549Z",
  "vorher": "38194f83",
  "bilanz": {
   "gewinn": [],
