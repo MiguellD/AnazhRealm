@@ -437,6 +437,9 @@ async function begegnung(r, T, arg) {
 // `ORTSNAME`) und `arg.leute` Bewohner aus dem Leser des Spiels (stamm/siedlung-bewohner.js `_bewohnerLauf` „name“: Vor- und
 // Familienname; der Same des Bewohners „Plan-Same:k“, sein Haus k mod Häuser). DER ZEUGE: die Bewohner der geladenen Siedlung, durch
 // denselben Ruf mit nichts als ihrem Plan (`{ plan }`) — Name für Name gleich dem Namen, den die Welt ihnen gibt (`b.name`).
+// DIE SÄTZE (sprache#2): je Zelle `arg.saetze` Reden aus demselben Leser (`_bewohnerLauf` „rede“, die erste Rede des k-ten Bewohners)
+// und die Sprache des Orts (fachwerk `spracheVon(region, same)`: Familie und Blatt — die Gruppe, nie ein Merkmal des Trenners).
+// Kennt der Leser das Feld nicht, steht sein Wort wörtlich in `rede` (die Sprosse 2 urteilt es; Namen und Baum messen weiter).
 async function namenFaecher(r, T, arg) {
     const zellen = [];
     for (let R = 0; R <= 26 && zellen.length < arg.n; R++)
@@ -446,15 +449,23 @@ async function namenFaecher(r, T, arg) {
                 const c = r._autoSettlementCellInfo(cx, cz);
                 if (c) zellen.push([cx + "," + cz, c]);
             }
-    const orte = [];
+    const orte = [], FC = globalThis.__fachwerkCore;
+    let rede = null;
     for (const [key, c] of zellen) {
         const dp = r._ortDp(key, c);
         delete dp.ort;
         const P = await r._foundryRequestSettlement(dp);
         if (!P || !Array.isArray(P.slots) || !P.slots.length) return { fehler: "die Gießerei gibt der Zelle " + key + " keinen Plan (_foundryRequestSettlement(_ortDp))" };
-        const Q = { plan: P }, nh = P.slots.length, leute = [];
+        const Q = { plan: P }, nh = P.slots.length, leute = [], saetze = [];
         for (let k = 0; k < arg.leute; k++) leute.push(r._bewohnerLauf(Q, { seed: (P.seed >>> 0) + ":" + k, heim: k % nh, same: k }, "name"));
-        orte.push({ name: P.name || null, region: P.region || null, seed: P.seed >>> 0, zelle: key, personenNamen: leute });
+        for (let k = 0; k < (arg.saetze || 0) && !rede; k++)
+            try {
+                saetze.push(r._bewohnerLauf(Q, { seed: (P.seed >>> 0) + ":" + k, heim: k % nh, same: k }, "rede", 1));
+            } catch (e) {
+                rede = String((e && e.message) || e);
+            }
+        const L = FC && typeof FC.spracheVon === "function" ? FC.spracheVon(P.region, P.seed >>> 0) : null;
+        orte.push({ name: P.name || null, region: P.region || null, seed: P.seed >>> 0, zelle: key, personenNamen: leute, saetze: rede ? [] : saetze, sprache: L ? L.region + "|" + L.blatt : null });
     }
     const S = [...(r._bewohnerSiedlungen || new Map()).values()].find((Q) => Q && Q.plan && Array.isArray(Q.liste) && Q.liste.length);
     let gleich = 0, n = 0;
@@ -464,7 +475,47 @@ async function namenFaecher(r, T, arg) {
             n++;
             if (r._bewohnerLauf({ plan: S.plan }, b, "name") === b.name) gleich++;
         }
-    return { orte, zeuge: { gleich, n, ort: S ? S.plan.name : null } };
+    return { orte, rede, zeuge: { gleich, n, ort: S ? S.plan.name : null } };
+}
+
+// ───────── DIE REDE DER MENGE (sprache#2, der Zeuge des Konsums, Seite der Welt) ─────────
+// Der Satz des Fächers zählt nur, wenn die Welt ihn SPRICHT: der Klang steht (wie raumSeite, k2-erleben), der Loop des Spiels läuft
+// bis `arg.sprecher` Bewohner der geladenen Siedlung eine Rede mit Satz tragen (klang.js `_bewohnerLautTakt`: `_mengeRede` je Sprecher
+// Nummer und Satz; höchstens `arg.ms`) — je Sprecher derselbe Ruf `_bewohnerLauf(S, b, "rede", nr)`, Satz für Satz gleich, und die
+// Kerne seiner Stimme (`sprachKerne`) aus den Vokalen des Gesetzes seiner Sprache.
+async function redeZeuge(r, T, arg) {
+    const s = r.state, rend = s.renderer, warte = (ms) => new Promise((f) => setTimeout(f, ms));
+    const FC = globalThis.__fachwerkCore;
+    const S = [...(r._bewohnerSiedlungen || new Map()).values()].find((Q) => Q && Q.plan && Array.isArray(Q.liste) && Q.liste.length);
+    if (!S) return { fehler: "keine geladene Siedlung mit Bewohnern (r._bewohnerSiedlungen)" };
+    const war = !!(s.symphony && s.symphony.enabled), t0 = performance.now();
+    const mitSatz = () => S.liste.filter((b) => { const z = r._mengeRede && r._mengeRede.get(b); return !!z && typeof z.satz === "string"; }); // prettier-ignore
+    const o = { ort: S.plan.name, saetze: 0, sprecher: 0, gleich: 0, fremd: [], beispiel: [], vokaleFremd: 0, ms: 0 };
+    try {
+        if (!war) r.initSymphony();
+        const sy = s.symphony;
+        if (sy.ctx && sy.ctx.state !== "running") await sy.ctx.resume();
+        if (!sy.enabled || !sy.umwelt) return { fehler: "der Klang steht nicht (enabled " + !!sy.enabled + ", Umwelt " + !!sy.umwelt + ")" };
+        rend.setAnimationLoop((t) => r._gameLoopTick(t));
+        while (mitSatz().length < arg.sprecher && performance.now() - t0 < arg.ms) await warte(100);
+        rend.setAnimationLoop(null);
+        o.saetze = (sy.menge && sy.menge.saetze) || 0;
+        const vokale = new Set(FC.spracheVon(S.plan.region, S.plan.seed >>> 0).gesetz.vokale.join(""));
+        for (const b of mitSatz()) {
+            const z = r._mengeRede.get(b);
+            o.sprecher++;
+            const soll = r._bewohnerLauf(S, b, "rede", z.nr);
+            if (soll === z.satz) o.gleich++;
+            else if (o.fremd.length < 3) o.fremd.push("„" + z.satz + "“ statt „" + soll + "“");
+            if (o.beispiel.length < 3) o.beispiel.push(z.satz);
+            for (const k of FC.sprachKerne(z.satz)) for (const c of k) if (!vokale.has(c)) o.vokaleFremd++;
+        }
+    } finally {
+        rend.setAnimationLoop(null);
+        if (!war && s.symphony && s.symphony.enabled) r.disposeSymphony();
+    }
+    o.ms = Math.round(performance.now() - t0);
+    return o;
 }
 
 // ───────── DER STAMMBAUM AUS DEN WORTLISTEN (sprache#3, kultur-aus-klima, Seite der Welt) ─────────
@@ -570,8 +621,8 @@ module.exports = (F) => [
     // ═════ SPRACHE ═════
     F.leiter("mensch.kultur.sprache", {
         sek: 45,
-        pfad: [...ORT, "stamm/feld-leben.js", "index.html", "gelaende-core.js"],
-        seite: { ZENSUS: zensus, STUFEN: stufen, ZAEHLE: SPRACHE_LESER, NAMEN: namenFaecher, BAUM: sprachBaum },
+        pfad: [...ORT, "stamm/feld-leben.js", "index.html", "gelaende-core.js", "stamm/klang.js", "klang-core.js"],
+        seite: { ZENSUS: zensus, STUFEN: stufen, ZAEHLE: SPRACHE_LESER, NAMEN: namenFaecher, BAUM: sprachBaum, REDE: redeZeuge },
         messe: async (H, K) => {
             await K.messort("stadt-voll");
             const z = await K.welt("return await (" + H.seite.ZENSUS + ")(r, T, " + JSON.stringify({}) + ");", 30000);
@@ -583,7 +634,7 @@ module.exports = (F) => [
             H.zeile("Sprache: " + z.orte.length + " Orte (" + z.orte.map((o) => o.name + "/" + o.region).join(", ") + "), Namen im DOM " + z.imBild + " von " + ((dom && dom.zeilen) || 0) + " Zeilen, Personennamen " + z.bewohner.namen + " von " + z.bewohner.n);
             // DIE NAMEN AM FÄCHER (kultur-aus-klima): 32 Zellen der Welt, je Ortsname und 20 Bewohner — der Zeuge verlangt, dass der Ruf
             // des Fächers die Namen der geladenen Siedlung Name für Name trifft (sonst misst der Fächer einen Zwilling)
-            const F = await K.welt("return await (" + H.seite.NAMEN + ")(r, T, " + JSON.stringify({ n: 32, leute: 20, zeuge: 50 }) + ");", 30000);
+            const F = await K.welt("return await (" + H.seite.NAMEN + ")(r, T, " + JSON.stringify({ n: 32, leute: 20, zeuge: 50, saetze: 20 }) + ");", 30000);
             if (!F || F.fehler) throw new Error("die Namen am Fächer: " + ((F && F.fehler) || "ohne Antwort"));
             if (!(F.zeuge.n >= 20 && F.zeuge.gleich === F.zeuge.n))
                 throw new Error("der Zeuge der Namen: der Ruf des Fächers trifft " + F.zeuge.gleich + " von " + F.zeuge.n + " Namen der Siedlung „" + F.zeuge.ort + "“ (Soll alle, ≥ 20) — der Fächer misst einen Zwilling");
@@ -629,6 +680,64 @@ module.exports = (F) => [
                 return { n: L.length, werte: { zugeordnet: L.length ? ok / L.length : NaN, saaten: saaten.length }, beleg: "Saaten " + saaten.join("/"), taeter: "die Namen der Bewohner (stamm/siedlung-bewohner.js) und der Orte (fachwerk-core ORTSNAME)" };
             };
             const sprachen = (z) => z.regionen;
+            // DIE SÄTZE GETRENNT (sprache#2): je Sprache des Fächers (die Gruppe aus `spracheVon`) die 20 Sätze ihres ersten Orts — der
+            // Trenner sieht NUR die Sätze: Cavnar & Trenkle (1994, „N-Gram-Based Text Categorization“, SDAIR-94) — Zeichen-N-Gramme
+            // N = 1 … 5 der Wörter (nur Buchstaben, mit Leerzeichen gepolstert), das Rang-Profil der häufigsten P = 400, der Abstand
+            // „out-of-place“ (fehlt ein Gramm: P). Hälfte gegen Hälfte: die Sätze 1–10 einer Sprache als EIN Dokument gegen die Profile der
+            // Sätze 11–20 jeder Sprache, und umgekehrt; getrennt = der Anteil der Dokumente, deren nächstes Profil ihr eigenes ist.
+            // U_eff: die Sprachen mit ≥ 20 Sätzen. Das Band der Quelle (Table 2): Dokumente ≤ 300 Bytes, Profil 400: 98,3 % richtig.
+            const ct = { P: 400, N: 5, saetze: 20 };
+            const profil = (texte) => {
+                const m = new Map();
+                for (const t of texte)
+                    for (const w of String(t).toLowerCase().split(/[^\p{L}]+/u).filter(Boolean)) {
+                        const s = "_" + w + "_".repeat(ct.N - 1);
+                        for (let n = 1; n <= ct.N; n++)
+                            for (let i = 0; i + n <= s.length; i++) {
+                                const g = s.slice(i, i + n);
+                                if (!/^_+$/.test(g)) m.set(g, (m.get(g) || 0) + 1);
+                            }
+                    }
+                return new Map([...m.entries()].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1)).slice(0, ct.P).map(([g], i) => [g, i]));
+            };
+            const abstand = (doc, kat) => {
+                let d = 0;
+                for (const [g, i] of doc) d += kat.has(g) ? Math.abs(kat.get(g) - i) : ct.P;
+                return d;
+            };
+            const trennung = (z) => {
+                const je = new Map();
+                for (const o of z.faecher || []) if (o.sprache && o.saetze.length >= ct.saetze && !je.has(o.sprache)) je.set(o.sprache, o.saetze.slice(0, ct.saetze));
+                const K2 = [...je.keys()], h = ct.saetze / 2;
+                let ok = 0, n = 0;
+                for (const [von, gegen] of [[0, h], [h, 0]]) {
+                    const prof = new Map(K2.map((k) => [k, profil(je.get(k).slice(gegen, gegen + h))]));
+                    for (const k of K2) {
+                        const doc = profil(je.get(k).slice(von, von + h));
+                        let [best, bd] = [null, Infinity];
+                        for (const j of K2) {
+                            const d = abstand(doc, prof.get(j));
+                            if (d < bd) [best, bd] = [j, d];
+                        }
+                        n++;
+                        if (best === k) ok++;
+                    }
+                }
+                const fam = [...new Set(K2.map((k) => k.split("|")[0]))];
+                return {
+                    n: K2.length,
+                    werte: { getrennt: n ? ok / n : NaN, saetze: K2.length ? Math.min(...K2.map((k) => je.get(k).length)) : 0 },
+                    beleg: K2.length + " Sprachen aus " + fam.length + " Familien (" + fam.join("/") + ") · " + ok + " von " + n + " Hälften richtig (C&T N 1–5, P 400) · die Rede der Menge: " + z.rede.gleich + " von " + z.rede.sprecher + " Sprechern sprechen den Satz des Lesers (" + z.rede.saetze + " Sätze, " + z.rede.ms + " ms) · „" + z.rede.beispiel.join("“ · „") + "“",
+                    taeter: "fachwerk-core.js sprachSatz (der Satz aus Laut, Silbe und Wortschatz der Sprache) · stamm/siedlung-bewohner.js _bewohnerLauf „rede“",
+                };
+            };
+            // DER ZEUGE DES KONSUMS (sprache#2): spricht die Welt den Satz des Lesers nicht, misst der Fächer einen Satz, den keiner sagt
+            const ZEUGE_REDE = { sprecher: 5, ms: 8000 };
+            z.rede = F.rede ? { leer: "der Leser der Rede: " + F.rede } : await K.welt("return await (" + H.seite.REDE + ")(r, T, " + JSON.stringify(ZEUGE_REDE) + ");", 30000);
+            if (!z.rede || z.rede.fehler) z.rede = { leer: "die Rede der Menge: " + ((z.rede && z.rede.fehler) || "ohne Antwort") };
+            else if (!z.rede.leer && !(z.rede.sprecher >= ZEUGE_REDE.sprecher && z.rede.gleich === z.rede.sprecher && z.rede.vokaleFremd === 0))
+                z.rede.leer = "die Rede der Menge (klang.js _bewohnerLautTakt) spricht nicht den Satz des Lesers: " + z.rede.gleich + " von " + z.rede.sprecher + " Sprechern gleich (Soll alle, ≥ " + ZEUGE_REDE.sprecher + "), " + z.rede.vokaleFremd + " Kerne fremder Vokale" + (z.rede.fremd.length ? " — " + z.rede.fremd.join(" · ") : "");
+            H.zeile("Rede: " + (z.rede.leer || z.rede.gleich + " von " + z.rede.sprecher + " Sprechern der Siedlung " + z.rede.ort + " sprechen den Satz des Lesers (" + z.rede.ms + " ms)") + " · Sätze am Fächer " + z.faecher.reduce((a, o) => a + o.saetze.length, 0) + " in " + new Set(z.faecher.map((o) => o.sprache)).size + " Sprachen");
             // DER STAMMBAUM AUS DEN WORTLISTEN (sprache#3, kultur-aus-klima): der Zeuge sind die Orte des Fächers — ihr Name liest die Liste
             const B = await K.welt("return await (" + H.seite.BAUM + ")(r, T, " + JSON.stringify({ orte: F.orte.map((o) => ({ name: o.name, region: o.region, seed: o.seed })) }) + ");", 30000);
             if (!B) throw new Error("der Stammbaum der Sprachen: ohne Antwort");
@@ -647,7 +756,9 @@ module.exports = (F) => [
             };
             await H.seite.STUFEN(H, K, z, [
                 { n: 1, art: "leser", wert: (z) => z.imBild + z.bewohner.namen, da: (z) => z.orte.some((o) => o.personenNamen.length > 0), zahl: zuordnung, wo: "stamm/siedlung-bewohner.js:887", fehlt: "Personennamen: kein Bewohner trägt einen Namen (der Satz des Bewohners ohne name); die Welt nennt nur den Ortsnamen je Siedlung (ORTSNAME)" },
-                { n: 2, art: "leser", wert: sprachen, da: (z) => z.texte.nahBewohner > 0, wo: "stamm/siedlung-bewohner.js:2109", fehlt: "kein Bewohner spricht einen Satz: die Begegnung dreht den Kopf, kein Wort, keine Sprache eines Sprechers" },
+                z.rede.leer
+                    ? { n: 2, art: "leser", wert: () => 0, da: () => false, wo: "stamm/siedlung-bewohner.js _bewohnerLauf „rede“ · stamm/klang.js _bewohnerLautTakt", fehlt: "kein Bewohner spricht einen Satz seiner Sprache — " + z.rede.leer }
+                    : { n: 2, art: "zahl", wert: (z) => trennung(z).n, zahl: trennung, wo: "fachwerk-core.js sprachSatz · stamm/siedlung-bewohner.js _bewohnerLauf „rede“" },
                 z.baum.leer ? { n: 3, art: "nicht", wert: () => 0, fehlt: z.baum.leer } : { n: 3, art: "zahl", wert: (z) => z.baum.ueff, zahl: baum, wo: "fachwerk-core.js spracheVon · sprachWort" },
                 { n: 4, art: "nicht", wert: sprachen, fehlt: "Sprachen mit Dialekt-Kontinuum: die Silben-Tafel einer Region kennt keinen Dialekt" },
                 { n: 5, art: "auge", um: 7000, wert: sprachen, fehlt: "hörbare Sprachen: kein Laut einer Sprache in der Welt" },
@@ -657,7 +768,7 @@ module.exports = (F) => [
         },
         sprossen: {
             1: { umfang: { soll: 100, wort: "Namen (Orts- und Personennamen) aus 2 Saaten" }, masse: [{ key: "zugeordnet", wort: "Namen richtig zugeordnet", soll: 0.9, richtung: "≥" }, { key: "saaten", wort: "Saaten der Namen", soll: 2, richtung: "≥" }], erwartet: "leser", fehlt: "Personennamen: kein Bewohner trägt einen Namen", wo: "stamm/siedlung-bewohner.js:887" },
-            2: { umfang: { soll: 10, wort: "Sprachen (U_eff)" }, masse: [{ key: "getrennt", wort: "Sprachen an Sätzen getrennt", soll: 0.85, richtung: "≥" }, { key: "saetze", wort: "Sätze", soll: 20, richtung: "≥" }], erwartet: "leser", fehlt: "kein Bewohner spricht einen Satz", wo: "stamm/siedlung-bewohner.js:2109" },
+            2: { umfang: { soll: 10, wort: "Sprachen (U_eff)" }, masse: [{ key: "getrennt", wort: "Sprachen an Sätzen getrennt", soll: 0.85, richtung: "≥" }, { key: "saetze", wort: "Sätze", soll: 20, richtung: "≥" }] },
             3: { umfang: { soll: 100, wort: "Sprachen (U_eff)" }, masse: [{ key: "rf", wort: "Robinson-Foulds des Stammbaums", soll: 0.3, richtung: "≤" }, { key: "anteil", wort: "Anteil der Bäume mit RF ≤ 0,3", soll: 0.7, richtung: "≥" }, { key: "familien", wort: "Sprachfamilien", soll: 5, richtung: "≥" }] },
             4: { umfang: { soll: 1000, wort: "Sprachen (U_eff) mit Dialekt-Kontinua" }, masse: [{ key: "kl", wort: "KL der Laut-Verteilung", soll: 0.2, richtung: "≤" }, { key: "isoglossen", wort: "Isoglossen auf Barrieren", soll: 0.7, richtung: "≥" }], erwartet: "nicht", fehlt: "Dialekt-Kontinua: keine" },
             5: { auge: { pose: POSE, vorbild: "Tonaufnahme einer realen, den Hörern unbekannten Sprache (Linguisten-Blindtest 2AFC ≤ 60 %); Satz ↔ Handlung ≥ 80 %" }, erwartet: "nicht", fehlt: "hörbare Sprachen: kein Laut einer Sprache" },
@@ -666,6 +777,11 @@ module.exports = (F) => [
         },
         proben: {
             1: [{ name: "die Attrappe: hundert Namen, alle aus EINER Saat", j: mut("mensch.kultur.sprache", 1, { art: "zahl", n: 100, werte: { zugeordnet: 0.97, saaten: 1 } }), gruen: false, zahl: /ROT an Saaten der Namen / }],
+            2: [
+                { name: "die Attrappe: die Menge spricht Vokale aus EINER Tafel — jede Stadt klingt gleich (getrennt beim Zufall)", j: mut("mensch.kultur.sprache", 2, { art: "zahl", n: 24, werte: { getrennt: 0.04, saetze: 20 } }), gruen: false, zahl: /ROT an Sprachen an Sätzen getrennt / },
+                { name: "die Attrappe: neun Sprachen, sauber getrennt (U_eff unter 10)", j: mut("mensch.kultur.sprache", 2, { art: "zahl", n: 9, werte: { getrennt: 1, saetze: 20 } }), gruen: false },
+                { name: "die Sätze der Sprachen am Fächer (U_eff ≥ 10, getrennt ≥ 0,85)", j: mut("mensch.kultur.sprache", 2, { art: "zahl", n: 24, werte: { getrennt: 0.96, saetze: 20 } }), gruen: true },
+            ],
             3: [
                 { name: "die Attrappe: Wortlisten nur aus Lautgesetzen, kein Ersatz (RF 0,53–0,71, kein Baum gelesen)", j: mut("mensch.kultur.sprache", 3, { art: "zahl", n: 191, werte: { rf: 0.6, anteil: 0, familien: 6 } }), gruen: false, zahl: /ROT an Robinson-Foulds des Stammbaums / },
                 { name: "der Stammbaum aus den Wortlisten (6 Familien, RF ≤ 0,21)", j: mut("mensch.kultur.sprache", 3, { art: "zahl", n: 192, werte: { rf: 0.12, anteil: 1, familien: 6 } }), gruen: true },
