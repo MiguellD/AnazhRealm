@@ -3020,15 +3020,15 @@
   },
   "profiband.K4": {
    "punkte": 1,
-   "beleg": "Maschine: Gehen 65 Bilder · max 75.24 ms · 69.23 % > 33 ms · Fahrt 9 Bilder · max 66.97 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 69.23 % > 33 ms | Fahrt: blind (9 Bilder in 2.5 s), 100.00 % > 33 ms, nicht aus- und eingestiegen (Sattel 1) an b3740dd5 radeon · Gehen 79 Bilder · max 83.36 ms · 21.52 % > 33 ms · Fahrt 54 Bilder · max 116.68 ms · 74.07 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 21.52 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 116.68), 74.07 % > 33 ms an b3740dd5 gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an b3740dd5: Last: Referenz f 1,297 (Faden 1,297 · alle Kerne 1,205; vor 108,3/313,2 ms, nach 106,2/285,3 ms, Ruhe 83,5/259,9 ms seit 2026-11-16) · fremd: bash.exe scratchpad/wache-0331.sh 14,6 CPU-s · bash.exe we · profiband.K4#2 gtx: ROT: Gehen 80 Bilder · max 91.59 ms · 18.75 % > 33 ms · Fahrt 38 Bilder · max 183.31 ms · 86.84 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 18.75 % > 33 ms | Fahrt: 9 Bild(er) > 100 ms (max 183.31), 86.84 % > 33 ms an b3740dd5",
+   "beleg": "Maschine: Gehen 66 Bilder · max 92.12 ms · 69.70 % > 33 ms · Fahrt 6 Bilder · max 66.97 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 69.70 % > 33 ms | Fahrt: blind (6 Bilder in 2.5 s), 100.00 % > 33 ms, nicht aus- und eingestiegen (Sattel 1) an b3740dd5 radeon · Gehen 79 Bilder · max 83.36 ms · 21.52 % > 33 ms · Fahrt 54 Bilder · max 116.68 ms · 74.07 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 21.52 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 116.68), 74.07 % > 33 ms an b3740dd5 gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an b3740dd5: Last: Referenz f 1,376 (Faden 1,376 · alle Kerne 1,246; vor 114,9/323,8 ms, nach 104,3/251,5 ms, Ruhe 83,5/259,9 ms seit 2026-11-16) · fremd: bash.exe scratchpad/wache-0331.sh 19,7 CPU-s · git stash c · profiband.K4#2 gtx: ROT: Gehen 80 Bilder · max 91.59 ms · 18.75 % > 33 ms · Fahrt 38 Bilder · max 183.31 ms · 86.84 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 18.75 % > 33 ms | Fahrt: 9 Bild(er) > 100 ms (max 183.31), 86.84 % > 33 ms an b3740dd5",
    "stationen": [
     {
      "id": "profiband.K4#1",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "Gehen 65 Bilder · max 75.24 ms · 69.23 % > 33 ms · Fahrt 9 Bilder · max 66.97 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 69.23 % > 33 ms | Fahrt: blind (9 Bilder in 2.5 s), 100.00 % > 33 ms, nicht aus- und eingestiegen (Sattel 1)",
+     "zahl": "Gehen 66 Bilder · max 92.12 ms · 69.70 % > 33 ms · Fahrt 6 Bilder · max 66.97 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 69.70 % > 33 ms | Fahrt: blind (6 Bilder in 2.5 s), 100.00 % > 33 ms, nicht aus- und eingestiegen (Sattel 1)",
      "sha": "b3740dd5566793ae66152d955e5a55d9c272884c",
-     "grund": "GRÜN trotz Last: Referenz f 1,363 (Faden 1,363 · alle Kerne 1,247; vor 107,2/324,1 ms, nach 113,8/280,3 ms, Ruhe 83,5/260 ms seit 2026-11-16) · fremd: bash.exe scratchpad/wache-0331.sh 15,7 CPU-s · sh.exe dienst/radeon-dienst.sh 7,9 CPU-s · bash.exe werkzeug/gpu-lauf.sh --waechter 1652832 claude/gpu-schloss.wache.1652832 7,9 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 21,8 CPU-s · svchost.exe 20,9 CPU-s · SearchProtocolHost.exe 8,2 CPU-s",
+     "grund": "GRÜN trotz Last: Referenz f 1,376 (Faden 1,376 · alle Kerne 1,246; vor 114,9/323,8 ms, nach 104,3/251,5 ms, Ruhe 83,5/259,9 ms seit 2026-11-16) · fremd: bash.exe scratchpad/wache-0331.sh 19,7 CPU-s · git stash create 13,0 CPU-s · bash.exe -c source /c/Users/micha/.claude/shell-sna… == $f/\"; grep -E \"uhr60|sturm|ruhig|B 12,7 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 27,0 CPU-s · svchost.exe 23,2 CPU-s · SearchProtocolHost.exe 7,4 CPU-s",
      "r6": "konsum"
     },
     {
@@ -3046,7 +3046,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an b3740dd5: Last: Referenz f 1,297 (Faden 1,297 · alle Kerne 1,205; vor 108,3/313,2 ms, nach 106,2/285,3 ms, Ruhe 83,5/259,9 ms seit 2026-11-16) · fremd: bash.exe scratchpad/wache-0331.sh 14,6 CPU-s · bash.exe we",
+     "grund": "Station seit der Messung geändert — zuletzt an b3740dd5: Last: Referenz f 1,376 (Faden 1,376 · alle Kerne 1,246; vor 114,9/323,8 ms, nach 104,3/251,5 ms, Ruhe 83,5/259,9 ms seit 2026-11-16) · fremd: bash.exe scratchpad/wache-0331.sh 19,7 CPU-s · git stash c",
      "ungemessen": true
     },
     {
@@ -16126,7 +16126,7 @@
   },
   "karte2.mensch.fahrzeug.lenker": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.fahrzeug.lenker#1 radeon: ungemessen (R10) — zuletzt an b3740dd5: die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 60 s von karte2.mensch.fahrzeug.lenker#1) — offen, UNGEMESSEN · karte2.mensch.fahrzeug.lenker#1 gtx: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#2 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#2 gtx: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#3 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#3 gtx: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#4 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#4 gtx: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#5 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#5 gtx: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#6 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.fahrzeug.lenker#1 radeon: ungemessen (R10) — zuletzt an b3740dd5: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 48 s · S1 warf: eine Spielstunde Verkehr nicht erreicht: 81.2 von 2500000000000 s in 2525 T · karte2.mensch.fahrzeug.lenker#1 gtx: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#2 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#2 gtx: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#3 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#3 gtx: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#4 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#4 gtx: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#5 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#5 gtx: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#6 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.fahrzeug.lenker#1",
@@ -16134,7 +16134,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an b3740dd5: die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 60 s von karte2.mensch.fahrzeug.lenker#1) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an b3740dd5: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 48 s · S1 warf: eine Spielstunde Verkehr nicht erreicht: 81.2 von 2500000000000 s in 2525 T",
      "ungemessen": true,
      "beide": true
     },
@@ -36626,7 +36626,7 @@
   },
   "karte2.same.preis.ausdauer": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.preis.ausdauer#1 radeon: Station seit der Messung geändert — zuletzt an b3740dd5: die Dauer misst nie über ein Neuladen: die Seite lud vor dem Grund neu (profiband.K4#1: Last: Referenz f 1,297 (Faden 1,297 · alle Kerne 1,205; vor 108,3/313,2 ms, nach 106,2/285,3 ms, Ruhe 83,5/259,9 · karte2.same.preis.ausdauer#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, koerper-core.js +17) — zuletzt an b3740dd5: die Dauer misst nie über ein Neuladen: die Seite lud vor dem Grund neu (profiband.K4#1: Last: Referenz f 1,446 (Faden 1,446 · alle Kerne 1,185; vor 122,1/261,6 ms, nach 128,8/249,9 ms, Ruhe 89,1/220,7 · karte2.same.preis.ausdauer#2 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#2 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#3 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#3 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#4 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#4 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#5 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#5 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#6 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.same.preis.ausdauer#1 radeon: Station seit der Messung geändert — zuletzt an b3740dd5: die Dauer misst nie über ein Neuladen: die Seite lud vor dem Grund neu (profiband.K4#1: Last: Referenz f 1,376 (Faden 1,376 · alle Kerne 1,246; vor 114,9/323,8 ms, nach 104,3/251,5 ms, Ruhe 83,5/259,9 · karte2.same.preis.ausdauer#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, koerper-core.js +17) — zuletzt an b3740dd5: die Dauer misst nie über ein Neuladen: die Seite lud vor dem Grund neu (profiband.K4#1: Last: Referenz f 1,446 (Faden 1,446 · alle Kerne 1,185; vor 122,1/261,6 ms, nach 128,8/249,9 ms, Ruhe 89,1/220,7 · karte2.same.preis.ausdauer#2 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#2 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#3 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#3 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#4 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#4 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#5 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#5 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#6 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.preis.ausdauer#1",
@@ -36634,7 +36634,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an b3740dd5: die Dauer misst nie über ein Neuladen: die Seite lud vor dem Grund neu (profiband.K4#1: Last: Referenz f 1,297 (Faden 1,297 · alle Kerne 1,205; vor 108,3/313,2 ms, nach 106,2/285,3 ms, Ruhe 83,5/259,9",
+     "grund": "Station seit der Messung geändert — zuletzt an b3740dd5: die Dauer misst nie über ein Neuladen: die Seite lud vor dem Grund neu (profiband.K4#1: Last: Referenz f 1,376 (Faden 1,376 · alle Kerne 1,246; vor 114,9/323,8 ms, nach 104,3/251,5 ms, Ruhe 83,5/259,9",
      "ungemessen": true,
      "beide": true
     },
@@ -37461,9 +37461,7 @@
    ]
   }
  },
- "rueckfall": [
-  "karte2.same.kopplung.ereignis#2 gtx: S2 brennendHa 1,024 ha gegen Soll ≥ 1 ha ✓ · meidenProzent 100 % gegen Soll = 100 % ✓ · der Zeuge der Welt fehlt: nur 39 ↔ 27 Bilder mit ↔ ohne Brand (Soll je 30) · Täter: stamm/siedlung-bewohner.js `_bewohnerSoll` (liest kein Brand-Feld) · stamm/feld-brand.js `_tickBrand` (die Kosten der Front) an b3740dd5 (grün gebucht an 54b89949)"
- ],
+ "rueckfall": [],
  "r6": {
   "haelften": 3787,
   "konsum": 291,
@@ -37592,7 +37590,7 @@
   "ohne": 3376
  },
  "kopfVoll": "b3740dd5566793ae66152d955e5a55d9c272884c",
- "zeit": "2026-11-27T21:57:18.782Z",
+ "zeit": "2026-11-27T22:10:12.229Z",
  "vorher": "b3740dd5",
  "bilanz": {
   "gewinn": [],
