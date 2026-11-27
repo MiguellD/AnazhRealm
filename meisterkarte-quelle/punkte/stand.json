@@ -3020,7 +3020,7 @@
   },
   "profiband.K4": {
    "punkte": 1,
-   "beleg": "Maschine: Gehen 61 Bilder · max 108.65 ms · 77.05 % > 33 ms · Fahrt 51 Bilder · max 92.02 ms · 90.20 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 2 Bild(er) > 100 ms (max 108.65), 77.05 % > 33 ms | Fahrt: 90.20 % > 33 ms an bed6256c radeon · Gehen 86 Bilder · max 74.97 ms · 16.28 % > 33 ms · Fahrt 11 Bilder · max 75.03 ms · 72.73 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 16.28 % > 33 ms | Fahrt: blind (11 Bilder in 2.5 s), 72.73 % > 33 ms, nicht aus- und eingestiegen (Sattel 01) an bed6256c gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an bed6256c: Last: Referenz f 1,456 (Faden 1,456 · alle Kerne 1,171; vor 121,6/304,1 ms, nach 104/254,4 ms, Ruhe 83,5/259,8 ms seit 2026-11-16) · fremd: bash.exe scratchpad/wache-0331.sh 22,5 CPU-s · Claude.exe -- · profiband.K4#2 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/wirt-wache.cjs, stamm/bild-himmel.js +15) — zuletzt an bed6256c: Last: Referenz f 1,387 (Faden 1,387 · alle Kerne 1,266; vor 123/278,7 ms, nach 87,4/252,9 ms, Ruhe 88,7/220,1 ms seit 2026-11-18) · fremd: bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\";",
+   "beleg": "Maschine: Gehen 61 Bilder · max 108.65 ms · 77.05 % > 33 ms · Fahrt 51 Bilder · max 92.02 ms · 90.20 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 2 Bild(er) > 100 ms (max 108.65), 77.05 % > 33 ms | Fahrt: 90.20 % > 33 ms an bed6256c radeon · Gehen 82 Bilder · max 75 ms · 24.39 % > 33 ms · Fahrt 46 Bilder · max 116.68 ms · 82.61 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 24.39 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 116.68), 82.61 % > 33 ms an bed6256c gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an bed6256c: Last: Referenz f 1,456 (Faden 1,456 · alle Kerne 1,171; vor 121,6/304,1 ms, nach 104/254,4 ms, Ruhe 83,5/259,8 ms seit 2026-11-16) · fremd: bash.exe scratchpad/wache-0331.sh 22,5 CPU-s · Claude.exe -- · profiband.K4#2 gtx: ROT: Gehen 82 Bilder · max 75 ms · 24.39 % > 33 ms · Fahrt 46 Bilder · max 116.68 ms · 82.61 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 24.39 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 116.68), 82.61 % > 33 ms an bed6256c",
    "stationen": [
     {
      "id": "profiband.K4#1",
@@ -3035,9 +3035,9 @@
      "id": "profiband.K4#1",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "Gehen 86 Bilder · max 74.97 ms · 16.28 % > 33 ms · Fahrt 11 Bilder · max 75.03 ms · 72.73 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 16.28 % > 33 ms | Fahrt: blind (11 Bilder in 2.5 s), 72.73 % > 33 ms, nicht aus- und eingestiegen (Sattel 01)",
+     "zahl": "Gehen 82 Bilder · max 75 ms · 24.39 % > 33 ms · Fahrt 46 Bilder · max 116.68 ms · 82.61 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 24.39 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 116.68), 82.61 % > 33 ms",
      "sha": "bed6256cc52c9489d5f9bb30b2d7faf5b307806d",
-     "grund": "GRÜN trotz Last: Referenz f 1,387 (Faden 1,387 · alle Kerne 1,266; vor 123/278,7 ms, nach 87,4/252,9 ms, Ruhe 88,7/220,1 ms seit 2026-11-18) · fremd: bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \" 3,4 CPU-s · taskhostw.exe 2,7 CPU-s · Explorer.EXE 2,4 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 32,0 CPU-s · svchost.exe 10,9 CPU-s · SearchIndexer.exe 1,9 CPU-s",
+     "grund": null,
      "r6": "konsum"
     },
     {
@@ -3053,10 +3053,9 @@
      "id": "profiband.K4#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/wirt-wache.cjs, stamm/bild-himmel.js +15) — zuletzt an bed6256c: Last: Referenz f 1,387 (Faden 1,387 · alle Kerne 1,266; vor 123/278,7 ms, nach 87,4/252,9 ms, Ruhe 88,7/220,1 ms seit 2026-11-18) · fremd: bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\";",
-     "ungemessen": true,
+     "zahl": "Gehen 82 Bilder · max 75 ms · 24.39 % > 33 ms · Fahrt 46 Bilder · max 116.68 ms · 82.61 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 24.39 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 116.68), 82.61 % > 33 ms",
+     "sha": "bed6256cc52c9489d5f9bb30b2d7faf5b307806d",
+     "grund": "ROT: Gehen 82 Bilder · max 75 ms · 24.39 % > 33 ms · Fahrt 46 Bilder · max 116.68 ms · 82.61 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 24.39 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 116.68), 82.61 % > 33 ms",
      "r6": "konsum"
     }
    ]
@@ -36632,7 +36631,7 @@
   },
   "karte2.same.preis.ausdauer": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.preis.ausdauer#1 radeon: Station seit der Messung geändert — zuletzt an eef726c7: die Dauer misst nie über ein Neuladen: die Seite lud vor dem Grund neu (profiband.K4#1: Last: Referenz f 1,381 (Faden 1,381 · alle Kerne 1,148; vor 107,1/297,5 ms, nach 115,3/289,6 ms, Ruhe 83,5/259,2 · karte2.same.preis.ausdauer#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, klang-core.js +56) — zuletzt an bed6256c: die Dauer misst nie über ein Neuladen: die Seite lud vor dem Grund neu (profiband.K4#1: Last: Referenz f 1,387 (Faden 1,387 · alle Kerne 1,266; vor 123/278,7 ms, nach 87,4/252,9 ms, Ruhe 88,7/220,1 ms · karte2.same.preis.ausdauer#2 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#2 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#3 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#3 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#4 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#4 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#5 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#5 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#6 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.same.preis.ausdauer#1 radeon: Station seit der Messung geändert — zuletzt an eef726c7: die Dauer misst nie über ein Neuladen: die Seite lud vor dem Grund neu (profiband.K4#1: Last: Referenz f 1,381 (Faden 1,381 · alle Kerne 1,148; vor 107,1/297,5 ms, nach 115,3/289,6 ms, Ruhe 83,5/259,2 · karte2.same.preis.ausdauer#1 gtx: ROT: Spielgang 1.37 min in 1 Seite(n), davon die Station 0 s in 0 Fenster(n) auf der Bahn (die Sitzung trug 66.5 s, Ziel 70 s, Deckel 93 s) · nach dem Collector 234.8 → 320.6 MB: 62.6 MB/min (Soll ≤ 50) · Heap-Kurve 22 Punkte über 1.15 min, 258.1 → 332.1 MB (max 425.5), roh 77.67 MB/min (der Takt des Collectors, kein Urteil) · [linse-gpu] nvidia/pascal — ROT 1: Heap nach dem Collector 234.8 → 320.6 MB: 62.6 MB/min > 50 · ROT trotz Last: Referenz f 1,292 (Faden 1,13 · alle Kerne 1,292; vor 100,3/243,4 ms, nach 99,7/284,4 ms, Ruhe 88,8/220,2 ms seit 2026-11-25) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 2,3 CPU-s · Explorer.EXE 1,7 CPU-s · bash.exe sk/wacht6.sh 1,5 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 13,4 CPU-s · svchost.exe 4,6 CPU-s · SearchIndexer.exe 0,2 CPU-s — auch entlastet: Heap nach dem Collector MB/min roh 62,6 (fest), Schwelle ≤ 50 an bed6256c · karte2.same.preis.ausdauer#2 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#2 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#3 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#3 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#4 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#4 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#5 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#5 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#6 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.preis.ausdauer#1",
@@ -36648,10 +36647,9 @@
      "id": "karte2.same.preis.ausdauer#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, klang-core.js +56) — zuletzt an bed6256c: die Dauer misst nie über ein Neuladen: die Seite lud vor dem Grund neu (profiband.K4#1: Last: Referenz f 1,387 (Faden 1,387 · alle Kerne 1,266; vor 123/278,7 ms, nach 87,4/252,9 ms, Ruhe 88,7/220,1 ms",
-     "ungemessen": true,
+     "zahl": "Spielgang 1.37 min in 1 Seite(n), davon die Station 0 s in 0 Fenster(n) auf der Bahn (die Sitzung trug 66.5 s, Ziel 70 s, Deckel 93 s) · nach dem Collector 234.8 → 320.6 MB: 62.6 MB/min (Soll ≤ 50) · Heap-Kurve 22 Punkte über 1.15 min, 258.1 → 332.1 MB (max 425.5), roh 77.67 MB/min (der Takt des Collectors, kein Urteil) · [linse-gpu] nvidia/pascal — ROT 1: Heap nach dem Collector 234.8 → 320.6 MB: 62.6 MB/min > 50",
+     "sha": "bed6256cc52c9489d5f9bb30b2d7faf5b307806d",
+     "grund": "ROT: Spielgang 1.37 min in 1 Seite(n), davon die Station 0 s in 0 Fenster(n) auf der Bahn (die Sitzung trug 66.5 s, Ziel 70 s, Deckel 93 s) · nach dem Collector 234.8 → 320.6 MB: 62.6 MB/min (Soll ≤ 50) · Heap-Kurve 22 Punkte über 1.15 min, 258.1 → 332.1 MB (max 425.5), roh 77.67 MB/min (der Takt des Collectors, kein Urteil) · [linse-gpu] nvidia/pascal — ROT 1: Heap nach dem Collector 234.8 → 320.6 MB: 62.6 MB/min > 50 · ROT trotz Last: Referenz f 1,292 (Faden 1,13 · alle Kerne 1,292; vor 100,3/243,4 ms, nach 99,7/284,4 ms, Ruhe 88,8/220,2 ms seit 2026-11-25) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 2,3 CPU-s · Explorer.EXE 1,7 CPU-s · bash.exe sk/wacht6.sh 1,5 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 13,4 CPU-s · svchost.exe 4,6 CPU-s · SearchIndexer.exe 0,2 CPU-s — auch entlastet: Heap nach dem Collector MB/min roh 62,6 (fest), Schwelle ≤ 50",
      "r6": "konsum",
      "beide": true
     },
@@ -37596,7 +37594,7 @@
   "ohne": 3386
  },
  "kopfVoll": "bed6256cc52c9489d5f9bb30b2d7faf5b307806d",
- "zeit": "2026-11-27T16:07:38.177Z",
+ "zeit": "2026-11-27T16:20:10.244Z",
  "vorher": "bed6256c",
  "bilanz": {
   "gewinn": [],
