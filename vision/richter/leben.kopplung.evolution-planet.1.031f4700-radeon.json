@@ -1,0 +1,88 @@
+{
+ "leiter": "leben.kopplung.evolution-planet",
+ "sprosse": 1,
+ "sha": "031f4700b44ed32ea4362ff2744f8fa71fa5fc2e",
+ "datum": "2026-11-27T07:41:22.704Z",
+ "soll": "≥ 0,9 der Würfe in der Boden-Klasse der Gattung, im Bild gezählt",
+ "station": "karte2.leben.kopplung.evolution-planet#1",
+ "geraete": [
+  {
+   "geraet": "Radeon 890M",
+   "richter": {
+    "wert": "S1 anteilImRaum ungemessen gegen Soll ≥ 0,9 ✗ · Bild (Beleg) fehlt (/bild: {\"ms\":17254,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von Natur baum) · Täter: stamm/kreatur-leben.js _pickFaunaSoulAtPlayer (die Gattung aus der Boden-Klasse)",
+    "urteil": "ROT"
+   },
+   "preis": {
+    "fehlt": "der Preis-Lauf nannte sein Stück nicht (kein Ergebnis von `/lauf`)",
+    "bilder": 0,
+    "fenster": {
+     "von": "2026-11-27T07:36:50.247Z",
+     "bis": "2026-11-27T07:41:22.704Z"
+    },
+    "quelle": "kein Preis: der Preis-Lauf nannte sein Stück nicht (kein Ergebnis von `/lauf`)",
+    "referenz": {
+     "f": 1.272,
+     "fEin": 1.272,
+     "fAlle": 1,
+     "vor": {
+      "ein": 106.2,
+      "alle": 249.4,
+      "tor": {
+       "ruhig": true,
+       "s": 0,
+       "kerne": 0.02,
+       "soll": 6,
+       "reihe": [
+        0.05,
+        0.04,
+        0.02,
+        0.03,
+        0.01,
+        0.01
+       ]
+      }
+     },
+     "nach": {
+      "ein": 100.7,
+      "alle": 228.7,
+      "tor": {
+       "ruhig": true,
+       "s": 0,
+       "kerne": 0.02,
+       "soll": 6,
+       "reihe": [
+        0.05,
+        0.04,
+        0.02,
+        0.03,
+        0.01,
+        0.01
+       ]
+      }
+     },
+     "ruhe": {
+      "ein": 83.5,
+      "alle": 259.2,
+      "n": 1194,
+      "von": "2026-11-16"
+     },
+     "nachGruendung": {
+      "f": 1.208,
+      "ein": 100.9,
+      "alle": 282.3,
+      "fahrten": 9,
+      "s": 164.2,
+      "ruhig": false
+     },
+     "umfeld": "sitzung",
+     "rechner": "win32 · 24 Kerne · AMD Ryzen AI 9 HX 370 w/ Radeon 890M"
+    },
+    "posten": {
+     "fehler": "Connection closed."
+    },
+    "urteil": "FEHLT",
+    "treppe": "2026-11-23b"
+   }
+  }
+ ]
+}
