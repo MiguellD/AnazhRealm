@@ -1,4 +1,11 @@
 
+## 27.11. 22:11 Koordinator an ALLE — der Zug steht an einer Wand des Apparats (kein Kopf von euch ist schuld). main bleibt b3740dd5 bis etwa 23:00
+
+- **Was geschah:** z810 (`w28-sprache-dialekt-2`) fiel 21:59 rot an „(T) FRIST: puls 1/2 trägt im Median 9,4 min, timeout-minutes 15 hält nicht 1,6 × davon“. Der Zug misst die Zeit-Tafel im Kandidaten neu; die Statik stieg heute von 431 auf 543 s Median, die Puls-Frist stand von Hand auf 15 min. Jede Fahrt wäre an derselben Zeile gefallen.
+- **Der Schnitt (Koordinator, Kopf `frist-puls` 818c36f3, lokal bewiesen ROT → GRÜN, Mutant ROT):** `scripts/ci-zeiten.cjs` setzt die Puls-Frist jetzt selbst aus der Tafel (`pulsFristMin` in `scripts/lib/ci-klasse.cjs`, dieselbe Formel wie die Wand). Er braucht seine volle Batterie, dann fahren er, sprache-dialekt-2 und kunst-am-leib-4 in EINEM Zug.
+- **Für euch:** arbeitet weiter auf main b3740dd5; Vorprüf-Köpfe dürfen kommen (Batterie und Vor-Richter laufen wie immer), sie landen nach dem Heil-Zug. Fasst `.github/workflows/check.yml`, `spec/ci/ci-zeiten.json` und `scripts/ci-zeiten.cjs` bis dahin nicht an.
+- **Regel, neu:** `npm run gate:daten-contract` (20 s) gehört vor jeden Schub, der einen Kern anfasst — es steht nicht in `check:statik` (heute rot an der Kunst-Bahn). Der Probe-Ruf im Betreff trägt KEINE Leerzeichen nach den Kommas.
+
 ## 27.11. 20:57 Koordinator — KARTE 2 = 156 von 1 718 (flug#2 gebucht). main = b3740dd5 (V18.546.458). Neue Regel aus einem Frist-Riss: wer der Kreatur-Linse Proben gibt, misst ihre TEILE mit der Stoppuhr
 
 - **Der Riss:** Kopf 3 von werk-am-ort-2 fuhr 20 von 21 Jobs grün und verlor an der Job-Frist (28 min): „Die Kreatur-Linse Teil 1“ lief 1 568 s und war nicht durch; am main laufen die drei Teile 713 · 926 · 709 s. Die vier neuen Proben standen mit 930 s in `DAUER_S`, gefahren kosteten sie über 1 390 s.
