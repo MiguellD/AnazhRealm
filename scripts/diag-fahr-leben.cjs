@@ -772,6 +772,17 @@ function stationVerdict(s) {
                 fk.ball?.zerfallPct >= 4 && fk.ball.zerfallPct <= 8,
                 `frei-drall-zerfall: der Drall des Balls fällt bis kurz nach dem Scheitel um ${fk.ball?.zerfallPct} % (Band der Messungen 4–8 %) — Täter FREI.luft.drallZerfall / \`_freiZiehen\` (stamm/koerper-frei.js)`,
             ],
+            // same.physik.flug#3: das Tauchen — Holz und Eis schwimmen in der Tiefe ihres Dichteverhältnisses (±5 %), der Stein
+            // liegt auf dem Grund (main b3740dd5: der Löser las kein Wasser, Holz 3,42 m tief statt 0,22 m, 1 485 %)
+            [
+                fk.tauch?.holz?.abwPct <= 5 && fk.tauch.eis?.abwPct <= 5,
+                `frei-tauchen: Holz taucht ${fk.tauch?.holz?.tiefe} m (Soll ${fk.tauch?.holz?.soll}, ${fk.tauch?.holz?.abwPct} %), Eis ${fk.tauch?.eis?.tiefe} m (Soll ${fk.tauch?.eis?.soll}, ${fk.tauch?.eis?.abwPct} %; je ≤ 5)${fk.tauch?.fehlt ? " — " + fk.tauch.fehlt : ""} — Täter \`_freiAuftrieb\` / \`_freiWasserPacken\` (stamm/koerper-frei.js)`,
+            ],
+            [
+                fk.tauch?.stein?.ueberGrund < 0.05,
+                `frei-sinken: der Stein-Würfel liegt ${fk.tauch?.stein?.ueberGrund} m über dem Grund (< 0,05) — Täter \`_freiAuftrieb\` (stamm/koerper-frei.js)`,
+            ],
+            [fk.tauchOhneWasser?.holz?.abwPct > 5, "frei-mutante: ohne Wasser schwimmt das Holz doch (vakuös)"],
             [fk.ballOhneMagnus?.ablenkAbwPct > 25, "frei-mutante: ohne Magnus lenkt der Drall den Ball wie die Rechnung (vakuös)"],
             [!(fk.ballOhneZerfall?.zerfallPct >= 4), "frei-mutante: ohne Zerfall fällt der Drall doch (vakuös)"],
             [fk.ballPrallEins?.prallAbwPct > 10, "frei-mutante: mit EINER Stoßzahl 0,2 prallt der Ball wie das FIFA-Band (vakuös)"],
@@ -2346,6 +2357,8 @@ hauptLauf(async () => {
                 ballOhneMagnus: { kugel: true, ablenkung: 0, rechnung: 1.0, ablenkAbwPct: 100, prallH: 1.3, prallAbwPct: 5.3, zerfallPct: 0 },
                 ballPrallEins: { kugel: true, ablenkung: 0.95, rechnung: 1.0, ablenkAbwPct: 5, prallH: 0.07, prallAbwPct: 77.9, zerfallPct: 5.6 },
                 ballOhneZerfall: { kugel: true, ablenkung: 0.98, rechnung: 1.0, ablenkAbwPct: 2, prallH: 1.3, prallAbwPct: 5.3, zerfallPct: 0 },
+                tauch: { saeule: 3.43, holz: { tiefe: 0.215, soll: 0.216, abwPct: 0.35, ueberGrund: 3.21 }, eis: { tiefe: 0.28, soll: 0.275, abwPct: 1.8, ueberGrund: 3.14 }, stein: { tiefe: 3.43, soll: 0.795, abwPct: 331, ueberGrund: 0 } },
+                tauchOhneWasser: { saeule: 3.43, holz: { tiefe: 3.423, soll: 0.216, abwPct: 1484.9, ueberGrund: 0.007 }, eis: { tiefe: 3.431, soll: 0.275, abwPct: 1147, ueberGrund: 0 }, stein: { tiefe: 3.43, soll: 0.795, abwPct: 331, ueberGrund: 0 } },
             },
             spielerWagen: {
                 a: {
@@ -2606,6 +2619,23 @@ hauptLauf(async () => {
                 "ohne Zerfall fällt der Drall doch",
                 { frei: { ...gutS.frei, ballOhneZerfall: gutS.frei.ball } },
                 "frei-mutante: ohne Zerfall",
+            ],
+            // der Löser ohne Wasser (main b3740dd5): Holz und Eis sinken auf den Grund des Sees
+            [
+                "Holz und Eis sinken auf den Grund",
+                { frei: { ...gutS.frei, tauch: gutS.frei.tauchOhneWasser } },
+                "frei-tauchen",
+            ],
+            ["kein See in der Welt", { frei: { ...gutS.frei, tauch: { fehlt: "kein See in der Welt" } } }, "frei-tauchen"],
+            [
+                "der Stein schwimmt",
+                { frei: { ...gutS.frei, tauch: { ...gutS.frei.tauch, stein: { ...gutS.frei.tauch.stein, ueberGrund: 3 } } } },
+                "frei-sinken",
+            ],
+            [
+                "ohne Wasser schwimmt das Holz doch",
+                { frei: { ...gutS.frei, tauchOhneWasser: gutS.frei.tauch } },
+                "frei-mutante: ohne Wasser",
             ],
             // der wandernde Fuss an 55a540d7~1: das stehende Fass im Gras gewann +18 J in 8 s und schlief nie
             [
