@@ -1,7 +1,7 @@
 {
  "sha": "9a75d61c8d3eaa08bbf4b0bd18137d11e2e2287d",
  "geraet": "radeon",
- "zeit": "2026-11-27T18:50:17.681Z",
+ "zeit": "2026-11-27T19:06:10.938Z",
  "host": "MiguellD",
  "je": {
   "karte2.erleben.bild.nacht#2": {
@@ -213,6 +213,149 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "profiband.K4#1": {
+   "gruen": true,
+   "zahl": "Gehen 66 Bilder · max 91.91 ms · 59.09 % > 33 ms · Fahrt 40 Bilder · max 151.01 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 59.09 % > 33 ms | Fahrt: 6 Bild(er) > 100 ms (max 151.01), 100.00 % > 33 ms",
+   "exit": 0,
+   "minuten": 0.88,
+   "mass": [
+    {
+     "wort": "Gehen Frame max ms",
+     "wert": 91.91,
+     "soll": 100
+    }
+   ],
+   "gpu": "amd/rdna-3",
+   "konsum": "kd525ab04fd9b",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kf166dff2abcc",
+   "s": 52.1,
+   "fremd": {
+    "s": 57.1,
+    "takte": 22,
+    "fremdS": 164.27,
+    "kerne": 2.879,
+    "fensterKerne": 3.668,
+    "namen": [
+     [
+      "node scripts/diag-kreatur-leben.cjs",
+      58.28
+     ],
+     [
+      "bash.exe scratchpad/wache-0331.sh",
+      14.58
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-30000-profil-U7GRWR --no-p",
+      12.44
+     ]
+    ],
+    "dienerS": 61.78,
+    "diener": [
+     [
+      "System",
+      32.48
+     ],
+     [
+      "dwm.exe",
+      16.31
+     ]
+    ],
+    "geraetS": 72.73,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      31.53
+     ],
+     [
+      "svchost.exe",
+      21.5
+     ],
+     [
+      "SearchProtocolHost.exe",
+      8.61
+     ]
+    ],
+    "eigenS": 283.16,
+    "rechnerKerne": 24,
+    "spannen": {
+     "vor": 2.432,
+     "nach": 3.36,
+     "station": 4.412
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 123.8,
+     "alle": 324.3,
+     "cpuEin": 140,
+     "tor": {
+      "ruhig": true,
+      "kerne": 0.98,
+      "s": 0,
+      "soll": 6,
+      "reihe": [
+       3.01,
+       8.25,
+       3.52,
+       1.24,
+       0.96,
+       0.73
+      ]
+     },
+     "spanne": [
+      1795806370941,
+      1795806371585
+     ]
+    },
+    "nach": {
+     "ein": 120.7,
+     "alle": 318,
+     "cpuEin": 125,
+     "tor": {
+      "ruhig": true,
+      "kerne": 3.76,
+      "s": 0,
+      "soll": 6,
+      "reihe": [
+       3.3,
+       3.97,
+       3.35,
+       2.79,
+       2.57,
+       5.99
+      ]
+     },
+     "spanne": [
+      1795806424518,
+      1795806425130
+     ]
+    },
+    "ruhe": {
+     "ein": 83.5,
+     "alle": 259.2,
+     "n": 1192,
+     "von": "2026-11-16"
+    },
+    "f": 1.483,
+    "fEin": 1.483,
+    "fAlle": 1.251,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 24 Kerne · AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
+    "umfeld": "sitzung"
+   },
+   "grund": "GRÜN trotz Last: Referenz f 1,483 (Faden 1,483 · alle Kerne 1,251; vor 123,8/324,3 ms, nach 120,7/318 ms, Ruhe 83,5/259,2 ms seit 2026-11-16) · fremd: node scripts/diag-kreatur-leben.cjs 58,3 CPU-s · bash.exe scratchpad/wache-0331.sh 14,6 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-30000-profil-U7GRWR --no-p 12,4 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 31,5 CPU-s · svchost.exe 21,5 CPU-s · SearchProtocolHost.exe 8,6 CPU-s",
+   "zeit": "2026-11-27T19:06:10.938Z",
+   "abdruck": "67957095b356",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -222,165 +365,21 @@
   "k678c3a0875a4": "bVXBbqMwEP2XHLfrGjAUY6kHp1TbSJtV+gljGAMNgciGUGW1/76ChDRA58LBbzzP780Mf1dHSPaQ4eOHrauVWP1Y/VxZOCGxaE5oHj/sSqyixPWQCXkJKqV86WGJKY6NpWWhKKgK8gOS1jRYlI/JkKafwAmUoN2rzHaUanqmcff8PE8tFaY1aUDjmOggCziKObC1GSgk0Oqh2BUc+BE+uYIOwWO5jektPrmUu452O/42u0xBlU7Zum4ET6GQ3UZK+T5nmRaADSmLyo513TSMtCNutbrtIsdAR86AeYnmmoTcdX01kl33cvbSzBJ12Vo7KcZZGnhcUBrNsRnaIskbcjS1wuoKV5EXuiDWS7WzY0v0PSNQCriaa50DVhmaCQeHJboX+pPPL93DAQ2QCvIrNHJY6KkvbSilb0su5UB8KDES9xn3uDtJ7E2lp17gVE5iNxxmI0p340Fyg2RyUdQmeWEOU7m0j57DxO8lRZtDiobsa9vc0AxD31GXadjE9MKFr+eZX48bPQQAftcwlFP5ttDS1rrpwCDJju3YND4GYSCk3CzADRwON1qMA5sbaZu+0e9peJEOAl9Q+nAZlOWjL2NBzliUeOvbJGTR/PKTgQMBlZlC69F5FSQ6+q5ROywbouq6GXkwx0kCQRmt7s3+M9i4ufM5zt79plx3r1P7N3LOe6hQm2YkrUAx3xc6izmlXM/RhWlIB0k+wkOmEJno+20GPaMpMcOJjNp1wUsF7fSF97lfNeF1FeiHSQOfFy6fC+wFrmxrR4UT8FUgvrGkQ7NXUO1v+46rCIf2W2/lbqLJ60vWjwE9cTrVKj4N3+2v3VW7WMqY62uhIyb0aGpd9FuR5tDaHMrm65fw7z8="
  },
  "ungemessen": {
-  "profiband.K4#1": {
-   "gruen": false,
-   "zahl": "Last: Referenz f 1,369 (Faden 1,369 · alle Kerne 1,199; vor 102,1/310,9 ms, nach 114,3/298,1 ms, Ruhe 83,5/259,2 ms seit 2026-11-16) · fremd: node scripts/diag-kamera-laub.cjs --selftest 34,8 CPU-s · bash.exe scratchpad/wache-0331.sh 14,3 CPU-s · git pack-objects --exclude-promisor-objects-best-effort pack/pack 14,0 CPU-s · Gerät (Grund-Last, nie fremd) svchost.exe 30,1 CPU-s · MsMpEng.exe 29,5 CPU-s · SearchIndexer.exe 9,7 CPU-s — unscharf unter Last: Gehen Frame max ms roh 108,6, entlastet ≥ 54,3 (÷ 2, Karte), Schwelle ≤ 100 — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 63 Bilder · max 108.61 ms · 73.02 % > 33 ms · Fahrt 47 Bilder · max 108.83 ms · 91.49 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 1 Bild(er) > 100 ms (max 108.61), 73.02 % > 33 ms | Fahrt: )",
-   "exit": 0,
-   "minuten": 0.83,
-   "grund": "Last: Referenz f 1,369 (Faden 1,369 · alle Kerne 1,199; vor 102,1/310,9 ms, nach 114,3/298,1 ms, Ruhe 83,5/259,2 ms seit 2026-11-16) · fremd: node scripts/diag-kamera-laub.cjs --selftest 34,8 CPU-s · bash.exe scratchpad/wache-0331.sh 14,3 CPU-s · git pack-objects --exclude-promisor-objects-best-effort pack/pack 14,0 CPU-s · Gerät (Grund-Last, nie fremd) svchost.exe 30,1 CPU-s · MsMpEng.exe 29,5 CPU-s · SearchIndexer.exe 9,7 CPU-s — unscharf unter Last: Gehen Frame max ms roh 108,6, entlastet ≥ 54,3 (÷ 2, Karte), Schwelle ≤ 100 — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 63 Bilder · max 108.61 ms · 73.02 % > 33 ms · Fahrt 47 Bilder · max 108.83 ms · 91.49 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 1 Bild(er) > 100 ms (max 108.61), 73.02 % > 33 ms | Fahrt: )",
-   "mass": [
-    {
-     "wort": "Gehen Frame max ms",
-     "wert": 108.61,
-     "soll": 100
-    }
-   ],
-   "gpu": "amd/rdna-3",
-   "konsum": "kd525ab04fd9b",
-   "konsumN": 29,
-   "konsumSeite": false,
-   "konsumGanz": {
-    "gelesen": 2
-   },
-   "konsumBoot": "kf166dff2abcc",
-   "s": 49.1,
-   "fremd": {
-    "s": 53.7,
-    "takte": 21,
-    "fremdS": 146.08,
-    "kerne": 2.72,
-    "fensterKerne": 3.494,
-    "namen": [
-     [
-      "node scripts/diag-kamera-laub.cjs --selftest",
-      34.83
-     ],
-     [
-      "bash.exe scratchpad/wache-0331.sh",
-      14.3
-     ],
-     [
-      "git pack-objects --exclude-promisor-objects-best-effort pack/pack",
-      13.95
-     ]
-    ],
-    "dienerS": 39.73,
-    "diener": [
-     [
-      "dwm.exe",
-      15.98
-     ],
-     [
-      "System",
-      13.55
-     ]
-    ],
-    "geraetS": 76.67,
-    "geraet": [
-     [
-      "svchost.exe",
-      30.13
-     ],
-     [
-      "MsMpEng.exe",
-      29.53
-     ],
-     [
-      "SearchIndexer.exe",
-      9.67
-     ]
-    ],
-    "eigenS": 280.33,
-    "rechnerKerne": 24,
-    "spannen": {
-     "vor": 1.787,
-     "nach": 3.183,
-     "station": 6.084
-    }
-   },
-   "referenz": {
-    "vor": {
-     "ein": 102.1,
-     "alle": 310.9,
-     "cpuEin": 110,
-     "tor": {
-      "ruhig": true,
-      "kerne": 4.05,
-      "s": 0,
-      "soll": 6,
-      "reihe": [
-       0.3,
-       0.58,
-       3.82,
-       8.37,
-       2.57,
-       0.91
-      ]
-     },
-     "spanne": [
-      1795804682874,
-      1795804683461
-     ]
-    },
-    "nach": {
-     "ein": 114.3,
-     "alle": 298.1,
-     "cpuEin": 125,
-     "tor": {
-      "ruhig": true,
-      "kerne": 4.98,
-      "s": 0,
-      "soll": 6,
-      "reihe": [
-       3.82,
-       3.76,
-       3.89,
-       4.86,
-       4.35,
-       5.68
-      ]
-     },
-     "spanne": [
-      1795804733337,
-      1795804733911
-     ]
-    },
-    "ruhe": {
-     "ein": 83.5,
-     "alle": 259.2,
-     "n": 1192,
-     "von": "2026-11-16"
-    },
-    "f": 1.369,
-    "fEin": 1.369,
-    "fAlle": 1.199,
-    "verdraengt": 1,
-    "schwankt": false,
-    "rechner": "win32 · 24 Kerne · AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
-    "umfeld": "sitzung"
-   },
-   "ungemessen": true,
-   "zeit": "2026-11-27T18:38:02.871Z",
-   "abdruck": "67957095b356",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session"
-  },
   "profiband.K4#2": {
    "gruen": false,
-   "zahl": "Last: Referenz f 1,369 (Faden 1,369 · alle Kerne 1,199; vor 102,1/310,9 ms, nach 114,3/298,1 ms, Ruhe 83,5/259,2 ms seit 2026-11-16) · fremd: node scripts/diag-kamera-laub.cjs --selftest 34,8 CPU-s · bash.exe scratchpad/wache-0331.sh 14,3 CPU-s · git pack-objects --exclude-promisor-objects-best-effort pack/pack 14,0 CPU-s · Gerät (Grund-Last, nie fremd) svchost.exe 30,1 CPU-s · MsMpEng.exe 29,5 CPU-s · SearchIndexer.exe 9,7 CPU-s — unscharf unter Last: Gehen Frame max ms roh 108,6, entlastet ≥ 54,3 (÷ 2, Karte), Schwelle ≤ 100 · Fahrt Frame max ms roh 108,8, entlastet ≥ 54,41 (÷ 2, Karte), Schwelle ≤ 100 — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 63 Bilder · max 108.61 ms · 73.02 % > 33 ms · Fahrt 47 Bilder · max 108.83 ms · 91.49 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 1 Bild(er) > 100 ms (max 108.61), 73.02 % > 33 ms | Fahrt: )",
+   "zahl": "Last: Referenz f 1,483 (Faden 1,483 · alle Kerne 1,251; vor 123,8/324,3 ms, nach 120,7/318 ms, Ruhe 83,5/259,2 ms seit 2026-11-16) · fremd: node scripts/diag-kreatur-leben.cjs 58,3 CPU-s · bash.exe scratchpad/wache-0331.sh 14,6 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-30000-profil-U7GRWR --no-p 12,4 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 31,5 CPU-s · svchost.exe 21,5 CPU-s · SearchProtocolHost.exe 8,6 CPU-s — unscharf unter Last: Fahrt Frame max ms roh 151, entlastet ≥ 75,5 (÷ 2, Karte), Schwelle ≤ 100 — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 66 Bilder · max 91.91 ms · 59.09 % > 33 ms · Fahrt 40 Bilder · max 151.01 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 59.09 % > 33 ms | Fahrt: 6 Bild(er) > 100 ms (max 151.01), )",
    "exit": 0,
-   "minuten": 0.83,
-   "grund": "Last: Referenz f 1,369 (Faden 1,369 · alle Kerne 1,199; vor 102,1/310,9 ms, nach 114,3/298,1 ms, Ruhe 83,5/259,2 ms seit 2026-11-16) · fremd: node scripts/diag-kamera-laub.cjs --selftest 34,8 CPU-s · bash.exe scratchpad/wache-0331.sh 14,3 CPU-s · git pack-objects --exclude-promisor-objects-best-effort pack/pack 14,0 CPU-s · Gerät (Grund-Last, nie fremd) svchost.exe 30,1 CPU-s · MsMpEng.exe 29,5 CPU-s · SearchIndexer.exe 9,7 CPU-s — unscharf unter Last: Gehen Frame max ms roh 108,6, entlastet ≥ 54,3 (÷ 2, Karte), Schwelle ≤ 100 · Fahrt Frame max ms roh 108,8, entlastet ≥ 54,41 (÷ 2, Karte), Schwelle ≤ 100 — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 63 Bilder · max 108.61 ms · 73.02 % > 33 ms · Fahrt 47 Bilder · max 108.83 ms · 91.49 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 1 Bild(er) > 100 ms (max 108.61), 73.02 % > 33 ms | Fahrt: )",
+   "minuten": 0.88,
+   "grund": "Last: Referenz f 1,483 (Faden 1,483 · alle Kerne 1,251; vor 123,8/324,3 ms, nach 120,7/318 ms, Ruhe 83,5/259,2 ms seit 2026-11-16) · fremd: node scripts/diag-kreatur-leben.cjs 58,3 CPU-s · bash.exe scratchpad/wache-0331.sh 14,6 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-30000-profil-U7GRWR --no-p 12,4 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 31,5 CPU-s · svchost.exe 21,5 CPU-s · SearchProtocolHost.exe 8,6 CPU-s — unscharf unter Last: Fahrt Frame max ms roh 151, entlastet ≥ 75,5 (÷ 2, Karte), Schwelle ≤ 100 — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 66 Bilder · max 91.91 ms · 59.09 % > 33 ms · Fahrt 40 Bilder · max 151.01 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 59.09 % > 33 ms | Fahrt: 6 Bild(er) > 100 ms (max 151.01), )",
    "mass": [
     {
      "wort": "Gehen Frame max ms",
-     "wert": 108.61,
+     "wert": 91.91,
      "soll": 100
     },
     {
      "wort": "Fahrt Frame max ms",
-     "wert": 108.83,
+     "wert": 151.01,
      "soll": 100
     }
    ],
@@ -392,106 +391,106 @@
     "gelesen": 2
    },
    "konsumBoot": "kf166dff2abcc",
-   "s": 49.1,
+   "s": 52.1,
    "fremd": {
-    "s": 53.7,
-    "takte": 21,
-    "fremdS": 146.08,
-    "kerne": 2.72,
-    "fensterKerne": 3.494,
+    "s": 57.1,
+    "takte": 22,
+    "fremdS": 164.27,
+    "kerne": 2.879,
+    "fensterKerne": 3.668,
     "namen": [
      [
-      "node scripts/diag-kamera-laub.cjs --selftest",
-      34.83
+      "node scripts/diag-kreatur-leben.cjs",
+      58.28
      ],
      [
       "bash.exe scratchpad/wache-0331.sh",
-      14.3
+      14.58
      ],
      [
-      "git pack-objects --exclude-promisor-objects-best-effort pack/pack",
-      13.95
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-30000-profil-U7GRWR --no-p",
+      12.44
      ]
     ],
-    "dienerS": 39.73,
+    "dienerS": 61.78,
     "diener": [
      [
-      "dwm.exe",
-      15.98
+      "System",
+      32.48
      ],
      [
-      "System",
-      13.55
+      "dwm.exe",
+      16.31
      ]
     ],
-    "geraetS": 76.67,
+    "geraetS": 72.73,
     "geraet": [
      [
-      "svchost.exe",
-      30.13
-     ],
-     [
       "MsMpEng.exe",
-      29.53
+      31.53
      ],
      [
-      "SearchIndexer.exe",
-      9.67
+      "svchost.exe",
+      21.5
+     ],
+     [
+      "SearchProtocolHost.exe",
+      8.61
      ]
     ],
-    "eigenS": 280.33,
+    "eigenS": 283.16,
     "rechnerKerne": 24,
     "spannen": {
-     "vor": 1.787,
-     "nach": 3.183,
-     "station": 6.084
+     "vor": 2.432,
+     "nach": 3.36,
+     "station": 4.412
     }
    },
    "referenz": {
     "vor": {
-     "ein": 102.1,
-     "alle": 310.9,
-     "cpuEin": 110,
+     "ein": 123.8,
+     "alle": 324.3,
+     "cpuEin": 140,
      "tor": {
       "ruhig": true,
-      "kerne": 4.05,
+      "kerne": 0.98,
       "s": 0,
       "soll": 6,
       "reihe": [
-       0.3,
-       0.58,
-       3.82,
-       8.37,
-       2.57,
-       0.91
+       3.01,
+       8.25,
+       3.52,
+       1.24,
+       0.96,
+       0.73
       ]
      },
      "spanne": [
-      1795804682874,
-      1795804683461
+      1795806370941,
+      1795806371585
      ]
     },
     "nach": {
-     "ein": 114.3,
-     "alle": 298.1,
+     "ein": 120.7,
+     "alle": 318,
      "cpuEin": 125,
      "tor": {
       "ruhig": true,
-      "kerne": 4.98,
+      "kerne": 3.76,
       "s": 0,
       "soll": 6,
       "reihe": [
-       3.82,
-       3.76,
-       3.89,
-       4.86,
-       4.35,
-       5.68
+       3.3,
+       3.97,
+       3.35,
+       2.79,
+       2.57,
+       5.99
       ]
      },
      "spanne": [
-      1795804733337,
-      1795804733911
+      1795806424518,
+      1795806425130
      ]
     },
     "ruhe": {
@@ -500,16 +499,16 @@
      "n": 1192,
      "von": "2026-11-16"
     },
-    "f": 1.369,
-    "fEin": 1.369,
-    "fAlle": 1.199,
+    "f": 1.483,
+    "fEin": 1.483,
+    "fAlle": 1.251,
     "verdraengt": 1,
     "schwankt": false,
     "rechner": "win32 · 24 Kerne · AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
     "umfeld": "sitzung"
    },
    "ungemessen": true,
-   "zeit": "2026-11-27T18:38:02.871Z",
+   "zeit": "2026-11-27T19:06:10.938Z",
    "abdruck": "464abdde1514",
    "port": 7804,
    "bahn": "sitzung",
