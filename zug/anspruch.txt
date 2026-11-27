@@ -137,3 +137,5 @@ w28-sprache-saaten-2 karte2.mensch.kultur.sprache#2
 w28-bahn-klima-2 karte2.planet.kopplung.bahn-klima#2
 # z799 (main 920fa974, 27.11. 03:36): z799 gelandet 03:59 (w28-biome-hoehenstufen 152ddf8f + w28-ci-puls-frist 255026f1): Lücken-Sprosse biome#2 im main, Buchungs-Läufe an Radeon und OMEN folgen
 w28-biome-hoehenstufen karte2.leben.pflanzen.biome#2
+# z805 (main bed6256c, 27.11. 15:26): Vor-Richter GTX 1060 am Kopf 2a3454ba GRÜN/GRÜN (medium#2 p95 33,41 ms, form#2 p95 33,39 ms); Stations-Kandidat gesetzt pm 9e9a3816
+w28-fahrzeug-medium-4 karte2.mensch.fahrzeug.medium#2,karte2.mensch.fahrzeug.form#2
