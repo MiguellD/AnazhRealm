@@ -1,0 +1,98 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.450",
+  "sha": "eef726c747050e60042a4a0c9f65fea3ff3e9077"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 160,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0.7986,
+  "taeter": {
+   "Gelände": 0.7986
+  },
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0.9427,
+   "taeter": {
+    "Gelände": 0.9427
+   },
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": false,
+  "vor": "Gelände",
+  "vorAbstand": 0.45,
+  "leiber": null,
+  "abstand": 151.33,
+  "gestalt": [
+   "baum_kiefer 3545",
+   "baum_kiefer 3592"
+  ],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -7683,
+   134.787,
+   -6968
+  ],
+  "blick": [
+   -0.99123,
+   -0.13216,
+   0
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 37.8,
+  "sigma": 19.2,
+  "schwarz": 0.0961,
+  "weiss": 0
+ },
+ "ok": false,
+ "zeile": "ABNAHME ROT [Sicht verdeckt 79.9 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Gelände 79.9 % · Vordergrund 94.3 % näher als 8 m (der halbe Ziel-Abstand): Gelände 94.3 % · Ziel Blickziel verdeckt von Gelände in 0.45 m] · beweis · Sicht 79.9 % (Gelände 79.9 %) · Ziel Blickziel im Bild VERDECKT 151.33 m · Luma 37.8 σ 19.2 schwarz 9.6 % weiß 0.0 % · Stand 18.546.450 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+ "rot": [
+  {
+   "feld": "sicht.deckung",
+   "grund": "Sicht verdeckt 79.9 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Gelände 79.9 %"
+  },
+  {
+   "feld": "sicht.vordergrund.deckung",
+   "grund": "Vordergrund 94.3 % näher als 8 m (der halbe Ziel-Abstand): Gelände 94.3 %"
+  },
+  {
+   "feld": "ziel.frei",
+   "grund": "Ziel Blickziel verdeckt von Gelände in 0.45 m"
+  }
+ ],
+ "urteil": "ROT"
+}
