@@ -1035,6 +1035,7 @@ Meer oder See der Zelle — und der Abfluss Q/Q̄ aus dem Pegel), die Optik der 
 Wassers, schmiede `STOFF_GESETZ.medium`; die Klarheit aus der Mitte seines Bands, der Schwebstoff mit dem Abfluss — sie
 trägt das Medium unter und über dem Spiegel in Welt und Studio), der Mäander `MAEANDER`, das
 Schicht-Gesetz `schichtOrt`, der Höhlen-Mund `HOEHLEN_MUND`/`hoehlenMund`), die Schneegrenze `SCHNEE`/`schnee`, die
+Höhenstufe des Walds `waldStufe` (biome-hoehenstufen: die Höhe im Maß derselben Schneegrenze, phyto-core `forestStufe` liest sie), die
 Temperatur `TEMPERATUR`/`temperatur` (stoffe.K3: Höhe × Saison × Uhr; das Feld in Wellen `temperaturFeld`, mit der Trägheit
 eines Körpers, ausgewertet von `temperaturAus` unter dem Wetter `WOLKE`, wetter.K4: die Wolke dämpft den Tagesgang, der Regen
 kühlt — die Grillen lesen sie), das Eis `EIS`/`eisDicke` (stoffe.K3-2: die Dicke nach
