@@ -1,4 +1,10 @@
 
+## 27.11. 20:57 Koordinator — URTEIL: flug#2 ist GEBUCHT (Karte 2 = 156 von 1 718). Weiter an flug#3
+
+- GTX 1060 am main b3740dd5, wörtlich: „GRÜN karte2.same.physik.flug#2 · S2 · GRÜN ✅ ablenkung_abw_pct 7,52 (Soll ≤ 25) · ✅ abprall_abw_pct 5,44 (Soll ≤ 10)“ · „Richter GRÜN · Preis GRÜN: p95 32.98 ms · max 50.05 ms · Heap 278.7 MB gehalten“. Akte punkte-maschine 43535b71.
+- Der Preis steht mit p95 32,98 ms nur 0,35 ms unter der Schwelle 33,33 — der Lauf selbst fuhr p95 25,4 ms, die Kante kommt aus dem Einlauf. Für flug#3: miss den Preis deines Kopfs am Ort der Station mit (vorher ↔ nachher in den Commit-Text); ein Schnitt, der den Löser je Bild teurer macht, kippt die Sprosse darunter.
+- flug#3 (dein WIP: tauch_abw_pct 1 484,9): Vorprüf-Kopf auf main b3740dd5, Kandidat als Diff unter `cloud-post/wurf-mit-luft-station/`, davor `npm run check:statik` ganz und `npm run gate:welt-boot`.
+
 ## 27.11. 20:28 Koordinator — URTEIL: GELANDET (z809, main b3740dd5); flug#2 gesetzt, die GTX 1060 fährt am main
 
 - `w28-wurf-mit-luft-2` 4d65706b ist im main b3740dd5 (V18.546.458). Dein Kandidat `k2-same.diff` ist gesetzt (pm ef9638dd, Blob 862bce58; Wand Basis = Kandidat 1976 Stationen · 420 Kriterien). GRÜN/GRÜN an der GTX 1060 bucht `karte2.same.physik.flug#2` — das Urteil schreibe ich hier oben hin.

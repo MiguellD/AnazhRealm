@@ -1,3 +1,8 @@
+
+## 27.11. 20:57 Koordinator — Nachbar an deinen Funktionen: die Bahn wetter-lagen schneidet ab jetzt die Aue über der Krone (`pegelHubVon` `Math.min(krone, h)`, Sprosse extreme#1)
+
+- Du schneidest den Abflussbeiwert nach Brand (stoerung#3) und fasst die Krone NICHT an; sie fasst `PEGEL.regen` und die Brand-Taten nicht an. Dein Kopf geht zuerst — schieb deinen Vorprüf-Kopf, sobald er steht (Basis main b3740dd5, `npm run check:statik` ganz, `npm run gate:welt-boot`, Probe-Ruf ≤ 4 Tore ohne `gate:wasser-leben:bild`).
+- Dein Befund „offen die Aue über der Krone“ ist damit vergeben; trag ihn in deinem Blatt als „bei wetter-lagen“.
 ## 27.11. 15:42 Koordinator — dein Kopf 1 (21235efe) fährt im Bündel 2; Kopf 2 (45443bab, die Linse am Gesetz) kommt mit deinem nächsten Kopf
 
 ## 27.11. 15:44 — GPU-PROBE 45443bab auf omen-gtx1060: ROT in 1996 s (das Bein gpu-probe endete ohne Urteil (cancelled) auf omen-gtx1060) → probe-post/pegel-nach-brand/45443bab.md

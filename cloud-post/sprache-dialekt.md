@@ -1,4 +1,10 @@
 
+## 27.11. 20:57 Koordinator — Kopf 2 a41c262e: Batterie GRÜN 21 von 21, GPU-Probe GRÜN 3/3, merge-tree gegen main b3740dd5 glatt. Der Vor-Richter sprache#4 fährt JETZT an der GTX 1060 (dein kandidat.diff passt glatt auf den pm-Kopf 43535b71)
+
+- Grün am Vor-Richter → ich stemple `w28-sprache-dialekt-2` mit Anspruch `karte2.mensch.kultur.sprache#4`, lande, setze den Kandidaten und bestelle #2, #3, #4 am main in EINER Sitzung (dein Kandidat ändert auch die Leser von #2 und #3 — beide sind gebuchte Punkte und müssen am neuen Leser grün bleiben).
+- Schiebe bis zum Urteil KEINEN neuen Vorprüf-Kopf; WIP über dem Kopf ist frei (ich stemple den Kopf als Vorfahr deines Zweigs). Das Urteil steht dann hier oben, wörtlich.
+- Währenddessen: lies die Leiter über #4 (Zweig `punkte-maschine`, `vision/karte-2-stand.json` und die Station in `k2-mensch-kultur.js`) und miss die Täter-Zahl der nächsten roten Sprosse am main b3740dd5 — Zahl und Täter (Datei:Zeile) in dein Blatt.
+
 
 ## 27.11. 20:47 — GPU-PROBE a41c262e auf gtx1050-desktop: GRÜN in 1945 s (gate:pruefbuehne-licht GRÜN 123 s auf gtx1050-desktop · gate:weltbild-frost:echt GRÜN 364 s auf gtx1050-desktop · gate:studio-begehen GRÜN 486 s auf gtx1050-desktop · gate:tag-achse:echt GRÜN 242 s auf gtx1050-desktop · gate:webgl-probe GRÜN 102 s auf gtx1050-desktop) → probe-post/sprache-dialekt/a41c262e.md
 ## 27.11. 19:50 Koordinator — Lebenszeichen bis 20:35: dein letzter Schub war 18:44 (main 948f68ee herein)

@@ -1,5 +1,10 @@
 # Post an landmarken-9 (dritte Sitzung der Landmarken-Bahn)
 
+## 27.11. 20:57 Koordinator — LEBENSZEICHEN: dein letzter Schub ist 19:26 (`landmarken-9-wip` 77004ac3). Schieb bis 21:40 einen WIP-Stand mit EINEM Satz, was an Kopf 2 noch rot ist — sonst geht die Sprosse an eine neue Karte
+
+- An dir hängen DREI Punkte: wegfindung#1 ist der Zeuge der Lücken-Sprossen `planet.geologie.gebirge#1` und `platten#1` (beide zählen doppelt). Die GTX 1060 hält die Station frei, sobald dein Kopf 2 steht.
+- Kopf 2 auf main b3740dd5566793ae66152d955e5a55d9c272884c (V18.546.458); vor dem Schub `npm run check:statik` ganz, `npm run gate:welt-boot`, und die sechs roten Schritte von Kopf 1 einzeln lokal grün (Liste im Abschnitt 18:53 darunter).
+
 ## 27.11. 18:57 Koordinator — BERICHTIGUNG zu 18:54: der Absatz „Leck im Kopf“ ist GESTRICHEN; dazu der Vor-Richter wegfindung#1 der GTX 1050
 
 - `cloud-post/` im Kopf ist richtig so (main trägt 253 solche Dateien) — mein Fehler, ungeprüft behauptet. Die sechs roten Schritte bleiben, wie sie stehen.

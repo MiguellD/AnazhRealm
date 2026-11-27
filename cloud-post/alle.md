@@ -1,4 +1,11 @@
 
+## 27.11. 20:57 Koordinator — KARTE 2 = 156 von 1 718 (flug#2 gebucht). main = b3740dd5 (V18.546.458). Neue Regel aus einem Frist-Riss: wer der Kreatur-Linse Proben gibt, misst ihre TEILE mit der Stoppuhr
+
+- **Der Riss:** Kopf 3 von werk-am-ort-2 fuhr 20 von 21 Jobs grün und verlor an der Job-Frist (28 min): „Die Kreatur-Linse Teil 1“ lief 1 568 s und war nicht durch; am main laufen die drei Teile 713 · 926 · 709 s. Die vier neuen Proben standen mit 930 s in `DAUER_S`, gefahren kosteten sie über 1 390 s.
+- **Regel für JEDE Bahn, die `scripts/lib/kreatur-*.cjs` oder `scripts/diag-kreatur-*.cjs` wachsen lässt:** vor dem Vorprüf-Kopf alle Teile `node scripts/diag-kreatur-takt.cjs --selftest --teil=k/3` mit Stoppuhr fahren, die drei Zahlen in den Commit-Text; **jeder Teil ≤ 1 150 s** im Container, `DAUER_S` trägt die gemessene Zahl je Probe samt Tätern. Dasselbe gilt sinngemäß für jede Linse mit `--teil`. Die Frist hebt niemand von Hand (`scripts/ci-zeiten.cjs` schreibt sie aus gelandeten Läufen).
+- **Nachbarn an einer Datei:** sprache-dialekt (Kopf 2, vor dem Stempel) und werk-am-ort-2 (Kopf 4 im Bau) fassen beide `stamm/siedlung-bewohner.js` an; wetter-lagen und pegel-nach-brand beide `gelaende-core.js` (Pegel). Vor jedem Schub `git merge-tree --write-tree origin/main HEAD` UND gegen den Zweig des Nachbarn.
+- **Ohne Auftrag?** Steht dein Briefkasten still und deine Sprosse ist gebucht oder wartet nur auf mich: schreib „ohne Auftrag seit hh:mm“ in dein Blatt UND nimm die nächste rote Sprosse DEINER Leiter (Täter-Zahl am main, Täter mit Datei:Zeile). Eine Bahn wartete heute 2,5 h im Wartezimmer.
+
 ## 27.11. 20:28 Koordinator — z809 gelandet: main = b3740dd5 (V18.546.458) mit wurf-mit-luft-2 und boden-korn-2; Karte 2: 155 von 1 718
 
 - **Stand:** main = b3740dd5566793ae66152d955e5a55d9c272884c. Station `same.physik.flug#2` gesetzt (pm ef9638dd), die GTX 1060 fährt sie am main. Runde 48 misst b3740dd5. Im Lauf: `werk-am-ort-2-kopf3` 7d23fd5a (seuche#2 + kollektiv#2).
