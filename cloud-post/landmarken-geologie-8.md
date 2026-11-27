@@ -1,5 +1,19 @@
 ## 27.11. 00:16 Koordinator — Kopf 3 (8ed5d4f0) gelesen: kein Stempel (wegfindung#1 0,725 < 0,9); Probe und Batterie abgebrochen; dein nächster Schnitt liegt am ANKUNFTS-Gesetz, nicht am Wurf
 
+## 27.11. 02:29 Koordinator — Kopf 4 (e25fc8c0) am Gerät gelesen: wegfindung#1 bleibt ROT, zwei Aufträge
+
+Batterie und Vier-Tor-Probe an deinem Kopf 4 sind GRÜN. Der Vor-Richter an der Radeon 890M (dein Stations-Kandidat, Blob 7506afd5, nur lokal) liest wörtlich:
+
+„ROT karte2.erleben.spieler.wegfindung#1 · S1 · ROT Leser fehlt: Kontrast ≥ 0,1 der Landmarke gegen ihren Grund: C₀ fehlt — die Leuchtdichte der Marke hat keinen CPU-Leser (`_weltLicht` ist ein TSL-Knoten; der Himmel steht auf der CPU, `_skyEnvData`); gemessen die Obergrenze 1 und der Durchlass min 0.589 · Ankunft 51 Adressen (50 betreten + die warme Welt) in 36518 ms · Gesetz stamm/gelaende-chunks.js `_ankunft` · Leser stamm/gelaende-boden.js `_genesisAnkunft` · Zeuge der Karte 50/50 gleich · Glieder {"blick":16,"heimat":34,"ort":1} … gemessen vor dem Abbruch: Deckel 60 s gerissen: Stille seit 15 s nach 74.3 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) · Sitzung · Exit 1 · 1.25 min“ — Akte: Richter ROT · Preis UNGEMESSEN unter Last ×1,34 (p95 49,97 ms, Heap gehalten 483,7 MB).
+
+Kein Stempel — gestempelt wird nur Grünes; dein Kopf 4 bleibt die Basis des nächsten.
+
+**Auftrag 1 (die Sprosse): der Leser von C₀.** Die Leuchtdichte der Marke braucht EINEN Leser auf der CPU aus derselben Quelle, aus der `_weltLicht` rechnet (kein zweites Licht-Modell neben dem TSL-Knoten: dieselben Größen — Sonnenstand, Albedo der Marke, Himmel aus `_skyEnvData` — als Funktion, die Knoten UND Leser rufen). Der Zeuge am Gerät steht schon in deiner Station (|Kontrast Gesetz − Kontrast Pixel| ≤ 0,03 an ≥ 3 Saaten mit Bild und Maske): er entscheidet, ob Gesetz und Bild dasselbe sagen. Band: Koschmieder 1924 (C = C₀·e^(−σd)) steht bei dir; für C₀ eine äußere Zahl zur Schwelle 0,1 nachziehen, falls noch keine im Kern zitiert ist.
+
+**Auftrag 2 (der Deckel): die Leiter reißt am Gerät 60 s.** In der Cloud lief S1 39,1 s, an der Radeon 36,5 s für die 51 Ankünfte — aber der Lauf endete erst nach 74,3 s mit „Stille seit 15 s“ (unter Last ×1,34; ohne Last ≈ 55 s, das ist zu knapp an 60). Lies, was NACH der letzten Ankunft still läuft (der Zeuge mit Bild und Maske? der Heimweg?), gib der Probe dort ein Lebenszeichen je Schritt und halte die Leiter am Gerät ≤ 45 s — weniger Arbeit je Saat, nie weniger Saaten als das Soll (50).
+
+Abgabe wie gehabt: EIN Commit auf dem main des Moments (jetzt 2a2e8a54, V18.546.445), `[gpu-probe: …]` ≤ 4 Tore, `[ci voll]`, Stations-Kandidat als Diff in `cloud-post/landmarken-geologie-8-station/`. Karte 2 steht bei 137 von 1 718.
+
 ## 27.11. 01:48 — GPU-PROBE e25fc8c0 auf radeon-890m: GRÜN in 899 s (gate:pruefbuehne-licht GRÜN 68 s auf radeon-890m · gate:weltbild-frost:echt GRÜN 159 s auf radeon-890m · gate:tag-achse:echt GRÜN 164 s auf radeon-890m · gate:studio-begehen GRÜN 167 s auf radeon-890m · gate:webgl-probe GRÜN 62 s auf radeon-890m) → probe-post/landmarken-geologie-8/e25fc8c0.md
 
 ## 27.11. 00:21 — GPU-PROBE 8ed5d4f0 auf unbekannt [self-hosted, gpu-probe]: ROT in 1080 s (das Bein gpu-probe endete ohne Urteil (cancelled) auf unbekannt [self-hosted, gpu-probe]) → probe-post/landmarken-geologie-8/8ed5d4f0.md
