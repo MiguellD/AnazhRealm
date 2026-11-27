@@ -218,7 +218,14 @@ function laufUrteil(run) {
 function erbeUrteil({ kopf, kette, kein, laeufe }) {
     if (kein) return { wort: "KEINS", grund: kein, zeilen: [] };
     // der Name des Laufs: „Code-Check“, die Probe trägt ihren run-name „GPU-Probe <zweig> <sha>“ (gpu-probe.yml)
-    const je = (sha, name) => (laeufe.get(sha) || []).filter((r) => (r.name === name || String(r.name).startsWith(name + " ")) &&["push", "workflow_dispatch"].includes(r.event)).sort((a, b) => b.id - a.id);
+    // EIN ÜBERSPRUNGENER LAUF IST KEIN LAUF (27.11., z811): am Stempel „Abgabe …“ startet kein Job, GitHub schreibt dennoch je Workflow
+    // einen Lauf „completed/skipped“. Der Neu-Stempel auf einem gefahrenen Stempel (Täter-Suche `neuerBetreff`, oder von Hand) fand
+    // darum am alten Stempel „einen Lauf“ und wartete für immer („… trägt kein Urteil (skipped)“) statt durch ihn hindurch vom
+    // Vorprüf-Kopf zu erben. Abgebrochen bleibt ein Lauf ohne Urteil (der Kopf wartet beim Namen) — nur „skipped“ fällt hier.
+    const je = (sha, name) =>
+        (laeufe.get(sha) || [])
+            .filter((r) => (r.name === name || String(r.name).startsWith(name + " ")) && ["push", "workflow_dispatch"].includes(r.event) && !(r.status === "completed" && r.conclusion === "skipped"))
+            .sort((a, b) => b.id - a.id);
     const s8 = (s) => s.slice(0, 8);
     const zeilen = [];
     // die GPU-Probe: das nächste Glied, dessen Ruf jede Probe des Kopf-Rufs nennt und das einen Lauf trägt — sein jüngster
@@ -2180,6 +2187,12 @@ function selbsttestErbe(pr) {
         // der Neu-Stempel über dem Stempel (Täter-Suche: leerer Commit auf den alten Stempel) erbt durch ihn hindurch vom Vorprüf-Kopf
         const u5 = urteil(s2, gruen);
         pr(`Erbe Neu-Stempel S2 → S → V erbt vom Vorprüf-Kopf (${u5.grund})`, bereit(u5) && u5.von === v);
+        // DER ECHTE FALL 27.11. (z811, w28-sprache-dialekt-2 6336e97b auf dem gefahrenen Stempel 2fa60e40): am alten Stempel S steht je
+        // ein Lauf „completed/skipped“ (GitHub schreibt ihn, obwohl dort kein Job startet) — er ist kein Urteil und kein Glied mit Lauf
+        const leer = ["kopf", "puls 1/2", "puls 2/2", "voll 1/18"].map((n) => job(n, "skipped"));
+        const amStempel = [s, [cc(31, "skipped", leer), { ...gp(41, "skipped"), name: `GPU-Probe x ${s}` }]];
+        const u5b = urteil(s2, [amStempel, ...gruen]);
+        pr(`Erbe Neu-Stempel über einem Stempel mit übersprungenen Läufen → erbt vom Vorprüf-Kopf (${u5b.grund})`, bereit(u5b) && u5b.von === v);
         // ein Elter ohne volle Batterie (der Puls grün, [ci voll] fehlte) → wartet beim Namen
         const u6 = urteil(s, [[v, [cc(11, "success", gruenJobs.filter((j) => !/^voll/.test(j.name))), gp(21, "success")]]]);
         pr(`Erbe Elter ohne volle Batterie → WARTET (${u6.grund})`, u6.wort === "WARTET" && /trägt \[ci voll\] nicht/.test(u6.grund));
