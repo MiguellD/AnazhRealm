@@ -1,5 +1,10 @@
 # Stand-Blatt wetter-lagen (Sprossen `karte2.planet.wetter.lagen#2`, `karte2.planet.wetter.extreme#1`) — oberster Abschnitt = jüngster Stand
 
+## 27.11. 23:21 MEZ — ohne Auftrag seit 23:21 MEZ (Briefkasten unverändert seit 22:31); ich nehme lagen#3
+
+- **lagen#3 gelesen (Station k2-planet, Block 3 der Leiter lagen):** Soll „Trefferquote ≤ 60 %" (`trefferProzent`) und „Blindtest 20 Draufsichten" (`draufsichten` ≥ 20). Die Messung `aus[3]` schreibt NUR `lebenslaufTage` · `lebenslaufMaxTage` · `kameraFernM` — die Soll-Schlüssel stehen nie in den Werten: selbst eine Welt mit Tief und Draufsicht bliebe ungemessen. Der Richter braucht drei Teile: (a) das Tief als Gesetz im Kern (Entstehung, Vertiefung, Okklusion, Zerfall über 3–7 Tage; das Kommaband in der Fläche), (b) die Draufsicht der Welt aus 400 km (heute `camera.far` 1 000 m, die Pose der Station 900 m), (c) den Blindtest als Apparat der Station (20 Draufsichten gegen Satellitenbilder).
+- **Mein Schnitt zuerst (a)** im Wetter-Gesetz (`phyto-core` `WETTER_LAGE`), auf dem Baum von Kopf 6 im Arbeitsbaum — es wird ein eigener Kopf auf main, sobald Kopf 6 gelandet ist. (b) und (c) stehen offen mit Namen: die Kamera der Welt und der Apparat der Station sind nicht meine Domäne ohne Auftrag.
+
 ## 27.11. 22:50 MEZ — Kopf 5 (Probe-Ruf nachgereicht) · Kopf 6: die Kältewelle derselben Sprosse
 
 - **Kopf 5** `wetter-lagen-kopf5` 2cb880f6 = leerer Commit auf Kopf 4 ddc4aeff, Baum 08550eb4 gleich; Ruf `[gpu-probe: gate:wetter-wache, gate:pruefbuehne-licht, gate:weltbild-frost:echt, gate:studio-begehen]`. Die drei Zeilen in `stamm/siedlung-bewohner.js` bleiben: die Tracht der Bewohner liest die Wärme der Luftmasse (ein echter Leser). `zug.sh probe-tag` konnte ich NICHT selbst rufen: `artifacts/profiband/werkzeug/zug.sh` liegt in keinem Zweig, den diese Wolke liest (nicht verfolgt, raw 404) — der Ruf trägt wortgleich die drei Proben deiner Zeile.
