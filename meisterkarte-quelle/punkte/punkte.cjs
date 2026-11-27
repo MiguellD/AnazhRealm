@@ -1914,6 +1914,31 @@ function referenzBericht(vor, nach, ruhe, umfeld) {
     return { vor, nach, ruhe, f: Math.max(fEin, fAlle), fEin, fAlle, verdraengt: +Math.max(1, vEin).toFixed(3), schwankt: Math.max(sK("ein"), sK("alle")) > REFERENZ_SCHWANKT,
         ...(anlauf ? { anlauf } : {}), rechner: REFERENZ_RECHNER, umfeld };
 }
+// DIE REFERENZ „VOR“ WARTET AUF RUHE (Koordinator 27.11. 03:42; Befund OMEN sprache#2 am 1336dcb8, GTX 1060: die Sitzung gründete
+// stadt-voll (172,1 s), der Preis-Lauf fuhr die Referenz „vor“ gleich danach — Faden 182,7 / alle 486,1 ms gegen die Ruhe 88,5 / 220,5
+// → f 2,205; „nach“ 86 / 235,9 → f 1,07; das Ruhe-Tor beide Male ruhig (eigen 1,31 · 2,12 Kerne), kein CI-Job: „Preis UNGEMESSEN unter
+// Last ×2,21“ war der Nachhall der eigenen Gründung, nicht die Umgebung des Fensters). Vor dem Fenster des Preises fährt die Referenz
+// darum im Takt PREIS_VOR_TAKT_S neu, bis f ≤ REFERENZ_RUHE_BAND liest — höchstens PREIS_VOR_MAX_S —, erst dann öffnet das Fenster.
+// Liest sie bis zum Deckel nicht ruhig, zählt die LETZTE Fahrt wie bisher (fail-closed: f über dem Band bleibt UNGEMESSEN beim Grund,
+// kein weicher Weg). Die erste Fahrt reist als Lesewert `nachGruendung` (f, Faden/alle, Fahrten, Sekunden, ruhig) in die Akte.
+// → { vor (die Fahrt, die zählt), frueh: { f, ein, alle, fahrten, s, ruhig } }; o = { taktS, maxS, warte, jetzt } (der Selbsttest)
+const PREIS_VOR_TAKT_S = 20;
+const PREIS_VOR_MAX_S = 180;
+async function referenzVorRuhig(ref, umfeld, o = {}) {
+    const taktMs = (o.taktS != null ? o.taktS : PREIS_VOR_TAKT_S) * 1000, maxMs = (o.maxS != null ? o.maxS : PREIS_VOR_MAX_S) * 1000;
+    const warte = o.warte || ((ms) => new Promise((r) => setTimeout(r, ms))), jetzt = o.jetzt || Date.now, t0 = jetzt();
+    const fVon = (x) => { if (!x || x.fehler) return null; const r = referenzBericht(x, x, ref.ruhe(umfeld, []), umfeld); return r.fehler ? null : r.f; }; // prettier-ignore
+    const erst = await ref.fahrt();
+    let x = erst, f = fVon(x), n = 1;
+    while (f != null && f > REFERENZ_RUHE_BAND && jetzt() - t0 + taktMs <= maxMs) {
+        await warte(taktMs);
+        x = await ref.fahrt();
+        n++;
+        f = fVon(x);
+    }
+    const f0 = fVon(erst);
+    return { vor: x, frueh: { f: f0, ...(erst && !erst.fehler ? { ein: erst.ein, alle: erst.alle } : {}), fahrten: n, s: +((jetzt() - t0) / 1000).toFixed(1), ruhig: f != null && f <= REFERENZ_RUHE_BAND } };
+}
 // DER STOSS (die OMEN 11.11., Falle 8): eine Last, die mitten in der Station kam und vor der Fahrt danach ging, sieht die Referenz nie —
 // der Zeuge sieht sie: liegt die Spitze eines Takts IN der Station um mehr als REFERENZ_STOSS_KERNE über den fremden Kernen beider
 // Fahrten, ist f mindestens die Teilung des Rechners in dieser Spitze: N Kerne (`rechnerKerne`), E eigene (eigenS ÷ s), F fremde →
@@ -1991,6 +2016,16 @@ async function fremdlastCli(o) {
 // (referenzAblageVon), je Wanduhr und Faden-CPU, die Streuung (max ÷ min − 1), die Ruhe des Pools danach und f je Fahrt gegen sie
 async function referenzCli(o) {
     const n = Number(o.n) || 10, umfeld = o.umfeld || "allein", fahrten = [], ref = maschinenReferenz();
+    // `referenz --vor-ruhig [--takt 20] [--max 180] [--umfeld sitzung]`: die Referenz „vor“ des Preises (referenzVorRuhig) an der echten
+    // Maschine — der gepflanzte Fall (ein Brenner auf allen Kernen über das ganze Warten) muss „NICHT ruhig“ lesen, f über dem Band
+    if (o.vorRuhig) {
+        const t = Date.now(), v = await referenzVorRuhig(ref, umfeld, { taktS: o.takt != null ? Number(o.takt) : undefined, maxS: o.max != null ? Number(o.max) : undefined });
+        const r = v.vor && !v.vor.fehler ? referenzBericht(v.vor, v.vor, ref.ruhe(umfeld, []), umfeld) : { fehler: (v.vor && v.vor.fehler) || "keine Fahrt" };
+        console.log("REFERENZ VOR-RUHIG (" + umfeld + ") nach " + ((Date.now() - t) / 1000).toFixed(1) + " s: " + v.frueh.fahrten + " Fahrten · f nach Gründung (erste) " + v.frueh.f +
+            " · zählende Fahrt " + (r.fehler ? "fehlt: " + r.fehler : "f " + fzW(r.f) + " (Faden " + fzW(r.fEin) + " · alle " + fzW(r.fAlle) + "; " + fzW(v.vor.ein) + "/" + fzW(v.vor.alle) + " ms)") +
+            " → " + (v.frueh.ruhig ? "RUHIG, das Fenster öffnet" : "NICHT ruhig bis zum Deckel — ein ROT unter dieser Referenz bleibt UNGEMESSEN") + (v.vor && v.vor.tor ? " · Tor " + torText(v.vor.tor) : ""));
+        return 0;
+    }
     for (let i = 0; i < n; i++) {
         const t = Date.now(), x = await ref.fahrt();
         if (x.fehler) {
@@ -3522,7 +3557,8 @@ async function preisLauf(W, namen, geraet) {
     // hielt die Pose 347 MB. Der Preis urteilt den ORT, nicht die Schuld der Probe: derselbe erzwungene GC, der danach die Posten zählt
     // (/puffer), steht auch davor. Ein Bild über dem Soll, das die Pose selbst erzeugt, bleibt im Fenster und reißt wie zuvor.
     const gcVor = await rufFrist(W, "/puffer", { top: 1 }, 120000).catch((e) => ({ fehler: String((e && e.message) || e) }));
-    const rVor = await ref.fahrt();
+    // DIE REFERENZ „VOR“ WARTET AUF RUHE (referenzVorRuhig, 27.11.): nach dem Nachhall der eigenen Gründung, unmittelbar vor dem Fenster
+    const vr = await referenzVorRuhig(ref, "sitzung"), rVor = vr.vor;
     // DER LAUF NENNT SEIN STÜCK (16.11., vegetation.K5#2 Radeon p95 50 ms bei K2#1 33,5 an derselben Pose): der Sprung der Bühne
     // (Sommer nach dem Frühling der Probe reiht jede gebackene Karte neu ein, `_karteJahrTakt`) und der Anlauf des Loops nach der
     // ruhenden Probe liegen im Einschwingen (`ein`) — der Lauf zählt erst danach, und erst nach seiner `ruhe` (zerlege-linse.cjs:
@@ -3542,10 +3578,12 @@ async function preisLauf(W, namen, geraet) {
         : null;
     const rNach = await ref.fahrt();
     const ok = rVor && rNach && !rVor.fehler && !rNach.fehler;
-    const referenz = referenzBericht(rVor, rNach, ok ? ref.ruhe("sitzung", [rVor, rNach]) : null, "sitzung");
+    const referenz = { ...referenzBericht(rVor, rNach, ok ? ref.ruhe("sitzung", [rVor, rNach]) : null, "sitzung"), nachGruendung: vr.frueh };
     const posten = await preisPosten(W);
+    const ng = vr.frueh;
     console.log("  KARTE2 Preis-Lauf nach " + station + ": " + ((Date.now() - t) / 1000).toFixed(1) + " s Loop des Spiels an der Pose der Probe · Referenz " +
         (referenz.fehler ? "fehlt: " + referenz.fehler : "f " + referenz.f + " (Faden " + referenz.fEin + " · alle " + referenz.fAlle + ")") +
+        (ng && ng.fahrten > 1 ? " · vor wartete " + ng.s + " s (" + ng.fahrten + " Fahrten, f nach Gründung " + ng.f + " → " + (ng.ruhig ? "ruhig" : "NICHT ruhig, Deckel " + PREIS_VOR_MAX_S + " s") + ")" : "") +
         (rVor && rVor.tor ? " · Tor vor " + torText(rVor.tor) : "") + (rNach && rNach.tor ? " · Tor nach " + torText(rNach.tor) : "") +
         (posten.fehler ? " · Posten fehlen: " + posten.fehler : " · nach GC VRAM " + posten.vram_mb + " MB, Heap " + posten.heap_mb + " MB") +
         (gcVor && gcVor.fehler ? " · DER GC DAVOR FEHLT (" + String(gcVor.fehler).split(String.fromCharCode(10))[0].slice(0, 80) + ") — die Schuld der Probe liegt im Fenster" : "") +
@@ -8069,6 +8107,29 @@ async function selbsttest(o = {}) {
                     /^Anlauf der eigenen Welt: Referenz f 1,8 .*; Tor vor: Anlauf der eigenen Welt nach 4[,0-9]* s \(eigen [0-9,]+ Kerne, Soll ≤ 3\)\)/.test(uRiss.grund) && uRiss.ungemessen === true &&
                     !/Last:|fremd/.test(uRiss.grund),
                 JSON.stringify([rRiss.anlauf, uRiss.grund]));
+            // (d) DIE REFERENZ „VOR“ WARTET AUF RUHE (referenzVorRuhig, 27.11. — OMEN sprache#2 am 1336dcb8: f 2,205 „vor“ im Nachhall der
+            // Gründung stadt-voll, 1,07 „nach“): die Uhr der Attrappe rückt je Pause vor, keine echte Wartezeit. Soll: (1) Nachhall
+            // [LAST, LAST, STILL] — „vor“ wartet zwei Takte, zählt die ruhige dritte Fahrt (f 1), ROT 40 wie gemessen, der Lesewert nennt
+            // f 1,8 nach Gründung und 3 Fahrten; der Mutant (die erste Fahrt zählt, das alte Gesetz) läse UNGEMESSEN; (2) Fremdlast über das
+            // ganze Warten — „vor“ fährt bis zum Deckel 180 s (10 Fahrten), f 1,8 bleibt: ROT 40 bleibt UNGEMESSEN (fail-closed); (3) ruhig
+            // von Anfang an — EINE Fahrt, kein Warten
+            {
+                const uhr = () => { const z = { t: 0 }; return { z, jetzt: () => z.t, warte: async (ms) => { z.t += ms; } }; }; // prettier-ignore
+                const b0 = { s: 4, takte: 9, fremdS: 0, kerne: 0, fensterKerne: 0, namen: [], dienerS: 0, diener: [], geraetS: 0, geraet: [], eigenS: 0 };
+                const e40 = { gruen: false, zahl: "n 40", grund: "ROT: n 40", mass: [{ wort: "n", wert: 40, soll: 33 }] };
+                const fall = async (folge) => { const U = uhr(), R = refA(folge), v = await referenzVorRuhig(R, "sitzung", U), nach = await R.fahrt(), r = referenzBericht(v.vor, nach, RUHE, "sitzung"); return { v, r, u: fremdUrteil(zeitSt, e40, b0, r), t: U.z.t }; }; // prettier-ignore
+                const nachhall = await fall([LAST, LAST, STILL]), fremd = await fall([LAST]), still = await fall([STILL]);
+                const alt = fremdUrteil(zeitSt, e40, b0, referenzBericht(LAST, STILL, RUHE, "sitzung")); // der Mutant: die erste Fahrt zählt
+                pruef("VOR-RUHE (1) Nachhall der Gründung: „vor“ wartet 2 Takte à 20 s, zählt die ruhige 3. Fahrt (f 1), ROT 40 wie gemessen; Lesewert f 1,8 nach Gründung, 3 Fahrten — der Mutant (erste Fahrt) läse UNGEMESSEN",
+                    nachhall.v.frueh.f === 1.8 && nachhall.v.frueh.fahrten === 3 && nachhall.v.frueh.ruhig === true && nachhall.t === 40000 && nachhall.r.f === 1 && nachhall.u.grund === "ROT: n 40" && !nachhall.u.ungemessen &&
+                        alt.ungemessen === true && /unscharf unter Last/.test(alt.grund),
+                    JSON.stringify([nachhall.v.frueh, nachhall.r.f, nachhall.u.grund, String(alt.grund).slice(0, 80)]));
+                pruef("VOR-RUHE (2) Fremdlast über das ganze Warten: „vor“ fährt bis zum Deckel 180 s (10 Fahrten), f 1,8 bleibt — ROT 40 bleibt UNGEMESSEN (fail-closed), der Lesewert sagt „nicht ruhig“",
+                    fremd.v.frueh.fahrten === 10 && fremd.v.frueh.ruhig === false && fremd.t === 180000 && fremd.r.f === 1.8 && fremd.u.ungemessen === true && /unscharf unter Last/.test(fremd.u.grund),
+                    JSON.stringify([fremd.v.frueh, fremd.t, fremd.r.f, String(fremd.u.grund).slice(0, 80)]));
+                pruef("VOR-RUHE (3) ruhig von Anfang an: EINE Fahrt, kein Warten, f 1", still.v.frueh.fahrten === 1 && still.t === 0 && still.r.f === 1 && still.v.frueh.ruhig === true,
+                    JSON.stringify([still.v.frueh, still.t]));
+            }
             // (c) DER TÄTER „Auffüllung ohne Schloss“ (23.11. 09:50: `run` fuhr die Auffüllung „allein“ vor dem Schloss, im Preis-Stück von
             // markt#1): das Attrappen-Schloss zählt Leihen und hält eine Tiefe, jede Roh-Fahrt notiert, ob sie frei lief. Soll: die zehn
             // Fahrten unter EINER Leihe, eine einzelne Fahrt leiht es selbst, ein verweigertes Schloss ist ein Wurf beim Namen; der Mutant
