@@ -12079,10 +12079,10 @@
    "summe": {
     "kriterien": 40,
     "sprossen": 274,
-    "heute": 17,
+    "heute": 18,
     "kern": 0,
     "kernDazu": 0,
-    "anteilHeute": 6.3,
+    "anteilHeute": 6.7,
     "anteilKern": 0
    },
    "perspektiven": [
@@ -14457,7 +14457,7 @@
        "richter": "Nachtlicht-Statistik je Epoche gegen DMSP/VIIRS-Archiv 1992 → heute KS ≤ 0,1; Bortle eines Orts folgt seiner Epoche ±1"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "Licht-Pool 4 Plätze in 48 m (stamm/stoff-material.js:3849); Feuer-Wurf gebaut (stamm/bild-schatten.js:383-391), gemessen ROT 0,248:1 statt ≥ 3:1 (Radeon, cec92db1, §16.K5); ~2 800 Sterne.",
@@ -20098,7 +20098,7 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 137,
+  "heute": 138,
   "davonKopplungen": 33,
   "kern": 2,
   "kernDazu": 2,
@@ -20112,7 +20112,7 @@
    "ungemessen": 113
   },
   "gliederLeitern": 9,
-  "beide": 65,
+  "beide": 66,
   "nachwache": 72
  },
  "zusammengelegt": [
