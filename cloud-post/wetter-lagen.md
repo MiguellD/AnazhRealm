@@ -2,6 +2,7 @@
 
 ## 27.11. — Kopf 3 übernommen; die Station extreme#1 S1 gegen main 948f68ee gefahren
 
+- 17:44 Wartezimmer: Briefkasten unverändert seit 16:59, main 948f68ee, Kopf 3 31678001 wartet auf den Stempel `w28-wetter-lagen-3`.
 - Kopf 3 31678001 (Rang statt Hand-Median, Zeile 830) ist in `wetter-lagen` gemergt (4d933e1), Basis jeder Folge-Arbeit. Gelernt: wer `scripts/diag-*.cjs` anfasst, fährt die Stall-Akte `npm run gate:welt-boot` lokal — am gemergten Baum Exit 0.
 - S1, FLUT_AN wortgleich aus `k2-planet.js` (punkte-maschine), 20 Saaten × 30 Jahre + die Welt = 601 Adressen, in der echten Welt (Null-Renderer, `_wetterAmOrt` → `pegelLauf` → `pegelTafel` → `pegelHub`):
     - main 948f68ee (ohne `WETTER_LAGE`): regenMaxMm **17,6 mm**, Median 13,8 mm, stark 0, ueberAueM ungemessen, bordvoll 601/601, hubMax 0,2 m = Krone 0,2 m.
