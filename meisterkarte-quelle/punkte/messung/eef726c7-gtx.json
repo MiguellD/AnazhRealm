@@ -1,7 +1,7 @@
 {
  "sha": "eef726c747050e60042a4a0c9f65fea3ff3e9077",
  "geraet": "gtx",
- "zeit": "2026-11-27T10:51:24.132Z",
+ "zeit": "2026-11-27T10:57:22.020Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.geist.gespraech#2": {
@@ -645,6 +645,76 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.leben.tiere.masse#1": {
+   "gruen": false,
+   "zahl": "(a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.998 über 570 Takte, letzter Flüchter 0.32 s (4 aus zweiter Hand), Fluchtweg 31 m, ID 600 s hält (Flucht 5 / 4 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 11.2 m: 43 m 5/5 fliehen, 5 sichtbar, 2 Fleck(en) (215 px) · 46.3 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (248 px) · 43.2 m 5/5 fliehen ABNAHME ROT [Ziel Herde verdeckt von an Punkt 1 Laub baum_eiche in 48.87 m · Ziel Herde nicht gezeichnet: tier:wesen 0 UNGEZEICHNET, tier:wesen 1 UNGEZEICHNET, tier:wesen 2 UNGEZEICHNET, tier:wesen 3 UNGEZEICHNET, tier:wesen 4 UNGEZEICHNET] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 50.77 m · Luma 102.9 σ 39.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.450 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Blick-Wahl 14 Posen · ROT-Bild C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\eef726c7-gtx\\karte2.leben.tiere.masse_1-herde-3-rot.png · Glieder im Pulk je Schuss 5/5/0 (Umfang ≥ 10) · [linse-gpu] nvidia/pascal",
+   "exit": 1,
+   "minuten": 1.22,
+   "grund": "ROT: (a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.998 über 570 Takte, letzter Flüchter 0.32 s (4 aus zweiter Hand), Fluchtweg 31 m, ID 600 s hält (Flucht 5 / 4 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 11.2 m: 43 m 5/5 fliehen, 5 sichtbar, 2 Fleck(en) (215 px) · 46.3 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (248 px) · 43.2 m 5/5 fliehen ABNAHME ROT [Ziel Herde verdeckt von an Punkt 1 Laub baum_eiche in 48.87 m · Ziel Herde nicht gezeichnet: tier:wesen 0 UNGEZEICHNET, tier:wesen 1 UNGEZEICHNET, tier:wesen 2 UNGEZEICHNET, tier:wesen 3 UNGEZEICHNET, tier:wesen 4 UNGEZEICHNET] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 50.77 m · Luma 102.9 σ 39.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.450 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Blick-Wahl 14 Posen · ROT-Bild C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\eef726c7-gtx\\karte2.leben.tiere.masse_1-herde-3-rot.png · Glieder im Pulk je Schuss 5/5/0 (Umfang ≥ 10) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "ke1d81335c3e0",
+   "konsumN": 34,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 3
+   },
+   "konsumBoot": "ka71c8a7254d1",
+   "s": 72.5,
+   "fremd": {
+    "s": 74.4,
+    "takte": 34,
+    "fremdS": 34.86,
+    "kerne": 0.468,
+    "fensterKerne": 0.653,
+    "namen": [
+     [
+      "bash.exe sk/wacht5.sh",
+      6.75
+     ],
+     [
+      "bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \"",
+      3.63
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      3.27
+     ]
+    ],
+    "dienerS": 24.2,
+    "diener": [
+     [
+      "System",
+      10.81
+     ],
+     [
+      "dwm.exe",
+      7.34
+     ]
+    ],
+    "geraetS": 53.3,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      41.13
+     ],
+     [
+      "svchost.exe",
+      10.83
+     ],
+     [
+      "SearchIndexer.exe",
+      0.66
+     ]
+    ],
+    "eigenS": 159.78,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-27T10:57:22.020Z",
+   "abdruck": "5f316e994d1d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -656,7 +726,8 @@
   "k9862d4836124": "bVVdj5swEPwveeyVM58BLN2Dc7kqkZo29xPWZm24EIhsCFWq/vcKX0gCnB8iRZ71jGd2zd/FCcQBFD5/mLpa0MW3xfeFgTM6BvUZ9fOHWdBFKjwfA9pvCV2cGkPKghPgFeRHdFrdYFE+CwuVS3AjTkn3xtSeEEkuZN29vExLS45Z7TQgcSh0MYgSnHG0RgFHB1ppya7gKExx6VFiV7JmuzW5rU4wtu9It082k8M4VNlYreelsIwp67avjL1PVWYFYOOURWUGXi+LU+nSO9duVqOhcy6AeYn6WoSJ54V8ELtijFlrJoWybI0ZkSVBFvkJJSSdYhWaQuSNc9I1x+oK56kfe0BXc7fVqXXkoyLgHBI+9ToHrBTqkQY3ELI3+k8yPfQAR9TgVJBfoakbxD6/e0MI2cy1lFa4pRiEp6HPM3dU2IdKzr3BGRutvd1UA0p2w4a4QRSbkRqRF/o4tkuG6LsB/TmXaHLIUDuH2jQ3dIBx6HJqCbZr8qklWU0r75cbMgSA5PFuCWGbmZemlk0HGh11aoemCTGKI8rYdgZu4Hi8yQoSmA2mafpGf5ThpzKKQkrI0+egzC/9ORbOBYsSb30r4iCdHn7WcHSAK11IOQTIIyHTrxq1w7JxeF03g14vjoOAkoBUj2H/sjFuH3Jeq/dw94Opt3H8WzbVbRlq3QyiOfAgDKlU64SQRE7RhW6cDkR+M0ZyhF76LJML6hIVjmyUngd+Ru0TY1X2XRBfnwL5NGrgy/zEAnuDK9OawWEBIY/oF5F0qA8cqsMVKLwlCN+232rH9mNTXlU/BuSckLFXq8COw2+2sf9Xyv70JCcU5KRrWfQvIsmhNTmUzf0T8O8/",
   "k6a257cdb5705": "bVXbbptAEP0XHpuS4RpgpTwscaRYalrnE2aX2YUag7WAiVz13yuwcQx03oAzM2fPmVn+WEeUe9T0+LupK4tZ36zv1rHEilpb1mZ4bTErlF4mJKsceIBuB9C7mqf62fpuNXgiuyFzInOBJtL1yGf8EsA5fxlg0hTHtoGyEICiwvxAdmdaKspHOaapJ3RCwaB/5XoHoOAMm/75eZlaCspqu0VFU6JDfhgTWwK7RqMgGzs1NruCwyChJ5fBGPGGv2/gFp8x57se+l38tigmsMrmbF03waeI8X77wvnHkmVWILV2WVTN1NfNokQ57Narf1/lGOztM1JekrkmUey6gZjIpoOcgzSLRFV2TTNrFvtZ6MUMIFliNTWFzFv7aGpB1RUuEi9ykaVrtfWxs9U9IxQCY7HUOkeqNJkZB8eXahD6M14W3eOBDNoV5ldo4viRJ760AYC3NZdyJD62mIgngScyZ5Y4mAqnQeCMz2I3ftQTSvXTB3mDaL5q2si8MIe5XCogz/HZjzXFJseMjL2vm/aG9ikKHHHZhu0GLlzidJn5dbjJQ0SM788WA39badnUqu3RkK2P3TQ0AYVRyDjfrsAtHg43Wn6M/tLIph0G/Z6Gl6gwDBjAw2VR1oe+rIV9pqKk29zKyE+WxU8GDzYKbQqlJgNFKFXyv0HtqWxtUdftxNeNIt9n4EN1b/bP0cbtnc8b/RG0Zdq/zu3f8iXvsUNt2om0QOEHAVN6EwPEaokuTGv3KPObMEoQDtRXnpzJlKRpJqNyXfQyBr268D4PV010vQrUw2yAz+uKBQ0CV03XTApLDETI/mNJT2YvsNpfgdJ9QumN45e+891Mk9cXPawBnGKYa5X6nKdc/+Jv43Pac/5rA/za6EgSjqZWxXArQo5dk2PZfv09/v4D",
   "kfb188f16bdd9": "bVVdj5swEPwveWzLmc9gLN2DOSJd1Ls29xPWZg1cCEQ2hCpV/3sFCUmA8yszntnZXfN3dQS5hwyfPk1drdjq2+rHysAJLYP6hPrp06zYKpKOix7jH7w/hHP+0sOkLo6NIWUhCIgK8gNarW6wKJ/kQFNrsAPBSLfh2Y4QRc4k6Z6f59RSYFpbDSgciTZ6AUU2B7YmA4EWtGoQu4IDP8K1w8hwaMLfE3I7fyjnu450O/o6u0xAlU7dOk4E65DxbvvC+cfcZVoANlZZVGbUddIwUja7aXXvC46GzjoD5iXqKwmp4/hiNBv3cfbRzIiqbI2ZiFEvDVzKCInm2AxNIfPGOupaYHWFi8gNHWDxMu3s2Frq0REIAVTMs84Bqwz1xIPtSXUJWg32jbtTfcAxn4vs4YAarAryKzWyvdAV96wIIa9Lb+VQyCA5FhL5rkjtCbFvMjn1gad8cnbDx2xEqW78IG+QjC9EjcwLfZjGp3x0bY+9LS2aHFLU1r42zQ3tYejbgg0C24RcvNB4zrwXN/YUAOhjbZTwV7pQrFXTgUYrO7bjEPkYhAHjfLsAN3A43Gx5FDzGF2fzBatKJ9bcSAWBzwj5flmmZRCX1bHOWJR4m20ZetF8kk4aDhaITBdKjU0VgVTRV8PcYdlYoq6bsQYnDD2vj6h6HIBfQ2u3DzUl2YfflHG3mZa6XYzmoFDrZjQtQHi+z1SWUEKomqML3VgdyPwWjBIIESOdnF98Rl1ihpMYleOAmzLSXRaGnPvnKLw+F+r7ZKjPi86fC+wDrkxrxoQl+CJgX7SkQ70XUO2vQOmsQbrsjXMev/PdPZA445uXrF8NcqJkmlXsDSvykycXaMf574Twq9ARJTnqWhX9y0lyaE0OZXP/bfz7Dw==",
-  "ka1bd5974fda2": "bVVdj5swEPwveezVZz4DWLoH57gqkXpt7ieszRq4EEA2hCpV/3sFCUmA8wMSYtY7npk1f1c1yAOk+PxpqnLFVt9W31cGTkgM6hPq50+zYqtI2g66jF8W5Zy/9jCp87oxtMgFBVFCdkTS6gbz4lkOZWoNli8Y7d54uqdU0TONu5eXeWkhMKlIAwrHQgtdP0Q2B7YmBYEEWjU0u4J9L8K1zeiwwpi/x/S2Osn5vqPdPtzONhNQJlO2th3BOmC823HOP+YskxywIUVemrGvnQSRsti91/uiRkNHzoBZgfpahKFte2Iku+nl7KWZFaqiNWbSLHQT3wkZpdEcm6LJZdaQWlcCyytcRE5gA9ss1U7rlqhHRiAEhGKudQZYpqgnHCxXql7oP+F80wMcUQMpIbtCI8sNHHHXhlK6XXIpBuJDi5F45DkisSaFvan01Auc8MnaDx/TEaW68YO8QVK+aGpkluvjVC7loWO57OeSoskgQU0OlWluaBcDzxKXadjF9MIl3Mwr74cbPQSA8PFsIeXbhZamUk0HGklat2NoPPQDn3G+W4AbOB5vtNwQ3LmRpumD/kjDiZTve4zSp8ugLA99GQtyxrzAW25l4EbsNeZz8EnDkYBIda7UaKLwpYq+CmuHRUNEVTUjZzsIXJdRl5aPhv8arNw9eB2nH977D969TSOwW9AZOlS6GYkLEK7nMZXGIaWhmqNz3ZAOZHYTRwmEnvrClzPqAlOcSKlsG5yEDdfMwLJPQnC9DtTTJMTn5Y459iKXpjWjyhI84bMvbOlQHwSUhytQ2muQzhDBzTvfT0X5rPtRoKeQTrWK3WEkfvPt8L5Jh8fuOiI1SlrrSuX9zUgzaE0GRXP/Lfz7Dw=="
+  "ka1bd5974fda2": "bVVdj5swEPwveezVZz4DWLoH57gqkXpt7ieszRq4EEA2hCpV/3sFCUmA8wMSYtY7npk1f1c1yAOk+PxpqnLFVt9W31cGTkgM6hPq50+zYqtI2g66jF8W5Zy/9jCp87oxtMgFBVFCdkTS6gbz4lkOZWoNli8Y7d54uqdU0TONu5eXeWkhMKlIAwrHQgtdP0Q2B7YmBYEEWjU0u4J9L8K1zeiwwpi/x/S2Osn5vqPdPtzONhNQJlO2th3BOmC823HOP+YskxywIUVemrGvnQSRsti91/uiRkNHzoBZgfpahKFte2Iku+nl7KWZFaqiNWbSLHQT3wkZpdEcm6LJZdaQWlcCyytcRE5gA9ss1U7rlqhHRiAEhGKudQZYpqgnHCxXql7oP+F80wMcUQMpIbtCI8sNHHHXhlK6XXIpBuJDi5F45DkisSaFvan01Auc8MnaDx/TEaW68YO8QVK+aGpkluvjVC7loWO57OeSoskgQU0OlWluaBcDzxKXadjF9MIl3Mwr74cbPQSA8PFsIeXbhZamUk0HGklat2NoPPQDn3G+W4AbOB5vtNwQ3LmRpumD/kjDiZTve4zSp8ugLA99GQtyxrzAW25l4EbsNeZz8EnDkYBIda7UaKLwpYq+CmuHRUNEVTUjZzsIXJdRl5aPhv8arNw9eB2nH977D969TSOwW9AZOlS6GYkLEK7nMZXGIaWhmqNz3ZAOZHYTRwmEnvrClzPqAlOcSKlsG5yEDdfMwLJPQnC9DtTTJMTn5Y459iKXpjWjyhI84bMvbOlQHwSUhytQ2muQzhDBzTvfT0X5rPtRoKeQTrWK3WEkfvPt8L5Jh8fuOiI1SlrrSuX9zUgzaE0GRXP/Lfz7Dw==",
+  "ke1d81335c3e0": "tVZNj+I4EP0vHLc37XySxNIcDEGC3WkNfdxj2SknaUKCbIeMWM1/H4UQIEmPNFppfUO8qnr1ql7Bv4sTiANk+Pqh62pBF38s/lxoOKOlUZ1RvX7oBV3EwnHRo6x/hDG27mBCFSejSVpAZh0UgmmUVSLH6lVcw1K+5DKm5P947aaj8s6Gl7A126zYr2gZOJgbK4lxADZdZYy17MuXp4iy4AR4BfkRrUYZLMohZAl2wGlXNNsTIsmFJO29NNt8kqbkmNaWAYlDEhu9IEI6BTY6A44WNPJa+AYO/BiXzk26KGFvyaP17xFj+5a0+2jLGHtZzatzqNJxB44TwzKkrN2tGXuf4tMC0FhlUemhvpOGsbQfo2vfZjEKWusCmJeobkEYOY7PB9KrTppOrkmgLButR8UiLw3ciBIST7EZ6kLkxjqp+rFWPHZDB+iqnfWdnRpLPjMCziHiU81zwCpDNeJge0J2gn+PpkkPcEQFVgX5DRrbXujy0Vpv51yGzTtipcUQ6ngSffEfHBHJX6QfKROkS+QRZb/71qNPq9+O6wbLNv9MKJXXUV1FHQjFvstTe9JvlJBzt1LpOOP++mU2oOTdYOKp6ExmLfJCHccySB9d26Nf50PROaSorEOtzR3tYejbvBdtl5CeS7SaRj6aG7YWAKLn3iLCtrPt0bU0LSi0slMz2MTHIAwoY7sZ2MDxeKflReB9OsuMzdyoTWf5Z3puLIPAp4S89KdjLkZ/IKwLFiXeHSxCL6brxJ+CzwqOFvBMFVIOw+WBuJ73mW1bLI3F63o4uZ4Thp7XSVU9L8L+OuLdU2dJ9u6bctUf98f7m23P2WZK6VqlVmYgz4F7vk9lm0SfGKYtlLFaEPldIMkROvqzmV1QlZjhSE7pOOCmlLSy537pjnB4O47yZbTgl3nGAjuhK93oQWkBPg/oJ6NpUR04VIcbUDhLEC79qzPoG9uPdNl8nDqbXO00ejHp7Jyh2PbObhn7lpDdrdAJBTmpWhbd7wTJodE5lGb0D6CHNCh5g3mF3X6Zoq6weqB+/AQ="
  },
  "ungemessen": {
   "profiband.K4#2": {
@@ -1016,21 +1087,6 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
-  },
-  "karte2.leben.tiere.masse#1": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-27T10:17:11.366Z",
-   "abdruck": "5f316e994d1d",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1,
-   "fahrt": "11336@mwytblwm"
   },
   "karte2.planet.wasser.gezeiten#1": {
    "gruen": false,
