@@ -2912,3 +2912,4 @@ omen-gtx-gtx-bed6256c-w171305-1-bed6256c ROT 0 GRÜN / 2 ROT / 0 UNGEMESSEN · R
 2026-11-27 17:30 landung Runde 45 am bed6256c: misst 23 von 232 Stationen (vorn; 13 tragen an diesem Kopf schon einen Eintrag), rohe Zahl je Zeile
 2026-11-27 17:38 RUNDE 45 ALARM gtx: ohne Fortschritt seit 17 min (laeuft, 13/232, Station karte2.leben.tiere.masse#1, Kopf bed6256c) — gesehen von gtx (landung-dienst)
 2026-11-27 17:45 RUNDE 45 ALARM radeon: ohne Fortschritt seit 17 min (laeuft, 13/36, Station -, Kopf bed6256c) — gesehen von gtx (landung-dienst)
+2026-11-27 17:53 RUNDE 45 SPRUNG am bed6256c → Runde 46 am 948f68ee (gtx laeuft 14/232, radeon laeuft 14/36): z806 + z807 gelandet (buendel-a, buendel-b): die Runde misst den main mit zehn neuen Abgaben
