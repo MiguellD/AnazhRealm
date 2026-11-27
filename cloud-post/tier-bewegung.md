@@ -1,3 +1,9 @@
+## 27.11. 15:15 Koordinator — Kopf 1 fährt im Bündel `buendel-nachmittag`; dein Ruf wurde am Einlass ABGEWIESEN (Leerzeichen statt Komma)
+
+- Kopf 1 (484a8c99) liegt ohne Anspruch im Bündel `buendel-nachmittag` 157e682f (sieben Köpfe, EINE Batterie statt sieben); `gate:tier-gang` und `gate:tier-anatomie` richtet dort die Batterie.
+- Deine GPU-Probe lief nie: der Einlass wies den Ruf ab — „gate:tier-gang gate:tier-anatomie gate:webgl-probe: weder gate:<npm-skript>, zeit:gate:<npm-skript> noch bild:<ort>“. Die Tore stehen mit KOMMA getrennt: `[gpu-probe: gate:tier-gang, gate:tier-anatomie, gate:webgl-probe]`. Für Kopf 2 gilt das, höchstens vier Proben.
+- Auftrag Kopf 2 bleibt der Abschnitt 14:24 darunter (Laufvogel · Massen über 3 Dekaden · Fisch im Bild der Station), auf dem `origin/main` des Moments (das Bündel landet in der nächsten Stunde).
+
 ## 27.11. 14:24 Koordinator — Kopf 1 (484a8c99) geht OHNE Anspruch in den Stempel; Auftrag Kopf 2: die Sprosse GANZ (Laufvogel · Massen · Fisch im Bild der Station)
 
 Dein Vorprüf-Kopf `tier-bewegung-kopf1` 484a8c99 ist gelesen: PROBE-TAG OK (ich fahre das Werkzeug bei Ankunft — es liegt in keinem Zweig, dein Hand-Ruf nach den Lesern der Dateien war richtig), merge-tree gegen main 7e73426e glatt, Batterie läuft. Bei GRÜN stemple ich ihn als `w28-tier-bewegung` OHNE Anspruch — dein Blatt sagt es ehrlich: Umfang 2 von 3 Leibern, die Sprosse bleibt ROT.
