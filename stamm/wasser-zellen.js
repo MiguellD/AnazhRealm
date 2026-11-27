@@ -720,6 +720,7 @@ class AnazhRealm_wasser_zellen {
         if (alt && alt.quelle === nr) return alt.netz;
         let pos = null;
         let idx = null;
+        let meer = null;
         if (gezeichnet) {
             if (quelle) {
                 // DAS NETZ TRÄGT SEINE BYTES (K37): die Positionen des gezeichneten Sheets sind ein View in den Puffer des
@@ -728,23 +729,26 @@ class AnazhRealm_wasser_zellen {
                 // Damm im Tal 26/−120 verlor `_nassAt` so 285–1 309 von 2 070 nassen Punkten eines Sees, dessen Sheet stand.
                 pos = Float32Array.from(quelle.geometry.attributes.position.array);
                 idx = quelle.geometry.index.array;
+                meer = Float32Array.from(quelle.geometry.attributes.aMeer.array);
             }
         } else if (this._wasserSheetTraegt(cx, cz)) {
             const d = this._computeWaterSheetData(cx, cz, this._mainWaterSheetCtx(cx, cz, entry));
             if (d) {
                 pos = Float32Array.from(d.positions);
                 idx = Uint32Array.from(d.indices);
+                meer = Float32Array.from(d.aMeer);
             }
         }
-        let netz = pos ? this._wasserNetzBau(cx, cz, pos, idx) : null;
+        let netz = pos ? this._wasserNetzBau(cx, cz, pos, idx, meer) : null;
         if (alt && AnazhRealm._wasserNetzGleich(alt.netz, netz)) netz = alt.netz;
         entry._wasserNetz = { quelle: nr, netz };
         return netz;
     }
 
     // Das Netz eines Sheets: jedes Dreieck in jeder Zelle (1,8 m) des um eine Zelle erweiterten Chunks, die seine xz-Hülle
-    // berührt (die Rand-Vertices sind bis 0,54 m versetzt, `_computeWaterSheetData`) — CSR (`start` · `liste`).
-    _wasserNetzBau(cx, cz, pos, idx) {
+    // berührt (die Rand-Vertices sind bis 0,54 m versetzt, `_computeWaterSheetData`) — CSR (`start` · `liste`); `meer` das
+    // Gewicht der Gezeit je Vertex (`aMeer`: 1 = der Vertex liegt in der Ruhe-Höhe des Meers), `meerDa` trägt es irgendwo.
+    _wasserNetzBau(cx, cz, pos, idx, meer) {
         const { dim, step, span } = this._voxelChunkConfig(0);
         const nb = dim + 2;
         const gx0 = cx * span - step;
@@ -766,11 +770,14 @@ class AnazhRealm_wasser_zellen {
         const liste = new Int32Array(start[nb * nb]);
         const fuell = start.slice(0, nb * nb);
         for (let t = 0; t < triN; t++) faecher(t, (f) => (liste[fuell[f]++] = t));
-        return { pos, idx, gx0, gz0, nb, step, start, liste };
+        const meerDa = meer.some((m) => m > 0);
+        return { pos, idx, meer, meerDa, gx0, gz0, nb, step, start, liste };
     }
 
-    // Das höchste Dreieck eines Netzes über (x, z) (baryzentrisch in xz; senkrechte Vorhänge tragen keine Fläche) oder null.
-    static _wasserNetzHoehe(n, x, z) {
+    // Das höchste Dreieck eines Netzes über (x, z) (baryzentrisch in xz; senkrechte Vorhänge tragen keine Fläche) oder null —
+    // gehoben um `hub` (der Hub der Gezeit, der jetzt gilt, `_gezeitHubBild`) mal dem Gewicht `meer` seiner Ecken: dieselbe
+    // Rechnung wie das Bild (`uGezeit` × `aMeer` im Wasser-Stoff), das Sheet einer anderen Stufe liest die Stufe der Uhr.
+    static _wasserNetzHoehe(n, x, z, hub) {
         const i = Math.floor((x - n.gx0) / n.step);
         const k = Math.floor((z - n.gz0) / n.step);
         if (i < 0 || k < 0 || i >= n.nb || k >= n.nb) return null;
@@ -789,7 +796,9 @@ class AnazhRealm_wasser_zellen {
             const v = ((p[c + 2] - p[a + 2]) * (x - p[c]) + (p[a] - p[c]) * (z - p[c + 2])) / d;
             const w = 1 - u - v;
             if (u < -1e-6 || v < -1e-6 || w < -1e-6) continue;
-            const y = u * p[a + 1] + v * p[b + 1] + w * p[c + 1];
+            const m = n.meer;
+            const y =
+                u * (p[a + 1] + hub * m[a / 3]) + v * (p[b + 1] + hub * m[b / 3]) + w * (p[c + 1] + hub * m[c / 3]);
             if (best === null || y > best) best = y;
         }
         return best;
@@ -800,6 +809,7 @@ class AnazhRealm_wasser_zellen {
         if (a.pos.length !== b.pos.length || a.idx.length !== b.idx.length) return false;
         for (let i = 0; i < a.pos.length; i++) if (a.pos[i] !== b.pos[i]) return false;
         for (let i = 0; i < a.idx.length; i++) if (a.idx[i] !== b.idx[i]) return false;
+        for (let i = 0; i < a.meer.length; i++) if (a.meer[i] !== b.meer[i]) return false;
         return true;
     }
 
@@ -813,7 +823,8 @@ class AnazhRealm_wasser_zellen {
         const cz = Math.floor(z / span);
         const eigen = this._wasserNetz(cx, cz);
         if (eigen === undefined) return undefined;
-        let best = eigen ? AnazhRealm._wasserNetzHoehe(eigen, x, z) : null;
+        const hub = this._gezeitHubBild();
+        let best = eigen ? AnazhRealm._wasserNetzHoehe(eigen, x, z, hub) : null;
         const fx = x - cx * span;
         const fz = z - cz * span;
         for (let dz = -1; dz <= 1; dz++) {
@@ -822,7 +833,7 @@ class AnazhRealm_wasser_zellen {
                 if ((!dx && !dz) || (dx < 0 ? fx > R : dx > 0 ? span - fx > R : false)) continue;
                 const n = this._wasserNetz(cx + dx, cz + dz);
                 if (!n) continue;
-                const y = AnazhRealm._wasserNetzHoehe(n, x, z);
+                const y = AnazhRealm._wasserNetzHoehe(n, x, z, hub);
                 if (y !== null && (best === null || y > best)) best = y;
             }
         }
@@ -839,6 +850,7 @@ class AnazhRealm_wasser_zellen {
         for (let cz = Math.floor((z0 - R) / span); cz <= Math.floor((z1 + R) / span); cz++)
             for (let cx = Math.floor((x0 - R) / span); cx <= Math.floor((x1 + R) / span); cx++)
                 aus.push(cx, cz, this._wasserNetz(cx, cz));
+        aus.hub = this._gezeitHubBild(); // die Gezeit, unter der die Kachel ihr Wasser las
         return aus;
     }
 
@@ -846,6 +858,7 @@ class AnazhRealm_wasser_zellen {
     // Rechteck ändern (`_wasserNetzGleichIn`); sonst liest sie ab jetzt das neue Netz. Bis F3 fiel sie mit jedem neuen Netz —
     // der Automat baute am Graben das Sheet alle vier Takte neu, und die Wiese um den Graben fiel 557-mal in 600 Takten
     // (eine Kachel wächst je Takt neu: das Flackern).
+    // Wechselt die Stufe der Gezeit, fällt die Kachel, deren Netze Meer tragen (das Wasser über ihr stieg oder fiel).
     _wasserKennungenGleich(k) {
         if (!k) return false;
         for (let i = 4; i < k.length; i += 3) {
@@ -853,6 +866,11 @@ class AnazhRealm_wasser_zellen {
             if (n === k[i + 2]) continue;
             if (!AnazhRealm._wasserNetzGleichIn(k[i + 2], n, k[0], k[1], k[2], k[3])) return false;
             k[i + 2] = n;
+        }
+        const hub = this._gezeitHubBild();
+        if (k.hub !== hub) {
+            for (let i = 4; i < k.length; i += 3) if (k[i + 2] && k[i + 2].meerDa) return false;
+            k.hub = hub;
         }
         return true;
     }
@@ -878,7 +896,8 @@ class AnazhRealm_wasser_zellen {
                         if (
                             a.pos[pa] !== b.pos[pb] ||
                             a.pos[pa + 1] !== b.pos[pb + 1] ||
-                            a.pos[pa + 2] !== b.pos[pb + 2]
+                            a.pos[pa + 2] !== b.pos[pb + 2] ||
+                            a.meer[pa / 3] !== b.meer[pb / 3]
                         )
                             return false;
                     }
@@ -928,6 +947,7 @@ class AnazhRealm_wasser_zellen {
         geom.setAttribute("aWave", new THREE.BufferAttribute(f32(data.aWave), 1));
         geom.setAttribute("aDepth", new THREE.BufferAttribute(f32(data.aDepth), 1));
         geom.setAttribute("aSlope", new THREE.BufferAttribute(f32(data.aSlope), 1));
+        geom.setAttribute("aMeer", new THREE.BufferAttribute(f32(data.aMeer), 1));
         const ix = data.indices;
         geom.setIndex(new THREE.BufferAttribute(ix instanceof Uint32Array ? ix : new Uint32Array(ix), 1));
         const mat = this._ensureHydroSurfaceMaterial();
@@ -951,7 +971,7 @@ class AnazhRealm_wasser_zellen {
 
     // Die EINE pure-typed-array-Mathematik des Zell-Oberkanten-Sheets: keine THREE-Objekte, Zellen/Level
     // NUR via ctx → der Worker-Mirror `buildWaterSheetGeometry` ist byte-identisch. Liefert
-    // {positions, indices, aFlow, aWave, aDepth, aSlope} (plain Arrays) oder null.
+    // {positions, indices, aFlow, aWave, aDepth, aSlope, aMeer} (plain Arrays) oder null.
     _computeWaterSheetData(cx, cz, ctx) {
         // Wie die Zellen + die Fläche: IMMER LOD0 (V9.93/V18.22 — eine Skala).
         const cfg0 = this._voxelChunkConfig(0);
@@ -1284,6 +1304,11 @@ class AnazhRealm_wasser_zellen {
         const aWave = [];
         const aDepth = [];
         const aSlope = [];
+        // DIE GEZEIT IM BILD (planet.wasser.gezeiten #1): 1, wo das Meer mit seinem Hub den ruhenden Vertex trägt (`atlasSpiegel`
+        // aus.meer) — der Vertex liegt in der Ruhe-Höhe des Meers, Bild (`uGezeit`) und Körper (`_wasserNetzHoehe`) heben ihn um
+        // den Hub der Stufe, die JETZT gilt (`_gezeitGilt`); bis hier stand das Sheet auf der Stufe seines Baus (Hub 0 m am Gerät)
+        const aMeer = [];
+        const MEER = {};
         const vmap = new Int32Array(NV * NV).fill(-1);
         const vertIsAnchor = []; // V18.114 — pro Vertex: Anker (kein nasser Nachbar)?
         // Welt-deterministischer Vertex-Jitter gegen Gitter-Moiré: das reguläre 1,8-m-Gitter aliast am
@@ -1349,10 +1374,12 @@ class AnazhRealm_wasser_zellen {
             // höchsten SOLID-Zelle), MIN über die 4 Nachbar-Spalten — nie MAX (griffe an Klippen/Überhängen die Wand →
             // schwebende Kante); die Kante taucht am Ufer-Fuß ein.
             let surfY = anchor - 0.5;
+            let meer = 0;
             if (n > 0 && ruht) {
-                const Lv = this._atlasWaterLevelAt(wx + _jdir, wz + _jdir2, Infinity);
+                const Lv = this._atlasWaterLevelAt(wx + _jdir, wz + _jdir2, Infinity, MEER);
                 const Lq = Lv > -Infinity ? Lv : this._hydroSpiegelQuer(wx + _jdir, wz + _jdir2);
                 surfY = Lq > -Infinity ? Math.max(rohMin, Math.min(rohMax, Lq)) : rohMax;
+                meer = Lv > -Infinity && MEER.meer === 1 && surfY === Lq ? 1 : 0;
             } else if (n > 0) surfY = sum / n;
             const depthM = n > 0 ? dsum / n : 0;
             const id = positions.length / 3;
@@ -1373,6 +1400,7 @@ class AnazhRealm_wasser_zellen {
             aWave.push(isLake ? 0 : heightRamp * (1 - riverness));
             aDepth.push(depthM);
             aSlope.push(n > 0 ? slopeMax : 0);
+            aMeer.push(meer);
             aFlow.push(avFx, avFz);
             vmap[vi] = id;
             return id;
@@ -1382,12 +1410,13 @@ class AnazhRealm_wasser_zellen {
         // DECK bis zur Lippe + senkrechter VORHANG (wasserdicht an beide Sheets); der Vorhang trägt
         // aSlope-Maximum → das Wildwasser schäumt den Fall weiß.
         const VERT_SPLIT = step * 3;
-        const dupVert = (srcId, nx, ny, nz, slopeOverride) => {
+        const dupVert = (srcId, nx, ny, nz, slopeOverride, meer) => {
             const id = positions.length / 3;
             positions.push(nx, ny, nz);
             aWave.push(aWave[srcId]);
             aDepth.push(aDepth[srcId]);
             aSlope.push(slopeOverride !== undefined ? slopeOverride : aSlope[srcId]);
+            aMeer.push(meer);
             aFlow.push(aFlow[srcId * 2], aFlow[srcId * 2 + 1]);
             return id;
         };
@@ -1443,20 +1472,35 @@ class AnazhRealm_wasser_zellen {
                     loB = v10;
                 }
                 const lipY = (positions[hiA * 3 + 1] + positions[hiB * 3 + 1]) / 2;
+                const lipMeer = aMeer[hiA] && aMeer[hiB] ? 1 : 0; // die Lippe trägt den Hub, wo beide hohen Ecken ihn tragen
                 // DECK: von der hohen Kante horizontal bis über die tiefen Vertices (deren XZ), auf Lippen-Höhe.
                 // WICKLUNG exakt wie das Original-Quad (v00,v10,v01 / v11,v01,v10 → -Y-Normale, BackSide-Oberseite),
                 // die tiefen Ecken durch ihre Lippen-Dups ersetzt — sonst ny>0-Decks (der W1-Test fängt es).
-                const dA = dupVert(loA, positions[loA * 3], lipY, positions[loA * 3 + 2]);
-                const dB = dupVert(loB, positions[loB * 3], lipY, positions[loB * 3 + 2]);
+                const dA = dupVert(loA, positions[loA * 3], lipY, positions[loA * 3 + 2], undefined, lipMeer);
+                const dB = dupVert(loB, positions[loB * 3], lipY, positions[loB * 3 + 2], undefined, lipMeer);
                 const rep = (v) => (v === loA ? dA : v === loB ? dB : v);
                 indices.push(rep(v00), rep(v10), rep(v01), rep(v11), rep(v01), rep(v10));
                 // VORHANG: senkrecht von der Lippe auf die tiefen Original-
                 // Vertices (teilt deren Position → wasserdicht ans untere Sheet).
                 // aSlope = 4 (Cap) → der Shader schäumt den Fall weiss.
-                const cA = dupVert(loA, positions[loA * 3], lipY, positions[loA * 3 + 2], 4);
-                const cB = dupVert(loB, positions[loB * 3], lipY, positions[loB * 3 + 2], 4);
-                const fA = dupVert(loA, positions[loA * 3], positions[loA * 3 + 1], positions[loA * 3 + 2], 4);
-                const fB = dupVert(loB, positions[loB * 3], positions[loB * 3 + 1], positions[loB * 3 + 2], 4);
+                const cA = dupVert(loA, positions[loA * 3], lipY, positions[loA * 3 + 2], 4, lipMeer);
+                const cB = dupVert(loB, positions[loB * 3], lipY, positions[loB * 3 + 2], 4, lipMeer);
+                const fA = dupVert(
+                    loA,
+                    positions[loA * 3],
+                    positions[loA * 3 + 1],
+                    positions[loA * 3 + 2],
+                    4,
+                    aMeer[loA]
+                );
+                const fB = dupVert(
+                    loB,
+                    positions[loB * 3],
+                    positions[loB * 3 + 1],
+                    positions[loB * 3 + 2],
+                    4,
+                    aMeer[loB]
+                );
                 // beide Wicklungen (der Fall ist von beiden Seiten sichtbar —
                 // ein Vorhang hat keine „Unterseite", die der BackSide-Cull
                 // verstecken müsste; zwei Dreieck-Paare = double-faced).
@@ -1465,7 +1509,15 @@ class AnazhRealm_wasser_zellen {
             }
         }
         if (indices.length === 0) return null;
-        return { positions, indices, aFlow, aWave, aDepth, aSlope };
+        // die Ruhe-Höhe des Meers: der Hub der Stufe, zu der das Gesetz eben rechnete (`gezeitHub` der Lage), fällt aus Lage und
+        // Tiefe jedes Vertex, den das Meer trägt — gehoben wird er an der Uhr (Worker-Mirror byte-identisch)
+        const hubBau = globalThis.__gelaendeCore.gezeitHub(this._gelaende());
+        for (let v = 0; v < aMeer.length; v++)
+            if (aMeer[v]) {
+                positions[3 * v + 1] -= hubBau;
+                aDepth[v] -= hubBau;
+            }
+        return { positions, indices, aFlow, aWave, aDepth, aSlope, aMeer };
     }
 
     // V9.72 (Welle C.2) — Iso-Wasser-Mesh disposen. Geometry wird disposed,

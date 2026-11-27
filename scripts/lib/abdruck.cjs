@@ -242,8 +242,8 @@ function abdruckKern(G) {
         //   das gezeichnete Sheet des Wassers (`_finalizeWaterSheetMesh`, `voxelChunkWaterIso`): dieselbe Menge, als Mesh
         const kanon = (v, pp) => {
             if (v.pos && v.idx && v.start && v.liste && v.nb) {
-                for (const a of [v.pos, v.idx, v.start, v.liste]) gesehen.add(a.buffer);
-                return [pp + ".dreiecke", dreiecke([[v.pos, 3]], v.idx)];
+                for (const a of [v.pos, v.idx, v.start, v.liste, v.meer]) gesehen.add(a.buffer);
+                return [pp + ".dreiecke", dreiecke([[v.pos, 3], [v.meer, 1]], v.idx)];
             }
             if (v.isMesh && v.userData && v.userData.isHydrosphere && v.geometry && v.geometry.index) {
                 const g = v.geometry,

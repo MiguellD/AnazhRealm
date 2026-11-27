@@ -9,6 +9,9 @@
 - Linse gate:wetter-wache (D) DURCHZUG im Selbsttest: GRÜN am Kern; gepflanzt „drei Sinus-Wellen" → ROT an STIMMT (24 %), „Zeile ohne Druck" → ROT an DRUCK, „Richtung blind" → ROT an STIMMT (0 %).
 - (F) zog mit dem Gesetz: „A nass bei trockenem B ≥ 20 %" war das Aliasing der drei Sinus-Wellen; Regen dekorreliert über 50–110 km (Korrelation bei 0 km 0,92, Peleg et al. 2013), über die Lage 8,6 %. Soll jetzt: die Kante zieht (> 0) und der Lag 240 s gegen 273 s ±20 %. Die volle Wache (Null-Renderer) lief hier: GRÜN bis auf diese eine Klinge, die nun zieht.
 - windWeg 0,097 → 0,138 ms je Aufruf (ein Aufruf je Bild, `_wolkenWind`).
+- Vorprüf-Kopf 1 auf main 3008a66: `check:statik` GRÜN · gate:wetter-wache voll GRÜN (probeUrteil GRÜN) · gate:mp-sync Exit 0 mit EINER roten Zeile „(b) Tür … kein Rejoin geplant“ — am main 52937c92 dieselbe Zeile, nicht vom Wetter, darum nicht im Ruf · gate:tag-achse:echt hier nicht fahrbar (SwiftShader: das erste Weltbild steht nicht), der Richter ist der Ruf an der Radeon · `zug.sh probe-tag` liegt in keinem Zweig, der Ruf ist von Hand gegen `spec/ci/ci-zeiten.json` gehalten (wetter-wache 79 s · tag-achse:echt 117 s).
+- Messort der Station: Ort (0, 0) der Heimat, kein GPU-Messort — der Mess-Leib FRONT_AN ist deterministisch am Kern; die Zahl am Gerät ist die Zahl headless.
+- Ehrlich offen: der Rumpf der Station im Zweig `punkte-maschine` nicht gefahren — der Vor-Richter fährt sie; stadtklima#1 am Rumpf seiner Station nicht nachgefahren (kraft#2: die Böe-Linse (Ö) am Wirt GRÜN, Laufzeit ±2 %); das Bild des Himmels (Wolken-Zug mit der Drehung) nur am Ruf `bild:wiese@0.5`.
 
 Karte 2 gebucht 149 von 1 718 · Status ZWISCHENSTAND.
 

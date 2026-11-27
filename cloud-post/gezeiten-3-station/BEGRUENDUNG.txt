@@ -1,0 +1,46 @@
+Kandidat der Station planet.wasser.gezeiten S1 (karte2.planet.wasser.gezeiten#1) — Bahn gezeiten-3, Vorprüfung 1
+Diff: kandidat.diff gegen origin/punkte-maschine e1dfdc4 (meisterkarte-quelle/punkte/stationen/k2-planet.js), 2 Code-Zeilen + 2 Kommentarzeilen.
+
+DIE TÄTER-ZAHL (station-faecher.cjs: GEZEIT_AN und die Maße wörtlich aus der Stations-Datei geschnitten, Null-Renderer, 12 Saaten × 25 h + Heimat × 25 h):
+  Station wie sie steht, Kopf 2 der Bahn gezeiten-2 (main + 36fc4266 + sleep(0)):
+    Tag 60 min (Standard)       hubM 3,450 · periodeH 12,353 · benetztDiff 5 · Heimat 3,450 m, 11 fremde Küsten je 0 m
+    Tag 10^12 min (die Bühne)   hubM 0,000 · periodeH ungemessen · benetztDiff 0 · Uhr 25 — der Satz des Vor-Richters wörtlich
+  Die Sitzung des Richters steht auf der Tag-Länge der Bühne, sobald eine Probe vor der Station `__buehne` rief
+  (scripts/lib/ausgabe-aufnahme.cjs:394 `st.dayLengthMinutes = 1e12`; das Laden setzt sie nie zurück). Die Gezeit läuft in der
+  Kalender-Zeit (stamm/wasser-hydro.js `_gezeitStunde` → `_kalenderZeit`, zeit-ein-kalender: „eine Tag-Länge, die die Zeit anhält,
+  hält jeden Prozess des Tags an“). Die Station schiebt die Welt-Uhr um `normS / 24` — eine Stunde des STANDARD-Tags. Unter der
+  Bühne sind das 10^-11 Stunden des Tags der Welt: das Meer steht, an der Heimat wie überall.
+
+DIE ZWEI ZEILEN:
+  :3780  stundeS = r._kalender().normS / 24  →  r._kalender().tagS / 24
+         Die Stunde N der Welt-Uhr ist 1/24 des Tags DER WELT (`tagS`), nie des Standard-Tags; beide sind nur am Standard-Tag gleich.
+         Der Sprung über 24 Stunden ist derselbe Sprung der Kalender-Zeit wie heute am Standard-Tag (dieselben Regen-Knoten fallen).
+  :3777/:3778  G.wasserSpiegel(M0.L, …)  →  G.wasserSpiegel(G.lageZurStunde(M0.L, a.zeit), …)
+         Die fremde Lage (lageAus) hat keine Uhr; der Export bekommt die Stunde als Träger (gelaende-core `lageZurStunde` →
+         `gezeitStand`, derselbe Träger, den der Wirt seiner Lage gibt). `wasserSpiegel` trägt am Kopf die Gezeit der Lage
+         (`gezeitHub`, derselbe Term wie `atlasSpiegel`/`spiegelZurStufe` für Körper, Nässe, Bild, Ferne). Kein Soll, keine Schwelle,
+         kein Nachbau der Gezeit in der Station.
+
+NACHHER (dieser Kopf + Kandidat, derselbe Lauf):
+    Tag 60 min      hubM 3,450 · periodeH 12,353 (−0,54 % gegen 12,42) · benetztDiff 10 · 12 von 12 Küsten je 3,450 m / 12,353 h
+    Tag 10^12 min   hubM 3,450 · periodeH 12,353 · benetztDiff 10 · 12 von 12 Küsten je 3,450 m / 12,353 h · Uhr 25
+  Gegenprobe: die Station wie sie steht am Kopf unter der Bühne bleibt bei hubM 0 — der Kern allein heilt S1 nicht.
+  Gleichheit Spiel-Leser ↔ Export: die Heimat (durch `_koerperWasser` unter der Uhr) und jede fremde Saat (durch den Export) lesen
+  denselben Hub 3,450 m und dieselbe Periode 12,353 h.
+
+DIE DREI WÄNDE:
+  1. node meisterkarte-quelle/punkte/punkte.cjs liste --kopf <dieser Kopf>: 1976 Stationen · Fehler 2 — genau ROT gelaende.K2#1/#2
+     „Wand HAKEN“ (dieselben zwei wie die Basis am Kopf origin/main eef726c7). Der Kandidat braucht diesen Kopf (der Export
+     `lageZurStunde` steht erst am Kopf dieser Vorprüfung).
+  2. Die Leiter misst in ≤ 60 s: der Fächer 300 Adressen in 0,8 s (Null-Renderer), die Station `sek: 45` unverändert.
+  3. Kein neuer Fächer im Kern: die Station las die fremden Saaten schon im Kern und die Heimat durch den Leser des Spiels; beides bleibt.
+
+DIE ZEILE, DIE DER RICHTER NACH DEM SETZEN ZEIGEN SOLL:
+  GRÜN  karte2.planet.wasser.gezeiten#1 · S1 periodeH 12,353 gegen Soll 12,42 ± 2 % ✓ · hubM 3,45 m über 12 Küsten × 25 Stunden
+  (25 unter der Uhr der Heimat), Watt 10 Punkte
+
+OFFEN (dieselbe Klasse, nicht in diesem Kandidaten — die Welt-Uhr in Stunden des Standard-Tags, unter der Bühne steht jeder Prozess
+des Kalenders): k2-planet.js:3829 S3 `tagS = DAY_LENGTH_DEFAULT_MINUTES * 60` (der Hub an 20 Punkten der Küste über 25 h), dazu
+:4693 · :5120 · :5176 · :5521 · :5962 · :6016 · :6226 · :6285 (andere Leitern). Die Linse, die die Klasse beim Namen nennt, wäre die
+Wand LÄNGE in punkte.cjs (`toteLaengen`): sie fängt heute weder `DAY_LENGTH_DEFAULT_MINUTES` noch `_kalender().normS` als Schritt
+der Welt-Uhr.

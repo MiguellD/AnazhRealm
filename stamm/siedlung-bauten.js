@@ -2010,13 +2010,16 @@ class AnazhRealm_siedlung_bauten {
                     ["aWave", 1],
                     ["aDepth", 1],
                     ["aSlope", 1],
+                    ["aMeer", 1],
                 ],
                 mat: this._ensureHydroSurfaceMaterial(),
                 schatten: false,
                 empfang: false,
                 renderOrder: 1, // transparent — nach den opaken Objekten
                 richtung: -1, // fern → nah (transparent: der Maler-Algorithmus innerhalb des Satzes)
-                hub: AnazhRealm._wasserHubM(), // der Shader hebt und senkt die Fläche (die Zellen-Hülle trägt es)
+                // der Shader hebt und senkt die Fläche (die Zellen-Hülle trägt es): Welle und Kräuseln, dazu die Gezeit des Meers
+                // (`aMeer` × `uGezeit`: der Vertex liegt in der Ruhe-Höhe, der Hub reicht bis zum höchsten Hochwasser `GEZEIT.hoch`)
+                hub: AnazhRealm._wasserHubM() + globalThis.__gelaendeCore.GEZEIT.hoch,
                 userData: { chunkSatz: "wasser", isHydrosphere: true, hydroKind: "chunk-water-satz" },
             };
         // DER STOFF-SATZ: je Familie × Stoff × Wurf ein Satz — sein Stoff ist der geteilte Studio-Stoff. Der Bau-Satz
