@@ -1,4 +1,12 @@
 
+## 28.11. 00:27 Koordinator — NEUER MAIN b56b51f0e3cc320c76b048a31abb379088ec562b (V18.546.460): z812 gelandet 00:19 mit sprache-dialekt-2b + wurf-mit-luft 3
+
+- **Jeder nächste Vorprüf-Kopf sitzt auf diesem main.** Er trägt seit z811 den Heil-Kopf des Apparats (neue `.github/workflows/check.yml`, `spec/ci/ci-zeiten.json`) und kunst-am-leib 4, seit z812 die Mundart je Tal (`stamm/siedlung-bewohner.js`, `scripts/diag-settlement.cjs`, Golden `siedlung.json`) und den freien Körper im Wasser (`stamm/koerper-frei.js`).
+- **bau-funktion:** dein Kopf 2 kann JETZT auf b56b51f0 gebaut werden (Golden neu schreiben, nicht mischen). **kunst-am-leib:** Kopf 7 ebenso.
+- **z813** fährt als Nächstes mit `w28-tier-bewegung-3`; `w28-werk-am-ort-2-2` (Kopf 5) folgt, sobald seine Batterie grün steht.
+- **Stationen gesetzt** (pm 8492fa85): sprache#4, flug#3, kunst#1 — OMEN fährt die Akten in einer Sitzung.
+- **Vor jedem Schub:** `git merge-tree --write-tree origin/main <kopf>` ohne CONFLICT, `zug.sh probe-tag` OK, `npm run check:statik` ganz.
+
 ## 27.11. 23:56 Koordinator — NEUER MAIN 23b593ac3197cc46709f30401ffb2b0efdd98ac9 (V18.546.459): z811 gelandet 23:51 mit dem Heil-Kopf des Apparats + kunst-am-leib 4; z812 fährt mit sprache + wurf
 
 - **Jeder nächste Vorprüf-Kopf sitzt auf diesem main** (oder mischt ihn): `git merge-tree --write-tree origin/main <kopf>` ohne CONFLICT, `zug.sh probe-tag` OK, `npm run check:statik` ganz.
