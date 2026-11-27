@@ -1388,6 +1388,103 @@ class AnazhRealm_gelaende_chunks {
         this._disposeHydrosphereMeshes();
     }
 
+    // DIE ANKUNFT DER SAAT (Karte 2 erleben.spieler.wegfindung#1, landmarken-geologie-8 Kopf 4): Ort und Blick, an denen eine Welt
+    // ihren Spieler ankommen lässt — EINE Funktion der geladenen Saat und ihrer Heimat (`heim` {x, z}: die Mitte des Genesis-Orts,
+    // `_genesisMitte`), die die Ankunft ruft (`_genesisAnkunft`: die erste einer Welt und jede Rückkehr nach dem Tod); die Station
+    // der Wegfindung betritt jede Saat und misst an dieser Ankunft, sie wählt nie selbst. Die Profis setzen die
+    // Ankunft an eine Aussicht: der erste Blick trägt ein Ziel. DAS BAND (`ANKUNFT_SICHT`): die Mittelsicht, in der eine Landform als
+    // Ziel liest, beginnt beim 60-fachen der Höhe des herrschenden Baums (Higuchi, The Visual and Spatial Structure of Landscapes;
+    // die Higuchi-Viewsheds bei Wheatley & Gillings 2000: nah bis 60 ×, fern ab 1 100 × Baumhöhe) — der Baum ist der Median der
+    // Bestandeshöhen des Wald-Gesetzes (phyto-core `FOREST_ERTRAG`: 15,55 m → 933 m); sie endet an der Weite des Wurfs
+    // (`LANDMARKE_FERN_M`). DIE FOLGE: (1) die Heimat mit der Gier der Geburt (0, `state.yaw`) bleibt, trägt ihr Kegel (die
+    // Kamera der Welt, Neigung 0) eine freie Landmarke der Mittelsicht; (2) sonst blickt sie auf die TRAGENDE — die freie mit dem
+    // größten Winkel Höhe/Weg; (3) steht an der Heimat keine frei, rückt der Stand auf der Ring-Spirale des Gesetzes
+    // (gelaende-core `ringSpirale` um die Heimat, dieselbe, die den Genesis-Ort rückt) auf den ersten Stand über dem Wasser
+    // außerhalb jedes Grundrisses (`_imGrundriss`) mit einer freien; (4) trägt keiner eine, bleibt die Heimat (glied „keine“). FREI heißt: die Gerade vom Ego-Auge (über dem Boden der Ankunft samt
+    // Erdbau, `getTerrainHeightAt`, Body-Box halfExtent 0,5 + `EGO_AUGE_M`, wie `_loopCamera`) zum Gipfel (`_landmarkeHoehe`) bleibt
+    // über dem Grund der Saat (gelaende-core `hoehe`, je 25 m, bis 30 m vor den Fuß, den die Landmarke selbst trägt). → { x, z, yaw, auge: {x, y, z}, glied, marke: {art, x, y, z, d} }.
+    // Bis hier kam jede Welt an der Mitte ihres Plans mit Gier 0 an: an 18 von 51 Saaten der Station trug der erste Blick keine
+    // Landmarke in 1–3 km.
+    _ankunft(heim) {
+        const K = globalThis.__gelaendeCore;
+        const A = AnazhRealm;
+        const L = this._gelaende();
+        const { span } = this._voxelChunkConfig();
+        const baum = Object.values(globalThis.__phytoCore.FOREST_ERTRAG.kurven)
+            .map((k) => k.hoeheM)
+            .sort((a, b) => a - b);
+        const innen = A.ANKUNFT_SICHT.mittelsichtBaumX * baum[baum.length >> 1];
+        const aussen = A.LANDMARKE_FERN_M;
+        const reich = aussen + K.RING_SPIRALE.bisM;
+        const RC = Math.ceil(reich / span);
+        const [hx, hz] = [Math.floor(heim.x / span), Math.floor(heim.z / span)];
+        const marken = [];
+        for (let cx = hx - RC; cx <= hx + RC; cx++)
+            for (let cz = hz - RC; cz <= hz + RC; cz++) {
+                if (Math.hypot((cx + 0.5) * span - heim.x, (cz + 0.5) * span - heim.z) > reich + span) continue;
+                for (const l of this._landmarkenDesChunks(cx, cz)) {
+                    const h = this._landmarkeHoehe(l);
+                    if (h > 0) marken.push({ art: l.art, x: l.x, y: l.y + h, z: l.z, h });
+                }
+            }
+        const grund = (x, z) => K.hoehe(L, x, z, true);
+        const augeAn = (x, z) => ({
+            x,
+            y: Math.max(this.getTerrainHeightAt(x, z), L.waterLevel) + 0.5 + A.EGO_AUGE_M,
+            z,
+        });
+        const frei = (o, q) => {
+            const [vx, vy, vz] = [q.x - o.x, q.y - o.y, q.z - o.z];
+            const d = Math.hypot(vx, vz);
+            for (let s = 25; s < d - 30; s += 25)
+                if (grund(o.x + (vx * s) / d, o.z + (vz * s) / d) > o.y + (vy * s) / d) return false;
+            return true;
+        };
+        // die freien Landmarken der Mittelsicht an einem Stand, die tragende (größter Winkel Höhe/Weg) zuerst
+        const freie = (o) =>
+            marken
+                .map((q) => ({ q, d: Math.hypot(q.x - o.x, q.z - o.z) }))
+                .filter((m) => m.d >= innen && m.d <= aussen && frei(o, m.q))
+                .sort((a, b) => b.q.h / b.d - a.q.h / a.d);
+        // der Kegel der Kamera der Welt, wie sie steht: ihre Weite die des Rings (`_weltKameraFern`), nie das Boot-far einer
+        // frischen Welt — sonst hinge die Ankunft am Ladezustand des Rings, nicht an der Saat
+        const kam = this.state.camera.clone();
+        kam.far = Math.max(kam.far, this._weltKameraFern());
+        kam.updateProjectionMatrix();
+        const imKegel = (o, yaw, m) => {
+            const v = this._blickVorn(yaw, 0);
+            kam.position.set(o.x, o.y, o.z);
+            kam.lookAt(o.x + v.x, o.y + v.y, o.z + v.z);
+            const F = this._frustumVon(kam, true);
+            return m.find((w) => F.containsPoint(new THREE.Vector3(w.q.x, w.q.y, w.q.z))) || null;
+        };
+        const marke = (w) => ({ art: w.q.art, x: w.q.x, y: w.q.y, z: w.q.z, d: w.d });
+        const h0 = augeAn(heim.x, heim.z);
+        const f0 = freie(h0);
+        const traegt = f0.length ? imKegel(h0, 0, f0) : null;
+        if (traegt) return { x: heim.x, z: heim.z, yaw: 0, auge: h0, glied: "heimat", marke: marke(traegt) };
+        let stand = f0.length ? { o: h0, f: f0, r: 0 } : null;
+        if (!stand)
+            K.ringSpirale((dx, dz, r) => {
+                const [x, z] = [heim.x + dx, heim.z + dz];
+                if (!r || !(grund(x, z) > K.wasserSpiegel(L, x, z) + 0.4) || this._imGrundriss(x, z)) return false;
+                const o = augeAn(x, z);
+                const f = freie(o);
+                if (f.length) stand = { o, f, r };
+                return !!stand;
+            });
+        if (!stand) return { x: heim.x, z: heim.z, yaw: 0, auge: h0, glied: "keine", marke: null };
+        const w = stand.f[0];
+        return {
+            x: stand.o.x,
+            z: stand.o.z,
+            yaw: this._blickGierZu(w.q.x - stand.o.x, w.q.z - stand.o.z),
+            auge: stand.o,
+            glied: stand.r ? "ort" : "blick",
+            marke: marke(w),
+        };
+    }
+
     // Erster Spawn auf (0, 50, 0); spätere Regen-Aufrufe (Nexus terrainFlatten, „Spawne neue Welt")
     // behalten die Position, sonst teleportiert jede Selbstoptimierung den Spieler. Liegt er danach
     // unter dem Boden, fangen Kill-Plane + findSurfaceAbove ab.
@@ -3440,6 +3537,9 @@ class AnazhRealm_gelaende_chunks {
 _stammZonen(AnazhRealm, [AnazhRealm_gelaende_chunks]);
 
 // ===== ATLAS · Gelaende/chunks — Außen-Konstanten =====
+// DAS BAND DER ANKUNFT (`_ankunft`): die Mittelsicht beginnt beim `mittelsichtBaumX`-fachen der Höhe des herrschenden Baums
+// (Higuchi; die Higuchi-Viewsheds bei Wheatley & Gillings 2000, „Vision, perception and GIS“: nah bis 60 ×, fern ab 1 100 ×).
+AnazhRealm.ANKUNFT_SICHT = Object.freeze({ mittelsichtBaumX: 60 });
 // Eintrags-Deckel des Chunk-Mesh-Stores "anazhChunkMesh" (grobes Überlauf-Ventil der Platte im voxel-worker, `platteLege`,
 // kein LRU): LOD-0-Chunk ≈ 0.2–0.6 MB → ~600 Einträge halten den Store unter wenigen hundert MB.
 AnazhRealm.CHUNK_IDB_MAX = 600;

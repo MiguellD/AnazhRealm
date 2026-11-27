@@ -1152,6 +1152,56 @@ var __weltLicht = (function () {
         for (let c = 0; c < 3; c++) rgb[c] += (y - rgb[c]) * grau;
         return rgb;
     }
+    // `umgebungLicht` auf Zahlen: die Farbe des Himmels je Einheit E0 ([r, g, b], linear) × E0 × Tönung, dann das Ergrauen
+    // (`himmelGrau`) — die Uniforms `U` der Tafeln, gelesen wie der Knoten sie liest. Leser: die CPU-Lesung des Himmels
+    // (`_himmelBestrahlungAn`, `_himmelStrahlAn`, stamm/bild-sicht.js).
+    function umgebungLichtZahl(U, rgb) {
+        const t = U.toenung.value;
+        const L = U.licht.value;
+        return himmelGrau([rgb[0] * L * t.x, rgb[1] * L * t.y, rgb[2] * L * t.z], U.grau.value);
+    }
+
+    // DIE RECHEN-GLIEDER EINES LICHT-GESETZES (landmarken-geologie-8 Kopf 5): dieselbe Formel rechnet als TSL-Knoten (das Bild)
+    // und auf Zahlen (der Leser der CPU) — `RECHNEN_TSL` reicht Knoten durch (die Glieder sind die Aufrufe, die der Knoten bis
+    // hier selbst schrieb), `RECHNEN_ZAHL` rechnet je Kanal (ein Vektor ist [x, y, z], ein Skalar eine Zahl). Leser: `halbraum`
+    // und `flaechenLicht`.
+    const RECHNEN_TSL = Object.freeze({
+        plus: (a, b) => a.add(b),
+        mal: (a, b) => a.mul(b),
+        punkt: (a, b) => globalThis.THREE.TSL.dot(a, b),
+        y: (v) => v.y,
+        einsMinus: (x) => globalThis.THREE.TSL.float(1).sub(x),
+        nullAb: (x) => globalThis.THREE.TSL.max(x, 0.0),
+        nullAbV: (v) => globalThis.THREE.TSL.max(v, globalThis.THREE.TSL.vec3(0)),
+    });
+    const jeKanal = (a, b, f) =>
+        Array.isArray(a) ? a.map((x, i) => f(x, Array.isArray(b) ? b[i] : b)) : Array.isArray(b) ? b.map((y) => f(a, y)) : f(a, b);
+    const RECHNEN_ZAHL = Object.freeze({
+        plus: (a, b) => jeKanal(a, b, (x, y) => x + y),
+        mal: (a, b) => jeKanal(a, b, (x, y) => x * y),
+        punkt: (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2],
+        y: (v) => v[1],
+        einsMinus: (x) => 1 - x,
+        nullAb: (x) => Math.max(x, 0),
+        nullAbV: (v) => v.map((x) => Math.max(x, 0)),
+    });
+    // DIE UNTERE HEMISPHÄRE DER BESTRAHLUNG (schatten.K4): der Himmel der Normale `n` plus die Änderung, die der gezeichnete
+    // Boden anstelle des Bodens der Atmosphäre bringt (`unten`), gewichtet mit dem Anteil des Halbraums unter dem Horizont, den
+    // die Fläche sieht ((1 − n.y)/2), nie unter 0. Der Stamm ruft sie als Knoten (`_rueckstrahlHalbraum`) und auf Zahlen.
+    function halbraum(o, himmel, unten, n) {
+        return o.nullAbV(o.plus(himmel, o.mal(unten, o.mal(o.einsMinus(o.y(n)), 0.5))));
+    }
+    // DAS LICHT EINER FLÄCHE (Licht K3, Lehre 21): die diffuse Bestrahlung E(n)/π einer Fläche mit der Normale `n`, wie jedes
+    // MeshStandard sie nimmt — das direkte Licht von Sonne oder Mond (`l0c` · max(n·`l0d`, 0), × die Sonnen-Sicht `s`, wo der
+    // Leser sie hält) durch π und die Umgebung (`himmel`: die Bestrahlung des Himmels an n je Einheit, schon × das Licht jetzt;
+    // `halbraum` mit dem Rückstrahl `unten`) × `ei` (environmentIntensity). EIN Gesetz für zwei Leser: der Knoten des Bilds
+    // (`_weltLicht`, stamm/bild-sicht.js — Feld, Panorama, Spiegel, Wasser, der Welt-March) mit `RECHNEN_TSL` und der Leser der
+    // CPU (`_weltLichtAn`: die Leuchtdichte einer Fläche als Zahl, der Kontrast der Landmarke) mit `RECHNEN_ZAHL`.
+    function flaechenLicht(o, g) {
+        const direkt = o.mal(g.l0c, o.nullAb(o.punkt(g.n, g.l0d)));
+        const umgebung = o.mal(halbraum(o, g.himmel, g.unten, g.n), g.ei);
+        return o.plus(o.mal(g.s == null ? direkt : o.mal(direkt, g.s), 1 / Math.PI), umgebung);
+    }
     function umgebungZeichnen(gen, A, ziel) {
         return gen.fromEquirectangular(A.rtEq.texture, ziel || null);
     }
@@ -2485,6 +2535,11 @@ var __weltLicht = (function () {
         bestrahlung,
         umgebungLicht,
         himmelGrau,
+        umgebungLichtZahl,
+        RECHNEN_TSL,
+        RECHNEN_ZAHL,
+        halbraum,
+        flaechenLicht,
         umgebungZeichnen,
         himmelDerStoffe,
         stufeKonstant,

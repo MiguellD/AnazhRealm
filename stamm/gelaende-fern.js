@@ -32,6 +32,7 @@ class AnazhRealm_gelaende_fern {
         // (`ZELL_GEDAECHTNISSE`, Ring „boden“), die `_zellGedaechtnisGeht` nach der Saat in EINEM Gang räumt.
         const geht = new Set();
         this._saatGeht(pcx, pcz, ringRadius, bleibt, span, vcx, vcz, geht);
+        this._landmarkenFern(playerPos, frist);
         this._zellGedaechtnisGeht({ pcx, pcz, vcx, vcz, R: ringRadius, span, bleibt, geht, ende, frist });
     }
 
@@ -85,11 +86,12 @@ class AnazhRealm_gelaende_fern {
             const Q = st.pendingVegSpawns;
             if (Q && Q.length) {
                 let j = 0;
-                for (const t of Q) if (!geht.has(imGehen(t.position))) Q[j++] = t;
+                for (const t of Q) if (!geht.has(imGehen(t.position)) || (t.opts && t.opts.landmarke)) Q[j++] = t;
                 Q.length = j;
             }
             for (const e of st.architectures || []) {
-                if (!e || !(e._ausGesetz === true && e.feldWurf === true)) continue;
+                // die Landmarke geht mit der Zelle ihres Registers (`_landmarkeWurf`, bis `LANDMARKE_FERN_M`), nie mit der Saat
+                if (!e || !(e._ausGesetz === true && e.feldWurf === true) || e._landmarke) continue;
                 const k = imGehen(e.position);
                 if (geht.has(k)) G.get(k).weg.push(e);
             }
@@ -2479,6 +2481,16 @@ AnazhRealm.SAAT_GEHT_MIN = 4;
 // Zell-Schlüssel, das hier fehlt und wächst, nennt die Linse beim Namen (unangemeldet). Bis w28-halter-register standen acht
 // Gedächtnisse in der Tafel und räumten nur, wenn die Saat einen Chunk abgab; der Boden räumte sieben weitere in eigener Schleife.
 AnazhRealm.ZELL_GEDAECHTNISSE = Object.freeze([
+    // der Wurf der Landmarke je Chunk (`_landmarkeChunk`, der Fern-Takt `_landmarkenFern`): bis `LANDMARKE_FERN_M`; sein Abschied nimmt
+    // die Einträge des Chunks und seine wartenden Würfe aus der Pflanz-Schlange
+    {
+        name: "_landmarkeWurf",
+        karte: (r) => r._landmarkeWurf,
+        zelle: (r) => r._voxelChunkConfig(0).span,
+        reichweite: () => AnazhRealm.LANDMARKE_FERN_M,
+        saum: false,
+        geht: (r, schluessel, listen) => r._landmarkeGeht(schluessel, listen),
+    },
     // die Marke der Streu und ihr Lookup (jede Schicht ihr Zellmaß), bis an den Horizont der Streu; die Zelle eines bleibenden
     // gewachsenen Baus hält (die Marke der Promotion wächst nicht neu)
     {

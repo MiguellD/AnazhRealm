@@ -1396,15 +1396,10 @@ function genesisPlan(msg) {
         }
         return (hi - lo) / (2 * r) <= G.ERDBAU.boeschung;
     };
-    let o = { x: 0, z: 0 };
-    let gerueckt = false;
-    if (!traegt(0, 0))
-        for (let rr = 12; rr <= 240 && !gerueckt; rr += 12)
-            for (let k = 0; k < 8 && !gerueckt; k++) {
-                const x = Math.round(Math.cos((k / 8) * 2 * Math.PI) * rr);
-                const z = Math.round(Math.sin((k / 8) * 2 * Math.PI) * rr);
-                if (traegt(x, z)) [o, gerueckt] = [{ x, z }, true];
-            }
+    // die EINE Ring-Spirale des Gesetzes (gelaende-core `ringSpirale`, dieselbe, die die Ankunft des Spielers rückt)
+    const ring = G.ringSpirale(traegt);
+    const o = ring ? { x: ring.x, z: ring.z } : { x: 0, z: 0 };
+    const gerueckt = !!ring && ring.r > 0;
     // DER FREMDE ORT TRÄGT KEINEN PRÜFPLATZ (w28-reise-ort: `ortGesetz(teil).siedlung.platz` 0) — die Antwort ist die Ankunft allein
     const plan = state.ort.siedlung.platz
         ? FC.ortPlan(

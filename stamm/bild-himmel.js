@@ -2676,6 +2676,36 @@ class AnazhRealm_bild_himmel {
         return beta > 0 ? K / beta : Infinity;
     }
 
+    // DIE SICHT-DÄMPFUNG ALS ZAHL (landmarken-geologie-4, Karte 2 erleben.spieler.wegfindung#1): der Durchlass e^{−τ} je Kanal
+    // zwischen `auge` und `punkt` ({x, y, z}) — der CPU-Leser DERSELBEN Uniforms, die der Knoten `faktor` liest (τ = β·s·
+    // e^{−(yAuge−y0)/H}·d·(1−e^{−k})/k, k = Δy/H, k→0: 1 − k/2); ohne Szene das Gesetz selbst, wie der Takt der Luft es über Wasser
+    // schreibt (`_dayNightApplyLuft`: `_luftBeta`, `_luftSpektrum`, `LUFT.skalenHoeheM`, das Meer als Bezug). Das Bild mischt mit
+    // 1 − Durchlass die Himmels-Sicht hinein: der Kontrast eines Fernen gegen den Himmel ist C₀ · Durchlass (Koschmieder 1924). Bis
+    // hier trug nur der Knoten den Weg (`_luftSichtM` liest den waagrechten Blick): kein Richter konnte die Dämpfung einer Landmarke
+    // in 1–3 km am Ort als Zahl lesen. Leser: die Station der Landmarke (Kontrast je Saat); ihr Richter `werkbank licht --luft
+    // --selbsttest` integriert die Definition (β(y) längs des Strahls) und nennt einen Durchlass ohne Höhen-Term oder Weg-Faktor.
+    _luftDurchlass(auge, punkt, out = [0, 0, 0]) {
+        const luft = this._luftEnsure();
+        let beta, s, H, y0;
+        if (luft) {
+            const U = luft.U;
+            [beta, s, H, y0] = [U.beta.value, U.spektrum.value, U.hoehe.value, U.bezugY.value];
+        } else {
+            beta = this._luftBeta();
+            s = this._luftSpektrum(beta, null, new THREE.Vector3());
+            [H, y0] = [
+                AnazhRealm.LUFT.skalenHoeheM,
+                Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0,
+            ];
+        }
+        const [dx, dy, dz] = [punkt.x - auge.x, punkt.y - auge.y, punkt.z - auge.z];
+        const k = dy / H;
+        const fk = Math.abs(k) < 1e-3 ? 1 - k / 2 : (1 - Math.exp(-k)) / k;
+        const tau = beta * Math.exp(-(auge.y - y0) / H) * Math.hypot(dx, dy, dz) * fk;
+        [out[0], out[1], out[2]] = [Math.exp(-tau * s.x), Math.exp(-tau * s.y), Math.exp(-tau * s.z)];
+        return out;
+    }
+
     // Die Luft-Knoten (EINMAL je Szene): Uniforms in der geteilten renderGroup (Observer-Diät-Pflicht-Paar),
     // `faktor(auge, punkt)` = 1 − e^{−τ} JE KANAL mit τ = β·s·e^{−(yAuge−y0)/H}·d·(1−e^{−k})/k (s = `_luftSpektrum`,
     // k = Δy/H, k→0: 1 − k/2), `farbe(auge, punkt)` = die Himmels-Sicht der EINEN Atmosphäre in Blickrichtung.

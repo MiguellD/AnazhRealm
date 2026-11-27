@@ -927,8 +927,20 @@ hauptLauf(async () => {
                 };
                 const raeumt = () => !!(r._zellRaeumen && r._zellRaeumen.weiter);
                 const gehend = () => (r._saatGehend ? r._saatGehend.size : 0);
+                // die Tafel ruht erst, wenn ein Ruf keinen Gang mehr beginnt: der Gang, der beim Halt 270 km fern begann, lief über den
+                // Sprung 3 km bis heim und prüfte die Würfe der Landmarke (`_landmarkeWurf`) dort, wo sie standen — erst der Gang der neuen
+                // Lage räumt sie (bis landmarken-geologie-8 der gemessene: 8 027 Schlüssel fielen neben den 4 Eimern)
                 const zuEnde = () => {
-                    for (let i = 0; i < 400 && (i === 0 || gehend() || raeumt()); i++) r._pruneDistantVoxelChunks(pm);
+                    const ruhe = leihe(AnazhRealm, { ZELL_RAEUMEN: Object.freeze({ ...AnazhRealm.ZELL_RAEUMEN, nachMs: 0 }) });
+                    try {
+                        for (let i = 0; i < 400; i++) {
+                            const g0 = r._zellRaeumen ? r._zellRaeumen.gaenge : -1;
+                            r._pruneDistantVoxelChunks(pm);
+                            if (i > 0 && !gehend() && !raeumt() && r._zellRaeumen && r._zellRaeumen.gaenge === g0) break;
+                        }
+                    } finally {
+                        ruhe();
+                    }
                 };
                 const orte = [0, 1, 2, 3].map((i) => [(Math.floor(pm.x / B) + 100 + 25 * i) * B + 1, Math.floor(pm.z / B) * B + 1]); // prettier-ignore
                 const chunks = [0, 1, 2].map((i) => [Math.floor(pm.x / span) + 500 + 7 * i, Math.floor(pm.z / span)]);

@@ -400,7 +400,7 @@ async function checkBandKristallKleid({ page, check }) {
         await __weltDa(() => !!(f?.ready && f.recipes?.feuerstelle));
         const bp = st.blueprints || {};
         const res = {};
-        for (const t of ["kristall_var0", "kristall_var7", "fels_var0", "fels_var5", "fels_var7", "glut_var0", "glutbrunnen", "marktstand_dorf", "brunnen_dorf", "laterne_dorf", "kristall_geode", "felsturm", "stein_block"])
+        for (const t of ["kristall_var0", "kristall_var7", "fels_var0", "fels_var5", "fels_var7", "glut_var0", "glutbrunnen", "marktstand_dorf", "brunnen_dorf", "laterne_dorf", "kristall_geode", "felsturm", "felsbogen", "stein_block"])
             res[t] = { exists: !!bp[t], preset: r._foundryPresetForEntry({ type: t }) };
         res._umzug = AnazhRealm.BAUPLAN_UMZUG ? AnazhRealm.BAUPLAN_UMZUG.glut_var3 : null;
         res._kind = [r._workshopRecipeKind(bp["fels_var0"]), r._workshopRecipeKind(bp["kristall_var0"])].join("/");
@@ -408,7 +408,7 @@ async function checkBandKristallKleid({ page, check }) {
     });
     const o = out || {};
     const p = (t) => (o[t] || {}).preset;
-    const soll = { kristall_var0: "kristalle", kristall_var7: "kristalle", glutbrunnen: "feuerstelle", marktstand_dorf: "marktstand", brunnen_dorf: "brunnen", laterne_dorf: "laterne", kristall_geode: "kristalle", felsturm: "zacken", stein_block: "basalt" };
+    const soll = { kristall_var0: "kristalle", kristall_var7: "kristalle", glutbrunnen: "feuerstelle", marktstand_dorf: "marktstand", brunnen_dorf: "brunnen", laterne_dorf: "laterne", kristall_geode: "kristalle", felsturm: "felsturm", felsbogen: "felsbogen", stein_block: "basalt" };
     const fails = Object.entries(soll).filter(([t, w]) => p(t) !== w).map(([t, w]) => `${t} → ${p(t)} (erwartet ${w})`);
     for (const t of ["fels_var0", "fels_var5", "fels_var7"]) if (!p(t) || p(t) === "null") fails.push(`${t} → ${p(t)} (erwartet ein Fels-Rezept)`);
     if ((o.glut_var0 || {}).exists !== false) fails.push("glut_var0 lebt (das Glut-Genom ist gefallen)");

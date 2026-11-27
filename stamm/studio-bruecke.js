@@ -2980,15 +2980,7 @@ class AnazhRealm_studio_bruecke {
                             AnazhRealm._huelleVon(bf.fern, "sicht", "fachwerk:__fern (" + preset + ")")
                         )
                     );
-                const g = new THREE.Group();
-                for (const lf of bf.leaves) {
-                    if (!lf || !lf.geom) continue;
-                    const m = new THREE.Mesh(lf.geom, lf.mat);
-                    m.matrixAutoUpdate = false;
-                    if (lf.localMatrix) m.matrix.copy(lf.localMatrix);
-                    g.add(m);
-                }
-                return this._archBoxFit(g, new THREE.Matrix4());
+                return this._archFitVon(entry, bf);
             },
             einblenden
         );
@@ -2999,6 +2991,22 @@ class AnazhRealm_studio_bruecke {
         entry._ziegelVersuche = (entry._ziegelVersuche || 0) + 1;
         if (entry._ziegelVersuche >= 8) entry._ziegelGebacken = true;
         return true;
+    }
+
+    // DER SATZ EINES FITS aus der Lieferung `bf` (die Flat-Leaves, nie in der Szene): der Box-Fit, ein Fels mit Hüllen-Liste in
+    // seiner Hülle (`_felsFernBoxen`). EIN Rumpf für zwei Leser: der Welt-March (`_archFoundryZiegel`, der Satz des Baus) und die
+    // Farbe der Landmarke auf der CPU (`_landmarkeFarbe`, stamm/vegetation-baum.js — die Albedo, die der March zeichnet).
+    _archFitVon(entry, bf) {
+        const g = new THREE.Group();
+        for (const lf of bf.leaves) {
+            if (!lf || !lf.geom) continue;
+            const m = new THREE.Mesh(lf.geom, lf.mat);
+            m.matrixAutoUpdate = false;
+            if (lf.localMatrix) m.matrix.copy(lf.localMatrix);
+            g.add(m);
+        }
+        const fit = this._archBoxFit(g, new THREE.Matrix4());
+        return this._felsFernBoxen(entry, fit) || fit;
     }
 
     // (Die Oktanten-Zerlegung der Voxel-Ära fiel mit dem Schöpfer-Wort
@@ -3069,6 +3077,36 @@ class AnazhRealm_studio_bruecke {
         if (!kand.length) return null;
         kand.sort((p2, q2) => q2.vol - p2.vol);
         return kand.slice(0, 24);
+    }
+
+    // DIE LANDMARKE IN DER FERNE (landmarken-geologie-6, erleben.spieler.wegfindung#1): ein Fels, dessen Hülle eine Liste von Boxen
+    // ist (`_felsHuellBoxen`: der Felsbogen — Pfeiler je Scheibe und Sturz —, der Felsturm in fünf Scheiben), steht fern in DIESER
+    // Hülle, in der Welt-Skala seines Bilds (`_studioWeltSkala`), mit der Farbe des Fits (das Mittel seiner Boxen nach Volumen).
+    // Der Box-Fit allein fasst jedes Mesh in EINE Box: jenseits der Nah-Grenze stand der Bogen als Klotz ohne Öffnung, der Turm
+    // als Platte von Fuß-Breite bis zum Gipfel. null: keine Liste (jeder andere Fels trägt seinen Fit, byte-alt).
+    _felsFernBoxen(entry, fit) {
+        const B = this._felsHuellBoxen(entry);
+        if (!Array.isArray(B) || B.length < 2 || !Array.isArray(fit) || !fit.length) return null;
+        let [r, g, b, w] = [0, 0, 0, 0];
+        for (const d of fit)
+            if (d.farbe) {
+                r += d.farbe.r * d.vol;
+                g += d.farbe.g * d.vol;
+                b += d.farbe.b * d.vol;
+                w += d.vol;
+            }
+        const farbe = w > 0 ? { r: r / w, g: g / w, b: b / w } : null;
+        const k = this._studioWeltSkala(entry);
+        return B.map(([x0, x1, y0, y1, z0, z1]) => {
+            const h = new THREE.Vector3(((x1 - x0) * k) / 2, ((y1 - y0) * k) / 2, ((z1 - z0) * k) / 2);
+            return {
+                box: true,
+                c: new THREE.Vector3(((x0 + x1) * k) / 2, ((y0 + y1) * k) / 2, ((z0 + z1) * k) / 2),
+                h,
+                farbe,
+                vol: Math.max(1e-6, h.x) * Math.max(1e-6, h.y) * Math.max(1e-6, h.z),
+            };
+        });
     }
 
     // Das Feld stirbt mit seinem Eintrag (der Slot wird frei — kein Atlas-Leck).
@@ -3340,10 +3378,12 @@ AnazhRealm.STREU_NAMEN = Object.freeze({
     fels_var: "sediment",
     schichtfels: "sediment",
     sediment: "sediment",
-    // zacken = Felszacken (schroffe Tuerme/Boegen):
-    felsturm: "zacken",
+    // zacken = Felszacken (schroffe Tuerme/Boegen); Felsturm und Felsbogen tragen seit landmarken-geologie-5 ihre eigene
+    // Gestalt in ihrer Größe (foundry-core `felsturm`: das Band der Klettergipfel, 8–75 m; `felsbogen`: das Band der Felstore,
+    // Spannweite 17–26,5 m — als `zacken` standen beide ≤ 0,48 m im Bild, der Bogen ohne Öffnung):
+    felsturm: "felsturm",
     felszacken: "zacken",
-    felsbogen: "zacken",
+    felsbogen: "felsbogen",
     zacken: "zacken",
     // geroell = Geroellhalde (Schutt/Talus/Kiesel):
     geroell: "geroell",
