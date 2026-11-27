@@ -205,10 +205,10 @@
    "summe": {
     "kriterien": 26,
     "sprossen": 180,
-    "heute": 9,
+    "heute": 10,
     "kern": 0,
     "kernDazu": 0,
-    "anteilHeute": 4.4,
+    "anteilHeute": 4.8,
     "anteilKern": 0
    },
    "perspektiven": [
@@ -1263,7 +1263,7 @@
        "richter": "Bild der Gezeit eines Doppelmond-Planeten; Wärmefluss eines Eismonds gegen Exzentrizität Rang ≥ 0,7"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "ungemessen",
      "beleg": "Stand 0: Meeresspiegel ist eine Konstante, Basis − 3 m (gelaende-core.js:2687); 0 Treffer für Gezeit/Tide/Ebbe.",
@@ -20099,7 +20099,7 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 150,
+  "heute": 151,
   "davonKopplungen": 33,
   "kern": 0,
   "kernDazu": 0,
@@ -20113,7 +20113,7 @@
    "ungemessen": 113
   },
   "gliederLeitern": 9,
-  "beide": 73,
+  "beide": 74,
   "nachwache": 77
  },
  "zusammengelegt": [
