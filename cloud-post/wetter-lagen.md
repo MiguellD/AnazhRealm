@@ -1,5 +1,14 @@
 # Stand-Blatt wetter-lagen (Sprossen `karte2.planet.wetter.lagen#2`, `karte2.planet.wetter.extreme#1`) — oberster Abschnitt = jüngster Stand
 
+## 27.11. 22:50 MEZ — Kopf 5 (Probe-Ruf nachgereicht) · Kopf 6: die Kältewelle derselben Sprosse
+
+- **Kopf 5** `wetter-lagen-kopf5` 2cb880f6 = leerer Commit auf Kopf 4 ddc4aeff, Baum 08550eb4 gleich; Ruf `[gpu-probe: gate:wetter-wache, gate:pruefbuehne-licht, gate:weltbild-frost:echt, gate:studio-begehen]`. Die drei Zeilen in `stamm/siedlung-bewohner.js` bleiben: die Tracht der Bewohner liest die Wärme der Luftmasse (ein echter Leser). `zug.sh probe-tag` konnte ich NICHT selbst rufen: `artifacts/profiband/werkzeug/zug.sh` liegt in keinem Zweig, den diese Wolke liest (nicht verfolgt, raw 404) — der Ruf trägt wortgleich die drei Proben deiner Zeile.
+- **Bruch in Kopf 4/5, beim Namen:** die Sprosse heißt „Hitze- und Kältewelle, eine Region — Welle aus Blockierlage"; Kopf 4 trug nur die Hitze — der Block wärmte in JEDER Jahreszeit. Das wäre die halbe Klasse als ganze gemeldet.
+- **Kopf 6 schneidet am EINEN Chokepoint** `gelaende-core.js` `temperaturAus`: die Anomalie des Blocks folgt der Form der Jahres-Welle (+1 Hochsommer, −1 Hochwinter; Pfahl & Wernli 2012, GRL 39 L12807: Blockierung trägt die warmen Extreme des Sommers und die kalten des Winters). Ohne `waerme` bit-gleich; die Station (Saison 0,375) sieht dieselbe Zahl.
+- **Gemessen** (echte Welt, Heimat, 100 Jahre): amplitudeK Hochsommer 6,52 K (unverändert ✓) · **kaelteK Hochwinter: Kopf 4 wärmte auch im Winter (am Kern +4,82 K) → Kopf 6 −3,13 K** (die klare Nachmittags-Sonne des Worts trägt dagegen). Linse (H) am Kern: Hochsommer +4,82 · Hochwinter −4,82 K; gepflanzt „der Block wärmt in jeder Jahreszeit (Kopf 4 ddc4aeff)" → ROT an (H) KAELTE.
+- **Stations-Kandidat** jetzt als `cloud-post/wetter-lagen-station/k2-planet.diff` (ein Diff je Datei, gegen punkte-maschine 429560b6, `git apply --check` GRÜN), neuer Zeuge `kaelteK`.
+- **Nächste Sprosse nach Kopf 6 (die unterste rote meiner Leiter am main):** `karte2.planet.wetter.lagen#3` — „Tief mit Lebenslauf 3–7 Tage" (Kontinent 10³ km). Täter-Zahl: heute lebt jedes Tief genau EINE Lage = 40 Takte × 120 s = 4 800 s = 1,33 Spieltage (phyto-core `WETTER_LAGE.zyklusS`, `lageNummer`) — Soll 3–7 Tage; die Station-Zahl am main messe ich, ehe ich baue.
+
 ## 27.11. 21:55 MEZ — extreme#2 die Hitzewelle: Täter, Schnitt, Linse (H), Stations-Kandidat (Kopf 4 auf main b3740dd5)
 
 - **Täter-Zahl am main b3740dd5** (echte Welt, Null-Renderer, Heimat, 100 Jahre der Welt-Uhr, Station S2 wortgleich): dauerTage **0,5** (Soll 3–9) · amplitudeK 1,91 K (Wort-Tafel). Täter: `phyto-core.js:5232` `wetterAt` (main b3740dd5) — die Lage kennt kein Hoch, das steht; jede Lage zieht nach 40 Takten weiter, die längste klare Strecke ist ein halber Spieltag.

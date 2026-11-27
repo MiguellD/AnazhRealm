@@ -1053,9 +1053,12 @@ function starkSelbsttest() {
 // mindestens die Hälfte ihre Welle im Band; die Wärme der Luftmasse über der Strecke steht ≥ 2,5 K über ihrem Mittel aller Takte
 // (HWDI 5 K ±50 %, Frich et al. 2002 — das Wort trägt dazu seine eigene Wärme), und sie ist stetig: kein Schritt je 12 s über der
 // Steigung des Abklingens (`kelvin` · 12 / `abS`). Am Kern von main b3740dd5 (kein Block) trägt die Heimat 0,5 Tage — ROT; mit dem
-// Block 6,9 Tage, die Luftmasse +4,8 K. Der Selbsttest pflanzt drei Täter je in EINE Zeile des Kerns. Leser: `hitzeRot`.
-const HITZE = { heimat: "anazh-realm-seed", takte: 2000, Z: 120, tagS: 3600, dauer: [3, 9], weit: 200, imBand: 0.5, waermeK: 2.5, schrittS: 12 }; // prettier-ignore
-function hitzeMessung(P) {
+// Block 6,9 Tage, die Luftmasse +4,8 K. DIE KÄLTEWELLE (dieselbe Sprosse: „Hitze- und Kältewelle"): die Anomalie liest die Welt dort,
+// wo sie die Temperatur liest — gelaende-core `temperaturAus` mit der Wärme als 5. Glied, im Feld der Heimat (`TEMPERATUR`, Höhe des
+// Meers); im Hochsommer (Saison 0,375, die Uhr der Station 0,6) steht die Strecke ≥ 2,5 K über, im Hochwinter (0,875) ≥ 2,5 K unter dem
+// Mittel aller Takte (Pfahl & Wernli 2012). Der Selbsttest pflanzt vier Täter je in EINE Zeile eines Kerns. Leser: `hitzeRot`.
+const HITZE = { heimat: "anazh-realm-seed", takte: 2000, Z: 120, tagS: 3600, dauer: [3, 9], weit: 200, imBand: 0.5, waermeK: 2.5, schrittS: 12, sommer: 0.375, winter: 0.875, uhr: 0.6 }; // prettier-ignore
+function hitzeMessung(P, G) {
     const lauf = (saat) => {
         let best = 0,
             bi = 0,
@@ -1082,10 +1085,22 @@ function hitzeMessung(P) {
         const t = lauf("hitze-" + k).tage;
         if (t >= HITZE.dauer[0] && t <= HITZE.dauer[1]) imBand++;
     }
-    const K = P.WETTER_LAGE.block.waerme;
+    const K = P.WETTER_LAGE.block.waerme,
+        T = G.TEMPERATUR,
+        F = {
+            mittel: (T.sommer + T.winter) / 2,
+            kuehlung: 0,
+            jahr: { amp: (T.sommer - T.winter) / 2, gipfel: T.sommerPhase, spaet: 0 },
+            tag: { amp: T.tagAmp, gipfel: T.tagGipfel, spaet: 0 },
+        };
+    const welle = (saison) => {
+        const S = W.map((w) => G.temperaturAus(F, saison, HITZE.uhr, null, w));
+        return H.takte ? Math.round(100 * (mittel(S.slice(H.ab, H.ab + H.takte)) - mittel(S))) / 100 : 0;
+    };
     return {
         tage: Math.round(100 * H.tage) / 100,
-        waermeK: H.takte ? Math.round(100 * (mittel(W.slice(H.ab, H.ab + H.takte)) - mittel(W))) / 100 : 0,
+        waermeK: welle(HITZE.sommer),
+        kaelteK: welle(HITZE.winter),
         schrittK: Math.round(1e4 * schritt) / 1e4,
         schrittSoll: Math.round(1e4 * ((1.05 * K.kelvin * HITZE.schrittS) / K.abS)) / 1e4,
         imBand: imBand / HITZE.weit,
@@ -1097,6 +1112,8 @@ function hitzeRot(H) {
         rot.push(`(H) DAUER: die längste klare Strecke der Heimat ${H.tage} Tage gegen Soll ${HITZE.dauer[0]}–${HITZE.dauer[1]} (WSDI 6 ±50 %), im Band ${(100 * H.imBand).toFixed(0)} % von ${HITZE.weit} Saaten gegen ≥ ${100 * HITZE.imBand} % — die Lage kennt kein Hoch, das steht (phyto-core lageBlock, WETTER_LAGE.block)`); // prettier-ignore
     if (!(H.waermeK >= HITZE.waermeK))
         rot.push(`(H) WAERME: die Luftmasse über der Strecke ${H.waermeK} K über ihrem Mittel gegen Soll ≥ ${HITZE.waermeK} K (HWDI 5 K ±50 %) — die Luft des Blocks sammelt keine Wärme (phyto-core lageWaerme)`); // prettier-ignore
+    if (!(H.kaelteK <= -HITZE.waermeK))
+        rot.push(`(H) KAELTE: im Hochwinter steht die Strecke ${H.kaelteK} K gegen ihr Mittel, Soll ≤ −${HITZE.waermeK} K — der Block wärmt im Winter, statt auszustrahlen (gelaende-core temperaturAus, das Vorzeichen der Jahreszeit)`); // prettier-ignore
     if (!(H.schrittK <= H.schrittSoll))
         rot.push(`(H) STETIG: die Wärme springt ${H.schrittK} K in ${HITZE.schrittS} s gegen ≤ ${H.schrittSoll} K (die Steigung des Abklingens) — sie beginnt an einer Lage neu`); // prettier-ignore
     return rot;
@@ -1105,15 +1122,19 @@ const HITZE_TAETER = [
     ["DAUER", "kein Hoch steht (main b3740dd5)", /return u >= B\.start \? 0 :/, "return u >= 0 ? 0 :"],
     ["WAERME", "die Luftmasse ohne Gedächtnis", /\? W\.kelvin \+ \(w - W\.kelvin\) \* Math\.exp\(-dt \/ W\.aufS\)/, "? 0"],
     ["STETIG", "jede Lage des Blocks beginnt kalt", /\? W\.kelvin \+ \(w - W\.kelvin\) \* Math\.exp\(-dt \/ W\.aufS\)/, "? W.kelvin * (1 - Math.exp(-dt / W.aufS))"], // prettier-ignore
+    ["KAELTE", "der Block wärmt in jeder Jahreszeit (Kopf 4 ddc4aeff)", /waerme \* Math\.cos\(2 \* Math\.PI \* \(saison - F\.jahr\.gipfel\) - F\.jahr\.spaet\)/, "waerme", "gelaende-core.js", "__gelaendeCore"], // prettier-ignore
 ];
 function hitzeSelbsttest() {
-    const H = hitzeMessung(kernGepflanzt("phyto-core.js", "__phytoCore", null));
+    const G0 = kernGepflanzt("gelaende-core.js", "__gelaendeCore", null),
+        P0 = kernGepflanzt("phyto-core.js", "__phytoCore", null);
+    const H = hitzeMessung(P0, G0);
     const v = hitzeRot(H).map((r) => `hitze am Kern: ${r}`);
     const A = (o) => hitzeRot(Object.assign({}, H, o)).length;
-    if ([{ tage: 2.9 }, { tage: 9.1 }, { imBand: 0.4 }, { waermeK: 2.4 }, { schrittK: 1 }].some((o) => A(o) !== 1))
-        v.push("hitze: ein eingeschmuggelter Täter (Dauer, Band, Wärme, Sprung) fällt nicht genau einmal rot");
-    const taeter = HITZE_TAETER.map(([klinge, name, re, ersatz]) => {
-        const rot = hitzeRot(hitzeMessung(kernGepflanzt("phyto-core.js", "__phytoCore", [klinge, name, re, ersatz])));
+    if ([{ tage: 2.9 }, { tage: 9.1 }, { imBand: 0.4 }, { waermeK: 2.4 }, { kaelteK: -2.4 }, { schrittK: 1 }].some((o) => A(o) !== 1))
+        v.push("hitze: ein eingeschmuggelter Täter (Dauer, Band, Wärme, Kälte, Sprung) fällt nicht genau einmal rot");
+    const taeter = HITZE_TAETER.map(([klinge, name, re, ersatz, datei = "phyto-core.js", glob = "__phytoCore"]) => {
+        const k = kernGepflanzt(datei, glob, [klinge, name, re, ersatz]);
+        const rot = hitzeRot(datei === "phyto-core.js" ? hitzeMessung(k, G0) : hitzeMessung(P0, k));
         const an = rot.some((r) => r.startsWith(`(H) ${klinge}:`));
         if (!an) v.push(`hitze: der Täter „${name}" fällt nicht an (H) ${klinge} rot: ${rot.join(" · ") || "grün"}`);
         return `${name} → ${an ? `ROT an (H) ${klinge}` : "GRÜN"}`;
@@ -1546,7 +1567,7 @@ if (SELBSTTEST) {
     const hz = hitzeSelbsttest();
     v.push(...hz.v);
     console.log(
-        `  (H) Hitze am Kern · Heimat ${hz.H.tage} Tage klar · im Band ${(100 * hz.H.imBand).toFixed(0)} % von ${HITZE.weit} Saaten · Luftmasse +${hz.H.waermeK} K · Schritt ${hz.H.schrittK} K je ${HITZE.schrittS} s (≤ ${hz.H.schrittSoll})`
+        `  (H) Hitze am Kern · Heimat ${hz.H.tage} Tage klar · im Band ${(100 * hz.H.imBand).toFixed(0)} % von ${HITZE.weit} Saaten · Hochsommer +${hz.H.waermeK} K · Hochwinter ${hz.H.kaelteK} K · Schritt ${hz.H.schrittK} K je ${HITZE.schrittS} s (≤ ${hz.H.schrittSoll})`
     );
     for (const t of hz.taeter) console.log(`      gepflanzt: ${t}`);
     const lml = lmlSelbsttest();

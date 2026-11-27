@@ -1700,12 +1700,16 @@
     // `lageWaerme`) steht um sie über dem Wetter des Worts; der Wirt reicht sie an Ort und Uhr (`_temperaturAt`, `_bewohnerTracht`).
     // Ein Körper mit Trägheit folgt ihr nur zum Teil: `waerme` gilt für die Luft, die Welle des Körpers (`traegTage`) reicht der Wirt
     // gedämpft. Ohne `waerme` bit-gleich zur Formel davor.
+    // DAS VORZEICHEN DER JAHRESZEIT (Hitze- UND Kältewelle): der Block hält den Himmel klar — im Sommer wärmen Sonne und Absinken die
+    // Luft, im Winter strahlt sie aus und kühlt (Pfahl & Wernli 2012, GRL 39 L12807: Blockierung trägt die warmen Extreme des Sommers
+    // und die kalten des Winters über Europa; die Kältewelle Februar 2012 unter dem Block über Russland). `waerme` ist der Betrag; die
+    // Anomalie folgt der Form der Jahres-Welle des Körpers (+1 im Hochsommer, −1 im Hochwinter, ~0 im Übergang).
     const WOLKE = Object.freeze({ daempft: 0.5, regen: 3 });
     function temperaturAus(F, saison, uhr, wetter, waerme) {
         if (!Number.isFinite(saison) || !Number.isFinite(uhr)) throw new Error("gelaende-core temperaturAus: Saison oder Uhr fehlt");
         if (waerme !== undefined && !Number.isFinite(waerme)) throw new Error("gelaende-core temperaturAus: die Wärme der Luftmasse ist keine Zahl");
         const welle = (W, phase) => W.amp * Math.cos(2 * Math.PI * (phase - W.gipfel) - W.spaet);
-        const luft = waerme === undefined ? 0 : waerme;
+        const luft = waerme === undefined ? 0 : waerme * Math.cos(2 * Math.PI * (saison - F.jahr.gipfel) - F.jahr.spaet);
         if (!wetter) return F.mittel + welle(F.jahr, saison) + welle(F.tag, uhr) - F.kuehlung + luft;
         if (!Number.isFinite(wetter.sun) || !Number.isFinite(wetter.rain))
             throw new Error("gelaende-core temperaturAus: das Wetter trägt sun oder rain nicht");

@@ -1,6 +1,6 @@
 --- a/meisterkarte-quelle/punkte/stationen/k2-planet.js	2026-11-27 20:41:37.262348495 +0000
-+++ b/meisterkarte-quelle/punkte/stationen/k2-planet.js	2026-11-27 20:41:37.286321424 +0000
-@@ -5993,6 +5993,20 @@
++++ b/meisterkarte-quelle/punkte/stationen/k2-planet.js	2026-11-27 21:37:43.755302175 +0000
+@@ -5993,6 +5993,25 @@
  for (const w of W) freq[w] = (freq[w] || 0) + 1;
  let tMittel = 0;
  for (const w of Object.keys(freq)) tMittel += (Tw[w] * freq[w]) / W.length;
@@ -16,12 +16,17 @@
 +for (let i = 0; i < W.length; ) { if (W[i] === "sunny") { let e = i; while (e < W.length && W[e] === "sunny") e++; if (e - i > bl) { bl = e - i; bi = i; } i = e; } else i++; }
 +let mL = 0, spitze = -Infinity;
 +for (let i = bi; i < bi + bl; i++) { mL += Tt[i] / bl; if (Tt[i] > spitze) spitze = Tt[i]; }
-+hitze = { amplitudeK: bl ? mL - mT : null, spitzeK: bl ? spitze - mT : null, takte: bl };
++// die Kältewelle (dieselbe Sprosse): dieselbe Strecke im Hochwinter (0,875) — der Block strahlt aus, die Anomalie kehrt ihr Vorzeichen
++const Tw0 = W.map((w, i) => G.temperaturAus(r._temperaturFeld(wl), 0.875, 0.6, FELD[w], lw(saatW, 0, 0, i * Z)));
++const mW = Tw0.reduce((s, v) => s + v, 0) / Tw0.length;
++let mLW = 0;
++for (let i = bi; i < bi + bl; i++) mLW += Tw0[i] / bl;
++hitze = { amplitudeK: bl ? mL - mT : null, spitzeK: bl ? spitze - mT : null, kaelteK: bl ? mLW - mW : null, takte: bl };
 +}
  const tele = [];
  try {
  for (let k = 0; k < ${Number(u4.saaten) || 100}; k++) {
-@@ -6004,7 +6018,7 @@
+@@ -6004,7 +6023,7 @@
  }
  } finally { wm.seed = s0; }
  const sichtSturm = -Math.log(A.LUFT.kontrast) / r._luftBeta(FELD.stormy);
@@ -30,7 +35,7 @@
  `);
              // die Bild-Zeit über 2,5 s im Wetter der Welt (requestAnimationFrame) — headless die Zeit des Software-Renderers
              const takt = await H.seite(`
-@@ -6096,11 +6110,13 @@
+@@ -6096,11 +6115,13 @@
                  auge: await M.auge("wetter-extreme-s1", { ort: "wiese" }, { wetter: "stormy" }),
                  taeter: (RF.fehler.length && !RF.gemessen ? "Leser fehlt: " + RF.fehler[0].fehler + " · " : "") + "gelaende-core.js:1627 pegelHubVon deckelt den Hub an der Krone (Math.min(krone, h)), " + RF.werte.bordvoll + " von " + RF.gemessen + " Adressen bordvoll, " + RF.werte.stark + " mit ≥ " + stark + " mm — die Aue trägt den Überschuss „nicht gerechnet“ (gelaende-core.js:1569) · " + RF.akte,
              };
@@ -43,12 +48,12 @@
 -                werte: { dauerTage: R(Math.max(0, ...welt.sonnig)), amplitudeK: R(welt.Tw.sunny - welt.tMittel) },
 -                zeuge: { strecken: welt.sonnig.length, streuDauer: R(streu(welt.sonnig)), streuT: R(streu(Object.values(welt.Tw))), worte: welt.worte },
 +                werte: { dauerTage: R(Math.max(0, ...welt.sonnig)), amplitudeK: welt.hitze ? R(welt.hitze.amplitudeK) : null },
-+                zeuge: { strecken: welt.sonnig.length, streuDauer: R(streu(welt.sonnig)), streuT: R(streu(Object.values(welt.Tw))), worte: welt.worte, spitzeK: welt.hitze ? R(welt.hitze.spitzeK) : null, wortK: R(welt.Tw.sunny - welt.tMittel) },
++                zeuge: { strecken: welt.sonnig.length, streuDauer: R(streu(welt.sonnig)), streuT: R(streu(Object.values(welt.Tw))), worte: welt.worte, spitzeK: welt.hitze ? R(welt.hitze.spitzeK) : null, kaelteK: welt.hitze ? R(welt.hitze.kaelteK) : null, wortK: R(welt.Tw.sunny - welt.tMittel) },
 +                taeter: welt.hitze ? "phyto-core.js lageBlock · lageWaerme (die Blockierlage der WETTER_LAGE)" : "Leser fehlt: phyto-core lageWaerme (die Wärme der Luftmasse) — die Amplitude ist ungemessen",
              };
              // S3 die Wiederkehr: Gumbel über die Jahresmaxima des Strecken-Regens (Momente), x100 ÷ x2 gegen die Erd-Erwartung
              const jm = welt.jahrMax;
-@@ -6171,7 +6187,7 @@
+@@ -6171,7 +6192,7 @@
                  ],
                  zeuge: zMinStreu({ strecken: 10, worte: 3 }, ["streuDauer", "streuT"]),
                  taeter: "phyto-core.js wetterAt (keine Blockierlage)",
