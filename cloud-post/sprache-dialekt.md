@@ -76,6 +76,28 @@ Kopf 1 trug den glatten Baum auf main 7e73426e, Kopf 2 trägt ihn auf main 9a75d
 Dateien; gegen Kopf 1 kommt allein der Rang über `rang` und dieses Blatt hinzu). Der zweite Elter ist die Spitze meiner WIP-Kette, weil der Auftrag „nie force“ sagt: der Schub ist ein Fast-Forward, kein Stand wird
 überschrieben. Wer einen Elter braucht, nimmt den Baum (`git commit-tree <kopf>^{tree} -p 9a75d61c`), er ist byte-gleich.
 
+## Heap 740 MB und Einlauf 83 s am Vor-Richter (Post 21:27): was ich messen konnte, was offen bleibt
+
+**Gemessen im Kern** (node, `--expose-gc`, Heap nach GC vor ↔ nach, Kopf = Stempel 2fa60e40):
+- **Gesetz im Spiel:** `_mundartAm` je Zelle (talWeg → mundartVon) an 1 089 Zellen zu 256 m um den Ort (±4 km, mehr als der Nah-Ring
+  260 m fragt) kostet 610 ms und **+0,2 MB** gehalten.
+- **Seite MUNDART der Station:** das Gitter 48 × 48 auf 1,6 km (77 km, jede Kette bis zur Senke) kostet 1 026 ms und **+1,5 MB** gehalten.
+
+`talWeg` merkt sich je Knoten am EINEN Netz der Lage (`netzFuer` → `N.talWege`). Die Kosten folgen den gefragten Orten, nicht der
+Welt. Weder mein Gesetz noch das Gitter der Station trägt also im Kern 200 MB. Der Heap des Vor-Richters (740 MB gegen 505–540 MB)
+kommt nicht aus `talWeg`.
+
+**Nicht messbar in der Wolke:** die Welt an stadt-voll headless (Null-Renderer, `ortZug` stadt-voll, main b3740dd5 gegen Stempel). Der
+GPU-Prozess stand in `gl.clientWaitSync` (#1264), nach 2 371 s gab es 0 Bewohner in 9 Siedlungen, Heap 85,9 MB. Das ist kein Bild der
+Stadt und kein Vergleich. Offen mit Messname: **Preis stadt-voll am main nach der Landung, Heap und Einlauf, einmal OHNE die Seite
+MUNDART** (an der GTX 1060).
+
+Auch das Merkbuch der Sprachen ist gemessen. Die Seite MUNDART ruft `spracheVon` für 2 304 Orte × 6 Familien = 1 152 Sprachen
+(`_MUNDARTEN` ≤ 4 096) in 216 ms, gehalten werden **+3,5 MB**. Zusammen trägt die Seite MUNDART im Kern ≈ 5 MB, das Spiel an den Zellen
+0,2 MB. Die 200 MB über dem Band kommen aus keinem der beiden Glieder meines Schnitts. Sie sind offen bis zum Lauf oben. Steht der Heap
+dort bei 505–540 MB, trägt sie die Sitzung der Station (die Seiten #2, #3 und #4 in EINER Sitzung). Steht er ≥ 700 MB, trägt sie die
+Welt, und dann schneide ich als ersten Schnitt von Kopf 3 an der Zahl, die der Lauf nennt.
+
 ## Die nächste rote Sprosse: `karte2.mensch.kultur.sprache#5` „hörbare Sprachen“ (Täter-Zahl am main b3740dd5, Post 20:57)
 
 Die Leiter (Zweig `punkte-maschine`, `meisterkarte-quelle/punkte/stationen/k2-mensch-kultur.js:764`): `{ n: 5, art: "auge", um: 7000 }`. Vorbild:
