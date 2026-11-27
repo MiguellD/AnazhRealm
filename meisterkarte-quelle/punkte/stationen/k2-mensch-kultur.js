@@ -690,7 +690,7 @@ module.exports = (F) => [
             const profil = (texte) => {
                 const m = new Map();
                 for (const t of texte)
-                    for (const w of String(t).toLowerCase().split(/[^\p{L}]+/u).filter(Boolean)) {
+                    for (const w of String(t).toLowerCase().split(/[^\p{Letter}]+/u).filter(Boolean)) {
                         const s = "_" + w + "_".repeat(ct.N - 1);
                         for (let n = 1; n <= ct.N; n++)
                             for (let i = 0; i + n <= s.length; i++) {
