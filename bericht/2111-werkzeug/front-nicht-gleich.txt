@@ -1,0 +1,68 @@
+# front-nicht-gleich — die Front-Sprossen der Karte 2 ohne Tafel-Zeile „gleich“ (OMEN, 27.11.)
+# Quelle: Front nachgebaut wie zug/dienst/runde.cjs front() aus vision/meisterkarte-2.json an refs/runde/koord e3d6b20e (ohne Anspruch):
+# 57 von 290 Front-Sprossen tragen in vision/richter-tafel.json richter „fehlt“ (51 R11 Prüfer, 4 Korpus fehlt, 2 sonst).
+# WARUM nie eine Akte: zug/dienst/front.sh:21-24 karte2_nur — die Liste der Runde nimmt NUR Tafel-Zeilen „gleich“; diese Sprossen
+# stehen in `punkte.cjs liste`, aber in keiner Runden-Liste und keiner messung-Datei. Ein Stations-Lauf schreibt für sie nie eine Akte.
+# Teilung: „braucht Korpus“ = im Richter-Satz steht ein Foto, Film, Höhenmodell, Datensatz der Wirklichkeit oder ein Vergleichstitel;
+# „aus Spielbildern allein“ = ein Prüfer/Panel/Jury urteilt an Bildern (oder Klang) des Spiels gegen die Wahrheit der Welt selbst.
+
+## aus Spielbildern allein prüfbar (30)
+karte2.planet.geologie.lagerstaette#1 · R11 Prüfer · Richter-Satz „Jury trennt drei Genesen ≥ 80 %; Genese passt zur Geschichte des Orts ≥ 85 %“
+karte2.planet.relief.formschatz#1 · R11 Prüfer · Richter-Satz „Blind-Klassifikation von Ego-Bildern an 20 Saaten ≥ 80 %“
+karte2.leben.tiere.lebenszyklus#2 · R11 Prüfer · Richter-Satz „Bildpaar Kitz/Hirsch Panel ≥ 0,7; Jungtiere ≥ 10 % einer Herde im Frühsommer“
+karte2.leben.wasser.lebensraeume#2 · R11 Prüfer · Richter-Satz „Klassifikator erkennt den Lebensraum ≥ 80 %; Ufer-Stichprobe ≥ 90 %“
+karte2.leben.evolution.zeitreise#1 · R11 Prüfer · Richter-Satz „Panel ordnet Bildpaare Gegenwart/Epoche ≥ 0,8; Hin- und Rücksprung byte-gleiches Bild“
+karte2.mensch.leib.verschieden#1 · R11 Prüfer · Richter-Satz „Bild 10 Bewohner auf 2 m: Prüfer findet 0 gleiche Paare“
+karte2.mensch.leib.tracht#1 · R11 Prüfer · Richter-Satz „20 Saaten: Prüfer ordnet Epoche ± 1 Jh. ≥ 0,7“
+karte2.mensch.leib.ausdruck#1 · R11 Prüfer · Richter-Satz „Prüfer errät Akt/Gemüt aus der Silhouette ≥ 60 %“
+karte2.mensch.geist.netz#2 · R11 Prüfer · Richter-Satz „Prüfer sagt aus Gesten Freund/Feind/fremd ≥ 0,7“
+karte2.mensch.geist.generationen#2 · R11 Prüfer · Richter-Satz „Prüfer ordnet Kinder den Eltern ≥ 0,7; Gang je Altersgruppe ≤ 15 %“
+karte2.mensch.geist.innenleben#1 · R11 Prüfer · Richter-Satz „Panel nennt das Gefühl aus 5 s Film ≥ 70 %; Gegenlauf ohne Anlass → neutral“
+karte2.mensch.stadt.breite#1 · R11 Prüfer · Richter-Satz „Region einer Stadt aus 6 erkannt ≥ 50 %“
+karte2.mensch.netz.verkehr#2 (Tafel → pflicht.C#1) · sonst · Richter-Satz „nH 300, Tag + Nacht, 10 min: 0 / 0 / 100 % am Ziel UND Wagen im Bild“
+karte2.mensch.bau.bedarf#1 · R11 Prüfer · Richter-Satz „50 Bauten blind nach Funktion ≥ 80 %“
+karte2.mensch.bau.innen#3 · R11 Prüfer · Richter-Satz „200 Räume blind klassifiziert ≥ 85 %“
+karte2.mensch.macht.stand#1 · R11 Prüfer · Richter-Satz „Gini der Wohnfläche im archäologischen Band; arm/reich erkannt ≥ 80 %“
+karte2.mensch.zeit.spanne#1 · R11 Prüfer · Richter-Satz „dieselbe Zelle unter 4 Jahren: Blind-Datierung bringt die 4 Bilder in die richtige Folge ≥ 80 %“
+karte2.erleben.sinn.entdeckung#1 · R11 Prüfer · Richter-Satz „Blind-Agent nennt in 10 min ≥ 1 Ort „anders als der vorige" und begründet es am Bild“
+karte2.erleben.bild.flaeche#1 · sonst · Richter-Satz „Halbschattenbreite gegen Abstand im Band; Albedo im Bild ±0,05 gegen Tabellenwert für Gras, Erde, Fels, Holz, Haut“
+karte2.erleben.klang.musik#1 · R11 Prüfer · Bild+Klang · Richter-Satz „Hörer-Blindtest: Stimmung der Szene aus der Musik erkannt ≥ 70 %; am Abgriff keine Wiederholung in 10 min“
+karte2.same.physik.stoffe#1 · R11 Prüfer · Bild+Klang · Richter-Satz „Blind-Jury sieht und hört einen grauen Gegenstand fallen, brechen, brennen und benennt den Stoff ≥ 70 %“
+karte2.same.entfaltung.vielfalt#1 · R11 Prüfer · Richter-Satz „aus einem Zufallsbild den richtigen von 10 Orten ≥ 80 % (Panel); der Prüfer nennt das Merkmal, Gegenlauf: Ursache getauscht → Merkmal weg ≥ 80 %“
+karte2.planet.kopplung.siedlungslage#6 · R11 Prüfer · Richter-Satz „Jury rät aus der Geländekarte OHNE Städte deren Lagen: Treffer ≥ 3× Zufall; Gegenlauf mit vertauschter Karte: Treffer auf Zufallsniveau“
+karte2.planet.kopplung.siedlungslage#7 · R11 Prüfer · Richter-Satz „Jury erkennt die geologische Ursache der Hauptstädte ≥ 70 %; Gegenlauf je Epoche: Gunst gekappt (Hafen verlandet, Fluss verlegt) → die Siedlung schrumpft oder wandert in ≥ 70 %“
+karte2.mensch.kopplung.leib#6 · R11 Prüfer · Richter-Satz „2 g: Statur gedrungener; Leib und Kultur kohärent ≥ 0,8“
+karte2.mensch.kopplung.sport#5 · R11 Prüfer · Richter-Satz „je Saat ≥ 1 Art mit Lebenslauf, plausibel ≥ 70 %“
+karte2.mensch.kopplung.sport#6 · R11 Prüfer · Richter-Satz „andere Geländesaat zeigt andere Sportkultur, stimmig“
+karte2.mensch.kopplung.kultur#1 · R11 Prüfer · Richter-Satz „32 Saaten: passender Baustoff ≥ 85 %; Region aus Hausbild ≥ 70 %“
+karte2.mensch.kopplung.kultur#6 · R11 Prüfer · Richter-Satz „1 000 Orte: Klima, Gestein, Epoche aus dem Bild ≥ 70 %“
+karte2.mensch.kopplung.kultur#7 · R11 Prüfer · Richter-Satz „Schwerkraft aus 20 Stadtbildern ≥ 70 %; gekoppelt ≥ 85 %“
+
+## braucht Foto/Vorbild-Korpus (27)
+karte2.planet.geologie.platten#1 · R11 Prüfer · Richter-Satz „30 Saaten: Gebirgsfläche > 2 km liegt in Gürteln mit Achsen ≥ 4:1 in ≥ 70 %; Blindpaar Schummerung gegen reale Region“
+karte2.planet.geologie.vulkan#1 · R11 Prüfer · Richter-Satz „Kruste bildet sich und die Glut verlischt im Bild nach der Abkühlkurve gemessener Laven ±30 %; Blindpaar Glutbild gegen Lava-Foto (2AFC ≤ 85 %)“
+karte2.planet.geologie.gebirge#1 · R11 Prüfer · Richter-Satz „Blindpaar Felswand gegen Foto; in Kollisionszonen ≥ 80 % der Wände verformt, im alten Kraton ≤ 20 %“
+karte2.planet.geologie.unterwelt#1 · Korpus fehlt · Richter-Satz „Mündungen je km² an 3 Saaten im Band; Mund im Bild an ≥ 90 % im Fels“
+karte2.planet.relief.boden#1 · R11 Prüfer · Richter-Satz „Blindpaar Ego-Bild gegen Foto gleichen Hangs und Klimas (2AFC ≤ 85 %); an 30 Zufallsposen liegt Schutt am Steilen und Moos im Feuchten wie im Foto-Korpus (Anteile ±20 %)“
+karte2.planet.wasser.eis#3 · R11 Prüfer · Richter-Satz „Verhältnis Winter/Sommer gegen Arktis ±30 %; Blindpaar Scholle“
+karte2.planet.wasser.tiefsee#2 · R11 Prüfer · Richter-Satz „Blindtest 50 Posen gegen Taucherfotos ≥ 60 %; Rippel-Abstand gegen Wellen-Orbital ±30 %“
+karte2.planet.wetter.wolken#1 · R11 Prüfer · Richter-Satz „Zeitraffer der Schicht gegen Zeitraffer-Film realer Schichtwolken (2AFC ≤ 85 %); Zuggeschwindigkeit der Schatten am Boden im Band realer Wolkenzüge (2–20 m/s) und gleich der Wolke darüber (Versatz ≤ 5“
+karte2.planet.wetter.vorhersage#2 · Korpus fehlt · Richter-Satz „Bildmodell, das NUR den Himmel sieht: Regen in 12 h mit Skill ≥ 0,3 über Persistenz“
+karte2.planet.wetter.fremde-atmosphaeren#1 · R11 Prüfer · Richter-Satz „Himmelsfarbe Mittag/Abend gegen Foto“
+karte2.planet.zeit.archiv#2 · R11 Prüfer · Richter-Satz „Bildvergleich gegen Fotos des Colorado-Plateaus (Farbbänder, Rhythmus)“
+karte2.planet.erde.gestalt#1 · R11 Prüfer · Richter-Satz „Küstenlinie gegen das Höhenmodell: mittlerer Lagefehler ≤ 5 km; Ortskundige wählen die Region aus 10 Kandidaten an 3 Ego-Bildern ≥ 70 %“
+karte2.leben.pflanzen.arten#1 · R11 Prüfer · Richter-Satz „Blindtest 10 Bilder je Gestalt: Gattung ≥ 80 % richtig; Herbar-Bildpaar je Gestalt ≥ 0,7“
+karte2.leben.pflanzen.lebenslauf#2 · R11 Prüfer · Richter-Satz „Bildreihe 0/10/50/150 Jahre gegen Fotoreihe derselben Art“
+karte2.leben.pflanzen.jahreslauf#3 · R11 Prüfer · Richter-Satz „12-Wochen-Bildreihe gegen Webcam-Zeitreihe“
+karte2.leben.pflanzen.dichte#1 · R11 Prüfer · Richter-Satz „Ring-Bildanteil gegen Foto; Bildpaar gegen REF real-mischwald“
+karte2.leben.pflanzen.kraft#3 · R11 Prüfer · Richter-Satz „Bildreihe Durchgang gegen Video derselben Lage“
+karte2.leben.oeko.zerfall#2 · R11 Prüfer · Richter-Satz „Bildreihe 0/3/10/30 Tage gegen forensische Referenz; Gilde-Folge im Band von Kamerafallen-Studien“
+karte2.leben.oeko.sukzession#2 · R11 Prüfer · Richter-Satz „Bildpaar nach 1/5/25 Spieljahren gegen die Yellowstone-1988-Fotoreihe“
+karte2.leben.evolution.mikroben#1 · R11 Prüfer · Richter-Satz „Bildvergleich der Zonierung gegen Natur-Fotos“
+karte2.mensch.stadt.groesse#1 · R11 Prüfer · Richter-Satz „im Bild gezählt ≥ 10 Häuser; Straßenbild gegen Foto eines Weilers: Panel-2AFC ≤ 90 %; Zwillinge im Bild 0“
+karte2.mensch.stadt.messlatte#1 · R11 Prüfer · Richter-Satz „Blindpaar gegen dieselbe Kameralage im Vergleichstitel: das Panel wählt unser Bild in ≥ 20 %; die vier Zählungen sind an beiden gefahren“
+karte2.mensch.bau.huelle#1 · R11 Prüfer · Richter-Satz „Paarvergleich Spiel ↔ Foto bei 10 m: „Foto“ ≥ 5 %“
+karte2.same.massstab.nahe#1 · Korpus fehlt · Richter-Satz „Spektrum gegen Foto der Bodenklasse: Energie über 1/20 der Bildbreite ≥ 50 % der Referenz in ≥ 80 %“
+karte2.planet.kopplung.gegenwart#3 · R11 Prüfer · Richter-Satz „Bildpaar Durchbruch/Fjord gegen Foto; Fjorde außerhalb jemals vereister Küsten = 0“
+karte2.mensch.kopplung.leib#4 · R11 Prüfer · Richter-Satz „Vielfalts-Index Hafen > Bergdorf, plausibel gegen Daten“
+karte2.same.kopplung.erdsaat#1 · Korpus fehlt · Richter-Satz „Bildvergleich gegen Relief-Modell; der Vulkan bricht von selbst aus“
