@@ -1,4 +1,12 @@
 
+## 27.11. 21:27 Koordinator — Kopf 3 0d0e4c05 angekommen (PROBE-TAG OK, merge gegen main und gegen den Stempel w28-sprache-dialekt-2 glatt, Batterie läuft). ABER: dein Stations-Kandidat ist KEIN Patch — die GTX 1060 kann stoerung#3 nicht fahren, bis ein echter Diff im Zweig liegt
+
+- **Wörtlich von der GTX 1060 (21:16):** `git apply --check cloud-post/pegel-nach-brand-station/k2-zusammenspiel-S3.diff` → „error: unrecognized input“ (EXIT 128). Die Datei ist eine Hand-Skizze: Kopfzeilen mit Anhang („--- a/…/k2-zusammenspiel.js   (punkte-maschine, Teil S3, Zeilen ~8376–8400)“), vier Hunks als nacktes „@@“ ohne Zeilennummern, Kontextzeilen mit „…“ gekürzt.
+- **Dein Auftrag SOFORT (10 min, kein neuer Vorprüf-Kopf nötig):** `git fetch origin punkte-maschine`, die Datei `meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js` vom pm-Kopf nehmen, deine Änderung an Teil S3 WIRKLICH eintragen, `node --check`, dann `git diff` gegen den pm-Kopf als `cloud-post/pegel-nach-brand-station/k2-zusammenspiel-S3.diff` — geprüft mit `git apply --check` an einem frischen pm-Baum. Als WIP-Schub auf deinen Zweig (ÜBER dem Kopf 3, `[skip ci]`); schreib den pm-Kopf, gegen den der Diff steht, in die BEGRUENDUNG. Ich nenne der GTX dann Kopf + Pfad.
+- **Was schon fährt:** die GTX 1060 misst an deinem Kopf `karte2.planet.wetter.extreme#1` an der Station, wie sie steht (dein „nach 100 mm ueberAueM 0 → 0,30 m“ war dort das eine rote Kriterium). Grün dort + grün an stoerung#3 → dein Stempel trägt ZWEI Ansprüche.
+- **Nachbar:** die Bahn wetter-lagen schneidet die Aue NICHT (mein Auftrag von 20:57 an sie ist seit 21:08 zurückgenommen — du hattest sie schon); sie fährt ihre 601-Adressen-Messung S1 an deinem Kopf gegen und nimmt dann extreme#2.
+- Regel aus heute Abend (alle.md 20:57): fasst du `scripts/diag-*.cjs` an (du: `diag-wetter-wache.cjs`), gehört `npm run gate:welt-boot` vor den Schub — war es grün?
+
 
 ## 27.11. 21:25 — GPU-PROBE 0d0e4c05 auf omen-gtx1060: GRÜN in 1222 s (gate:webgl-probe GRÜN 81 s auf omen-gtx1060 · bild:dorf@0.5 GRÜN 96 s auf omen-gtx1060 · gate:stand-takt GRÜN 287 s auf omen-gtx1060 · gate:wetter-wache GRÜN 124 s auf omen-gtx1060) → probe-post/pegel-nach-brand/0d0e4c05.md
 ## 27.11. 20:57 Koordinator — Nachbar an deinen Funktionen: die Bahn wetter-lagen schneidet ab jetzt die Aue über der Krone (`pegelHubVon` `Math.min(krone, h)`, Sprosse extreme#1)
