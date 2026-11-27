@@ -1,0 +1,27 @@
+Schnitt A: der Deckel der Leiter trägt den Takt-Faktor der Karte (OMEN, GTX 1060, Koordinator 27.11. 08:5x) — NICHT gesetzt
+Kandidat gegen punkte-maschine 4a0ee8ed: punkte.cjs ecb08247 → 8ad7cfbc, stationen/k2-planet.js ed562501 → 833dedb0 (17 Zeilen)
+DER FEHLER (Gebot: sage a, tue a): zwei Deckel, zwei Maßstäbe. Der Deckel der Probe ist `grundDeckel` = Radeon-sek × `taktVon`
+  (GTX 1,54); der Deckel JEDER Leiter in ihr (k2-planet.js probeRumpf) war roh `L.sek * 1000`, ebenso Dorf und Raffer-Budget.
+  An der GTX rissen so 6 von 9 Leitern der Gruppe same.kopplung, obwohl die Probe Zeit hatte (Deckel an der Leine ceil(395 × 1,54) = 609 s, sie lief 305,5 s).
+DER SCHNITT, EINE Quelle: punkte.cjs gibt in der Sitzung `PUNKTE_TAKT = taktVon(geraet)` neben PUNKTE_PROBE_DECKEL_S mit;
+  probeRumpf misst Dorf, jede Leiter und ihren Raffer mit `amGeraet(sek)` = ceil(sek × PUNKTE_TAKT) wie `grundDeckel` (Faktor ≤ 1:
+  roh). `sek` bleibt die Zahl der Radeon, die Regel ≤ 60 s je Leiter (perspektive) unverändert; die Radeon misst Byte für Byte gleich.
+  Kein Soll, kein Richter-Text, keine Leiter, keine Tafel-Zeile geändert. Gezählt (sk/takt/zaehle.cjs, 1640 Stationen vorher ↔ nachher):
+  588 Perspektiven — Befehlstext gleich 0 von 588 (der Rumpf steckt im Befehl, `seiteProbe`), Deckel an der Radeon gleich 588 von 588,
+  an der GTX neu 588 von 588; die übrigen 1052 Befehle unverändert. Der Abdruck der 588 wird auf BEIDEN Karten neu (die Radeon misst
+  sie neu mit gleicher Zeit und gleichem Deckel).
+GTX VORHER (aufw1, eef726c7, frische Sitzung, Lauf a, 08:41–08:48) — 3 von 9 Leitern durch, je Leiter s (D = Deckel gerissen):
+  aufwaerts 45,0 D · ereignis 38,4 · erdsaat 12,5 · gewalt 40,1 D · stoerung 30,2 D · kaskade 55,1 D · kohaerenz 40,1 D ·
+  zeitreise 18,1 · terraform 20,3 D · Probe 305,5 s
+DIE KLASSE, Runde 41 an der GTX (roh/031f4700-gtx, 9 Gruppen-Proben, 60 Leitern): 9 Leitern rissen am Leiter-Deckel (58 Sprossen, 45 ohne
+  jeden Wert); ihre 9 Front-Sprossen alle ohne Urteil, 4 davon auf der GTX-Liste UNGEMESSEN (aufwaerts#1, wasser.bild#1, evolution-planet#1, stadt-im-netz#2)
+GTX NACHHER (taktA, eef726c7 + Kandidat, frische Sitzung, --nur aufwaerts#1 + ereignis#2, 10:39–10:48) — 9 von 9 durch:
+  aufwaerts 57,4 · ereignis 29,6 · erdsaat 10,0 · gewalt 27,1 · stoerung 13,7 · kaskade 12,4 (wirft die Abnahme: Sicht verdeckt 41,8 %, kein Deckel) ·
+  kohaerenz 32,1 · zeitreise 1,7 · terraform 10,9 · Probe 199,7 s (vorher 305,5) · Dorf 4,6 · Deckel gerissen 0 von 9 (vorher 6 von 9)
+  Störung beim Namen: meine CDP-Lesungen (Heap-Halter) hielten die Seite 10:46:58–10:47:17 ≈ 20 s (gewalt/stoerung/kaskade) und 0,2 + 0,3 s
+  im ereignis-Fenster — die Zeiten dort eher länger, das Urteil „0 am Deckel“ trägt; ereignis#2 fehlt 1 Bild (29 < 30), mein Halt ist nicht ausgeschlossen
+URTEIL aufwaerts#1 (wörtlich): GRÜN karte2.same.kopplung.aufwaerts#1 · S1 sichtHoeheM 400 m gegen Soll ≥ 400 m ✓ · orteGeaendert 10 gegen Soll ≥ 10 ✓ · Zeuge: die Welt geändert · Sitzung · Exit 0 · 3.35 min
+URTEIL ereignis#2 (wörtlich): ROT karte2.same.kopplung.ereignis#2 · S2 brennendHa 1,024 ha gegen Soll ≥ 1 ha ✓ · meidenProzent 100 % gegen Soll = 100 % ✓ · der Zeuge der Welt fehlt: nur 39 ↔ 29 Bilder mit ↔ ohne Brand (Soll je 30) · Täter: stamm/siedlung-bewohner.js `_bewohnerSoll` (liest kein Brand-Feld) · stamm/feld-brand.js `_tickBrand` (die Kosten der Front) · Sitzung · Exit 0 · 3.35 min (Zwilling von karte2.same.kopplung.aufwaerts#1)
+Prüfung: node --check beide · `punkte.cjs tafel` an der vollen pm-Kopie 4a0ee8ed + Kandidat: 1716 Zeilen, Kollision 0, Abweichung 0
+  · alle Stationsdateien laden, 588 Perspektiven-Stationen tragen PUNKTE_TAKT im Befehl (aufwaerts probe.sek 395 → GTX 609 s)
+Offen beim Namen: (B) aufwaerts allein (Planet-Faden 100 Saaten × 2, ≥ 16 s an der GTX) liegt beim Koordinator (Radeon-Lesung)

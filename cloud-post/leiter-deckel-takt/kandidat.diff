@@ -1,0 +1,57 @@
+diff --git a/meisterkarte-quelle/punkte/punkte.cjs b/meisterkarte-quelle/punkte/punkte.cjs
+index ecb0824..8ad7cfb 100644
+--- a/meisterkarte-quelle/punkte/punkte.cjs
++++ b/meisterkarte-quelle/punkte/punkte.cjs
+@@ -2129,8 +2129,10 @@ function fahreGruppeEinmal(sts, ctx) {
+         // DER DECKEL DES LAUFS (PUNKTE_PROBE_DECKEL_S, w4-linsen-a): die eigene Frist einer Probe folgt ihm, nie dem `sek` der Station —
+         // in der Eich-Fahrt (90 s) warf die Seite von halten.K1#2 jeden Takt nach 5 s (sek 10 − 6), Masse und Schneide trafen nie
+         // (Radeon 379e5f56: „masse-traf, schneide-traf“, die Eich-Zahl zensiert)
++        // DER TAKT-FAKTOR DER KARTE (PUNKTE_TAKT, Koordinator 27.11.): derselbe, den `grundDeckel` dem Deckel der Probe gibt (`taktVon`) —
++        // die Deckel IN der Probe (jede Leiter einer Perspektive, stationen/k2-planet.js) messen mit ihm, nie mit einer zweiten Zahl
+         if (sitz) Object.assign(env, { PUNKTE_SITZUNG_LOG: sitz.log, PUNKTE_MASCHINE: __filename.split(path.sep).join("/"), PUNKTE_SITZUNG_GRUND: sitz.grund || "",
+-            PUNKTE_PROBE_DECKEL_S: String(deckelS), ...(sitz.strom ? { PUNKTE_SITZUNG_STROM: sitz.strom, PUNKTE_PROBE: sitz.probe } : {}) });
++            PUNKTE_PROBE_DECKEL_S: String(deckelS), PUNKTE_TAKT: String(taktVon(ctx.geraet)), ...(sitz.strom ? { PUNKTE_SITZUNG_STROM: sitz.strom, PUNKTE_PROBE: sitz.probe } : {}) });
+         // headless läuft ohne Karte: starteBrowser griffe lokal sonst die GPU (scripts/lib/software-gpu.cjs) — ohne Schloss
+     if (!st.gpu) env.LINSE_GPU = "software";
+     for (const [k, v] of Object.entries(st.env || {})) env[k] = ersetze(v, { ...ctx, sek: deckelS });
+diff --git a/meisterkarte-quelle/punkte/stationen/k2-planet.js b/meisterkarte-quelle/punkte/stationen/k2-planet.js
+index ed56250..833dedb 100644
+--- a/meisterkarte-quelle/punkte/stationen/k2-planet.js
++++ b/meisterkarte-quelle/punkte/stationen/k2-planet.js
+@@ -369,6 +369,12 @@ const KERN = (() => {
+     async function probeRumpf(H, M, LEITERN, DORF) {
+         const fs = require("fs");
+         await H.frist();
++        // EIN MASSSTAB FÜR JEDEN DECKEL (Koordinator 27.11., Schnitt A): der Deckel der Probe trägt den Takt-Faktor der Karte
++        // (punkte.cjs `grundDeckel` ← `taktVon`), also tragen ihn die Deckel in ihr — Dorf und jede Leiter, ihr Raffer-Budget mit —
++        // aus derselben Quelle (PUNKTE_TAKT, gerundet wie `grundDeckel`); `sek` bleibt die Zahl der Radeon (≤ 60 s je Leiter). Bis
++        // hier maß die Leiter roh `sek`: an der GTX (Faktor 1,54) rissen in same.kopplung 6 von 9 Leitern am Deckel (aufw1, eef726c7)
++        const TAKT = Math.max(1, Number(process.env.PUNKTE_TAKT) || 1);
++        const amGeraet = (sek) => (TAKT > 1 ? Math.ceil(+(sek * TAKT).toFixed(6)) : sek);
+         const aus = { fassung: 1, leitern: {} };
+         if (DORF) {
+             const t0 = Date.now();
+@@ -376,7 +382,7 @@ const KERN = (() => {
+             try {
+                 M.dorf = await Promise.race([
+                     H.seite("return await (" + DORF.code + ")(r, " + JSON.stringify(DORF.a) + ");"),
+-                    new Promise((_, nein) => (uhr = setTimeout(() => nein(new Error("der Deckel des Dorfs " + DORF.sek + " s")), DORF.sek * 1000))),
++                    new Promise((_, nein) => (uhr = setTimeout(() => nein(new Error("der Deckel des Dorfs " + amGeraet(DORF.sek) + " s")), amGeraet(DORF.sek) * 1000))),
+                 ]);
+             } catch (e) {
+                 M.dorf = { fehler: String((e && e.message) || e).split("\n")[0].slice(0, 300) };
+@@ -394,11 +400,12 @@ const KERN = (() => {
+             M.t0 = Date.now();
+             M.teil = {};
+             let uhr = null, deckel = false;
+-            await rafferStellen(H, L.sek);
++            const sekL = amGeraet(L.sek);
++            await rafferStellen(H, sekL);
+             try {
+                 const r = await Promise.race([
+                     L.mess(H, L.U, M),
+-                    new Promise((_, nein) => (uhr = setTimeout(() => ((deckel = true), nein(new Error("der Deckel der Leiter " + L.sek + " s"))), L.sek * 1000))),
++                    new Promise((_, nein) => (uhr = setTimeout(() => ((deckel = true), nein(new Error("der Deckel der Leiter " + sekL + " s"))), sekL * 1000))),
+                 ]);
+                 aus.leitern[id] = { s: (Date.now() - M.t0) / 1000, sprossen: (r && r.sprossen) || {} };
+             } catch (e) {
