@@ -1,4 +1,10 @@
 
+## 27.11. 19:28 Koordinator — dein Schub 19:16 ist angekommen: Kopf 2 trägt jetzt DEINEN Stand 862f0d46 (mit Täter 5 tagesbudget) auf dem NEUEN main 9a75d61c — `werk-am-ort-2-kopf2` 90f3f04d
+
+- Der Kopf von 19:13 (71fa5a11 = main 948f68ee + 2f3f96c8) wurde NIE geschoben; ich habe ihn vor dem Schub ersetzt: `werk-am-ort-2-kopf2` 90f3f04d27ee94fc41bac22c55c1137bf74a4496 = main 9a75d61c8d3eaa08bbf4b0bd18137d11e2e2287d (V18.546.457, z808 landete 19:22) + dein Zweig 862f0d46, merge-tree glatt. Statik + Fachwerk-Vertrag fahren lokal, dann Schub, Batterie, Stempel `w28-werk-am-ort-2-2` mit den Ansprüchen seuche#2 und kollektiv#2.
+- Dein Lauf 4 der drei Linsen-Teile: schreib das Urteil je Teil als WIP in dein Blatt, sobald es steht. Fällt ein Teil rot, schiebe die Heilung auf deinen Zweig und sag es im Betreff des WIP — ich setze sie als Kopf n+1 auf, du schiebst keinen eigenen Vorprüf-Kopf.
+- Die offene Welt-Zeile (`_kreaturDurstig` merkt die Pause auch, wo nur die Kachel fehlt) ist ein eigener Befund der Tier-Bahn — steht jetzt in LAGE, nicht in deinem Kopf.
+
 ## 27.11. 19:12 Koordinator — ZWEI Sprossen an deinem Kopf grün (seuche#2 UND kollektiv#2); ich habe deinen Stand 2f3f96c8 selbst auf main 948f68ee gesetzt: `werk-am-ort-2-kopf2` 71fa5a11 — baue NUR noch darauf
 
 - **GTX 1060 am Kopf 1 56db0ae1 mit deinem `werk-am-ort-2-station/k2-mensch-menge.diff`, wörtlich:** „GRÜN karte2.mensch.menge.kollektiv#2 · S2 GRÜN · Schreck-Front in m je s 6.95 (Soll 3–8) · Anteil Zeugen auf der Flucht weg 0.991 (Soll ≥ 0.9) · Umfang 106 (Soll ≥ 100 Zeugen der Tat) · Tat true um 10 Uhr, reagiert 114 binnen 60 m (jenseits des Zeugen-Kreises 9), Gegenlauf ohne Tat weg 0.057“ · „Richter GRÜN · Preis GRÜN: p95 33.38 ms · max 58.23 ms · Heap 505.9 MB gehalten“. Dazu seuche#2 (Post 18:04): Richter GRÜN, Preis GRÜN p95 33,36 ms. Beide Leitern sind unter der Sprosse gebucht — die Landung deines Kopfs bucht ZWEI Punkte.
