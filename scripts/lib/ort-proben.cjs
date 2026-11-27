@@ -634,7 +634,164 @@ function stadtFunktion(FC, o = {}) {
     return { gruen: !fehl.length, fehl, je };
 }
 
+// DAS WACHE GLAS IST EINE QUELLE (nacht-fenster-glas, die Klasse „jede Quelle der Nacht geht durch den EINEN Lichtweg“; Leser:
+// gate:settlement Teil F, die Familie des Dorf-Lichts): die Klasse im vm (`ladeKlasse`: der Stamm des Baums, wahlweise ein Täter
+// `taeter` am Text — die Kette [[glied, alt, neu], …]) über einem Wirt ohne Renderer. Die Häuser des Plans `dp` (fachwerk `FC`
+// exportSettlement, ihre Hülle aus `buildInstance` Stufe 0) treten in den Bestand (`_blockerEintritt`) und bekommen die Hülle über
+// den EINEN Eintritt (`_hausHuelleSetzen`); um Mitternacht (die Sonne 30° unter dem Horizont) fragt die Linse die Quellen der Welt
+// (`_leuchtQuellen` über den ganzen Ort) und die Wahl des Pools (`_leuchtWahl`). Je Haus: seine Zeilen `fenster` (das wache Glas
+// des Gesetzbuchs, fachwerk `fensterZeile`), das Verzeichnis „licht“, je Zeile GENAU EINE Quelle „fenster“ ihrer Kennung, ihr Ort
+// die Mitte des Glases 0,05 m vor der Wand im Raum der Decken desselben Hauses (`_deckenVon`: die Lage, die Dach, Regen und Schatten
+// am Haus lesen) und 0,5 m vor ihr kein fester Teil der Hülle; kein Glas auf einem Platz des Pools; je Fenster sein Fleck in der
+// Karte (`_lichtKarteFleck`: Zellen davor, keine dahinter). `rohe`: die gebauten Hüllen eines früheren Laufs (ein Täter am Stamm
+// teilt das Gesetzbuch). → { haeuser, wach, jeHaus, quellen, verzeichnis, wahlGlas, wahlAlle, zellen, hinten, fehl, rohe, ms }
+function fensterLicht(root, { FC, dp = { seed: 5 }, taeter = null, haeuser = Infinity, rohe = null } = {}) {
+    const t0 = Date.now();
+    const S = require("./stamm.cjs");
+    const vm = require("vm");
+    rohe =
+        rohe ||
+        FC.exportSettlement(dp)
+            .slots.slice(0, haeuser)
+            .map((s) => {
+                const g = FC.buildInstance(s.kultur, s.seed, 0, s.ov);
+                g.traverse((o) => o.geometry && o.geometry.dispose());
+                return { s, huelle: g.userData.__huelle };
+            });
+    const { AnazhRealm: A, ctx } = S.ladeTaeter(root, taeter);
+    const r = Object.create(A.prototype);
+    const cam = vm.runInContext("new THREE.PerspectiveCamera(75, 16 / 9, 0.1, 2000)", ctx);
+    r.state = { architectures: [], blueprints: {}, materials: {}, timeOfDay: 0, camera: cam };
+    Object.assign(r, {
+        _bildZeit: 0,
+        _augenLeuchte: null,
+        _portalLeuchte: null,
+        _sonnenRichtung: () => ({ y: -0.5 }), // Mitternacht: die Sonne 30° unter dem Horizont
+        _lodAuge: () => null,
+        _brandGlutUm: () => {},
+        _tatIndex: () => ({ lava: [] }),
+        _lavaSpanne: () => [1000, 1400],
+        _stahlGlut: () => null,
+        _foundryPresetForEntry: () => null,
+        _populateBlockerAABBs: () => {},
+        _grundrissRaeumen: () => {},
+    });
+    const haus = rohe.map(({ s, huelle }, i) => {
+        const e = { type: "haus_" + s.kultur, kind: "haus", position: { x: s.x, y: 0, z: s.z }, rotationY: s.phi, scale: 1 };
+        e.name = `${s.kultur}#${i}@${Math.round(s.x)},${Math.round(s.z)}`;
+        r.state.architectures.push(e);
+        r._blockerEintritt(e);
+        r._hausHuelleSetzen(e, A._huellePacken(huelle, "fenster-licht:" + s.kultur));
+        return e;
+    });
+    const fehl = [];
+    const n = haus.length || 1;
+    const [mx, mz] = haus.reduce((a, e) => [a[0] + e.position.x / n, a[1] + e.position.z / n], [0, 0]);
+    const Q = r._zeitplanFest(() => r._leuchtQuellen(mx, 1.7, mz, 1e4, null));
+    const glas = Q.filter((q) => q.quelle === "fenster");
+    const licht = new Set(r._blockerMit("licht"));
+    let wach = 0;
+    let verzeichnis = 0;
+    for (const e of haus) {
+        const zeilen = (e._hausHuelle && e._hausHuelle.fenster) || [];
+        wach += zeilen.length;
+        if (licht.has(e)) verzeichnis++;
+        if (licht.has(e) !== zeilen.length > 0)
+            fehl.push(`${e.name}: ${zeilen.length} wache Fenster, im Verzeichnis „licht“ ${licht.has(e)} (\`_hausHuelleSetzen\`)`);
+        // der Raum der Decken desselben Hauses (`_deckenVon`, die erste Decke: ihre Mitte in Welt und Haus, Gier, Oberkante)
+        const D = r._deckenVon(e)[0];
+        const dz0 = e._hausHuelle && e._hausHuelle.decken && e._hausHuelle.decken[0];
+        const sk = e._hausHuelleSkala || 1;
+        const welt = (p) => {
+            const [ux, uz] = [p[0] - (dz0[0] + dz0[1]) / 2, p[2] - (dz0[2] + dz0[3]) / 2];
+            return [D.x + (ux * D.co + uz * D.si) * sk, D.y + (p[1] - dz0[4]) * sk, D.z + (uz * D.co - ux * D.si) * sk];
+        };
+        const fest = A._huelleVon(e._hausHuelle, "fest", "fenster-licht") || [];
+        const drin = (p) => fest.some((t) => t.c && [0, 1, 2].every((a) => Math.abs(p[a] - t.c[a]) <= t.h[a]));
+        zeilen.forEach((z, i) => {
+            const qs = glas.filter((q) => q.id && q.id.haus === e && q.id.fenster === i);
+            if (qs.length !== 1) {
+                fehl.push(`${e.name} Fenster ${i} [${z.slice(0, 3)}]: ${qs.length} Quellen in \`_leuchtQuellen\``);
+                return;
+            }
+            const q = qs[0];
+            const [nx, nz] = [z[5], z[6]];
+            const nw = D ? [nx * D.co + nz * D.si, 0, nz * D.co - nx * D.si] : [NaN, 0, NaN];
+            const soll = D ? welt(z).map((v, a) => v + nw[a] * 0.05) : [NaN, NaN, NaN];
+            const ab = Math.max(Math.abs(q.x - soll[0]), Math.abs(q.y - soll[1]), Math.abs(q.z - soll[2]));
+            const nab = Math.max(Math.abs(q.normale[0] - nw[0]), Math.abs(q.normale[2] - nw[2]));
+            const frei = !drin([z[0] + nx * 0.5, z[1], z[2] + nz * 0.5]);
+            if (!(ab < 1e-6 && nab < 1e-9 && frei))
+                fehl.push(`${e.name} Fenster ${i}: die Quelle steht nicht 0,05 m vor ihrem Glas (Ort ±${ab.toFixed(3)} m, Normale ±${nab.toFixed(3)}, 0,5 m davor frei ${frei})`);
+        });
+        for (const q of glas) if (q.id.haus === e && !(q.id.fenster < zeilen.length)) fehl.push(`${e.name}: Quelle ohne Zeile (${q.id.fenster})`);
+    }
+    // DIE WAHL: das Glas nimmt nie einen Platz, die Karte trägt es (`pool.alle`)
+    cam.position.set(mx, 1.7, mz);
+    cam.lookAt(mx + 1, 1.7, mz);
+    cam.updateMatrixWorld(true);
+    const pool = { t: -Infinity, uhr: -Infinity, x: NaN, y: NaN, z: NaN, wahl: [], alle: [] };
+    r._leuchtWahl(pool, cam, 0);
+    const wahlGlas = pool.wahl.filter((q) => q.normale).length;
+    const wahlAlle = pool.alle.filter((q) => q.quelle === "fenster").length;
+    // DER FLECK JE FENSTER in einer Karte um es (`_lichtKarteFleck`, der Boden auf 0)
+    const K = A.LICHT_KARTE;
+    const t = K.texel;
+    const G = { boden: new Float32Array(t * t), d: [new Float64Array(t * t * 3), new Float64Array(t * t * 3)], c: new Float64Array(t * t * 3), e: new Float64Array(t * t) }; // prettier-ignore
+    r._lichtKarteZ = { flecken: 0 };
+    let [zellen, hinten] = [0, 0];
+    for (const q of glas) {
+        for (const a of [G.d[0], G.d[1], G.c, G.e]) a.fill(0);
+        const [gx, gz] = [Math.round(q.x / K.zelleM) * K.zelleM, Math.round(q.z / K.zelleM) * K.zelleM];
+        const I = r._leuchtStaerke(q, 0, true);
+        r._lichtKarteFleck(G, gx, gz, { q, I, x: q.x, y: q.y, z: q.z }, I);
+        for (let j = 0; j < t; j++)
+            for (let i = 0; i < t; i++) {
+                if (!(G.e[j * t + i] > 0)) continue;
+                zellen++;
+                const [cx, cz] = [gx + (i + 0.5 - t / 2) * K.zelleM, gz + (j + 0.5 - t / 2) * K.zelleM];
+                if (q.normale[0] * (cx - q.x) + q.normale[2] * (cz - q.z) <= 0) hinten++;
+            }
+    }
+    return {
+        haeuser: haus.length,
+        wach,
+        jeHaus: +(wach / n).toFixed(2),
+        quellen: glas.length,
+        verzeichnis,
+        wahlGlas,
+        wahlAlle,
+        zellen: glas.length ? Math.round(zellen / glas.length) : 0,
+        hinten,
+        fehl,
+        rohe,
+        ms: Date.now() - t0,
+    };
+}
+// Das Urteil der Linse (rein): die verfehlten Namen (leer = gehalten).
+function fensterUrteil(m) {
+    const fehl = m.fehl.slice(0, 6);
+    if (m.fehl.length > 6) fehl.push(`… ${m.fehl.length - 6} weitere`);
+    if (!(m.wach > 0)) fehl.push("kein waches Fenster im Plan — die Linse sieht keinen Täter");
+    if (m.quellen !== m.wach) fehl.push(`${m.quellen} Quellen „fenster“ für ${m.wach} wache Fenster (\`_leuchtQuellen\`)`);
+    if (m.wahlGlas) fehl.push(`${m.wahlGlas} Quellen mit Normale auf einem Platz des Pools (\`_leuchtWahl\`)`);
+    if (!(m.wahlAlle > 0)) fehl.push("die Wahl am Ort trägt kein Glas (`_leuchtWahl` → `pool.alle`)");
+    if (m.hinten) fehl.push(`${m.hinten} Zellen hinter der Wand tragen Licht (\`_lichtKarteFleck\`)`);
+    if (!(m.zellen > 0)) fehl.push("kein Fleck des Glases in der Karte (`_lichtKarteFleck`)");
+    return fehl;
+}
+// DIE TÄTER DER LINSE (ihr Selbsttest, gate:settlement --selftest): der Zweig des Glases fehlt in den Quellen, das Glas nimmt einen
+// Platz des Pools, der Fleck strahlt hinter die Wand (ohne Lambert)
+const FENSTER_TAETER = {
+    "ohne Glas-Zweig": [["_leuchtQuellen", "if (fensterAn)", "if (false)"]],
+    "Glas auf dem Platz": [["_leuchtWahl", "if (!s.normale && pool.wahl.push(s)", "if (pool.wahl.push(s)"]],
+    "ohne Lambert": [["_lichtKarteFleck", "const N = s.q.normale;", "const N = null;"]],
+};
+
 module.exports = {
+    fensterLicht,
+    fensterUrteil,
+    FENSTER_TAETER,
     stadtFunktion,
     gassenGefaelle,
     erdbauMedian,

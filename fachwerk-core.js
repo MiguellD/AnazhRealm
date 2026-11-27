@@ -444,6 +444,7 @@
   const hasAttic = (ridgeY - eaveY) > NORM.kopfSpar;          // GESETZ: nutzbarer Dachraum nur wenn First ≥1.9 m über Traufe — FRÜH gezogen, denn der Schacht hängt davon ab
   const dachRaum = hasAttic && ROOFMODE!=='flat';   /*DAS FLACHE DACH TRAEGT KEINEN DACHRAUM (w28-bau-rezept-tuer) — kein Lauf, kein Loch im Estrich: `ROOFMODE` ist die EINE Dach-Quelle — Arkade und Zinnen decken flach (`dachdeckung`: EINE Platte auf eaveY ueber dem ganzen Grundriss, ohne Loch). Bis hier fragte der Dachraum nur die Neigung des Sattels, den das flache Dach nie baut: das gasthaus #846868 (Arkade, Dorf 7/18) trug einen Speicherlauf N 12 in die Platte — auf Stufe 11 Kopfraum 0,32 m, auf der letzten Stufe der Kopf ueber der Platte (gate:studio-begehen: Kopfraum 99)*/          // GESETZ: nutzbarer Dachraum nur wenn First ≥1.9 m über Traufe — FRÜH gezogen, denn der Schacht hängt davon ab
   const DORMER = (hasAttic && !modern && P.hip<0.45 && Dp>5.5) ? (()=>{ const gx=clamp(((P.seed%5)-2)*0.5, -W/2+1.5, W/2-1.5), gW=clamp(W*0.16,1.15,1.6), zBack=-Dp*0.22, zFront=zBack-1.0; const yBack=roofSkinY(gx,zBack), baseY2=roofSkinY(gx,zFront)+0.02, frontTop=yBack-0.08; return (frontTop-baseY2>0.85)?{gx,gW,zBack,zFront,yBack,baseY2,frontTop}:null; })() : null;   // EINE Gauben-Quelle: Struktur (dachwerk) UND Dachhaut-Aussparung (dachdeckung) lesen sie
+  const GAUBEN_FENSTER = (DORMER&&ROOFMODE==='sattel') ? {cx:DORMER.gx, cy:(DORMER.baseY2+DORMER.frontTop)/2+0.05, cz:DORMER.zFront+0.02, w:DORMER.gW-0.30, h:(DORMER.frontTop-DORMER.baseY2)-0.25} : null;   // DAS FENSTER DER GAUBE (EINE Quelle): das Dachwerk baut es, die Öffnungen des Lichts nennen es auch dem Plan ohne Dachwerk (`_oeffnungenDerEinheit`)
   const stW = NORM.treppe;                                    // Haupttreppe-Breite = Norm
   const mainW = ((levels.length>=2)||(levels.length===1&&hasAttic)) ? stW : 0;   // LINKE Spur: Haupt-/Estrichtreppe — nur wenn nach oben gegangen wird
   const loftW = ((levels.length>=2&&hasAttic)||P.keller||levels.length>=3) ? 0.90 : 0;   // FIX Issue5: RECHTE Spur trägt Speicher- ODER Kellertreppe — Keller koppelt nicht mehr parasitär an den Speicher · SPUR-GESETZ (Welle L): ab drei Geschossen läuft der zweite Lauf (OG→2.OG) auf der RECHTEN Spur — sie hat Breite, auch ohne Speicher und Keller (vorher 0 m: die Treppe ins 2. OG war ein Null-Lauf, 44 von 270 Siedlungs-Häusern)
@@ -511,7 +512,7 @@
   const masse=[];                                                                                       // DIE MASSEN DES BAUS (S3, additiv): je Teil des Grundrisses sein Körper — Rechteck, Höhen, Dach. Der Fernkörper des Gesetzbuchs (koerperListe) liest sie; kein Bau liest sie zurück
   function addMasse(m){ if(Number.isFinite(m.x0)){ m.x0+=SHIFT; m.x1+=SHIFT; } masse.push(m); return m; }   // die 2. Einheit des Doppelhauses um +W wie ihre Solids
   const LICHT=[];   // DIE ÖFFNUNGEN DES LICHTS (w28-innenlicht, additiv — nur eine Liste, kein Bau): jede Öffnung, die der Bau in eine Außenwand schneidet, an ihrem EINEN Bauer (`fensterAt`, die Flügel-Tür, der Rundbau) — `raumVon` rechnet daraus das Raum-Licht je Körper; bis hier trug die Liste des Fern-Fensters nur Haupt, Giebel und Anbau (der Flügel und der Hof-Arm der Stufe 0 standen ohne Öffnung)
-  function lichtAuf(cx,cy,cz,w,h,perp,glas){ LICHT.push({cx:cx+SHIFT,cy,cz,w,h,perp,glas}); }
+  function lichtAuf(cx,cy,cz,w,h,perp,glas,schlaf){ LICHT.push({cx:cx+SHIFT,cy,cz,w,h,perp,glas,schlaf:!!schlaf}); }   // `schlaf`: der EINE Würfel des Glases (`fensterSchlaeft`), dort gefragt, wo der Bau `glas` oder `glasdunkel` wählt — `fensterZeile` liest ihn
   // ════ WELTMODELL · geteilte Quelle: Öffnungen · Erschließung · Kraftfluss ════
   const circR=[];
   function addSolid(cx,cy,cz,lx,ly,lz,tag){solids.push({min:[cx+SHIFT-lx/2,cy-ly/2,cz-lz/2],max:[cx+SHIFT+lx/2,cy+ly/2,cz+lz/2],tag});}
@@ -1008,7 +1009,7 @@
     if(DORMER){ const {gx,gW,zBack,zFront,yBack,baseY2,frontTop}=DORMER;   // ════ DACHGAUBE — Geometrie aus geteilter Quelle; die Dachhaut spart denselben Footprint aus (echter Durchbruch) ════
       [-1,1].forEach(s=>{ const cx=gx+s*gW/2; poly(g,[[cx,baseY2-0.05,zFront],[cx,frontTop+0.05,zFront],[cx,yBack+0.05,zBack],[cx,roofSkinY(cx,zBack)-0.05,zBack]],'gefach'); beam(g,cx,(baseY2+frontTop)/2,zFront,0.08,frontTop-baseY2+0.25,0.08,'holz'); });
       beam(g,gx,baseY2,zFront,gW,0.14,0.12,'gefach'); beam(g,gx,frontTop+0.03,zFront,gW+0.18,0.12,0.13,'holz');
-      fensterAt(g,gx,(baseY2+frontTop)/2+0.05,zFront+0.02,gW-0.30,(frontTop-baseY2)-0.25,true);
+      fensterAt(g,GAUBEN_FENSTER.cx,GAUBEN_FENSTER.cy,GAUBEN_FENSTER.cz,GAUBEN_FENSTER.w,GAUBEN_FENSTER.h,true);
       poly(g,[[gx-gW/2-0.13,frontTop+0.05,zFront-0.04],[gx+gW/2+0.13,frontTop+0.05,zFront-0.04],[gx+gW/2+0.13,yBack+0.06,zBack+0.1],[gx-gW/2-0.13,yBack+0.06,zBack+0.1]],'ziegel2');
       eindeckenFlaeche(g,{rY:yBack+0.06,eaveDropY:frontTop+0.05,eZ:Math.abs(zBack-zFront)+0.10,zMid:zBack+0.05,sign:-1,xRangeAt:function(){return [gx-gW/2-0.10,gx+gW/2+0.10];},trim:true,lift:0.05,axis:'z'});   // GAUBE durch DASSELBE Dach-Gesetz gedeckt (Lattung+Ziegel) — nicht mehr drangeklebt
       beam(g,gx,yBack+0.13,zBack+0.05,gW+0.34,0.06,0.11,'ziegel'); }
@@ -1310,7 +1311,8 @@
         zw.push(st); vor=st; } }
     if(zw.length) prisma(g,zw,eb(dp-0.06),role,{zwickel:{bogen:B}});
     return B; }
-  function fensterTeile(g,cx,cy,cz,w,h,horiz,capY){ lichtAuf(cx,cy,cz,w,h,horiz?'z':'x',1); const fr='holz', gl=fensterSchlaeft(P.seed,horiz?'z':'x',horiz?cz:cx,horiz?cx:cz,cy)?'glasdunkel':'glas', _cap=(capY!=null?capY:Math.min(roofUnderY(cx,cz),roofUnderY(cx+(horiz?0.22:0),cz+(horiz?0.22:0))));   // BOGEN-DECKEL-GESETZ: lokale Dachgrenze schlägt Hauptdach; Doppel-Sample gegen Randfälle
+  function fensterWuerfel(cx,cy,cz,horiz){ return fensterSchlaeft(P.seed,horiz?'z':'x',horiz?cz:cx,horiz?cx:cz,cy); }   // der EINE Würfel des Glases aus der Lage, an der der Bau das Fenster setzt
+  function fensterTeile(g,cx,cy,cz,w,h,horiz,capY){ const schlaf=fensterWuerfel(cx,cy,cz,horiz); lichtAuf(cx,cy,cz,w,h,horiz?'z':'x',1,schlaf); const fr='holz', gl=schlaf?'glasdunkel':'glas', _cap=(capY!=null?capY:Math.min(roofUnderY(cx,cz),roofUnderY(cx+(horiz?0.22:0),cz+(horiz?0.22:0))));   // BOGEN-DECKEL-GESETZ: lokale Dachgrenze schlägt Hauptdach; Doppel-Sample gegen Randfälle
     if(horiz){ beam(g,cx,cy+h/2+0.05,cz,w+0.2,0.1,0.18,fr); if(P.bogenTyp&&P.bogenTyp!=='none')bogenRahmen(g,cx,cy+h/2+0.12,cz,w*0.58,true,P.bogenTyp,fr,{art:'fenster',cap:_cap}); beam(g,cx,cy-h/2-0.05,cz,w+0.22,0.1,0.24,fr);     // Sturz + Fensterbank
       beam(g,cx-w/2-0.05,cy,cz,0.1,h+0.1,0.18,fr); beam(g,cx+w/2+0.05,cy,cz,0.1,h+0.1,0.18,fr);              // Pfosten
       const L=grp(); const inner=windowSash(w,h,true,fr,gl); inner.position.x=w/2; L.add(inner);
@@ -1915,7 +1917,7 @@
       for(let lv=0;lv<nLev;lv++){ const y0=baseY+lv*P.egH, wH=P.egH;
         if(isDoor&&lv===0){ lichtAuf(x,y0+(wH-0.8)/2,z,chord,wH-0.8,'x',0); beam(g,x,y0+wH-0.4,z,chord,0.8,0.3,wr,[0,Math.PI/2-a,0]); continue; }
         if(s%2===0){ beam(g,x,y0+0.5,z,chord,1.0,0.3,wr,[0,Math.PI/2-a,0]); beam(g,x,y0+wH-0.5,z,chord,1.0,0.3,wr,[0,Math.PI/2-a,0]);
-          const ww=chord*0.5,wh=Math.max(0.5,wH-1.9),wy=y0+wH/2,rr=[0,Math.PI/2-a,0]; lichtAuf(x,wy,z,ww*0.9,wh,'x',1); oeffnung(g,()=>{ beam(g,x,wy,z,ww*0.9,wh,0.1,'glas',rr);   // das Fenster des Rundbaus als Öffnung (Marke `oeffnung`): Glas, Sturz, Bank, Kreuz
+          const ww=chord*0.5,wh=Math.max(0.5,wH-1.9),wy=y0+wH/2,rr=[0,Math.PI/2-a,0]; lichtAuf(x,wy,z,ww*0.9,wh,'x',1,false); oeffnung(g,()=>{ beam(g,x,wy,z,ww*0.9,wh,0.1,'glas',rr);   // das Fenster des Rundbaus als Öffnung (Marke `oeffnung`): Glas, Sturz, Bank, Kreuz — sein Glas schläft nie (immer `glas`, kein Würfel)
           beam(g,x,wy+wh/2+0.07,z,ww+0.18,0.1,0.16,'holz',rr); beam(g,x,wy-wh/2-0.07,z,ww+0.2,0.1,0.18,'holz',rr); beam(g,x,wy,z,0.06,wh,0.13,'holz',rr); beam(g,x,wy,z,ww,0.06,0.13,'holz',rr); }); }
         else beam(g,x,y0+wH/2,z,chord,wH,0.3,wr,[0,Math.PI/2-a,0]); } }
     { const dHalf=Math.min(1.1,Math.max(0.7,2*Math.PI*rad/seg)), bt=(P.bogenTyp&&P.bogenTyp!=='none')?P.bogenTyp:'rund'; oeffnung(g,()=>{ bogenRahmen(g,0,baseY+P.egH-0.6,-rad-0.04,dHalf,true,bt,wr); beam(g,0,baseY-0.02,-rad-0.02,2*dHalf+0.3,0.06,0.35,'stein'); });   // Bogen + Schwelle der Rundbau-Tür (Öffnung)
@@ -2071,11 +2073,12 @@
   const spawn={x:0,y:baseY+1.6,z:-Dp/2-2.0};
   const windowOpenings=[];
   const _oeffnungenDerEinheit=()=>{ const dx=SHIFT;   // die Öffnungen EINER Einheit — das Doppelhaus trägt die der Einheit B um +W (vorher stand B in der L2 blind), keine an der Brandwand
-    const auf=(o,wand,u)=>{ if(dx){ o.cx+=dx; o.schlaf=fensterSchlaeft(P.seed,o.perp,wand,u,o.cy); } windowOpenings.push(o); };   // der Würfel der Einheit B aus ihrer eigenen Lage (EIN Würfel je Fenster, wie ihr Bau)
+    const auf=(o,wand,u)=>{ if(dx) o.cx+=dx; o.schlaf=fensterSchlaeft(P.seed,o.perp,wand,u,o.cy); windowOpenings.push(o); };   // der Würfel je Fenster aus seiner Lage in der Einheit (EIN Würfel, wie ihr Bau `fensterTeile`): die Liste trägt ihn, jede Stufe liest ihn
     WALLS.forEach(w=>{ if(!w.win||INNEN(w))return; const wd=winW(w),c=(w.lo+w.hi)/2; auf({cx:w.horiz?c:w.fixed, cy:w.win.cy, cz:w.horiz?w.fixed:c, w:wd, h:w.win.ch, perp:w.horiz?'z':'x', kind:'stockwerk'}, w.fixed, c); });
-    if(gableWin){ [1,-1].forEach(sx=>{ if(!BRANDSEITE(sx)) auf({cx:sx*(W/2-0.02), cy:gableWin.cy, cz:0, w:gableWin.wz, h:gableWin.hy, perp:'x', kind:'giebel'}, sx*(W/2-0.02), 0); }); } };
+    if(gableWin){ [1,-1].forEach(sx=>{ if(!BRANDSEITE(sx)) auf({cx:sx*(W/2-0.02), cy:gableWin.cy, cz:0, w:gableWin.wz, h:gableWin.hy, perp:'x', kind:'giebel'}, sx*(W/2-0.02), 0); }); }
+    const GF=GAUBEN_FENSTER; if(GF&&P.nur&&P.nur.dachwerk===false) lichtAuf(GF.cx,GF.cy,GF.cz,GF.w,GF.h,'z',1,fensterWuerfel(GF.cx,GF.cy,GF.cz,true)); };   // der Plan ohne Dachwerk (die Stufe 3) nennt das Fenster der Gaube, wie das Dachwerk es setzt
   _oeffnungenDerEinheit(); if(P.doppel){ SHIFT=W; _oeffnungenDerEinheit(); SHIFT=0; }
-  GAs.forEach(A=>windowOpenings.push({cx:A.xout, cy:0.06+1.2, cz:A.zc, w:0.8, h:0.55, perp:'x', kind:'anbau'}));   // Anbau-Fenster außen — seitenrichtig (war x1)
+  GAs.forEach(A=>windowOpenings.push({cx:A.xout, cy:0.06+1.2, cz:A.zc, w:0.8, h:0.55, perp:'x', kind:'anbau', schlaf:fensterSchlaeft(P.seed,'x',A.xout,A.zc,0.06+1.2)}));   // Anbau-Fenster außen — seitenrichtig (war x1); der Würfel aus der Lage der Liste
   for(const f of FERNFENSTER) windowOpenings.push(f);   // die Teilbauten der fernen Stufe (Turm, Hof): ihr Fern-Fenster
   const annexDoors = GAs.length ? GAs.flatMap(A=>{ const tw=Math.min(2.45,A.gw-0.55), t0=A.xin+A.sx*0.30, tlo=Math.min(t0,t0+A.sx*tw), thi=Math.max(t0,t0+A.sx*tw), p0=A.xin+A.sx*0.35;
     return [ {x0:tlo, x1:thi, y0:0.06, y1:0.06+2.0, z:A.z0, kind:'tor'},
@@ -3799,7 +3802,8 @@
       idx.push(...(x*n[0]+y*n[1]+z*n[2]>0?[v0,v0+1,v0+2,v0,v0+2,v0+3]:[v0,v0+2,v0+1,v0,v0+3,v0+2])); }
     const pg=new THREE.BufferGeometry(); pg.setAttribute('position',new THREE.Float32BufferAttribute(pos,3)); pg.setAttribute('normal',new THREE.Float32BufferAttribute(nrm,3)); pg.setAttribute('color',new THREE.Float32BufferAttribute(col,3)); pg.setIndex(idx);
     grp2.add(new THREE.Mesh(pg,mat)); };
-  for(const o of liste){ const z=o.perp==='z', s=o.s||(z?(o.cz<0?-1:1):(o.cx<0?-1:1)), u=z?o.cx:o.cz, schlaf=o.schlaf!=null?o.schlaf:fensterSchlaeft(B.p.seed,o.perp,s,u,o.cy);
+  for(const o of liste){ const z=o.perp==='z', s=o.s||(z?(o.cz<0?-1:1):(o.cx<0?-1:1)), u=z?o.cx:o.cz, schlaf=o.schlaf;
+    if(typeof schlaf!=='boolean') throw new Error('fachwerk fensterFern: das Fenster '+(o.kind||'?')+' trägt seinen Würfel nicht (schlaf) — die Liste des Baus würfelt ihn');
     const e0=_fernVorn(kappen,o,s), P=(uu,y,d)=>z?[uu,y,e0+s*d]:[e0+s*d,y,uu], aus=z?[0,0,s]:[s,0,0], uR=z?[1,0,0]:[0,0,1];
     const rw=(o.w+0.2)/2, rh=(o.h+0.2)/2, y0=o.cy-rh, y1=o.cy+rh, d0=-0.02, d1=RAHMEN_TIEFE;   // der Kasten greift 2 cm in die Wand: keine Fuge zum Körper (der liegt 1,5 cm innen)
     teile([[[P(u-rw,y0,d1),P(u+rw,y0,d1),P(u+rw,y1,d1),P(u-rw,y1,d1)],aus],                // Front und die Seiten längs der Wand (Ober- und Unterseite sieht von der Gasse kein Pixel: 0,4 px bei 30 m)
@@ -8080,10 +8084,11 @@
             T = (st && st.topH && st.topH.licht) || [];
         // jede Öffnung EINMAL: die Liste des Baus (`licht`, der Aufsatz des Stapels um `off` gehoben) und die des Fern-Fensters
         // (die ferne Stufe schneidet keine Löcher, sie trägt ihre Öffnungen dort) nennen dieselbe Öffnung an derselben Stelle
+        // — das Glas trägt seinen Würfel mit (`schlaf`, `fensterSchlaeft`: gefragt, wo der Bau `glas` oder `glasdunkel` wählt)
         var auf = function (a, dy, glas) {
             for (var k = 0; k < o.length; k++)
                 if (o[k].perp === a.perp && Math.abs(o[k].cx - a.cx) < 0.3 && Math.abs(o[k].cz - a.cz) < 0.3 && Math.abs(o[k].cy - a.cy - dy) < 0.6) return;
-            o.push({ cx: a.cx, cy: a.cy + dy, cz: a.cz, w: a.w, h: a.h, perp: a.perp, glas: glas });
+            o.push({ cx: a.cx, cy: a.cy + dy, cz: a.cz, w: a.w, h: a.h, perp: a.perp, glas: glas, schlaf: !!a.schlaf });
         };
         for (var i = 0; i < (H.licht || []).length; i++) auf(H.licht[i], 0, H.licht[i].glas);
         for (i = 0; i < T.length; i++) auf(T[i], off, T[i].glas);
@@ -8186,6 +8191,49 @@
             d.push([_hr(m.x0), _hr(m.x1), _hr(m.z0), _hr(m.z1), _hr(y), raumLicht(m, y, masse, raum)].concat(raumSonne(m, y, masse, raum)));
         }
         return d;
+    }
+    // DIE FENSTER DES LICHTS (nacht-fenster-glas, additiv, must-ignore — die EINE Formel): je WACHES Glas der Öffnungen des Raums
+    // (`raumVon`: das Glas, dessen Würfel `fensterSchlaeft` beim Bau `glas` wählte — dasselbe Glas, das nach LICHT_GESETZ.fenster
+    // glüht) die Mitte, Breite und Höhe der Scheibe und die Normale seiner Wand nach außen [cx, cy, cz, w, h, nx, nz], haus-lokal
+    // auf dem Raster. Die Wand ist die des EINEN Körpers mit Raum (`FENSTER_KOERPER`), an dessen Grundriss-Kante das Fenster
+    // zwischen Fuß und Dach sitzt (`_anKoerper`, die Kante des Raum-Lichts; der Rundbau radial) — die Normale zeigt von seiner Mitte
+    // weg (das Hof-Fenster in den Hof, die Stufe der Terrasse von ihr fort). Sitzt es an zwei Körpern, steht es in der Wand zwischen
+    // ihnen und sieht keine Gasse: keine Zeile. Die Reihe nach Lage (cy, cx, cz): jede Stufe nennt dasselbe Fenster an derselben
+    // Stelle der Zeile. Leser: die Hülle jeder Stufe (`buildInstance`: `__huelle.fenster`) und mit ihr der Licht-Takt des Wirts —
+    // jedes wache Fenster ist eine Leuchtquelle seines Datums (`_leuchtQuellen`, Lambert vor der Wand in der Licht-Karte).
+    // Das Band: die Leuchtdichte erleuchteter Fenster eines Wohnblocks im Mittel 6 cd/m² bei 1,44 m² (Novák, CIE x051 2025) — das Glas trägt 8.
+    var FENSTER_KOERPER = { haupt: 1, anbau: 1, fluegel: 1, hofarm: 1, turm: 1, rund: 1, gaube: 1, stufe: 1 };
+    function fensterZeile(raum, masse) {
+        var z = [],
+            O = (raum && raum.oeffnungen) || [],
+            M = masse || [];
+        for (var i = 0; i < O.length; i++) {
+            var o = O[i];
+            if (!o.glas || o.schlaf) continue;
+            var an = null,
+                n = 0;
+            for (var j = 0; j < M.length; j++) {
+                var m = M[j];
+                if (!FENSTER_KOERPER[m.art] || !isFinite(m.x0) || !isFinite(m.z0)) continue;
+                var dach = Math.max(m.eY || -Infinity, m.rY || -Infinity, m.y1 || -Infinity, m.yLow || -Infinity, m.yHigh || -Infinity);
+                if (_anKoerper(m, dach, o)) ((an = m), n++);
+            }
+            if (n !== 1) continue;
+            var mx = (an.x0 + an.x1) / 2,
+                mz = (an.z0 + an.z1) / 2,
+                nx = 0,
+                nz = 0;
+            if (an.art === "rund" && an.rad > 0) {
+                var l = Math.sqrt((o.cx - mx) * (o.cx - mx) + (o.cz - mz) * (o.cz - mz)) || 1;
+                nx = (o.cx - mx) / l;
+                nz = (o.cz - mz) / l;
+            } else if (o.perp === "x") nx = o.cx >= mx ? 1 : -1;
+            else nz = o.cz >= mz ? 1 : -1;
+            z.push([_hr(o.cx), _hr(o.cy), _hr(o.cz), _hr(o.w), _hr(o.h), _hr(nx), _hr(nz)]);
+        }
+        return z.sort(function (a, b) {
+            return a[1] - b[1] || a[0] - b[0] || a[2] - b[2] || a[5] - b[5] || a[6] - b[6];
+        });
     }
     // KAMIN-RAUCH (.108): Solo-Haus-Spitze aus massBau-AABB (exportSettlement-Formel).
     // null wenn kein chimney (ROUND/modern/kuppel) — Host fail-closed.
@@ -8308,7 +8356,10 @@
             geoms.__strahl = solidZeile(st, "strahl"); // der Leib des Strahls (das Geländer), dieselbe Form
             geoms.__kamin = { spitze: kaminSpitze(st.H && st.H.chimney) }; // die Spitze des Stapels (≡ massBau, die Hülle trägt sie)
             geoms.__tuer = tuerZeile(st.H && st.H.dims); // die Tür-Zeile des Baus (≡ exportSettlement, die Hülle trägt sie)
-            geoms.__decken = deckenZeile(masseVon(st), raumVon(st, p.col)); // die Decken der Körper samt ihrem Raum-Licht (≡ der Mass-Bau der Stufen 1/2, die Hülle trägt sie)
+            var raum0 = raumVon(st, p.col),
+                masse0 = masseVon(st);
+            geoms.__decken = deckenZeile(masse0, raum0); // die Decken der Körper samt ihrem Raum-Licht (≡ der Mass-Bau der Stufen 1/2, die Hülle trägt sie)
+            geoms.__fenster = fensterZeile(raum0, masse0); // die wachen Fenster (≡ jede Stufe, die Hülle trägt sie)
             bakeLOD(st.g, p.col, geoms, 0, true); // LÜCKENLOS: alles=true (Kopf, Stufen-Wahrheit 0)
             st.g.traverse(function (o) {
                 if (o.geometry) o.geometry.dispose();
@@ -8328,6 +8379,7 @@
             var P3 = planBau(p);
             geoms = wurfVon(P3);
             geoms.__decken = deckenZeile(P3.masse, P3.raum);
+            geoms.__fenster = fensterZeile(P3.raum, P3.masse);
             var hs3 = hausSolids(p);
             geoms.__solids = hs3.fest;
             geoms.__strahl = hs3.strahl;
@@ -8342,6 +8394,7 @@
             geoms.__kamin = { spitze: kaminSpitze(B.chimney) };
             geoms.__tuer = tuerZeile(B.dims);
             geoms.__decken = deckenZeile(B.masse, B.raum);
+            geoms.__fenster = fensterZeile(B.raum, B.masse);
         }
         return geoms;
     }
@@ -8475,6 +8528,9 @@
         // (`kamin` [x, y, z], null = kein Kamin) — der Wirt baut kein Haus im Haupt-Faden, um sie zu finden (`_hausHuelleSetzen`).
         // Ebenso die Tür-Zeile (`tuer`, bauen.K5, null = keine Haustür): was der Slot des Dorfs aus dem Export bringt.
         if (g.userData.__huelle && gm.__decken) g.userData.__huelle.decken = gm.__decken; // jede Stufe, auch die 3 (ohne Kamin-Zeile)
+        // DIE WACHEN FENSTER REISEN MIT DER HÜLLE (nacht-fenster-glas, additiv, must-ignore): je Fenster [cx, cy, cz, w, h, nx, nz]
+        // (`fensterZeile`), jede Stufe dieselbe Zeile — der Licht-Takt des Wirts liest sie (`_fensterVon`)
+        if (g.userData.__huelle && gm.__fenster) g.userData.__huelle.fenster = gm.__fenster;
         if (g.userData.__huelle && gm.__kamin) {
             var ks = gm.__kamin.spitze;
             g.userData.__huelle.kamin = ks ? _hr3([ks.x, ks.y, ks.z]) : null;
@@ -8549,7 +8605,9 @@
     // Bis nacht-lichter trug jede Zeile daneben die Zahl des Labors (`staerke` 1 / 19) und der Kopf eine eigene Leuchtdichte (`cdM2`
     // 640, flach über das ganze Glas — nachts 2 100-mal Bild-Weiß: das Glas stand als ein Fleck Orange), die Wandlaterne 3,6 cd
     // mit einem Kern von 2,74 m. `cdM2` bleibt NUR das Fenster: die Leuchtdichte eines erleuchteten Raums hinter Glas (8 cd/m²:
-    // Hypothese „Raum im Licht einer Flamme hinter Glas", 50 lx auf heller Wand ÷ π) — eine Fläche, keine Quelle im Pool. `schaltet`:
+    // Hypothese „Raum im Licht einer Flamme hinter Glas", 50 lx auf heller Wand ÷ π; das Band der Messung: Novák, CIE x051 2025 — ein
+    // erleuchtetes Fenster eines Wohnblocks im Mittel 6 cd/m² bei 1,44 m²) — eine Fläche, keine Quelle im Pool: je wachem Glas
+    // (`fensterZeile`) trägt die Welt ihr Licht als Lambert-Fläche in der Licht-Karte (`_fensterLicht`, nacht-fenster-glas). `schaltet`:
     // der Zeitplan `zeit` ist ein SCHALTPLAN (der Anteil brennender Quellen je Tageszeit, auf seinen größten Wert bezogen) — ohne
     // `schaltet` trägt `zeit` nur die Belichtung des Labors (das Herdfeuer brennt bei Tag und Nacht mit derselben Lichtstärke).
     // Leser: die Welt (`_leuchtStaerke`, `_leuchtTakt`: Wert ÷ die Einheit der EINEN Skala) und das Labor (geeicht am Herdfeuer).
@@ -16201,6 +16259,7 @@
         // K11b — die Farbe aus der Farbtemperatur, der Abfall 1/d² mit Kern und Saum (die Welt rechnet ihn im Stoff)
         lichtFarbe: lichtFarbe,
         lichtAbfall: lichtAbfall,
+        lichtReichweiteM: lichtReichweiteM, // nacht-fenster-glas — die Reichweite aus der Lichtstärke (der Wirt rechnet sie je Fenster)
         // schatten.K5 — der Leib einer Leuchte (der Glas-Kopf): die nahe Ebene ihres Wurfs
         lichtLeib: lichtLeib,
         EXPL_GESETZ: EXPL_GESETZ,
@@ -16353,6 +16412,7 @@
         innenFrei: innenFrei,
         INNEN_HOLZ: INNEN_HOLZ,
         deckenZeile: deckenZeile, // die Decken samt Raum-Licht (w28-innenlicht) — die Linse rechnet daran ihre Mutanten
+        fensterZeile: fensterZeile, // nacht-fenster-glas — die wachen Fenster der Hülle (die Linse liest sie gegen die Quellen des Wirts)
         RAUM_LICHT: RAUM_LICHT,
         slotPlan: slotPlan, // das gesetzte Haus als Ein-Slot-Plan (bauen.K2) — der Wirt rechnet daraus den Plan v2 und legt dessen Erdbau
         chimneyTipFromParams: chimneyTipFromParams,
