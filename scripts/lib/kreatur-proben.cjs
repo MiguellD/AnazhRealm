@@ -1253,6 +1253,7 @@ async function kreaturProben(r, T, opts) {
         const k = L.map((x) => x[0]);
         return {
             dorf,
+            heim: [rund(heim.x, 1), rund(heim.z, 1)],
             fremdN: X.fremdN,
             blickDiffM: rund(Math.max(...W.lage.map((p, i) => ab(p, B.lage[i]))), 4),
             verband: { fensterRaum: VH.fensterRaum, wander: zahl(W), flucht: zahl(F) },

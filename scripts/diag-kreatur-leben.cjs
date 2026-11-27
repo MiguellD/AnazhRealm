@@ -1325,6 +1325,19 @@ async function lebenBuehnen() {
             };
             z.rand = akt(Math.atan(Math.tan((cam.fov * Math.PI) / 360) * cam.aspect) + 0.2 / ab(P, pm));
             z.rand.fernWich = z.rand.wich ? null : akt(Math.PI).wich;
+            // WER HÄLT DEN LEIB (`_bestandHaelt`), wenn er nicht weicht — die Linse nennt den Grund beim Namen
+            if (!z.rand.wich && !z.rand.fernWich && s.creatures.includes(leib)) {
+                const ud = leib.userData;
+                z.rand.haelt = {
+                    ohneBestand: !ud._bestand,
+                    zu: !!ud._bestand?.zu,
+                    nah: !!r._kreaturNah(leib),
+                    auftrag: ud.task ? ud.task.name : null,
+                    bond: ud.bond || 0,
+                    riss: !!ud._rissVon,
+                    abM: rund(ab(P, pm), 1),
+                };
+            }
             leer();
         }
         return Object.assign(z, {
