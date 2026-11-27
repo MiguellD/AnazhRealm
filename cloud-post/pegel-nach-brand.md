@@ -1,4 +1,17 @@
 
+## 27.11. 22:31 Koordinator — das VIERTE Rot von Kopf 3 0d0e4c05, wörtlich: „WASSER-LEBEN ROT (22)“ (Job voll 14/18, Schritt Wasser-Wand, main ✅) — dasselbe Bett-Leck, 22 Glieder
+
+- **Die Klasse in einem Satz:** ohne Regen liegt die Sohle tiefer unter dem Spiegel als am main — jedes Glied, das Tiefe, Furt oder Strömung liest, fällt. Messnamen für deinen Kopf 4 (alle müssen am Kopf GRÜN stehen, `node scripts/diag-wasser-leben.cjs` ganz):
+  - „K6 LAGE: {"seele":"wesen","abstand":8,"sohleUnterSpiegel":1.342,"wasserlinie":0.872,"schwimmt":true,"amGrund":false}“ (ebenso wolf 1.069, fuchs 0.841, baer 1.201; je bei Abstand 8 und 120) · „K6 BAUMLOS: {"sohleUnterSpiegel":0.97,"soll":0.5}“
+  - „K2 ZELL-DACH: {"fussUnterSpiegelP50":1.568,"sollFussUnterSpiegel":1.224,…,"geerdet":false,"schwimmt":true}“ · Glied K1 (am Grund): „{…"tiefGeerdet":44,…"maxTiefeGeerdetM":1.7…}“
+  - „E3 TIER: {"seele":"wolf","abstand":8,"sohleUnterSpiegel":0.47,"wasserlinie":0.599,"schwimmt":false}“ (fuchs, baer ebenso) · „E4 KANTE: {"erster":41,"traegt":41,"wechsel":2,"tagesgang":[0,0]}“
+  - „K4 STRÖMUNG -4350,-3359: schwimmer treibt 0.02 · boot treibt 0.02 · tier treibt 0“ · „W2 RAND-STREIFEN: {"proben":12,"treibt":8,…}“
+  - „U1 UFER-SPRUNG: {"proben":24,"schritte":17762,"spruenge":1,"maxSprung":0.048,"beispiele":[[-812.3,-983.7,3.74]],…}“
+  - „P4 REGEN: {"hub":0.01,"post":1,"koerper":-0.46,"fest":0}“ — dein eigener Hub: der Körper sinkt 0,46 m, statt mit dem Pegel zu steigen · „K7 MITSPIELER: {"lehne":0,"meshKind":"soul"}“
+- **Die Regel für Kopf 4 bleibt die vom 21:41-Blatt:** ohne Regen ist das Bett byte-gleich main (Sohle, Spiegel, Furt); der Hub liegt ÜBER dem Grund und trägt die Körper mit. Beweis vor dem Schub: `gate:wasser-leben` ganz + Playtest-Invariante „Voxel V9.43-d → Welle L“ + „WERK-IM-WASSER“ (Furt F) + `gate:kamera-laub` K7 — vier Namen, vier grüne Zeilen im Stand-Blatt.
+- **Was schon trägt:** Vor-Richter GTX 1060 an Kopf 3, extreme#1 GRÜN/GRÜN („S1 regenMaxMm 117,8 mm gegen Soll ≥ 100 mm ✓ · ueberAueM 0,3 m gegen Soll > 0 m ✓“, p95 25,02 ms). Es fehlt das Beleg-Bild („kein nahWiese im Bild: 0.0 % < 15.0 %“) — stelle die Kamera der Station auf die überflutete Aue mit Wiese im Nahfeld. stoerung#3 fährt als nächster Slot an Kopf 3.
+- **Der Zug steht bis etwa 23:10** (Apparat, Heil-Kopf in der Batterie) — main bleibt b3740dd5; gebucht werden extreme#1 und stoerung#3 erst mit Kopf 4 am main.
+
 ## 27.11. 21:41 Koordinator — URTEIL Kopf 3 0d0e4c05: GPU-Probe GRÜN, Batterie ROT an DREI eigenen Zeilen (alle am Wasser, main b3740dd5 an denselben Schritten grün). Kein Stempel — Kopf 4
 
 - **(1) Job „voll 1/18“, Schritt „Voller Playtest“:** „❌ 1 Invariante(n) verletzt: Voxel V9.43-d → Welle L: der Kanal formt einen Fluss-Mittelpunkt (Flachboden unter dem Spiegel)“.

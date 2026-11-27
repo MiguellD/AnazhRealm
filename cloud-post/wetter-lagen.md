@@ -1,4 +1,14 @@
 
+## 27.11. 22:31 Koordinator — Kopf 4 ddc4aeff (extreme#2) angekommen: glatt gegen main, aber PROBE-TAG FEHLT — der Zug hält ihn so. Kopf 5 = leerer Commit mit dem richtigen Ruf
+
+- **Wörtlich (`zug.sh probe-tag wetter-lagen-kopf4@ddc4aeff`):** „PROBE-TAG FEHLT: Probe-Tag ohne gate:pruefbuehne-licht, gate:weltbild-frost:echt und gate:studio-begehen (Beitrag fasst stamm/siedlung-bewohner.js an)“.
+- **Der billigste Weg (Vorbild kuesten-kontrast Kopf 2, „Probe-Ruf nachgereicht“):** Kopf 5 = LEERER Commit auf ddc4aeff, derselbe Baum, Betreff „Vorprüfung wetter-lagen 5: Probe-Ruf nachgereicht — … [gpu-probe: gate:wetter-wache, gate:pruefbuehne-licht, gate:weltbild-frost:echt, gate:studio-begehen] [ci voll]“. Höchstens VIER Proben, jede ≤ 480 s: `gate:tag-achse:echt`, `gate:stand-takt` und `bild:wiese@0.5` fallen aus dem Ruf (die Batterie fährt sie ohnehin). Die Batterie 46068718860 von Kopf 4 läuft weiter und zählt für den baumgleichen Kopf 5.
+- **Oder:** brauchst du die 3 Zeilen in `stamm/siedlung-bewohner.js` nicht, nimm sie heraus — dann bleibt dein Ruf, aber die Batterie fährt neu (≈ 30 min). Entscheide nach der Sache, nicht nach dem Ruf.
+- **Vor dem Schub:** `sh artifacts/profiband/werkzeug/zug.sh probe-tag "<zweig>@<sha40>"` selbst rufen — „PROBE-TAG OK“ gehört in dein Stand-Blatt.
+- **Anspruch:** extreme#1 (Bahn pegel-nach-brand) ist noch nicht gebucht — Leitern zählen lückenlos. Dein Stempel fährt deshalb OHNE Anspruch extreme#2; der Stations-Kandidat wird gesetzt, sobald extreme#1 am main gebucht ist, dann bucht die GTX 1060 #2 in derselben Sitzung. Lege den Kandidaten als `cloud-post/wetter-lagen-station/<datei>.diff` in den Baum (ein Diff je Datei, gegen den pm-Kopf).
+- **Der Zug steht bis etwa 23:10** (Wand „(T) FRIST“ des Apparats, Heil-Kopf `frist-puls` in der Batterie) — main bleibt b3740dd5, kein Umbau deiner Basis nötig.
+- **Nächste Sprosse nach Kopf 5:** die unterste rote deiner Leiter am main — nenne sie mit der Täter-Zahl im Stand-Blatt, ehe du baust.
+
 ## 27.11. 21:41 Koordinator — deine Gegenmessung S1 ist angekommen (regenMaxMm 117,8 mm, ueberAueM 0 → 0,3 m am Pegel-Kopf 0d0e4c05). Der Pegel-Kopf 3 selbst steht ROT an drei Wasser-Zeilen — weiter an extreme#2
 
 - Der Nachbar baut Kopf 4 (rot: Playtest V9.43-d „der Kanal formt einen Fluss-Mittelpunkt“, Werk im Wasser „keine Furt 0,5–0,75 m“, Kamera-Laub K7 „Steig Kosten 7 m“). extreme#1 bucht erst mit seinem Kopf 4 am main; deine Zahl bleibt der Zeuge.
