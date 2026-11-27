@@ -926,12 +926,12 @@ async function probeLeben(expected) {
             // Wagen 19 in Probe 132, bis sein Nachtfahrer ankam
             frame(i++);
             const bereit = () =>
-                S.liste && S.liste.every((b) => b.leib && !b.ankunft) && S.verkehr && S.verkehr.wagen.every((W) => W.b.amSteuer); // prettier-ignore
+                S.liste && S.liste.every((b) => b.leib && !b.ankunft) && S.verkehr && S.verkehr.wagen.every((W) => W.wache || W.b.amSteuer); // prettier-ignore
             // (steht die Stadt nie bereit, nennt der Deckel, wer fehlt: der Wagen ohne Fahrer am Steuer samt Rolle, Ziel und Krankheit
             // seiner Fahrer, der Leib, der noch ankommt — bis bewohner-satz sagte er nur „die Welt hat nichts mehr offen")
             const fehlt = () =>
                 [
-                    ...(S.verkehr ? S.verkehr.wagen : []).filter((W) => !W.b.amSteuer).map((W) => `Wagen ${W.nr} (${W.zustand}): ${W.fahrer.map((f) => `${f === W.b ? "*" : ""}${f.rolle}#${f.same >>> 0}${f.krank ? " krank" : ""} ziel ${f.ziel === f.orte.werk ? "werk" : f.ziel === f.orte.heim ? "heim" : f.drinnen ? "drinnen" : "anderes"}`).join(" / ")}`), // prettier-ignore
+                    ...(S.verkehr ? S.verkehr.wagen : []).filter((W) => !W.wache && !W.b.amSteuer).map((W) => `Wagen ${W.nr} (${W.zustand}): ${W.fahrer.map((f) => `${f === W.b ? "*" : ""}${f.rolle}#${f.same >>> 0}${f.krank ? " krank" : ""} ziel ${f.ziel === f.orte.werk ? "werk" : f.ziel === f.orte.heim ? "heim" : f.drinnen ? "drinnen" : "anderes"}`).join(" / ")}`), // prettier-ignore
                     ...(S.liste || []).filter((b) => !b.leib || b.ankunft).slice(0, 3).map((b) => `${b.rolle}#${b.same >>> 0} ${b.leib ? "kommt an" : "ohne Leib"}`), // prettier-ignore
                 ].slice(0, 6).join(" · ") || "keiner";
             const bis = async (was, ok) => {
@@ -1008,6 +1008,9 @@ async function probeLeben(expected) {
                     `die Stadt stellt keinen Wagen (Soll ${VK.zahl.soll}, ohne Platz ${VK.zahl.ohnePlatz}, ` +
                         `Wenden ${VK.wenden.size} an ${VK.kp.filter((K) => K.ende).length} Enden, Netz ${Math.round(VK.zahl.laengeM)} m)`
                 );
+            // DIE TOUR: die Wagen der Häuser fahren Ziel um Ziel; die Streife einer Wache (`W.wache`, wache-streife) steht vor ihr, bis
+            // ein Ruf sie zieht — Fahrer am Steuer, Weg je Minute und Ziele zählen nur die Tour, Raum, Fahrbahn und Hülle jeden Wagen
+            const TW = VK.wagen.filter((W) => !W.wache);
             const m = {
                 leib: 0,
                 leibOrte: [],
@@ -1229,7 +1232,7 @@ async function probeLeben(expected) {
                 }
                 if (zwilling) continue;
                 if (tMs - T.t0 >= 60000 * (T.min + 1) && ++T.min) {
-                    const [w, W] = VK.wagen.map((W) => [W.weg - T.weg.get(W), W, T.weg.set(W, W.weg)]).sort((a, b) => a[0] - b[0])[0]; // prettier-ignore
+                    const [w, W] = TW.map((W) => [W.weg - T.weg.get(W), W, T.weg.set(W, W.weg)]).sort((a, b) => a[0] - b[0])[0]; // prettier-ignore
                     // der Täter am Kopf seiner Reihe: wer vor ihm steht (der Wagen, der Halter des Orts, auf den er wartet), bis einer aus
                     // anderem Grund hält (ein Leib — der Spieler oder ein Bewohner —, die Ankunft, ein Ort ohne Halter)
                     let K = W;
@@ -1296,8 +1299,8 @@ async function probeLeben(expected) {
                 if (k % 4) continue;
                 const fahrend = VK.wagen.filter((W) => W.zustand === "faehrt" && W.entry);
                 const L = fahrend.map(lage);
-                const nicht = VK.wagen.filter((W) => !fahrend.includes(W) || !W.b.amSteuer || !W.b.leib);
-                if (VK.wagen.length - nicht.length < T.st[0]) T.st = [VK.wagen.length - nicht.length, k, ...nicht.map((W) => [W.nr, W.zustand])]; // prettier-ignore
+                const nicht = TW.filter((W) => !fahrend.includes(W) || !W.b.amSteuer || !W.b.leib);
+                if (TW.length - nicht.length < T.st[0]) T.st = [TW.length - nicht.length, k, ...nicht.map((W) => [W.nr, W.zustand])]; // prettier-ignore
                 // DER BEWOHNER AM STEUER je fahrendem Wagen; die längste Fahrt zu einem Ziel (die Uhr des Wagens seit dem Anfang der
                 // Fahrt, `_verkehrAngekommen`); DIE FAHRBAHN: je Gehenden, ob seine Mitte in der Bahn eines Wagens liegt (das EINE
                 // Gesetz der Straße, `_verkehrAufSpur` mit dem halben Wagen)
@@ -1481,7 +1484,9 @@ async function probeLeben(expected) {
             const wer = W && [W.nr, W.grund, ...ort2(lage(W)), W.vorne ? W.vorne.O.nr : W.wer && W.wer.seed];
             aus[stunde] = {
                 soll: VK.zahl.soll,
-                wagen: VK.wagen.length,
+                wagen: TW.length,
+                streifen: VK.wagen.length - TW.length,
+                streifeOhne: VK.zahl.streifeOhne,
                 ohnePlatz: VK.zahl.ohnePlatz,
                 ohneFahrer: VK.zahl.ohneFahrer,
                 ohneNacht: VK.zahl.ohneNacht,
@@ -1511,8 +1516,8 @@ async function probeLeben(expected) {
                 ohr: { stimmen: KL.n, nah: KL.nah, stumm: KL.stumm, ms95: +(KL.ms.sort((a, b) => a - b)[Math.floor(0.95 * (KL.ms.length - 1))] || 0).toFixed(3), msMittel: +(KL.ms.reduce((s, x) => s + x, 0) / Math.max(1, KL.ms.length)).toFixed(4), raster: !self.crossOriginIsolated }, // prettier-ignore
                 sek: o.sek,
                 ziele: {
-                    erreicht: VK.wagen.reduce((s, W) => s + W.ziele - ziele0.get(W), 0),
-                    ohne: VK.wagen.filter((W) => W.ziele === ziele0.get(W)).map((W) => W.nr),
+                    erreicht: TW.reduce((s, W) => s + W.ziele - ziele0.get(W), 0),
+                    ohne: TW.filter((W) => W.ziele === ziele0.get(W)).map((W) => W.nr),
                     laengsteS: Math.round(m.fahrt),
                     wer,
                 },

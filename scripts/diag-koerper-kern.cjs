@@ -1468,6 +1468,74 @@ function rollenUrteil(C, m = null) {
     return { rot, r, j, h };
 }
 
+// DIE WACHE RÜCKT AUS (wache-streife, Meisterkarte 2 mensch.macht.megastadt#1; koerper TAGES_GESETZ.angebot.wache · einsatz,
+// `tagesOrte` · `tagesBindung` · `einsatzFahrt` · `einsatzWeg`, der Satz des Wirts `_bewohnerLauf` „waffe“; Leser: der Wirt
+// `_verkehrAnlegen` — die Streife, ihr Fahrer aus der Mannschaft —, `_streifeRuf` · `_streifeTakt`, die Station megastadt#1):
+//   W1 die Wache ist ein Ort mit DIENST (`tagesOrte`): sie bietet `dienst`, keine Arbeit und keinen Treff.
+//   W2 ihre Mannschaft hat Dienst in ihr, kein Fremder (`tagesBindung`, 200 Samen): wessen Heim die Wache ist, dessen Werk ist
+//      sie; kein Bewohner eines Wohnhauses bindet Werk, Mahl, Abend oder Besuch an sie.
+//   W3 die Antwort folgt dem Weg (`einsatzFahrt`): über 12 Wege 150–3 000 m ρ(Verzug + Fahrt, Weg) ≥ 0,7; das Band der Fahrt
+//      (Kolesar, Walker & Hausner 1975; Larson & Odoni 1981 §3.7.2): v 13,4 ± 0,1 m/s (30 mph), der feste Teil v/a 30–60 s, die
+//      Fahrt über v²/a hinaus v/a + D/v; der Ort der Fahrt (`einsatzWeg`) springt nie über v · dt und endet am Ziel.
+//   W4 der Fahrer der Streife trägt die Waffe der Wache (`_bewohnerLauf` „waffe“): der Fahrer im Wagen der Wache bewaffnet,
+//      der Fahrer eines Hauses nicht.
+// Am Kern vor wache-streife ROT: W1 (die Wache bot `sonst`: arbeit 3, treff 1), W3 (kein Einsatz im Kern), W4 (der Fahrer der
+// Streife ohne Waffe) — aus der Wache rückte keiner aus. Täter (Selbsttest): „wacheSonst“ (die Wache ohne eigenes Angebot) → W1
+// · „teleport“ (die Streife steht sofort am Ort) → W3 · „ohneWagen“ (der Satz liest den Wagen der Wache nicht) → W4.
+let einsatzWirt = null;
+function einsatzUrteil(C, m = null) {
+    const rot = [];
+    const G = C.TAGES_GESETZ;
+    const w = { n: 0, dienst: 0, fremd: 0 };
+    // W1 · W2 — BÜHNE: 40 Häuser im Ring um einen Platz, die Wache an Los 7 (die Mechanik der Bindung, kein Ort der Welt)
+    const slots = [];
+    for (let i = 0; i < 40; i++) {
+        const a = (2 * Math.PI * i) / 40;
+        slots.push({ x: Math.cos(a) * 50, z: Math.sin(a) * 50, rolle: i === 7 ? "wache" : i % 10 === 0 ? "schmiede" : "wohnhaus" }); // prettier-ignore
+    }
+    let orte = C.tagesOrte({ slots, platz: { cx: 0, cz: 0, ex: 12, ez: 10 }, felder: [] });
+    if (m === "wacheSonst") orte = orte.map((o) => (o.art === "wache" ? Object.assign({}, o, { bietet: G.angebot.sonst }) : o));
+    const wi = orte.findIndex((o) => o.art === "wache");
+    const B = (wi >= 0 && orte[wi].bietet) || {};
+    w.angebot = JSON.stringify(B);
+    if (wi < 0 || !(B.dienst > 0) || B.arbeit > 0 || B.treff > 0) rot.push(`W1 die Wache ist ein Ort ohne eigenen Dienst: sie bietet ${w.angebot} (Soll: dienst, keine Arbeit, kein Treff) — Täter: koerper TAGES_GESETZ.angebot.wache · tagesOrte`); // prettier-ignore
+    const TC = globalThis.__tetrapodaCore;
+    for (let s = 0; wi >= 0 && s < 200; s++) {
+        w.n++;
+        if (C.tagesBindung(TC, s, null, wi, orte, () => false).werk === wi) w.dienst++;
+        const Bf = C.tagesBindung(TC, s, null, 1, orte, () => false);
+        for (const k of ["werk", "mahl", "abend", "besuch"]) if (Bf[k] === wi) w.fremd++;
+    }
+    if (w.dienst < w.n || w.fremd) rot.push(`W2 die Wache bindet nicht ihre Mannschaft: ${w.dienst} von ${w.n} ihrer Leute haben Dienst in ihr, ${w.fremd} Bindungen Fremder an sie (Soll: alle, 0) — Täter: koerper tagesBindung (eigen)`); // prettier-ignore
+    // W3 — die Antwort folgt dem Weg
+    const E = G.einsatz;
+    if (!E || typeof C.einsatzFahrt !== "function" || typeof C.einsatzWeg !== "function") rot.push("W3 die Wache rückt nicht aus: der Kern trägt keinen Einsatz (TAGES_GESETZ.einsatz · einsatzFahrt · einsatzWeg)"); // prettier-ignore
+    else {
+        const [fahrt, ort] = m === "teleport" ? [() => 0, (D) => D] : [C.einsatzFahrt, C.einsatzWeg];
+        // (die Wege in gewürfelter Folge: eine Antwort ohne Bezug zum Weg — gleiche Zeiten — trägt den Rang der Folge, ρ 0,22)
+        const D = Array.from({ length: 12 }, (_, i) => 150 + ((i * 5) % 12) * 250 + ((i * 7919) % 97));
+        w.rho = spearman(D.map((d) => E.verzugS + fahrt(d)), D);
+        w.t2000 = fahrt(2000);
+        const soll = E.vMs / E.aMs2 + 2000 / E.vMs;
+        [w.sprung, w.endet] = [0, 0];
+        for (const d of D) {
+            let p = 0;
+            for (let t = 0.5; t <= fahrt(d) + 1; t += 0.5) [w.sprung, p] = [Math.max(w.sprung, ort(d, t) - p), ort(d, t)];
+            if (Math.abs(p - d) < 1e-6) w.endet++;
+        }
+        if (!(w.rho >= 0.7)) rot.push(`W3 die Antwort folgt dem Weg nicht: ρ ${Number.isFinite(w.rho) ? w.rho.toFixed(3) : "—"} über 12 Wege 150–3 000 m (Soll ≥ 0,7) — Täter: koerper einsatzFahrt`); // prettier-ignore
+        else if (Math.abs(E.vMs - 13.4) > 0.1 || !(E.vMs / E.aMs2 >= 30 && E.vMs / E.aMs2 <= 60) || Math.abs(w.t2000 - soll) > 1e-6) rot.push(`W3 die Fahrt verlässt das Band (Kolesar 1975): v ${E.vMs} m/s, v/a ${(E.vMs / E.aMs2).toFixed(1)} s, 2 000 m in ${w.t2000.toFixed(1)} s (Soll 13,4 ± 0,1 · 30–60 s · ${soll.toFixed(1)} s) — Täter: koerper TAGES_GESETZ.einsatz · einsatzFahrt`); // prettier-ignore
+        else if (w.sprung > E.vMs * 0.5 + 1e-6 || w.endet < D.length) rot.push(`W3 die Streife springt: ${w.sprung.toFixed(1)} m in 0,5 s (Soll ≤ ${(E.vMs * 0.5).toFixed(1)}), ${w.endet} von ${D.length} Fahrten enden am Ziel — Täter: koerper einsatzWeg`); // prettier-ignore
+    }
+    // W4 — der Fahrer der Streife trägt die Waffe der Wache (der Satz des Wirts, der Stamm im vm)
+    if (!einsatzWirt) einsatzWirt = require("./lib/stamm.cjs").grundWirt(require("path").join(__dirname, ".."), null, null);
+    const wirt = einsatzWirt.r;
+    const fahrer = (wache) => ({ rolle: "fahrer", same: 1, epoche: { jahr: 2000, rang: 0, n: 4 }, wagen: m === "ohneWagen" ? null : { wache } }); // prettier-ignore
+    [w.streife, w.haus] = [wirt._bewohnerLauf(null, fahrer({ si: 7 }), "waffe"), wirt._bewohnerLauf(null, fahrer(null), "waffe")];
+    if (!w.streife || w.haus) rot.push(`W4 der Fahrer der Streife trägt keine Waffe der Wache: die Streife ${w.streife || "ohne"}, der Wagen eines Hauses ${w.haus || "ohne"} (Soll: bewaffnet · ohne) — Täter: stamm _bewohnerLauf „waffe“`); // prettier-ignore
+    return { rot, w };
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 if (SELBSTTEST) {
     // Vier injizierte Abweichungen (Morph, Proportionen, Landmarken, die Wache ohne Versatz) — jede MUSS die Linse zuenden.
@@ -1513,13 +1581,16 @@ if (SELBSTTEST) {
     // die Rolle und ihr Tages-Angebot: das Gesetz hält, jeder Täter fällt ROT beim Namen
     const roGut = !rollenUrteil(core).rot.length;
     const rollenTaeter = [["ohneStreife", "R1 die Wache geht keine Streife"], ["ohneRueckkehr", "R2 die Runde kehrt nicht an den Posten"], ["ohneRevier", "J1 der Plan trägt kein Revier"], ["ohneJaeger", "J2 die Siedlung trägt keinen Jäger"], ["ohneTat", "J3 die Rolle trägt ihre Tat nicht"], ["beuteImmer", "J5 die Beute fällt"], ["fangAusNichts", "J6 der Fischfang trägt Beute aus dem Nichts"], ["durchDeckung", "H1 "], ["ohneAntwort", "H2 der Getroffene antwortet nicht"], ["ohneLage", "H5 der Treffer trägt keine Lage"], ["bindungAmPlatz", "J7 die Bindung trägt das Werk"], ["rundeSchiebt", "R6 die Runde frisst den Abend"]].map(([m, z]) => [roGut && rollenUrteil(core, m).rot.some((r) => r.startsWith(z)), `Rollen ${m} ${z}`]); // prettier-ignore
+    // die Wache rückt aus: das Gesetz hält, jeder Täter fällt ROT beim Namen (wache-streife)
+    const wsGut = !einsatzUrteil(core).rot.length;
+    const wacheTaeter = [["wacheSonst", "W1 die Wache ist ein Ort ohne eigenen Dienst"], ["teleport", "W3 die Antwort folgt dem Weg nicht"], ["ohneWagen", "W4 der Fahrer der Streife trägt keine Waffe"]].map(([m, z]) => { const rr = einsatzUrteil(core, m).rot; console.log(`  ${wsGut && rr.some((x) => x.startsWith(z)) ? "✅" : "⛔"} Wache-Täter „${m}“ → ROT an ${z.split(" ")[0]}`); return [wsGut && rr.some((x) => x.startsWith(z)), "Wache " + m + " " + z]; }); // prettier-ignore
     const morgenTaeter = [...eTaeter, [ankGut.n >= 1000 && ankGut.frueh >= 0.99 && !ankGut.monoton && !ankGut.ohneAbschnitt && ankWende.frueh < 0.5, "Ankunft zurWende M3 der Aufbruch liegt nicht um die Gehzeit vor der Wende"], [!uGut.length && uTaeter.length === 1, "Ankunft eigeneUhr M4 ein Leser liest den Plan mit eigener Uhr"]]; // prettier-ignore
-    for (const [x, n] of [[t1.diffs, "Morph"], [t2.diffs, "Proportionen"], [t3.diffs, "Landmarken"], [w && !wacheLeer(core.tagesPlan), "Wache"], [verbKlassen(core.tagesPlan, () => null).length < 2 && verbKlassen(core.tagesPlan, core.tagesHaltung).length >= 2, "Verb"], ...taeter, ...bestandTaeter, ...ackerTaeter, ...koennenTaeter, ...stoffTaeter, ...verbenTaeter, ...spielTaeter, ...morgenTaeter, ...rollenTaeter, ...satzTaeter])
+    for (const [x, n] of [[t1.diffs, "Morph"], [t2.diffs, "Proportionen"], [t3.diffs, "Landmarken"], [w && !wacheLeer(core.tagesPlan), "Wache"], [verbKlassen(core.tagesPlan, () => null).length < 2 && verbKlassen(core.tagesPlan, core.tagesHaltung).length >= 2, "Verb"], ...taeter, ...bestandTaeter, ...ackerTaeter, ...koennenTaeter, ...stoffTaeter, ...verbenTaeter, ...spielTaeter, ...morgenTaeter, ...rollenTaeter, ...satzTaeter, ...wacheTaeter])
         if (!x) {
             console.log(`⛔ Selbsttest: ${n}-Injektion NICHT erkannt`);
             fails++;
         }
-    urteilEnde(fails, "❌ ROT — die Linse ist blind.", `✅ Selbsttest: alle neunundsechzig injizierten Abweichungen erkannt (${t1.diffs}/${t2.diffs}/${t3.diffs} Treffer, die Wache, das Verb, fünf Täter des Stoßes, drei Täter des Bestands, drei Täter der Acker-Kette, fünf Täter des Könnens, acht Täter der Stoffstrom-Kette, sieben Täter der Verben aus der Gestalt, neun Täter der Regel-Grammatik, sieben Täter des Einkaufs und der Ankunft zur Stunde, elf Täter der Rolle und ihres Tages-Angebots, sechs Täter des Satzes des Leibs).`);
+    urteilEnde(fails, "❌ ROT — die Linse ist blind.", `✅ Selbsttest: alle zweiundsiebzig injizierten Abweichungen erkannt (${t1.diffs}/${t2.diffs}/${t3.diffs} Treffer, die Wache, das Verb, fünf Täter des Stoßes, drei Täter des Bestands, drei Täter der Acker-Kette, fünf Täter des Könnens, acht Täter der Stoffstrom-Kette, sieben Täter der Verben aus der Gestalt, neun Täter der Regel-Grammatik, sieben Täter des Einkaufs und der Ankunft zur Stunde, elf Täter der Rolle und ihres Tages-Angebots, sechs Täter des Satzes des Leibs, drei Täter der Wache, die ausrückt).`);
 }
 
 const r = runVergleich(neuMorph, core.labProportionen, core.labLandmarks);
@@ -1556,6 +1627,10 @@ if (an) console.log(`  ANKUNFT zur Stunde (je Weg 0,4 h): ${(100 * an.frueh).toF
 const ro = rollenUrteil(core);
 for (const z of ro.rot) st.rot.push("ROLLEN " + z + " — Täter: koerper TAGES_GESETZ.rollen · tagesPlan · tagesOrte · tagesStreife · tagesJagdHaushalte · tagesBeute · SPIEL_GESETZ.arten.hieb");
 console.log(`  ROLLEN die Streife: ${ro.r.streife} Proben in der Runde, ${ro.r.posten} am Posten (${ro.r.werk ? ((100 * ro.r.posten) / ro.r.werk).toFixed(1) : "—"} % des Werks), ${ro.r.runden} Runden (${ro.r.rundenOhne} ohne jeden Punkt), die Kette an ${ro.r.kette} Punkten, das Revier ${ro.r.revier} Punkte, bei 0,3 h je Schritt ${ro.r.aus} Runden ausgelassen, der Abend höchstens ${(ro.r.spaetMax || 0).toFixed(2)} h später, ${ro.r.gefallen} Tage mit gefallenen Abschnitten · die Jagd: ${ro.j.mitRevier}/${ro.j.saaten} Saaten mit Revier, ${ro.j.mitUfer} mit Ufer, ${ro.j.jaeger} mit Jäger, Jagd je Tag [${ro.j.jagdH.join(", ")}] h, Fischfang [${ro.j.fischH.join(", ")}] h, ${ro.j.fremd} fremde Bindungen, Beute an ${ro.j.tage ? ((100 * ro.j.beute) / ro.j.tage).toFixed(1) : "—"} % der Jagdtage, Fang aus dem Nichts ${ro.j.fang} · der Hieb: ${ro.h.kaempfe} Zweikämpfe, ${ro.h.zuege} Züge, ${ro.h.deckung} durch die Deckung, ${ro.h.antwort} von ${ro.h.treffer} Treffern beantwortet, der Stärkere siegt ${ro.h.staerkerSiegt} von ${ro.h.ungleich}`); // prettier-ignore
+const ws = einsatzUrteil(core);
+for (const z of ws.rot) st.rot.push("WACHE " + z);
+const wsZ = (x, n) => (Number.isFinite(x) ? x.toFixed(n) : "—");
+console.log(`  WACHE die Streife rückt aus: die Wache bietet ${ws.w.angebot} · ${ws.w.dienst} von ${ws.w.n} ihrer Leute im Dienst in ihr, ${ws.w.fremd} Bindungen Fremder · ρ Antwort ↔ Weg ${wsZ(ws.w.rho, 3)} über 12 Wege · 2 000 m in ${wsZ(ws.w.t2000, 1)} s · höchstens ${wsZ(ws.w.sprung, 2)} m je 0,5 s, ${ws.w.endet} von 12 Fahrten am Ziel · der Fahrer der Streife ${ws.w.streife || "ohne Waffe"}, eines Hauses ${ws.w.haus || "ohne Waffe"}`); // prettier-ignore
 const kn = koennenUrteil(core);
 for (const z of kn.rot) st.rot.push("KÖNNEN " + z + " — Täter: koerper leibKoennen");
 const vb = verbenUrteil(core);
