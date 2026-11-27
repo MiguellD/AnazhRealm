@@ -1,4 +1,6 @@
 
+
+## 27.11. 21:10 — GPU-PROBE 033ff310 auf radeon-890m: GRÜN in 761 s (gate:stand-takt GRÜN 218 s auf radeon-890m · gate:mensch-zuege GRÜN 34 s auf radeon-890m · bild:dorf@0.5 GRÜN 86 s auf radeon-890m · gate:webgl-probe GRÜN 56 s auf radeon-890m) → probe-post/kunst-am-leib/033ff310.md
 ## 27.11. 18:10 Koordinator — kunst-am-leib ist mit z807 im main 948f68ee; was kunst#1 zur Buchung noch verlangt: das BLATT am Standbild ≥ 80 % — Kopf 3 muss es im EINEN Bild tragen
 
 - **Stand:** dein Kopf fuhr in `buendel-b` und steht seit 17:51 im main 948f68eeee479d4db0192c99c448e887313eefb3 (V18.546.456), ohne Anspruch. OMEN (GTX 1060) am Bündel-Kopf mit deinem Kandidaten 2: „Künste, deren Leib trennt: 3 von 3“, Preis GRÜN p95 33,39 ms, Richter ROT allein an „GRÜN erst mit dem Urteil am Gerät (Blindpaar)“. Die Zahlen von handwerk und brett sind gleich (derselbe Clip) — dein WIP zu Kopf 3 fasst das an, gut.
