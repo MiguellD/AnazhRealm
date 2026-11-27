@@ -1,0 +1,82 @@
+{
+ "sha": "7e73426efae8578f057c9d5b8548f52affb8dd93",
+ "geraet": "gtx",
+ "zeit": "2026-11-27T13:19:48.041Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "karte2.mensch.fahrzeug.medium#2": {
+   "gruen": false,
+   "zahl": "S2 ROT: Umfang nicht erzeugbar: Bremsweg 100→0 0–45.39 m (im Band 75 %), 50→0 im Band 63 %, ≥ 130 km/h 120/160 · die Saat ändert die Physik nicht (1 Fahrt je Rezept über 20 Saaten: vehicle-core.js:3474 exportDrive liest keine Saat) · keine Spurrinne (kein Spur-Gesetz) · Fächer 160/160 Adressen (20 Saaten × 8 Orte) in 3652 ms · Les (gemessen 1, Soll 20 Saaten bis 130 km/h mit eigener Physik) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.3,
+   "grund": "ROT: S2 ROT: Umfang nicht erzeugbar: Bremsweg 100→0 0–45.39 m (im Band 75 %), 50→0 im Band 63 %, ≥ 130 km/h 120/160 · die Saat ändert die Physik nicht (1 Fahrt je Rezept über 20 Saaten: vehicle-core.js:3474 exportDrive liest keine Saat) · keine Spurrinne (kein Spur-Gesetz) · Fächer 160/160 Adressen (20 Saaten × 8 Orte) in 3652 ms · Les (gemessen 1, Soll 20 Saaten bis 130 km/h mit eigener Physik) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k3234d4bce37c",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k7a102ef6857b",
+   "s": 17,
+   "fremd": {
+    "s": 19.6,
+    "takte": 9,
+    "fremdS": 6.55,
+    "kerne": 0.334,
+    "fensterKerne": 0.333,
+    "namen": [
+     [
+      "Explorer.EXE",
+      1.06
+     ],
+     [
+      "bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \"",
+      0.77
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      0.64
+     ]
+    ],
+    "dienerS": 4.8,
+    "diener": [
+     [
+      "System",
+      1.7
+     ],
+     [
+      "dwm.exe",
+      1.58
+     ]
+    ],
+    "geraetS": 15.45,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      8.39
+     ],
+     [
+      "svchost.exe",
+      6.16
+     ],
+     [
+      "svchost.exe -k UnistackSvcGroup -s WpnUserService",
+      0.48
+     ]
+    ],
+    "eigenS": 50.02,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-27T13:19:48.041Z",
+   "abdruck": "76e64a243fe2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "k3234d4bce37c": "bVXbjpswEP2XPHbrNdcAlvbB2Wy1kZo2+wljMzZsCEQ2hCpV/72ChCTA+gnJZ2bOnDNj/i6OIPeg8fnTVuWCLb4tvi8snJBYNCc0z592wRaJdD30Gb8cyjl/7WDS5Mfa0iIXFEQJ2QFJY2rMi2fZh6klOKFgtH3jekepome6bl9epqGFwLQiNSgcAh30wxjZFNhYDQIJNKovdgWHQYJLl9H+xGu+XdPbaSXnu5a2u/h9kkxAmY7Zum4Cy4jxdsM5/5iyTHPAmhR5aYe6bholymH3WttZjIGWnAGzAs01CGPXDcRAdtXJ2UkzCVRFY+2oWOynoRczSpMpVqPNZVaTo6kElle4SLzIBbaaq62PDVGPjEAIiMVU6wyw1GhGHBxfqk7oP/E06R4OaICUkF2hieNHnrhrQyl9n3MpeuJ9iYF4EngidUaBnan01Amc8tHZ9Zd6QKl2uJA3iOazolZmuTmM5VIBeo7Pfs4p2gxSNGRf2fqG9jEKHHHZhs2aXrjEq2nkvbnBQwCIH3uLKX+faWkrVbdgkOhjMwxNgGEUMs43M3ANh8ONlh+DPzXS1t2gP9LwEhWGAaP06bIo86Yva0HOmBd4m1sZ+ck0+cnAgYDQJldqMFCEUiVfDWqLRU1EVdUDXzeKfJ9Rn5aPZv/qbdw8+LzWH8H2B9dvY/s3fMq7r1CZeiAtQPhBwJRex5TGaorOTU1akNm9xxSE99V8n9EUqHEko3Jd8FLWPzE3psHw8TQa4PM8Y46dwKVt7FBdQiBC9oUlLZq9gHJ/BUp3CdLrx2+15buxKK+6WwN6iulYq5Xfr8Nvvu4SH1HSo6lU3r2CNIPGZlDU91/Av/8=",
+  "k7a102ef6857b": "jVVdc5swEPwvfmyqiE8DmsmDHDJN0nHr9B+cxAmIMTAShI47/e8dsLEN5KH3xDB72r29RfxZ1SD3kOL9u6nKFVt9WX1dGfhAYlB/oL5/Nyu2iqTtoMv4qSjn/FsPkzqvG0OLXFAQJWQHJK1uMC/u5dCm1mD5gtHuiac7ShU90rjjl3rkDw/zYwqBSUUaUDgeYqHrh8jmwNakIJBAqwbiM9j3IlzbjA4Vxnwb00t1kvNdR7td+Dw7TECZTJXbdgTrgPHuhXP+NleZ5IANKfLSjLx2EkTKYleu7aJHQ0eOgFmB+tyEoW17YhS76S3pbZo1qqI1ZkIWuonvhIzSaI5N0eQya0itK4HlGS4iJ7CBbbqF22ndEnWrCISAUMy9zgDLFPVEg+VK1Rv9O5wfuocDaiAlZGdoZLmBI67eUEqfl1qKQfhAMQqPPEck1qSxX+rJ4IRPaje8TUeUusRMXiDpMm5GZrk+TO1SHjqWO/fAZJCgJvvKNBeki4FnidNX8RLTk45wM++8DjbuDwDC27lCyp8XPppKNR1oJGndjoHx0A98xtNFukwDh8NFlhvCcoCmD/mtDCdSvu8xSu/Oli7sOX0S5Ih5gZfMysCN2GPszcEfGg4ERKpzpcYFCl+q6LOgdlg0RFRVM2q2g8B1GXVpebvsHx1/5Hx7c2XExS+vKV7vnqbr/85fP2OodDMKFyBcz2Oqi0NKQzVH57ohHcjsOmcCwpmbeERdYIoTG5Vtg5Ow4XoZK/bGh7tJeI+LLR9z7A0uTWtGZgme8E/pOKf4ZZrcDvVeQLk/N0h7DdJhnMcp3/LdjSs/OX+vVcf/u942fCCqUdJaVyrvb0aaQWsyKJrrL+LvPw=="
+ }
+}
