@@ -1,7 +1,7 @@
 {
  "sha": "031f4700b44ed32ea4362ff2744f8fa71fa5fc2e",
  "geraet": "gtx",
- "zeit": "2026-11-27T03:39:56.284Z",
+ "zeit": "2026-11-27T04:02:50.215Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.kultur.sprache#2": {
@@ -569,6 +569,70 @@
    "ungemessen": true,
    "zeit": "2026-11-27T03:39:56.284Z",
    "abdruck": "c91f97507ed2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.macht.recht#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER Error: /eval ohne Antwort binnen 40 s |     at ClientRequest.<anonymous> ([eval]:58:62) |     at Object.onceWrapper (node:events:622:28) |     at ClientRequest.emit (node:events:508:28) |     at Socket.emitRequestTimeout (node:_http_client:927:9)",
+   "exit": 2,
+   "minuten": 0.98,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER Error: /eval ohne Antwort binnen 40 s |     at ClientRequest.<anonymous> ([eval]:58:62) |     at Object.onceWrapper (node:events:622:28) |     at ClientRequest.emit (node:events:508:28) |     at Socket.emitRequestTimeout (node:_http_client:927:9)",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 58.1,
+   "fremd": {
+    "s": 60.8,
+    "takte": 28,
+    "fremdS": 22.64,
+    "kerne": 0.373,
+    "fensterKerne": 0.715,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.48
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      3.73
+     ],
+     [
+      "claude.exe --output-format stream-json --verbose --input-format stream-json --effort=xhigh",
+      2.3
+     ]
+    ],
+    "dienerS": 10.67,
+    "diener": [
+     [
+      "dwm.exe",
+      3.91
+     ],
+     [
+      "System",
+      3.48
+     ]
+    ],
+    "geraetS": 21.95,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      14.55
+     ],
+     [
+      "svchost.exe",
+      6.66
+     ],
+     [
+      "SearchIndexer.exe",
+      0.31
+     ]
+    ],
+    "eigenS": 115.31,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-27T04:02:50.215Z",
+   "abdruck": "2c9130abcfb3",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
