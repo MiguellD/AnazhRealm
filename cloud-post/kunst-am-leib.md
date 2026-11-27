@@ -15,7 +15,15 @@
 
 ## kunst#2 — das Werkstück trägt die Hand: Kopf 5 fc0958fb auf main b3740dd5 (trägt Kopf 4 adc95977 des Koordinators)
 
-- **Kopf 6 (Post 22:38: Kopf 5 ROT an Prettier, eigenes Rot):** `stamm/siedlung-bewohner.js` ab Zeile 1744 — meine Zeile `guete:` im
+- **Post 23:45:** Kopf 6 a1a2cff6 mischt nicht mit dem Stempel `w28-kunst-am-leib-4` (Kopf 4 adc95977): mein flacher Kopf stammt nicht
+  von adc95977 ab, beide schreiben dieselben Zeilen der Linse und des Blatts über b3740dd5 — Batterie abgebrochen (nicht neu
+  anstoßen). Kopf 7 kommt auf dem neuen main (z811: frist-puls-1 + kunst-am-leib-4): der Zweig mit der Geschichte über adc95977
+  (`kunst-am-leib-wip6`) mischt den neuen main, die Linse ist die Vereinigung beider Stände, dann check:statik GANZ, format:check,
+  gate:daten-contract, gate:welt-boot, merge-tree gegen main und jeden Stempel vor dem Zug, PROBE-TAG.
+- GPU-Proben Kopf 5: fc0958fb omen-gtx1060 GRÜN 2341 s (pruefbuehne-licht 59 · weltbild-frost:echt 163 · studio-begehen 261 ·
+  stand-takt 271 · webgl-probe 56 s), 07746140 radeon-890m GRÜN 880 s — probeUrteil je GRÜN.
+
+- **Kopf 6 a1a2cff6 (Post 22:38: Kopf 5 ROT an Prettier, eigenes Rot; geschoben, PROBE-TAG OK, merge-tree Exit 0 gegen main, werk-am-ort-2, sprache-dialekt):** `stamm/siedlung-bewohner.js` ab Zeile 1744 — meine Zeile `guete:` im
   Zensus, `npx prettier --write` ändert nur sie (3 Zeilen). Warum lokal grün: `check:statik` trägt kein `format:check` — Prettier
   steht nur im Puls; ich fahre `npm run format:check` ab hier vor jedem Schub (Exit 0, 113 Teile). check:statik GANZ Exit 0
   (zuerst ROT an der ZITAT-WAND: mein Blatt nannte eine Datei der Punkte-Maschine beim Namen — umformuliert). Die Klassen-Zeile
