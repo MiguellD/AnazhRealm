@@ -390,16 +390,38 @@ class AnazhRealm_siedlung_verkehr {
         const vcF = globalThis.__vehicleCore;
         if (!vcF || typeof vcF.flotte !== "function") return AnazhRealm._kernPflichtBruch("vehicle:flotte");
         const flotte = vcF.flotte(von.slots.length, seed);
-        for (const [w, si] of von.slots.entries()) {
-            const b = frei(si, 0);
+        // DIE STREIFE (wache-streife, Meisterkarte 2 mensch.macht.megastadt#1): JEDE Wache des Plans (fachwerk `wacheLose`) hat
+        // ihren Wagen, gefahren von ihrer Mannschaft (Person 0 bei Tag, Person 1 bei Nacht — vor den Häusern gebunden, kein Haus
+        // leiht sie; nie ein Fremder: fehlt einer, fährt keine Streife, laut), der häufigste Wagen der Flotte (vehicle `flotte`),
+        // sein Platz an der Wende nächst ihrer Tür, NACH den Wagen der Häuser (ihre Plätze, Nummern und Takte bleiben). Er fährt
+        // nicht Ziel um Ziel wie der Wagen eines Hauses: er steht vor der Wache, und ein Ruf zieht ihn hinaus (`_streifeRuf`,
+        // `_streifeTakt`). Bis hier gehörte kein Wagen der Wache: am Hochhaus-Dach 0 Fahrer am Steuer aus ihr, kein Ruf zog je einen Wagen
+        const wachen = [];
+        for (const [si, sl] of S.plan.slots.entries()) if (sl && sl.rolle === "wache") wachen.push(si);
+        const mann = (si, p) => {
+            const x = leute.get(`${seed}:${si}:${p}`);
+            return x && !x.wagen && x.rolle !== "kind" ? x : null;
+        };
+        const mannschaft = new Map(wachen.map((si) => [si, [mann(si, 0), mann(si, 1)]]));
+        for (const M of mannschaft.values()) for (const x of M) if (x) x.wagen = true;
+        const halter = [
+            ...von.slots.map((si, w) => ({ si, wache: false, typ: flotte[w] })),
+            ...wachen.map((si) => ({ si, wache: true, typ: vcF.flotte(1, (seed ^ S.plan.slots[si].seed) >>> 0)[0] })),
+        ];
+        for (const [w, H] of halter.entries()) {
+            const si = H.si;
+            const M = H.wache ? mannschaft.get(si) : null;
+            if (M) for (const x of M) if (x) x.wagen = null;
+            const b = M ? M[0] : frei(si, 0);
             if (!b) {
-                VK.zahl.ohneFahrer++;
+                if (M) this._bruchMelden(`VERKEHR: die Wache #${S.plan.slots[si].seed >>> 0} in „${S.plan.name || "?"}" — keiner ihrer Mannschaft fährt die Streife`); // prettier-ignore
+                VK.zahl[M ? "streifeOhne" : "ohneFahrer"]++;
                 continue;
             }
             b.wagen = true;
-            const nacht = frei(si, 1) || frei(si + 1, 0);
+            const nacht = M ? M[1] : frei(si, 1) || frei(si + 1, 0);
             b.wagen = null;
-            if (!nacht) VK.zahl.ohneNacht++;
+            if (!nacht) VK.zahl[M ? "streifeOhne" : "ohneNacht"]++;
             const tuer = b.orte.tuer;
             const wahl = [...VK.wenden.entries()]
                 .filter(([, x]) => x.frei.length)
@@ -408,18 +430,21 @@ class AnazhRealm_siedlung_verkehr {
                         Math.hypot(p[1].x - tuer.x, p[1].z - tuer.z) - Math.hypot(q[1].x - tuer.x, q[1].z - tuer.z)
                 )[0];
             if (!wahl) {
-                VK.zahl.ohnePlatz++;
+                VK.zahl[M ? "streifeOhne" : "ohnePlatz"]++;
                 continue;
             }
             const [ki, wende] = wahl;
             const park = wende.frei.shift();
             const gen = this._rollGenome(`${seed}:${si}`, "verkehr");
-            const typ = flotte[w];
+            const typ = H.typ;
             const W = {
                 S,
                 b,
                 fahrer: nacht ? [b, nacht] : [b],
                 nr: w,
+                // die Wache, deren Streife er ist (`_streifeRuf`): ihr Slot und ihre Mitte; der Einsatz, den er fährt
+                wache: H.wache ? { si, seed: S.plan.slots[si].seed >>> 0, x: S.ox + S.plan.slots[si].x, z: S.oz + S.plan.slots[si].z } : null, // prettier-ignore
+                einsatz: null,
                 gen,
                 typ,
                 ki,
@@ -474,7 +499,7 @@ class AnazhRealm_siedlung_verkehr {
                 f.orte.werk = stand;
             }
             if (!this._verkehrWagenStellen(W)) {
-                VK.zahl.ohnePlatz++;
+                VK.zahl[W.wache ? "streifeOhne" : "ohnePlatz"]++;
                 for (const f of W.fahrer) f.wagen = null;
                 continue;
             }
@@ -513,6 +538,7 @@ class AnazhRealm_siedlung_verkehr {
         // im selben Halt ab, keine Ware läge je auf einem Weg (handel#1, Radeon 22.11. stadt-voll: 14 von 21 Wagen, 5 geladen, 0 gefahren);
         // findet sein Stand kein solches Werk, nimmt er den nächsten Stand der Reihe
         for (const [i, W] of VK.wagen.entries()) {
+            if (W.wache) continue; // (die Streife trägt keine Ware: sie steht vor der Wache, bis ein Ruf sie zieht)
             let [st, wk, stKi] = [null, null, null];
             for (let j = 0; j < staende.length && !wk; j++) {
                 st = staende[(i + j) % staende.length];
@@ -984,6 +1010,11 @@ class AnazhRealm_siedlung_verkehr {
                     const f = W.fahrer.find((x) => x.ziel === x.orte.werk);
                     if (f) W.b = f;
                 }
+                // DIE STREIFE fährt keine Ziele des Tags: sie steht vor ihrer Wache, bis ein Ruf sie zieht (`_streifeTakt`)
+                if (W.wache) {
+                    this._streifeTakt(S, W, p);
+                    continue;
+                }
                 const b = W.b;
                 const g = b.leib;
                 if (!g || !W.entry) continue;
@@ -1068,20 +1099,7 @@ class AnazhRealm_siedlung_verkehr {
     // los — vom Platz über die Wende auf die Trasse. Die ERSTE Fahrt
     // nach der Ankunft der Siedlung beginnt, wo sein Tag ihn sähe (`_verkehrAnkunft`): unterwegs auf seiner Route.
     _verkehrEinsteigen(S, W) {
-        const b = W.b;
-        const g = b.leib;
-        const e = W.entry;
-        b.amSteuer = true;
-        [b.kreis, b.nah, b.weg, b.drehen, b.vx, b.vz, b.platz] = [false, false, null, null, 0, 0, false];
-        this._bewohnerRasterLage(S, b);
-        if (g.userData._kzGlieder) for (const gl of g.userData._kzGlieder) this._weltFeldAktiv(gl.handle, false);
-        g.visible = false;
-        (e._passagiere || (e._passagiere = new Set())).add(g); // das Komposit: er zeigt sich nur mit der Stufe des Wagens
-        W.sitzt = false;
-        this._bewohnerSatzSchreiben(S);
-        this._blockerWacheMelden(e._blockerHuelle, false, e);
-        e._verkehrFaehrt = true;
-        this._archFahrt(e, true); // seine Stufe folgt auch dem wandernden Auge (`_archBewegteUrteilen`)
+        this._verkehrAnsSteuer(S, W);
         W.zustand = "faehrt";
         W.heim = false;
         W.letzter = null;
@@ -1104,6 +1122,26 @@ class AnazhRealm_siedlung_verkehr {
         this._verkehrLinie(S, W, this._verkehrZuege(S, W), true);
         if (W.ankunft) this._verkehrAnkunft(S, W);
         W.ankunft = false;
+    }
+
+    // ANS STEUER (der eine Weg in den Wagen — die Fahrt des Tags, `_verkehrEinsteigen`, und der Einsatz der Streife,
+    // `_streifeTakt`): der Leib verlässt das Gedränge und zeigt sich nur mit der Stufe seines Wagens, der Wagen verlässt die Wand
+    // der Wege und folgt dem wandernden Auge. Ohne Leib (die Stadt fern) sitzt er nur der Zahl nach am Steuer.
+    _verkehrAnsSteuer(S, W) {
+        const b = W.b;
+        const g = b.leib;
+        const e = W.entry;
+        b.amSteuer = true;
+        [b.kreis, b.nah, b.weg, b.drehen, b.vx, b.vz, b.platz] = [false, false, null, null, 0, 0, false];
+        this._bewohnerRasterLage(S, b);
+        if (g && g.userData._kzGlieder) for (const gl of g.userData._kzGlieder) this._weltFeldAktiv(gl.handle, false);
+        if (g) g.visible = false;
+        if (g) (e._passagiere || (e._passagiere = new Set())).add(g); // das Komposit: er zeigt sich nur mit der Stufe des Wagens
+        W.sitzt = false;
+        this._bewohnerSatzSchreiben(S);
+        this._blockerWacheMelden(e._blockerHuelle, false, e);
+        e._verkehrFaehrt = true;
+        this._archFahrt(e, true); // seine Stufe folgt auch dem wandernden Auge (`_archBewegteUrteilen`)
     }
 
     // DIE ERSTE FAHRT (die Ankunft: der Tag ist f(Same, t), auch für den, den keiner sah): der Wagen steht nicht am Platz, sondern
@@ -1207,7 +1245,8 @@ class AnazhRealm_siedlung_verkehr {
     _verkehrAussteigen(S, b, sofort = false) {
         const W = b.wagen;
         if (!W) return;
-        if (sofort && W.zustand === "faehrt") {
+        if (sofort && W.zustand !== "steht") {
+            W.einsatz = null; // (der Einsatz der Streife endet mit dem Sprung: sie steht wieder vor ihrer Wache)
             const e = W.entry;
             const fz = e._fahr;
             const p = W.park;
@@ -1292,6 +1331,7 @@ class AnazhRealm_siedlung_verkehr {
                 ankunft: true,
                 zielN: 0,
                 zugN: 0,
+                einsatz: null, // (auch der Ruf, der noch nicht ausrückte)
             });
             Object.assign(W, { takt: W.nr, denk: 0, folgeH, dtAcc: 0, aufgeschoben: false, kurz: false, heim: false });
             Object.assign(W, {
@@ -1325,6 +1365,137 @@ class AnazhRealm_siedlung_verkehr {
                 },
             });
         }
+    }
+
+    // DER RUF (Meisterkarte 2 mensch.macht.megastadt#1; das Ereignis: die Tat am Ort o, die ein Bewohner sah, `_bewohnerZeuge`):
+    // er zieht die freie Streife (eine Wache, deren Wagen vor ihr steht), deren Weg im Netz zur Tat der kürzeste ist — der Weg ist
+    // die Route des Verkehrs-Gesetzes (`_streifeRoute`: aus dem Platz, die Strecken des kürzesten Wegs zu einer Wende, durch sie,
+    // zurück, in den Platz); je Streife die Wende, deren Route der Tat am nächsten kommt (gleich nah: die kürzere), die Antwort
+    // an dem Punkt der Route nächst der Tat. Sie rückt nach dem Verzug des Gesetzes aus (koerper TAGES_GESETZ.einsatz) und kommt nach der Fahrt
+    // eines Einsatzwagens an (`einsatzFahrt`, Kolesar 1975): die Antwort folgt dem Weg. Keine freie Streife, kein Weg: gezählt,
+    // nie ein Wagen aus dem Nichts. Bis hier rief keine Tat die Wache.
+    _streifeRuf(S, o) {
+        const VK = S.verkehr;
+        if (!VK || !VK.wenden.size || !VK.wagen.some((W) => W.wache)) return null;
+        const Z = VK.zahl.rufe;
+        Z.gerufen++;
+        const frei = VK.wagen.filter((W) => W.wache && !W.einsatz && W.entry && W.zustand === "steht");
+        if (!frei.length) return (Z.ohneStreife++, null);
+        let best = null;
+        const vor = (R, B) => R.hinD < B.hinD - 2 || (R.hinD <= B.hinD + 2 && R.hinM < B.hinM);
+        for (const W of frei)
+            for (const zk of VK.wenden.keys()) {
+                const R = this._streifeRoute(S, W, zk, o);
+                if (R && (!best || vor(R, best.R))) best = { W, R };
+            }
+        if (!best) return (Z.ohneWeg++, null);
+        const KC = window.__koerperCore;
+        const t0 = this.state.spielZeit;
+        const ab = t0 + KC.TAGES_GESETZ.einsatz.verzugS;
+        const E = (best.W.einsatz = {
+            ...best.R,
+            o: { x: o.x, z: o.z },
+            t0,
+            ab,
+            an: ab + KC.einsatzFahrt(best.R.hinM),
+            i: 0,
+        });
+        E.zurueck = E.an + KC.einsatzFahrt(E.langM - E.hinM);
+        Z.akten.push({ wache: best.W.wache.seed, t0, ab, an: E.an, hinM: Math.round(E.hinM), ort: { x: Math.round(o.x), z: Math.round(o.z) } }); // prettier-ignore
+        Z.akten.splice(0, Z.akten.length - AnazhRealm.VERKEHR.einsatzAkten);
+        return E;
+    }
+
+    // DIE ROUTE DER STREIFE (der Weg des Verkehrs-Gesetzes, dieselben Züge wie `_verkehrZuege`): aus dem Platz der Wache, über die
+    // Strecken des kürzesten Wegs (`_verkehrWegZu`) bis an die Wende `zk` (an jeder anderen Wende auf dem Weg wendet sie, wie
+    // jeder Wagen), durch sie und zurück in ihren Platz — { pts, bogen (m je Punkt), hinM (bis zum Punkt des Hinwegs nächst der
+    // Tat o), hinD (sein Abstand zu o), langM, ziel }. Liegt `zk` außer dem Netz der Wache: null.
+    _streifeRoute(S, W, zk, o) {
+        const VK = S.verkehr;
+        const zuege = [];
+        const legen = (m) => (zuege.push(m), (m.pts = this._verkehrZugPunkte(S, W, m)), m);
+        let m = legen({ art: "aus", ki: W.ki });
+        let [hinZ, zu] = [-1, this._verkehrWegZu(S, zk)];
+        for (let n = 0; n < 512 && m.art !== "ein"; n++) {
+            if (m.art === "aus" || m.art === "wende") {
+                const si = VK.kp[m.ki].strecken.find((x) => VK.strecken[x].fahrbar);
+                if (si === undefined) return null;
+                m = legen({ art: "strecke", si, dir: VK.strecken[si].a === m.ki ? 0 : 1 });
+                continue;
+            }
+            const s = VK.strecken[m.si];
+            const ki = m.dir === 0 ? s.b : s.a;
+            if (VK.kp[ki].ende) {
+                const amZiel = hinZ < 0 && ki === zk;
+                m = legen({ art: (amZiel || hinZ >= 0) && ki === W.ki ? "ein" : "wende", ki });
+                if (amZiel) [hinZ, zu] = [zuege.length - 1, this._verkehrWegZu(S, W.ki)];
+                continue;
+            }
+            const an = VK.folge[2 * m.si + m.dir].map((y) => y >> 1);
+            const si = zu.get(2 * m.si + m.dir);
+            if (si === undefined || !an.includes(si)) return null; // (kein Irrweg im Einsatz: ohne Weg rückt sie nicht aus)
+            const vor = (VK.kp[ki].wege || {})[m.si + ">" + si] || [];
+            m = legen({ art: "strecke", si, dir: VK.strecken[si].a === ki ? 0 : 1, vor, von: m.si });
+        }
+        if (m.art !== "ein" || hinZ < 0 || !zuege[hinZ].pts.length) return null;
+        const [pts, bogen] = [[], []];
+        let [hinI, hinD] = [-1, Infinity];
+        for (const [z, M] of zuege.entries())
+            for (const q of M.pts) {
+                const L = pts[pts.length - 1];
+                const d = L ? Math.hypot(q.x - L.x, q.z - L.z) : 0;
+                if (L && d < 1e-3) continue;
+                pts.push(q);
+                bogen.push(L ? bogen[bogen.length - 1] + d : 0);
+                const dt = z <= hinZ ? Math.hypot(q.x - o.x, q.z - o.z) : Infinity;
+                if (dt < hinD) [hinI, hinD] = [pts.length - 1, dt];
+            }
+        return { pts, bogen, hinM: bogen[hinI], hinD, langM: bogen[bogen.length - 1], ziel: zk };
+    }
+
+    // DIE STREIFE IM TAKT (der Einsatz ist ein ZUSTAND: ihr Ort ist f(Weg, t), koerper `einsatzWeg` — fern und nah dieselbe
+    // Rechnung, kein Leib simuliert ihn, keiner entsteht): bis zum Ausrücken steht sie; dann sitzt ihr Fahrer am Steuer (der
+    // Dienst der Schicht, `_verkehrAnsSteuer`), sie fährt die Route zum Ort der Tat und zurück, ihr Wagen auf dem Boden seiner
+    // Räder (vehicle `fahrStand`), sein Bild und seine Hülle mit ihm; daheim parkt sie und ihr Fahrer steigt aus. Ihr Recht im
+    // Einsatz: sie fragt keinen Ort des Netzes, die Wagen der Stadt sehen sie in ihrer Folge (`_verkehrBelegung`).
+    _streifeTakt(S, W, p) {
+        const E = W.einsatz;
+        const e = W.entry;
+        if (!E || !e || !e._fahr) return;
+        const t = this.state.spielZeit;
+        if (t < E.ab) return;
+        if (W.zustand === "steht") {
+            const f = W.fahrer.find((x) => x.da && x.ziel === x.orte.werk);
+            if (f) W.b = f;
+            this._verkehrAnsSteuer(S, W);
+            W.zustand = "einsatz";
+        }
+        const KC = window.__koerperCore;
+        const ende = t >= E.zurueck;
+        const s = ende ? E.langM : t < E.an ? KC.einsatzWeg(E.hinM, t - E.ab) : E.hinM + KC.einsatzWeg(E.langM - E.hinM, t - E.an); // prettier-ignore
+        const { pts, bogen } = E;
+        let i = Math.min(E.i, pts.length - 2);
+        while (i + 1 < pts.length - 1 && bogen[i + 1] <= s) i++;
+        E.i = i;
+        const [A, B] = [pts[i], pts[i + 1]];
+        const a = Math.max(0, Math.min(1, (s - bogen[i]) / (bogen[i + 1] - bogen[i])));
+        const fahrt = Math.atan2(B.x - A.x, B.z - A.z);
+        const fz = e._fahr;
+        const L = ende ? W.park : { x: A.x + (B.x - A.x) * a, z: A.z + (B.z - A.z) * a, fahrt };
+        Object.assign(fz, { x: L.x, z: L.z, yaw: L.fahrt - Math.PI / 2, ...AnazhRealm.VERKEHR_STEHT, y: NaN });
+        [e._rideYaw, e.position.x, e.position.z] = [L.fahrt, L.x, L.z];
+        const { vc } = AnazhRealm._fahrSchrittGesetz();
+        vc.fahrStand(fz, e._fahrSatz, this._fahrBoden(e), 0);
+        if (Number.isFinite(fz.y)) this._wagenLage(e, fz);
+        const V = AnazhRealm.VERKEHR;
+        W.d2 = (e.position.x - p.x) ** 2 + (e.position.z - p.z) ** 2;
+        if (W.d2 < V.huelleM * V.huelleM) this._blockerBewegt(e, e.blockerAABBs ? 0 : undefined); // die Hülle, wo einer sie trifft
+        W.gleitJetzt = null;
+        this._verkehrBild(e);
+        if (!ende) return void (W.b.amSteuer && W.b.leib && this._verkehrSitz(W, p));
+        W.einsatz = null;
+        this._verkehrParken(S, W);
+        this._verkehrAussteigen(S, W.b);
     }
 
     // DIE ROUTE IM VORAUS: die nächsten Züge (Strecke in einer Richtung, Wende, aus dem Platz, in den Platz) nach dem letzten
@@ -2591,6 +2762,7 @@ AnazhRealm.VERKEHR = Object.freeze({
     trasseNick: 0.08,
     bildHolen: 0.1,
     spurN: 4,
+    einsatzAkten: 64, // die jüngsten Akten der Rufe je Stadt (`_streifeRuf`)
     eckeStueck: 5,
     denkTakt: 2,
     folgeTakt: 3,
@@ -2661,6 +2833,7 @@ AnazhRealm._verkehrZahl = (soll) => ({
     ohnePlatz: 0,
     ohneFahrer: 0,
     ohneNacht: 0,
+    streifeOhne: 0, // die Wachen ohne Streife (`_verkehrAnlegen`: ohne Fahrer, Nachtfahrer oder Platz) — nie ein Wagen der Häuser
     laengeM: 0,
     km: 0,
     fest: 0,
@@ -2672,6 +2845,9 @@ AnazhRealm._verkehrZahl = (soll) => ({
     // DIE ARBEIT DES TAKTS (gezählt, nie die Wanduhr): Blicke eines Fahrers (`_verkehrFolge`), die Wagen, die er dabei prüft (die
     // Zellen der Belegung um sein Fenster), die Suchen und die Schritte des Warte-Graphen (`_verkehrKreis`)
     arbeit: { folge: 0, paare: 0, kreise: 0, kreis: 0 },
+    // DIE RUFE AN DIE WACHE (`_streifeRuf`): gerufen, ohne freie Streife, ohne Weg im Netz; je Einsatz die Akte (die jüngsten
+    // `einsatzAkten`: Ruf, Ausrücken, Ankunft nach Gesetz, Weg im Netz) — die Station liest die Ankunft am Ort selbst
+    rufe: { gerufen: 0, ohneStreife: 0, ohneWeg: 0, akten: [] },
 });
 
 // DIE REIHE DER WARTENDEN eines Orts (`Z.warte`, in der Folge ihrer Frage) und je Wagen die Orte, an denen er wartet (`W.reihe`):

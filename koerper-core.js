@@ -5505,8 +5505,18 @@
             // (das Revier und das Ufer bieten nur ihre Tat: kein anderer wählt dort sein Werk, seinen Treff — `tagesBindung`)
             revier: Object.freeze({ jagd: 1 }),
             ufer: Object.freeze({ fischfang: 1 }),
+            // (die Wache bietet DIENST, nur ihrer Mannschaft: ihr Werk ist sie — `tagesBindung` —, kein Fremder arbeitet oder
+            // trifft sich dort; bis wache-streife bot sie `sonst`, Arbeit 3 und Treff 1 für jeden)
+            wache: Object.freeze({ dienst: 1 }),
             sonst: Object.freeze({ arbeit: 3, treff: 1 }),
         }),
+        // DER EINSATZ DER WACHE (Meisterkarte 2 mensch.macht.megastadt#1; Leser: `einsatzFahrt`, `einsatzWeg`, der Wirt
+        // `_streifeRuf` · `_streifeTakt`): ein Ruf zieht die nächste freie Streife aus ihrer Wache; sie rückt nach `verzugS` aus
+        // (Glendale Police, Response Times Juni 2023: Priority 1 Median Ruf → Ort 3:53, Alarm → Ort 2:23 min — der Ruf bis zum
+        // Alarm 90 s) und fährt den Weg im Netz in der Fahrt eines Einsatzwagens: anfahren mit `aMs2` bis `vMs`, rollen, bremsen
+        // — T(D) = 2·√(D/a) bis D = v²/a, darüber v/a + D/v (Kolesar, Walker & Hausner 1975, Operations Research 23:614; Larson
+        // & Odoni 1981 §3.7.2: v 30 mph = 13,4 m/s, a 0,5 mi/min² = 0,224 m/s², „der feste Teil v/a trägt 0,5–1 min“)
+        einsatz: Object.freeze({ verzugS: 90, vMs: 13.41, aMs2: 0.2235 }),
         daheim: Object.freeze({ mahl: 3, treff: 3 }),
         // DIE BROTZEIT: das eigene Werk aus der Sicht dessen, der dort arbeitet — wer keinen Tisch in der Nähe hat, isst am Werk
         // (bis hier ging er mittags heim, wie weit es auch war: an der Metropole war um 13 Uhr jeder Zweite unterwegs, und der
@@ -5923,6 +5933,26 @@
             return Math.atan2(pkt[a].x - P.x, pkt[a].z - P.z) - Math.atan2(pkt[b].x - P.x, pkt[b].z - P.z);
         });
     }
+    // DIE FAHRT DES EINSATZES (TAGES_GESETZ.einsatz, Kolesar 1975): die Dauer in s, in der ein Einsatzwagen D m im Netz fährt —
+    // anfahren mit a bis v, rollen, bremsen; reicht der Weg nicht bis v, fährt er die Hälfte an und die Hälfte ab
+    function einsatzFahrt(D) {
+        var E = TAGES_GESETZ.einsatz;
+        if (!(D > 0)) return 0;
+        return D <= (E.vMs * E.vMs) / E.aMs2 ? 2 * Math.sqrt(D / E.aMs2) : E.vMs / E.aMs2 + D / E.vMs;
+    }
+    // DER ORT DER FAHRT: so viele m des Wegs D liegen t s nach der Abfahrt hinter dem Wagen (0 … D) — die Lage der Streife als
+    // Funktion der Zeit (Leser: der Wirt `_streifeTakt`; dieselbe Rechnung im Blick und fern, kein Leib simuliert)
+    function einsatzWeg(D, t) {
+        var E = TAGES_GESETZ.einsatz,
+            T = einsatzFahrt(D);
+        if (!(t > 0) || !(D > 0)) return 0;
+        if (t >= T) return D;
+        var ta = Math.min(T / 2, E.vMs / E.aMs2),
+            v = E.aMs2 * ta;
+        if (t <= ta) return 0.5 * E.aMs2 * t * t;
+        if (t >= T - ta) return D - 0.5 * E.aMs2 * (T - t) * (T - t);
+        return 0.5 * v * ta + v * (t - ta);
+    }
     // DER WEG ZU EINEM ORT (pendler-anschluss; die Nähe der Bindung, `tagesBindung` `weg`): von einem Ort aus `orte` (tagesOrte,
     // plan-lokal) zum Knoten, an dem er am Wege-Netz hängt (netz = {knoten (am Ursprung ox, oz), kanten}: fachwerk `wegeNetz`), über das
     // Netz (tetrapoda `wegLaengen`, je Anfangs-Knoten EIN Baum, gemerkt), vom Knoten des Ziels zum Ziel; ein anderer Teil des
@@ -6008,7 +6038,8 @@
             return z ? z.i : -1;
         };
         // wer in einem Haus mit Rolle wohnt, dessen Werk ist sein Haus; sonst der Ort seiner Wahl, ohne einen der eigene Hof
-        var eigen = H.bietet && H.bietet.arbeit > 0 && H.art !== "wohnhaus";
+        // (die Wache, `angebot.wache`: wer in ihr wohnt, hat Dienst in ihr — sie bietet sonst niemandem Arbeit)
+        var eigen = H.bietet && (H.bietet.arbeit > 0 || H.bietet.dienst > 0) && H.art !== "wohnhaus";
         // (der Kaufmann: `rollen[rolle].werkAm` nennt die Art des Orts, an dem sein Werk steht — der nächste mit Ständen, den
         // der Wirt trägt, binnen wegM.markt; die Rolle mit Tat — Jäger, Fischer, rollen-des-tages — der nächste, der ihre Tat
         // anbietet, gleich wie fern: das Revier, das Ufer)
@@ -12069,6 +12100,9 @@
         tagesHaltung: tagesHaltung,
         // rollen-des-tages — die Tat der Rolle: das Revier der Streife, die Haushalte mit Jäger, die Beute des Tags (Leser: _bewohnerListe, _bewohnerBeute)
         tagesStreife: tagesStreife,
+        // wache-streife — die Fahrt des Einsatzes und ihr Ort in der Zeit (Leser: _streifeRuf, _streifeTakt)
+        einsatzFahrt: einsatzFahrt,
+        einsatzWeg: einsatzWeg,
         tagesJagdHaushalte: tagesJagdHaushalte,
         tagesJagdWahl: tagesJagdWahl,
         tagesBeute: tagesBeute,

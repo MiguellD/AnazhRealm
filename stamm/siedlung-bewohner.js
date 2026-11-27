@@ -375,7 +375,8 @@ class AnazhRealm_siedlung_bewohner {
             return ((h ^ (h >>> 16)) >>> 0) / 4294967296 < L.krank.anteil;
         }
         if (feld === "waffe") {
-            if (!L.wache.rollen.includes(b.rolle)) return null;
+            // (wer den Wagen der Wache fährt — die Streife, `_verkehrAnlegen` —, trägt ihre Waffe wie der Wächter am Posten)
+            if (!L.wache.rollen.includes(b.rolle) && !(b.wagen && b.wagen.wache)) return null;
             return L.wache.waffe.find((w) => b.epoche.jahr < w.bis).art;
         }
         const plan = S.plan;
@@ -1182,7 +1183,10 @@ class AnazhRealm_siedlung_bewohner {
                 const g = this._rollGenome(`${plan.seed >>> 0}:${si}:${k}`, "bewohner");
                 // SEIN ALTER (koerper ALTER_GESETZ: die Epoche des Plans, sein Platz im Haushalt — die erste Person erwachsen): wer
                 // jünger ist als kindJ, trägt die Rolle des Kinds (TAGES_GESETZ.rollen.kind: das Spiel; sein Alter geht in die Bindung — das fleißige hilft am Werk seines Hauses erst ab kindHilftAbJ)
-                const epoche = { jahr: plan.jahr, rang: k, n };
+                // DIE WACHE IST KEIN HAUSHALT (wache-streife, megastadt#1): ihre Leute sind ihre MANNSCHAFT (fachwerk BAU_NUTZUNG.wache,
+                // personen 4), jeder erwachsen — der Rang des Ersten. Bis hier trug sie Kinder wie ein Wohnhaus: an stadt-voll (Lausi)
+                // waren die Köpfe 2 und 3 der Wache Kinder (7,7 und 14,6 Jahre) — die Mannschaft trug keinen Nachtfahrer
+                const epoche = { jahr: plan.jahr, rang: rolle === "wache" ? 0 : k, n };
                 const jahre = this._bewohnerJahre(
                     this._rollGenome(`${plan.seed >>> 0}:${si}:${k}`, "humanoid"),
                     epoche
@@ -2855,6 +2859,7 @@ class AnazhRealm_siedlung_bewohner {
                     belegt = belegt || new Set(S.liste.map((x) => x.ziel));
                     this._bewohnerWeichen(S, b, o, stunde, belegt);
                 }
+            if (sah) this._streifeRuf(S, o); // wer sah, ruft die Wache (die nächste freie Streife über das Netz)
             const c = sah && cells[S.key];
             if (!c || !c.wachs) continue;
             c.akten = (c.akten || []).concat([{ t: this.state.spielZeit, type: "gewalt" }]);
