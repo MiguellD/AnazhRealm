@@ -1654,6 +1654,87 @@ async function wasserBild(o = {}) {
     };
 }
 
+// B10 DER SPIEGEL OHNE FELD (Karte 2 planet.wasser.seegang#1): der echte Spiegel-Pass (`_spiegelPassRechne` nach dem Bild der
+// Post-Kette) über einer See aus dem echten Wasser-Stoff, 2 m unter dem Auge, ihr Grund 6 m tiefer, das Auge blickt 25° hinab — und
+// das Spiegel-Feld STEHT NICHT (seine Mitte fehlt: der Sprung des Auges, die Ferne jenseits seiner 368 m, die Gezeit über dem
+// gebackenen Spiegel). Gezählt die Texel des Pass-Ziels im unteren Drittel (dort ist alles See), die der Pass deckt (Alpha ≥ 0,99):
+// das Wasser erkennt er im Bild (`wasserImBild`), nie nur im Feld. Bis seegang-spiegel deckte er dort 0 — das Meer der Bucht las
+// den Himmel allein. → { deckt, texel } oder { fehler }
+async function wasserSpiegel() {
+    const T = window.THREE;
+    const st = r.state;
+    const rend = st.renderer,
+        cam = st.camera,
+        sc = st.scene;
+    if (!rend || rend._isHeadlessNull || !st.postProcessing || !st.scenePass) return { fehler: "keine Post-Kette" };
+    rend.setAnimationLoop(null);
+    const pp = st.playerMesh.position;
+    const o = new T.Vector3(pp.x, r._voxelSurfaceY(pp.x, pp.z) + 45, pp.z);
+    // flüssig: 8 m unter der tiefsten Linie, über der Eis beginnt (wie der Lichtweg `spiegel`, licht-linsen.cjs)
+    o.y = Math.min(o.y, Math.min(...r._eisLinien().null) - 8);
+    const flaeche = (mat, kipp, y) => {
+        const m = new T.Mesh(new T.PlaneGeometry(400, 400).rotateX(kipp), mat);
+        m.frustumCulled = false;
+        m.position.set(o.x, y, o.z);
+        return m;
+    };
+    const see = flaeche(r._ensureHydroSurfaceMaterial(), Math.PI / 2, o.y - 2);
+    const n = see.geometry.attributes.position.count;
+    [["aFlow", 2, 0], ["aWave", 1, 0], ["aDepth", 1, 6], ["aSlope", 1, 0], ["aMeer", 1, 0]].forEach(([a, k, v]) => see.geometry.setAttribute(a, new T.Float32BufferAttribute(new Float32Array(n * k).fill(v), k))); // prettier-ignore
+    const grund = flaeche(new T.MeshStandardNodeMaterial({ color: new T.Color(0.18, 0.18, 0.18), roughness: 1, metalness: 0 }), -Math.PI / 2, o.y - 8); // prettier-ignore
+    const alle = [];
+    sc.traverse((m) => (m.isMesh || m.isSprite || m.isPoints) && alle.push([m, m.visible]));
+    const S = r._spiegelFeld(),
+        L = r._spiegelLeser();
+    const alt = { mitte: S.mitte, pos: cam.position.clone(), quat: cam.quaternion.clone() };
+    try {
+        for (const [m] of alle) m.visible = false;
+        sc.add(see, grund);
+        S.mitte = null;
+        cam.position.copy(o);
+        cam.lookAt(o.x + 1, o.y - Math.tan((25 * Math.PI) / 180), o.z);
+        cam.updateMatrixWorld(true);
+        // die Pipelines des Passes und der Stoffe entstehen im Vorbau: Bilder der Post-Kette, bis ein Bild nichts mehr baut, nichts
+        // verschiebt und kein Draw wartet (die Erst-Zeichnung `r._erstZeichnung`, wie `erstRuhe` der Aufnahme) und der Pass ganz
+        // zeichnet — sonst fehlte der See im Bild, und der Pass hätte nichts zu decken
+        // — gezählt vom EINEN Deckel (`__deckel`: ein Gang zählt nur, wenn nichts mehr offen ist; ein Hänger fällt beim Namen)
+        const E = r._erstZeichnung;
+        let ganz = false,
+            ruht = false;
+        for (const weiter = window.__deckel("wasserSpiegel: der Vorbau des Passes", 120, () => !(ganz && ruht)); weiter(); ) {
+            const b0 = E ? [E.bauN, E.verschoben, E.wartetN] : null;
+            st.postProcessing.render();
+            ganz = r._spiegelPassRechne(L);
+            await rend.backend?.device?.queue?.onSubmittedWorkDone?.();
+            await sleep(30);
+            ruht = !E || (E.offen.size === 0 && E.bauN === b0[0] && E.verschoben === b0[1] && E.wartetN === b0[2]);
+            if (ganz && ruht) break;
+        }
+        // drei Läufe nach der Ruhe (wie der Lichtweg `spiegel`): das Tiefen-Abbild und der Stoff stehen im selben Bild
+        for (let k = 0; k < 3; k++) st.postProcessing.render(), r._spiegelPassRechne(L);
+        const [W, H] = [L.rt.width, L.rt.height];
+        const px = await rend.readRenderTargetPixelsAsync(L.rt, 0, 0, W, H);
+        const sch = __weltLicht.zeilenSchritt(px, W, H);
+        // die Zeilen des Ziels: WebGPU liest von oben — das untere Drittel des Bilds sind die letzten Zeilen
+        let deckt = 0,
+            texel = 0;
+        for (let y = Math.ceil((2 * H) / 3); y < H; y++)
+            for (let x = 0; x < W; x++, texel++) if (T.DataUtils.fromHalfFloat(px[y * sch + x * 4 + 3]) >= 0.99) deckt++;
+        return { deckt: wasserRund(3)(deckt / Math.max(1, texel)), texel };
+    } finally {
+        sc.remove(see, grund);
+        for (const [m, v] of alle) m.visible = v;
+        see.geometry.dispose();
+        grund.geometry.dispose();
+        grund.material.dispose();
+        S.mitte = alt.mitte;
+        S.stand++;
+        cam.position.copy(alt.pos);
+        cam.quaternion.copy(alt.quat);
+        cam.updateMatrixWorld(true);
+    }
+}
+
 // ── Q7-Regen ──
 // Der ECHTE Regen der Welt (`_tickRain` im Sturm, dasselbe Objekt, dasselbe Material) allein auf Schwarz, mit einer
 // Kamera am Auge quer zum Wind: lit = Pixel über 4/255; eine Schliere = ein Lauf ≥ 4 lit Pixel in Fall-Richtung (je Schritt eine
@@ -3610,6 +3691,7 @@ module.exports = {
             wasserUferFarbe,
             wasserKoerper,
             wasserBild,
+            wasserSpiegel,
             __wasserSeeAm,
             wasserLicht,
             wasserRegen,

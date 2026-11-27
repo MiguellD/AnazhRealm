@@ -11,7 +11,8 @@
 //                   Licht Tag und Nacht, der Tauchgang färbt den Himmel nicht; das Wasser-Programm liest keine Variable,
 //                   die nur ein Zweig rechnet (B7, das TSL-Leck); die offene See trägt Weißkappen nach dem Wind (B8: in der Flaute
 //                   keine, bei Wind 0,8 der Anteil des Gesetzes, Monahan) — die Kurve des Gesetzes trifft den Anteil an der Dünung
-//                   des Kerns (B8 KURVE, ohne Browser); der Glanz der Sonne fällt hinter dem Grat (B9, `_sonnenSicht`).
+//                   des Kerns (B8 KURVE, ohne Browser); der Glanz der Sonne fällt hinter dem Grat (B9, `_sonnenSicht`);
+//                   der Spiegel-Pass deckt die See auch ohne Feld (B10, `wasserImBild`: Sprung, Ferne, Gezeit).
 //   U (Q7-Gestalt)  die Ufer-Farbe quer zum Fluss springt nie, Worker und Main färben gleich; der Schilf-Bezug springt nie (U3).
 //   K10 · K11 · W2  die Decke über trockenen Höhlen (Spieler, Kamera, Tier, Wagen lesen dort kein Wasser); der Wagen watet,
 //                   das Boot treibt ohne Nicken mit dem Grund, auch im Rand-Streifen des Sees.
@@ -63,6 +64,8 @@ const SCHWELLE = {
     // dieser Anteil davon
     sonneFrei: 2,
     sonneGrat: 0.2,
+    // B10 DER SPIEGEL OHNE FELD: der Anteil der See-Texel im mittleren Drittel, die der Spiegel-Pass ohne stehendes Feld deckt
+    spiegelDeckt: 0.9,
     schlieren: 50, // senkrechte Läufe ≥ 4 lit Pixel des Sturm-Regens allein auf Schwarz (640 × 360)
     neigung: 0.2, // (rechts − links) / (rechts + links) der diagonalen Lauf-Nachbarn quer zum Wind
     bankFels: 0.1, // Anteil der Bank-Profile (6 m ab der Wasserlinie), die steiler als der Fels des Boden-Gesetzes sind
@@ -543,6 +546,10 @@ function urteil(b) {
             const so = g.sonne;
             if (!(so && so.frei >= S.sonneFrei)) rot("B9 LEER", so || null);
             else if (!(so.grat <= S.sonneGrat * so.frei)) rot("B9 SCHATTEN", so);
+            // B10 DER SPIEGEL OHNE FELD (seegang#1): der Pass erkennt die See im Bild, nie nur im Feld — sonst liest die Bucht den Himmel
+            const sp = g.spiegel;
+            if (!(sp && sp.texel > 0)) rot("B10 LEER", sp || null);
+            else if (!(sp.deckt >= S.spiegelDeckt)) rot("B10 OHNE FELD", sp);
             // B7 DAS TSL-LECK (scripts/lib/shader-kosten.cjs `tslLecks`): das Wasser-Programm liest keine Variable, die nur
             // ein Zweig rechnet; BLIND: kein Programm des Bogens gelesen
             if (!(g.fragmente > 0)) rot("B7 BLIND", g.fragmente);
@@ -814,6 +821,7 @@ function selbsttest() {
             lecks: [],
             kamm: { ruhig: { hellAnteil: 0, pixel: 147456 }, sturm: { hellAnteil: 0.024, pixel: 147456 } },
             sonne: { frei: 40, grat: 1 },
+            spiegel: { deckt: 1, texel: 30000 },
         },
     };
     gut.ueberall = [1, 2, 3, 4, 5].map((i) => ({ ort: [i * 900, i * 700], ...gut.mutation }));
@@ -992,6 +1000,9 @@ function selbsttest() {
         // B9 an main 1b081d73: das Wasser las sein Licht ohne Ort — der Glanz stand hinter dem Grat wie in der Sonne
         ["B9 SCHATTEN", ["bild.sonne.grat=", 40]],
         ["B9 LEER", ["bild.sonne=", null]],
+        // B10 an main 7e73426e: der Pass erkannte Wasser nur im Feld — ohne Feld deckte er die See zu 0, die Bucht las den Himmel
+        ["B10 OHNE FELD", ["bild.spiegel.deckt=", 0]],
+        ["B10 LEER", ["bild.spiegel=", null]],
         // F3 an der Basis 25f53923: 720 Punkte über dem Spiegel bis 0,76 m, in Ruhe 397 daneben, Ruhe nach 620 Takten
         ["G2 ÜBER DEM SPIEGEL", ["graben.graeben.0", { ueber: 720, ueberM: 0.76 }]],
         ["G3 ZWEITE FLÄCHE", ["graben.graeben.1", { abseits: 397, abseitsM: 0.79 }]],
@@ -1196,6 +1207,8 @@ async function lauf() {
             // B7: der Befund trägt die Zahl der gelesenen Programme und ihre Lecks, nie das WGSL
             const fr = befund.bild.fragmente || [];
             Object.assign(befund.bild, { fragmente: fr.length, lecks: fr.flatMap(tslLecks) });
+            // B10: der Spiegel-Pass über der See ohne stehendes Feld (`__wasserSpiegel`, wasser-linse.cjs)
+            befund.bild.spiegel = await page.evaluate(() => window.__wasserSpiegel());
             befund.regen = await page.evaluate(() => window.__wasserRegen({}));
             befund.licht = await page.evaluate(() => window.__wasserLicht({}));
             befund.ferne = await page.evaluate(
@@ -1308,11 +1321,12 @@ async function lauf() {
         const v = urteil(befund);
         console.log(JSON.stringify(befund, null, 1));
         // die Zahlen von B8 und B9 vor dem Urteil (der Probe-Post trägt die letzten Zeilen, nie das JSON)
-        const [k, so] = [befund.bild && befund.bild.kamm, befund.bild && befund.bild.sonne];
-        if (k || so)
+        const [k, so, sp] = [befund.bild && befund.bild.kamm, befund.bild && befund.bild.sonne, befund.bild && befund.bild.spiegel];
+        if (k || so || sp)
             console.log(
-                `\n  ${v.some((x) => /^B[89]/.test(x)) ? "❌" : "✅"} B8 Weißkappe: Flaute ${k ? (k.ruhig.hellAnteil * 100).toFixed(2) : "–"} % · Wind 0,8 ${k ? (k.sturm.hellAnteil * 100).toFixed(2) : "–"} % der See` +
-                    ` · B9 Glanz der Zenit-Sonne: frei ${so ? so.frei : "–"} · hinter dem Grat ${so ? so.grat : "–"} (Luma-Mittel der Mitte)`
+                `\n  ${v.some((x) => /^B(8|9|10)/.test(x)) ? "❌" : "✅"} B8 Weißkappe: Flaute ${k ? (k.ruhig.hellAnteil * 100).toFixed(2) : "–"} % · Wind 0,8 ${k ? (k.sturm.hellAnteil * 100).toFixed(2) : "–"} % der See` +
+                    ` · B9 Glanz der Zenit-Sonne: frei ${so ? so.frei : "–"} · hinter dem Grat ${so ? so.grat : "–"} (Luma-Mittel der Mitte)` +
+                    ` · B10 Spiegel ohne Feld: deckt ${sp ? sp.deckt : "–"} der See`
             );
         // in der CI auch als Annotation (die Check-Run-API trägt sie ohne Log-Rechte): K16 — das Bild war dort rot
         // und lokal grün, der Täter stand nur im Log
