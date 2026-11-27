@@ -3020,25 +3020,24 @@
   },
   "profiband.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Gehen 60 Bilder · max 92.35 ms · 78.33 % > 33 ms · Fahrt 48 Bilder · max 100.42 ms · 95.83 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 78.33 % > 33 ms | Fahrt: 1 Bild(er) > 100 ms (max 100.42), 95.83 % > 33 ms an 948f68ee radeon · Gehen 77 Bilder · max 99.93 ms · 24.68 % > 33 ms · Fahrt 56 Bilder · max 141.66 ms · 69.64 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 24.68 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 141.66), 69.64 % > 33 ms an 9a75d61c gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an 9a75d61c: Last: Referenz f 1,369 (Faden 1,369 · alle Kerne 1,199; vor 102,1/310,9 ms, nach 114,3/298,1 ms, Ruhe 83,5/259,2 ms seit 2026-11-16) · fremd: node scripts/diag-kamera-laub.cjs --selftest 34,8 CPU-s ·  · profiband.K4#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, koerper-core.js +28) — zuletzt an 9a75d61c: Last: Referenz f 1,301 (Faden 1,301 · alle Kerne 1,164; vor 99,9/257 ms, nach 115,7/235,8 ms, Ruhe 88,9/220,7 ms seit 2026-11-27) · fremd: bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\";",
+   "beleg": "Maschine: Gehen 66 Bilder · max 91.91 ms · 59.09 % > 33 ms · Fahrt 40 Bilder · max 151.01 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 59.09 % > 33 ms | Fahrt: 6 Bild(er) > 100 ms (max 151.01), 100.00 % > 33 ms an 9a75d61c radeon · Gehen 83 Bilder · max 75 ms · 21.69 % > 33 ms · Fahrt 37 Bilder · max 191.61 ms · 94.59 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 21.69 % > 33 ms | Fahrt: 5 Bild(er) > 100 ms (max 191.61), 94.59 % > 33 ms an 9a75d61c gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an 9a75d61c: Last: Referenz f 1,483 (Faden 1,483 · alle Kerne 1,251; vor 123,8/324,3 ms, nach 120,7/318 ms, Ruhe 83,5/259,2 ms seit 2026-11-16) · fremd: node scripts/diag-kreatur-leben.cjs 58,3 CPU-s · bash.exe sc · profiband.K4#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, koerper-core.js +28) — zuletzt an 9a75d61c: Last: Referenz f 1,381 (Faden 1,381 · alle Kerne 1,189; vor 122,8/262,2 ms, nach 103,8/245,6 ms, Ruhe 88,9/220,6 ms seit 2026-11-27) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrj",
    "stationen": [
     {
      "id": "profiband.K4#1",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "Gehen 60 Bilder · max 92.35 ms · 78.33 % > 33 ms · Fahrt 48 Bilder · max 100.42 ms · 95.83 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 78.33 % > 33 ms | Fahrt: 1 Bild(er) > 100 ms (max 100.42), 95.83 % > 33 ms",
-     "sha": "948f68eeee479d4db0192c99c448e887313eefb3",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, koerper-core.js +28) — zuletzt an 9a75d61c: Last: Referenz f 1,369 (Faden 1,369 · alle Kerne 1,199; vor 102,1/310,9 ms, nach 114,3/298,1 ms, Ruhe 83,5/259,2 ms seit 2026-11-16) · fremd: node scripts/diag-kamera-laub.cjs --selftest 34,8 CPU-s · ",
-     "gehalten": true,
+     "zahl": "Gehen 66 Bilder · max 91.91 ms · 59.09 % > 33 ms · Fahrt 40 Bilder · max 151.01 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 59.09 % > 33 ms | Fahrt: 6 Bild(er) > 100 ms (max 151.01), 100.00 % > 33 ms",
+     "sha": "9a75d61c8d3eaa08bbf4b0bd18137d11e2e2287d",
+     "grund": "GRÜN trotz Last: Referenz f 1,483 (Faden 1,483 · alle Kerne 1,251; vor 123,8/324,3 ms, nach 120,7/318 ms, Ruhe 83,5/259,2 ms seit 2026-11-16) · fremd: node scripts/diag-kreatur-leben.cjs 58,3 CPU-s · bash.exe scratchpad/wache-0331.sh 14,6 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-30000-profil-U7GRWR --no-p 12,4 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 31,5 CPU-s · svchost.exe 21,5 CPU-s · SearchProtocolHost.exe 8,6 CPU-s",
      "r6": "konsum"
     },
     {
      "id": "profiband.K4#1",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "Gehen 77 Bilder · max 99.93 ms · 24.68 % > 33 ms · Fahrt 56 Bilder · max 141.66 ms · 69.64 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 24.68 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 141.66), 69.64 % > 33 ms",
+     "zahl": "Gehen 83 Bilder · max 75 ms · 21.69 % > 33 ms · Fahrt 37 Bilder · max 191.61 ms · 94.59 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 21.69 % > 33 ms | Fahrt: 5 Bild(er) > 100 ms (max 191.61), 94.59 % > 33 ms",
      "sha": "9a75d61c8d3eaa08bbf4b0bd18137d11e2e2287d",
-     "grund": "GRÜN trotz Last: Referenz f 1,301 (Faden 1,301 · alle Kerne 1,164; vor 99,9/257 ms, nach 115,7/235,8 ms, Ruhe 88,9/220,7 ms seit 2026-11-27) · fremd: bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \" 3,6 CPU-s · LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 2,6 CPU-s · bash.exe sk/wacht6.sh 2,5 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 38,8 CPU-s · svchost.exe 12,3 CPU-s · SearchIndexer.exe 2,0 CPU-s",
+     "grund": "GRÜN trotz Last: Referenz f 1,381 (Faden 1,381 · alle Kerne 1,189; vor 122,8/262,2 ms, nach 103,8/245,6 ms, Ruhe 88,9/220,6 ms seit 2026-11-27) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 8,9 CPU-s · Explorer.EXE 6,2 CPU-s · bash.exe sk/wacht6.sh 5,4 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 45,1 CPU-s · svchost.exe 15,6 CPU-s · SearchIndexer.exe 2,8 CPU-s",
      "r6": "konsum"
     },
     {
@@ -3047,7 +3046,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 9a75d61c: Last: Referenz f 1,369 (Faden 1,369 · alle Kerne 1,199; vor 102,1/310,9 ms, nach 114,3/298,1 ms, Ruhe 83,5/259,2 ms seit 2026-11-16) · fremd: node scripts/diag-kamera-laub.cjs --selftest 34,8 CPU-s · ",
+     "grund": "Station seit der Messung geändert — zuletzt an 9a75d61c: Last: Referenz f 1,483 (Faden 1,483 · alle Kerne 1,251; vor 123,8/324,3 ms, nach 120,7/318 ms, Ruhe 83,5/259,2 ms seit 2026-11-16) · fremd: node scripts/diag-kreatur-leben.cjs 58,3 CPU-s · bash.exe sc",
      "ungemessen": true
     },
     {
@@ -3056,7 +3055,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, koerper-core.js +28) — zuletzt an 9a75d61c: Last: Referenz f 1,301 (Faden 1,301 · alle Kerne 1,164; vor 99,9/257 ms, nach 115,7/235,8 ms, Ruhe 88,9/220,7 ms seit 2026-11-27) · fremd: bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\";",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, koerper-core.js +28) — zuletzt an 9a75d61c: Last: Referenz f 1,381 (Faden 1,381 · alle Kerne 1,189; vor 122,8/262,2 ms, nach 103,8/245,6 ms, Ruhe 88,9/220,6 ms seit 2026-11-27) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrj",
      "ungemessen": true,
      "r6": "konsum"
     }
@@ -16788,7 +16787,7 @@
   },
   "karte2.mensch.geist.gespraech": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.geist.gespraech#2 radeon: ROT: S2 ROT an Umfang 0 < 10 sprechende Bewohner — Täter: stamm/feld-nexus.js maybeAnswerCreature → llmCallCreature — die Antwort ist der Lauf des Modells (ohne Schlüssel: „keine Stimme“); keine Antwort ist gegen den Lebenslauf geprüft, kein Gespräch erinnert die vorige Begegnung (der LLM-Lauf mit Schlüssel, Drehbuch-Schritt 18) · Faktentreue der Antworten — (Soll ≥ 0.95) · Anteil Gespräche mit Bezug auf die vorige Begegnung — (Soll ≥ 1) · Umfang 0 (Soll ≥ 10 sprechende Bewohner) · der Ruf trifft 30 von 30 gerufenen Bewohnern beim Vornamen (stamm/feld-nexus.js _findCreatureByName), 30 Personae tragen den Lebenslauf (_buildCreaturePersonaPrompt); Stimme der Welt aus (state.llm); 1356 Bewohner · [linse-gpu] amd/rdna-3 an 948f68ee · karte2.mensch.geist.gespraech#2 gtx: ROT: S2 ROT an Umfang 0 < 10 sprechende Bewohner — Täter: stamm/feld-nexus.js maybeAnswerCreature → llmCallCreature — die Antwort ist der Lauf des Modells (ohne Schlüssel: „keine Stimme“); keine Antwort ist gegen den Lebenslauf geprüft, kein Gespräch erinnert die vorige Begegnung (der LLM-Lauf mit Schlüssel, Drehbuch-Schritt 18) · Faktentreue der Antworten — (Soll ≥ 0.95) · Anteil Gespräche mit Bezug auf die vorige Begegnung — (Soll ≥ 1) · Umfang 0 (Soll ≥ 10 sprechende Bewohner) · der Ruf trifft 30 von 30 gerufenen Bewohnern beim Vornamen (stamm/feld-nexus.js _findCreatureByName), 30 Personae tragen den Lebenslauf (_buildCreaturePersonaPrompt); Stimme der Welt aus (state.llm); 1356 Bewohner · [linse-gpu] nvidia/pascal an 948f68ee · karte2.mensch.geist.gespraech#3 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#3 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#4 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#4 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#5 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#5 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#6 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#6 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#7 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.geist.gespraech#2 radeon: ROT: S2 ROT an Umfang 0 < 10 sprechende Bewohner — Täter: stamm/feld-nexus.js maybeAnswerCreature → llmCallCreature — die Antwort ist der Lauf des Modells (ohne Schlüssel: „keine Stimme“); keine Antwort ist gegen den Lebenslauf geprüft, kein Gespräch erinnert die vorige Begegnung (der LLM-Lauf mit Schlüssel, Drehbuch-Schritt 18) · Faktentreue der Antworten — (Soll ≥ 0.95) · Anteil Gespräche mit Bezug auf die vorige Begegnung — (Soll ≥ 1) · Umfang 0 (Soll ≥ 10 sprechende Bewohner) · der Ruf trifft 30 von 30 gerufenen Bewohnern beim Vornamen (stamm/feld-nexus.js _findCreatureByName), 30 Personae tragen den Lebenslauf (_buildCreaturePersonaPrompt); Stimme der Welt aus (state.llm); 1356 Bewohner · [linse-gpu] amd/rdna-3 an 948f68ee · karte2.mensch.geist.gespraech#2 gtx: ROT: S2 ROT an Umfang 0 < 10 sprechende Bewohner — Täter: stamm/feld-nexus.js maybeAnswerCreature → llmCallCreature — die Antwort ist der Lauf des Modells (ohne Schlüssel: „keine Stimme“); keine Antwort ist gegen den Lebenslauf geprüft, kein Gespräch erinnert die vorige Begegnung (der LLM-Lauf mit Schlüssel, Drehbuch-Schritt 18) · Faktentreue der Antworten — (Soll ≥ 0.95) · Anteil Gespräche mit Bezug auf die vorige Begegnung — (Soll ≥ 1) · Umfang 0 (Soll ≥ 10 sprechende Bewohner) · der Ruf trifft 30 von 30 gerufenen Bewohnern beim Vornamen (stamm/feld-nexus.js _findCreatureByName), 30 Personae tragen den Lebenslauf (_buildCreaturePersonaPrompt); Stimme der Welt aus (state.llm); 1356 Bewohner · [linse-gpu] nvidia/pascal an 9a75d61c · karte2.mensch.geist.gespraech#3 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#3 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#4 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#4 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#5 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#5 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#6 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#6 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#7 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.geist.gespraech#2",
@@ -16804,7 +16803,7 @@
      "geraet": "gtx",
      "gruen": false,
      "zahl": "S2 ROT an Umfang 0 < 10 sprechende Bewohner — Täter: stamm/feld-nexus.js maybeAnswerCreature → llmCallCreature — die Antwort ist der Lauf des Modells (ohne Schlüssel: „keine Stimme“); keine Antwort ist gegen den Lebenslauf geprüft, kein Gespräch erinnert die vorige Begegnung (der LLM-Lauf mit Schlüssel, Drehbuch-Schritt 18) · Faktentreue der Antworten — (Soll ≥ 0.95) · Anteil Gespräche mit Bezug auf die vorige Begegnung — (Soll ≥ 1) · Umfang 0 (Soll ≥ 10 sprechende Bewohner) · der Ruf trifft 30 von 30 gerufenen Bewohnern beim Vornamen (stamm/feld-nexus.js _findCreatureByName), 30 Personae tragen den Lebenslauf (_buildCreaturePersonaPrompt); Stimme der Welt aus (state.llm); 1356 Bewohner · [linse-gpu] nvidia/pascal",
-     "sha": "948f68eeee479d4db0192c99c448e887313eefb3",
+     "sha": "9a75d61c8d3eaa08bbf4b0bd18137d11e2e2287d",
      "grund": "ROT: S2 ROT an Umfang 0 < 10 sprechende Bewohner — Täter: stamm/feld-nexus.js maybeAnswerCreature → llmCallCreature — die Antwort ist der Lauf des Modells (ohne Schlüssel: „keine Stimme“); keine Antwort ist gegen den Lebenslauf geprüft, kein Gespräch erinnert die vorige Begegnung (der LLM-Lauf mit Schlüssel, Drehbuch-Schritt 18) · Faktentreue der Antworten — (Soll ≥ 0.95) · Anteil Gespräche mit Bezug auf die vorige Begegnung — (Soll ≥ 1) · Umfang 0 (Soll ≥ 10 sprechende Bewohner) · der Ruf trifft 30 von 30 gerufenen Bewohnern beim Vornamen (stamm/feld-nexus.js _findCreatureByName), 30 Personae tragen den Lebenslauf (_buildCreaturePersonaPrompt); Stimme der Welt aus (state.llm); 1356 Bewohner · [linse-gpu] nvidia/pascal",
      "r6": "konsum"
     },
@@ -23545,7 +23544,7 @@
   },
   "karte2.mensch.sport.kunst": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.sport.kunst#1 radeon: ROT: S1 ROT: fehlender Leser: der Anfänger ist nicht sichtbar ungeschickt: Meister {\"handwerk\":427,\"tanz\":8,\"kampf\":6,\"brett\":8} und Anfänger {\"handwerk\":574,\"tanz\":745,\"kampf\":1088,\"brett\":642} in 4 von 3 Künsten stehen im Lebenslauf (b.uebung), kein Leib liest ihr Können — Haltung (koerper-core tagesHaltung: Akt, Rolle), Gang  (koerper-core.js tagesHaltung · stamm/siedlung-bewohner.js _bewohnerGemuet) · gemessen 4 · [linse-gpu] amd/rdna-3 an 9a75d61c · karte2.mensch.sport.kunst#1 gtx: ROT: S1 ROT: fehlender Leser: der Anfänger ist nicht sichtbar ungeschickt: Meister {\"handwerk\":427,\"tanz\":8,\"kampf\":6,\"brett\":8} und Anfänger {\"handwerk\":574,\"tanz\":745,\"kampf\":1088,\"brett\":642} in 4 von 3 Künsten stehen im Lebenslauf (b.uebung), kein Leib liest ihr Können — Haltung (koerper-core tagesHaltung: Akt, Rolle), Gang  (koerper-core.js tagesHaltung · stamm/siedlung-bewohner.js _bewohnerGemuet) · gemessen 4 · [linse-gpu] nvidia/pascal an 948f68ee · karte2.mensch.sport.kunst#2 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#2 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#3 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#3 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#4 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#4 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#5 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#5 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#6 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.sport.kunst#1 radeon: ROT: S1 ROT: fehlender Leser: der Anfänger ist nicht sichtbar ungeschickt: Meister {\"handwerk\":427,\"tanz\":8,\"kampf\":6,\"brett\":8} und Anfänger {\"handwerk\":574,\"tanz\":745,\"kampf\":1088,\"brett\":642} in 4 von 3 Künsten stehen im Lebenslauf (b.uebung), kein Leib liest ihr Können — Haltung (koerper-core tagesHaltung: Akt, Rolle), Gang  (koerper-core.js tagesHaltung · stamm/siedlung-bewohner.js _bewohnerGemuet) · gemessen 4 · [linse-gpu] amd/rdna-3 an 9a75d61c · karte2.mensch.sport.kunst#1 gtx: ROT: S1 ROT: fehlender Leser: der Anfänger ist nicht sichtbar ungeschickt: Meister {\"handwerk\":427,\"tanz\":8,\"kampf\":6,\"brett\":8} und Anfänger {\"handwerk\":574,\"tanz\":745,\"kampf\":1088,\"brett\":642} in 4 von 3 Künsten stehen im Lebenslauf (b.uebung), kein Leib liest ihr Können — Haltung (koerper-core tagesHaltung: Akt, Rolle), Gang  (koerper-core.js tagesHaltung · stamm/siedlung-bewohner.js _bewohnerGemuet) · gemessen 4 · [linse-gpu] nvidia/pascal an 9a75d61c · karte2.mensch.sport.kunst#2 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#2 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#3 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#3 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#4 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#4 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#5 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#5 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#6 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.sport.kunst#1",
@@ -23562,7 +23561,7 @@
      "geraet": "gtx",
      "gruen": false,
      "zahl": "S1 ROT: fehlender Leser: der Anfänger ist nicht sichtbar ungeschickt: Meister {\"handwerk\":427,\"tanz\":8,\"kampf\":6,\"brett\":8} und Anfänger {\"handwerk\":574,\"tanz\":745,\"kampf\":1088,\"brett\":642} in 4 von 3 Künsten stehen im Lebenslauf (b.uebung), kein Leib liest ihr Können — Haltung (koerper-core tagesHaltung: Akt, Rolle), Gang  (koerper-core.js tagesHaltung · stamm/siedlung-bewohner.js _bewohnerGemuet) · gemessen 4 · [linse-gpu] nvidia/pascal",
-     "sha": "948f68eeee479d4db0192c99c448e887313eefb3",
+     "sha": "9a75d61c8d3eaa08bbf4b0bd18137d11e2e2287d",
      "grund": "ROT: S1 ROT: fehlender Leser: der Anfänger ist nicht sichtbar ungeschickt: Meister {\"handwerk\":427,\"tanz\":8,\"kampf\":6,\"brett\":8} und Anfänger {\"handwerk\":574,\"tanz\":745,\"kampf\":1088,\"brett\":642} in 4 von 3 Künsten stehen im Lebenslauf (b.uebung), kein Leib liest ihr Können — Haltung (koerper-core tagesHaltung: Akt, Rolle), Gang  (koerper-core.js tagesHaltung · stamm/siedlung-bewohner.js _bewohnerGemuet) · gemessen 4 · [linse-gpu] nvidia/pascal",
      "r6": "konsum",
      "beide": true
@@ -37598,7 +37597,7 @@
   "ohne": 3384
  },
  "kopfVoll": "9a75d61c8d3eaa08bbf4b0bd18137d11e2e2287d",
- "zeit": "2026-11-27T19:01:53.201Z",
+ "zeit": "2026-11-27T19:13:55.094Z",
  "vorher": "9a75d61c",
  "bilanz": {
   "gewinn": [],
