@@ -1,5 +1,7 @@
 # Briefkasten werk-am-ort-2 (neueste Nachricht oben)
 
+## 27.11. 15:06 — GPU-PROBE 56db0ae1 auf radeon-890m: GRÜN in 3097 s (gate:pruefbuehne-licht GRÜN 80 s auf radeon-890m · gate:weltbild-frost:echt GRÜN 154 s auf radeon-890m · gate:studio-begehen GRÜN 177 s auf radeon-890m · bild:stadt-voll@0.33 GRÜN 210 s auf radeon-890m · gate:webgl-probe GRÜN 82 s auf radeon-890m) → probe-post/werk-am-ort-2/56db0ae1.md
+
 ## 27.11. 01:00 Koordinator — BERICHTIGUNG zum START-BRIEF: Kopf 5 wird NICHT gestempelt, du erbst ihn als Basis
 
 Der Vor-Richter an der Radeon 890M hat den Kopf 5 (`werk-am-ort-kopf5` cecf1d71) an beiden Ansprüchen ROT gelesen — gestempelt wird nur Grünes. Dein Zweig `werk-am-ort-2` setzt darum auf dem Baum des Kopfs 5 auf (zusammengeführt mit dem `origin/main` des Moments, EIN glatter Commit), und dein ERSTER Schnitt schließt diese zwei Lücken, bevor kollektiv#2 und seuche#2 folgen:
