@@ -454,6 +454,42 @@ function tuerFehlt(stamm, bruecke) {
     );
 }
 
+// DIE TÜR DER TSL (nacht-gasse-licht): die Welt liest TSL über `THREE.TSL`, die Brücke legt dort einen Namensraum ab. `three/tsl`
+// (vendor/three.tsl.min.js) reicht nur eine feste Liste aus `TSL` von three/webgpu weiter — ihr fehlten `specularColorBlended` und
+// `diffuseContribution`; das Gesetz der Scheibe (welt-licht `scheibe`) las beide, sein Bau warf, und r184 zeichnete jeden
+// Scheiben-Stoff still als leeren NodeMaterial (`getForRender` fängt den Wurf und baut neu): kein Fenster, kein Laternenkopf glühte.
+// ROT beim Namen jedes Glieds, das die Welt (der Stamm und welt-licht.js) aus TSL liest, die Engine führt und die Tür nicht reicht.
+// der Namensraum der Engine aus ihr selbst: das Modul three/webgpu geladen (Node trägt es ohne Seite), `Object.keys(TSL)`
+const tslEngine = () => {
+    const url = require("url").pathToFileURL(path.join(root, "vendor/three.webgpu.min.js")).href;
+    const js = `const W = await import(${JSON.stringify(url)}); process.stdout.write(JSON.stringify(Object.keys(W.TSL)));`;
+    const r = require("child_process").spawnSync(process.execPath, ["--no-warnings", "--input-type=module", "-e", js], { encoding: "utf8" });
+    return r.status === 0 ? new Set(JSON.parse(r.stdout)) : null;
+};
+const tslListe = (src) => {
+    const m = /export\{([^}]*)\}/.exec(src);
+    return new Set(m ? m[1].split(",").map((s) => s.split(" as ").pop().trim()) : []);
+};
+function tslTuerFehlt(welt, bruecke, engine, liste) {
+    if (!engine) return ["DIE TÜR DER TSL: vendor/three.webgpu.min.js lädt nicht in Node — der Namensraum der Engine (TSL) ist nicht lesbar"];
+    const wert = (/THREE_GLOBAL\.TSL\s*=\s*([^;]+);/.exec(bruecke) || [])[1];
+    const imp = (/import \* as (\w+) from "three\/tsl"/.exec(bruecke) || [])[1];
+    const tuer = wert === 'requireWebGPU("TSL")' || wert === "WEBGPU.TSL" ? engine : imp && wert === imp ? liste : null;
+    if (!tuer)
+        return [`DIE TÜR DER TSL: vendor/three-bootstrap.js legt ${wert ? `„${wert}“` : "nichts"} auf THREE.TSL — weder den Namensraum der Engine noch three/tsl`];
+    const fehlt = new Map();
+    for (const [datei, text] of welt)
+        for (const m of text.matchAll(/\b(?:THREE\.TSL|TSL|Te|_T|T)\.([A-Za-z_$][\w$]*)/g))
+            if (engine.has(m[1]) && !tuer.has(m[1]) && !fehlt.has(m[1])) {
+                const z = text.slice(0, m.index).split("\n").length;
+                fehlt.set(m[1], datei === "stamm" ? stammLib.ort(root, z) : `${datei}:${z}`);
+            }
+    return [...fehlt].map(
+        ([k, wo]) =>
+            `DIE TÜR DER TSL: die Welt liest TSL.${k} (${wo}), die Brücke reicht three/tsl — dessen Liste führt das Glied nicht, der Bau des Stoffs wirft, und r184 zeichnet ihn still als leeren NodeMaterial (getForRender) — die Tür reicht den Namensraum der Engine (requireWebGPU("TSL"))`
+    );
+}
+
 function main() {
     const selftest = SELBSTTEST;
     const errs = [];
@@ -497,7 +533,24 @@ function main() {
     const bruecke = les("vendor/three-bootstrap.js").toString("utf8");
     const tuer = tuerFehlt(stammText(), bruecke);
     if (!selftest) errs.push(...tuer);
+    // (5) die Tür der TSL
+    const welt = [["stamm", stammText()], ["welt-licht.js", les("welt-licht.js").toString("utf8")]];
+    const engine = tslEngine();
+    const liste = tslListe(les("vendor/three.tsl.min.js").toString("latin1"));
+    const tslTuer = tslTuerFehlt(welt, bruecke, engine, liste);
+    if (!selftest) errs.push(...tslTuer);
     if (selftest) {
+        // der Mutant: die Tür von main 7d793605 (three/tsl) — die Linse nennt die zwei Glieder und ihren Leser, das Gesetz der Scheibe
+        const alt = tslTuerFehlt(welt, `import * as TSL from "three/tsl";\n` + bruecke.replace(/THREE_GLOBAL\.TSL\s*=\s*[^;]+;/, "THREE_GLOBAL.TSL = TSL;"), engine, liste);
+        const tslFeuert =
+            tslTuer.length === 0 &&
+            ["specularColorBlended", "diffuseContribution"].every((k) => alt.some((e) => new RegExp(`TSL\\.${k} \\(welt-licht\\.js:\\d+\\)`).test(e)));
+        console.log(
+            tslFeuert
+                ? `✅ SELBST-TEST: die Tür der TSL feuert (heute 0 fehlende Glieder von ${engine.size}; mit three/tsl ${alt.length}: ${alt.map((e) => e.split(" (")[0].replace("DIE TÜR DER TSL: die Welt liest ", "")).join(", ")})`
+                : `❌ SELBST-TEST: die Tür der TSL ist vakuös — heute ${JSON.stringify(tslTuer)}, Mutant ${JSON.stringify(alt)}`
+        );
+        if (!tslFeuert) process.exit(1);
         // der Mutant: die Brücke ohne die Zeile des Sprites — die Linse nennt die Klasse und ihren Rufer
         const ohne = tuerFehlt(stammText(), bruecke.replace(/THREE_GLOBAL\.SpriteNodeMaterial\s*=\s*SpriteNodeMaterial;/, ""));
         const tuerFeuert =
@@ -521,7 +574,7 @@ function main() {
     }
     wandEnde(
         errs,
-        `DIE VENDOR-ANKER-WAND steht — ${PINS.length} Fingerabdrücke gepinnt, ${geprueft} Anker der Laufzeit-Organe leben im Vendor, die Diät-Prüfung hält am Schein-Programm (ein bewegtes Objekt geht nur seinen Objekt-Gang; eine neue Version, die die GPU trägt, frischt ${diaet.getragen.matrix.length} von 2 Pässen auf; ein verpasster Stoff-Wechsel lässt 0 von 4 Puffern alt und frischt 0 Objekte ohne Änderung auf).`
+        `DIE VENDOR-ANKER-WAND steht — ${PINS.length} Fingerabdrücke gepinnt, ${geprueft} Anker der Laufzeit-Organe leben im Vendor, die Tür der TSL reicht jedes Glied der Engine (${engine ? engine.size : 0}), das die Welt liest, die Diät-Prüfung hält am Schein-Programm (ein bewegtes Objekt geht nur seinen Objekt-Gang; eine neue Version, die die GPU trägt, frischt ${diaet.getragen.matrix.length} von 2 Pässen auf; ein verpasster Stoff-Wechsel lässt 0 von 4 Puffern alt und frischt 0 Objekte ohne Änderung auf).`
     );
 }
 main();

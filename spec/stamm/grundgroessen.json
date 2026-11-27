@@ -79,9 +79,9 @@
         },
         "lichtstaerke": {
             "groesse": "licht",
-            "rx": "\\b(?:cdM2|cd)\\s*:\\s*(?!(?:0|1)(?![\\d.]))\\d|\\bLEUCHT_FEUER\\s*=|\\bstaerke\\s*:\\s*[\\d.]+\\s*,\\s*cd\\b",
-            "was": "eine Leuchte trägt ihr Licht selbst (eine Zahl der Lichtstärke oder Leuchtdichte außer den Trägern 0 und 1, die das Gesetz zur Laufzeit füllt, oder eine Zahl des Labors neben der Lichtstärke)",
-            "lies": "fachwerk-core.js LICHT_GESETZ (EINE Zahl je Quelle: cd; Leib, Glas und Wandlaterne folgen aus ihr — lichtFlammeM, laterneGlasJeLuma) und FEUER_LEUCHTDICHTE",
+            "rx": "\\b(?:cdM2|cd|lm)\\s*:\\s*(?!(?:0|1)(?![\\d.]))\\d|\\bLEUCHT_FEUER\\s*=|\\bstaerke\\s*:\\s*[\\d.]+\\s*,\\s*cd\\b",
+            "was": "eine Leuchte trägt ihr Licht selbst (eine Zahl des Lichtstroms, der Lichtstärke oder Leuchtdichte außer den Trägern 0 und 1, die das Gesetz zur Laufzeit füllt, oder eine Zahl des Labors neben der Lichtstärke)",
+            "lies": "fachwerk-core.js LICHT_GESETZ (EINE Zahl je Quelle: cd, die Laterne ihr Lichtstrom lm → cd = lm ÷ 4π, lichtStaerkeCd; Leib, Glas und Wandlaterne folgen aus ihr — lichtFlammeM, laterneGlasJeLuma) und FEUER_LEUCHTDICHTE",
             "mutant": "const lampe = { kelvin: 2700, cd: 40, reichweiteM: 10 };"
         },
         "schwere-literal": {
@@ -226,7 +226,7 @@
                 "fachwerk-core.js": [
                     "feuer: { kelvin: 2000, cd: 10.2,",
                     "fenster: { kelvin: 2800, cdM2: 8,",
-                    "laterne: { kelvin: 1900, cd: 25.7,"
+                    "laterne: { kelvin: 1900, lm: 2000,"
                 ]
             }
         },
