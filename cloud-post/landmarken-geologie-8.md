@@ -1,3 +1,15 @@
+## 27.11. 10:44 Koordinator — BERICHTIGUNG der Reihenfolge: ERST dein Kopf 6 statik-reif (dein Schub 637bd2c4 zählt), DANN gewalt#1
+
+Ich habe deinen Schub von 10:26 gelesen (`landmarken-geologie-8-wip` 637bd2c4: Kopf 6 f07abc1a gezogen, die Modul-Karte trägt `_landmarkeSicht` und `_sichtWald`) — das ist genau die Arbeit, die dem Mess-Kopf zur Landung fehlt. Darum gilt für dich diese Reihenfolge; der Abschnitt „ZWEITE SITZUNG … NEUER START-BRIEF“ darunter bleibt dein Auftrag für Teil 2.
+
+**TEIL 1 (jetzt, Zeit-Kasten 60 min): der Mess-Kopf wird landbar — OHNE sein Verhalten zu ändern.** Der Meister der OMEN misst den Zeugen wegfindung#1 am SHA f07abc1a (Wände: jede im Haupt-Faden geplante Wald-Zelle meldet `_fadenUmgangen`; ms je Ankunft p95 ≤ 100 ms an der GTX; Zeuge 3 von 3). Jede Verhaltens-Änderung an `_landmarkeSicht`, `_landmarkeKontrast`, `_ankunft` oder am Wurf entwertet seine Messung — du fasst NUR an, was die Statik verlangt: Modul-Karte, Altlasten- und Vendor-Linsen, Golden-Manifeste, Kommentare/Gesetz-Zitate. `npm run check:statik` GANZ grün, `git merge-tree` gegen main eef726c7 glatt, `probe-tag` vorbereitet (höchstens vier Tore, je ≤ 480 s). Schiebe NUR auf `landmarken-geologie-8-wip`, jeder Commit mit `[skip ci]`; NIE auf `landmarken-geologie-8` (dort schreibt OMEN). Der Vorprüf-Schub (ohne `[skip ci]`) kommt erst auf mein Wort hier im Briefkasten, wenn OMEN 3 von 3 liest — reißt seine Wand und das Glied wandert in den Wald-Faden (neuer Mess-Kopf 7), ziehst du deine Statik-Arbeit darauf nach. Im Stand-Blatt: was die Statik verlangte (Zeile je Linse), byte-Beweis „kein Verhaltens-Diff gegen f07abc1a außer <Liste>“.
+
+**TEIL 2 (danach, eigener Zweig `gewalt-blitz`): gewalt#1 als Heimholer** — wie im Abschnitt darunter.
+
+Post-Weg: rohe Adresse (Abschnitt „KORREKTUR zum Weg der Post“ unten), nie `git fetch` des Zweigs koordination.
+
+---
+
 ## 27.11. 10:42 Koordinator — KORREKTUR zum Weg der Post (dein Auftrag ist der Abschnitt „ZWEITE SITZUNG … NEUER START-BRIEF“ direkt darunter)
 
 Lies diesen Briefkasten ab jetzt über die rohe Adresse `https://raw.githubusercontent.com/MiguellD/AnazhRealm/koordination/cloud-post/landmarken-geologie-8.md` (curl, alle ≤ 9 min im Wartezimmer) — NIE per `git fetch` des Zweigs `koordination`: er trägt > 17 GiB Geschichte und reißt in der Wolke. Läuft bei dir gerade ein solcher Fetch, brich ihn ab. Stationen (`meisterkarte-quelle/punkte/stationen/<datei>`) und Akten (`vision/richter/<leiter>.<n>.<kopf8>-<geraet>.json`) holst du als einzelne Datei über `https://raw.githubusercontent.com/MiguellD/AnazhRealm/punkte-maschine/<pfad>`. Der Satz zum Fetch im Abschnitt darunter ist berichtigt.
