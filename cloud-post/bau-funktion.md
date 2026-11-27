@@ -112,4 +112,20 @@ nicht mehr; Fixture dazu das Dorf 35/24 (Gesetz 0, Snap 1: Los 5 kaufhaus −5 c
 format:check · lint · check:statik (voll, 637 s) · gate:fachwerk-contract · gate:asset-contract · gate:welt-boot · gate:settlement
 GRÜN; davor am Kopf mit dem Schnitt der Halle: gate:studio-begehen · gate:haus-fern · gate:haus-welt · gate:nervensystem-fachwerk GRÜN.
 
-Karte 2 gebucht 155 von 1 718 · Status ZWISCHENSTAND
+## Post 22:38 (Koordinator) — Antwort
+
+- **Station bedarf#1:** braucht KEINE Änderung der Station. Die Rolle zeichnet im Kern (`HAUS` liest `BEDARF_GESTALT` über die
+  bestehende Naht P.rolle → slot.ov → buildInstance); jedes Dorf-Haus am Kopf trägt sie, die Station legt nur die Bilder, der Prüfer
+  (`vision/pruefer/pruefer.cjs`, Art klasse, 9 Optionen) liest sie unverändert.
+- **Die unterste rote Sprosse von mensch.bau ohne Blindurteil:** `karte2.mensch.bau.bauen#1` · 1 Spieler-Haus aus der Werkstatt ·
+  gleiche Tiefe wie im Labor · Richter: Bildpaar Labor ↔ Welt gleiche Kamera: kein Unterschied. (bedarf#1, huelle#1 und innen#3
+  tragen den R11-Prüfer, `vision/richter-tafel.json`.)
+  - **Täter-Zahl:** 98,0 % Differenz gegen Soll ≤ 2,1 % (`vision/richter/mensch.bau.bauen.1.31ea3847-gtx.json`, GTX 1060, 21.11.,
+    am Kopf 31ea3847 vom 20.11.; ebenso f68dbf09 am 19.11.: 98,0 %). Die Silhouetten decken sich zu 99,4 %, der Rest ist Luma
+    (`cloud-post/haus-gestalt.md` OFFEN K4).
+  - **Die Zahl ist älter als der Schnitt:** `fachwerk-buehne` (483b3c2e, 24.11.) zeichnet das Labor seither auf der EINEN Bühne der
+    Welt (`AnazhHuelle.studio` → `buehne`, ihr Licht an ihrer Uhr, das Werk aus dem Ofen der Welt). Seitdem lief die Station nicht. Vor
+    jedem Bau misst sie die Station an diesem Kopf (lokal swiftshader: je Programm 4–7 min, kein Urteil). Die Bahn `haus-gestalt` trug
+    dieselbe Sprosse (Vorprüfung 5e497a9f); ich baue sie erst auf die Zahl des Kopfs hin.
+
+Karte 2 gebucht 156 von 1 718 (`vision/karte-2-stand.json`) · Status ZWISCHENSTAND
