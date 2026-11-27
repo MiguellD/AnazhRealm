@@ -748,6 +748,16 @@ function stationVerdict(s) {
                 `frei-luft-wind: der Wind 2 m/s längs der Bahn trägt die Feder nicht (${fk.luftWind?.feder?.weite} gegen ${fk.luft?.feder?.weite} m) — \`_windAt\` in \`_freiLuftPacken\``,
             ],
             [fk.ohneLuft?.feder?.abwPct > 10, "frei-mutante: ohne Luft fliegt die Feder wie die Rechnung (vakuös)"],
+            // der Wind kostet, was ihn ändert: 20 fallende Körper fragen `_windAt` in 30 Schritten höchstens je windS einmal
+            // (main 7e73426e: je Körper je Schritt, 600 Fragen; 200 Kisten 1,84 ms je Schritt gegen 0,46 ohne Luft)
+            [
+                fk.windPreis?.koerper === 20 && fk.windPreis.lesen <= fk.windPreis.soll,
+                `frei-luft-preis: ${fk.windPreis?.koerper} fallende Körper fragen den Wind ${fk.windPreis?.lesen}× in ${fk.windPreis?.schritte} Schritten (Soll ≤ ${fk.windPreis?.soll}) — Täter \`_freiLuftPacken\` (stamm/koerper-frei.js: \`K.wind\`, FREI.luft.windM/windS)`,
+            ],
+            [
+                fk.windPreisOhneMerken?.lesen > (fk.windPreis?.soll ?? Infinity),
+                "frei-mutante: ohne das Merken (`K.wind`) fragt der Löser den Wind nicht öfter (vakuös: die Probe zählt nicht)",
+            ],
             [!ruht(fk.schwerelos), "frei-mutante: ohne Schwere ruhen die Kisten am Boden (vakuös)"],
             [fk.fassOhneStoss && fk.fassOhneStoss.kipp < 45, "frei-mutante: ohne Stoß kippt das Fass (vakuös)"],
         ]),
@@ -2313,6 +2323,8 @@ hauptLauf(async () => {
                 luft: { stein: { weite: 11.37, rechnung: 11.402, abwPct: 0.28 }, feder: { weite: 0.504, rechnung: 0.507, abwPct: 0.44 } },
                 luftWind: { stein: { weite: 11.6, rechnung: 11.402, abwPct: 1.7 }, feder: { weite: 2.1, rechnung: 0.507, abwPct: 314 } },
                 ohneLuft: { stein: { weite: 11.9, rechnung: 11.402, abwPct: 4.4 }, feder: { weite: 11.9, rechnung: 0.507, abwPct: 2247 } },
+                windPreis: { lesen: 120, soll: 120, koerper: 20, schritte: 30 },
+                windPreisOhneMerken: { lesen: 600, soll: 120, koerper: 20, schritte: 30 },
             },
             spielerWagen: {
                 a: {
@@ -2530,6 +2542,17 @@ hauptLauf(async () => {
                 "die Luft ohne Wind",
                 { frei: { ...gutS.frei, luftWind: gutS.frei.luft } },
                 "frei-luft-wind",
+            ],
+            // der Wind je Körper je Schritt (main 7e73426e): 200 fallende Kisten 1,84 ms je Schritt gegen 0,46 ohne Luft
+            [
+                "jeder Körper fragt den Wind je Schritt (main)",
+                { frei: { ...gutS.frei, windPreis: gutS.frei.windPreisOhneMerken } },
+                "frei-luft-preis",
+            ],
+            [
+                "ohne das Merken fragt er nicht öfter",
+                { frei: { ...gutS.frei, windPreisOhneMerken: gutS.frei.windPreis } },
+                "frei-mutante: ohne das Merken",
             ],
             // der wandernde Fuss an 55a540d7~1: das stehende Fass im Gras gewann +18 J in 8 s und schlief nie
             [
