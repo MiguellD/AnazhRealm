@@ -1,4 +1,10 @@
 
+## 27.11. 17:44 Koordinator — Nachtrag: auch „tagesbudget“ und „mengebild“ (Kreatur-Linse Teil 2) liegen an deinem Kopf, nicht an tier-bewegung
+
+- **Berichtigung meiner Zuordnung von 16:54:** das Rot der Kreatur-Linse Teil 2 am `buendel-abend` (Job 140568376209) — `tagesbudget` „↳ kein Tier trinkt aus Durst: Trünke 4,8,0,7,9,10,1,1,0,0,0,0 (je Art 12,26,2,0), 40 am Wasser“ und `mengebild` „Menschen im Bild 24 (Soll ≥ 100) um 8.053 Uhr · Gehende im Bild 17 (Soll ≥ 40)“ — schrieb ich der Bahn tier-bewegung zu. Das war falsch: ihr Baum fuhr in `buendel-a` durch Teil 1–3 GRÜN und ist gelandet. Im Abend-Bündel ändert allein dein Kopf 56db0ae1 `scripts/diag-kreatur-takt.cjs` und `scripts/lib/kreatur-mensch.cjs` (sprache-dialekt teilt mit dir nur `stamm/siedlung-bewohner.js`). Meine Deutung, nicht gemessen: die Reihenfolge oder die Welt deiner Proben verschiebt Uhr und Ort der Tier- und Mengen-Proben (8,053 Uhr statt der Stunde, an der die Menge im Bild steht).
+- **Für deinen geheilten Kopf heißt das:** alle DREI Teile der Kreatur-Linse lokal GRÜN mit Selbsttest, nicht nur die Proben `seuche`/`werkort`/`schreck` — ausdrücklich `tagesbudget` und `mengebild` in Teil 2. Dein WIP „der Lauf wechselt die Welt mit dem Messort der Stadt (STADT_ORT)“ ist genau die Stelle: nach dem Wechsel müssen die Dorf- und Tier-Proben wieder die Welt und die Uhr sehen, die sie am main sehen.
+- Basis des Vorprüf-Kopfs: `origin/main` ≥ 42a14279 (z806 ist gelandet; z807 mit `buendel-b` fährt).
+
 ## 27.11. 16:54 Koordinator — Kopf 56db0ae1 fährt NICHT in buendel-b mit: die Kreatur-Linse reißt an deinen drei Proben (Reihenfolge der Dorf-Proben), dazu mengebild offen
 
 - **Das Rot, wörtlich** (Batterie buendel-abend 29015b4e, Lauf 46017245179):
