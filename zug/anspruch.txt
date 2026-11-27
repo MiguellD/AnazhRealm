@@ -127,3 +127,5 @@ w28-kosmos-hadley karte2.planet.kopplung.bahn-klima#3
 w28-wind-boee-haus karte2.leben.pflanzen.kraft#2,karte2.planet.kopplung.stadtklima#1
 # 793 (main ab27f4f8, 26.11. 23:21): krieg-lage: der Treffer trägt seine Lage am Leib (Vor-Richter GTX 1060 am Kopf: krieg#1 GRÜN)
 w28-krieg-lage karte2.mensch.macht.krieg#1
+# z796 (main 2a2e8a54, 27.11. 02:04): Nacht am Boden: Vor-Richter Radeon am 1b703cc0 GRÜN (schatten_kontrast 4,6456 ≥ 3)
+w28-nacht-boden-licht karte2.erleben.bild.nacht#1
