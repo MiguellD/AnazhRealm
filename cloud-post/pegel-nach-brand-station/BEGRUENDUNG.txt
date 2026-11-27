@@ -14,3 +14,8 @@ Zahlen am Zweig pegel-nach-brand (Eichung CN + Aue + Klima, `ABFLUSS_CN`, `AUE`,
 - Kandidat (Sturm 20 mm): 0,098 → 0,333 m · ×3,398 ≥ 1,3; Gegenlauf (die Taten zurück) 0,098 m byte-gleich.
 - Derselbe Kandidat am main b3740dd5: 0,758 → 0,758 m · ×1,000 (der Boot-Stand bordvoll, die Krone deckelt).
 - Linse wetter-wache (A), Brand ±400 m (2 601 Zellen, b 0,981): 0,098 → 1,290 m (die Aue trägt die Flut, in Stufen von 1 ft; der Hub über dem Mittel des Flusses in seinem Klima); am main b 0, ×1,000.
+
+Der Patch `k2-zusammenspiel-S3.diff` steht gegen den pm-Kopf 1522407ae4129f05c244e257eed07d11608958e7
+(meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js, Teil S3, 4 Hunks): `spitze()` nach `fluss`, `blockVor.fluss` und
+`aus.block.nach.fluss` lesen sie, `aus.zurueck.fluss` den Gegenlauf, die Aufruf-Argumente tragen `regen: 1, regenS: 300`.
+Geprüft: `node --check` am gepatchten Stand; `git apply --check` an einem frischen Baum aus dem pm-Kopf GRÜN, angewendet byte-gleich.

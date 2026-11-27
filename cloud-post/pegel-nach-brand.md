@@ -149,3 +149,11 @@ Karte 2 gebucht 155 von 1 718 · Status ZWISCHENSTAND.
 - **Ehrlich offen:** Basisabfluss-Index ≈ 0,09 (Profi 0,5–0,7) · bankvoll trägt nur 1,6 Q̄ (Bett-Geometrie des Kerns) · Bildpaar · der Bach nach trockenem Wetter 0,098 m tief.
 
 Karte 2 gebucht 155 von 1 718 · Status ZWISCHENSTAND.
+
+## 27.11. 21:40 — Stations-Kandidat S3 ist ein echter Patch (auf den Auftrag 21:27)
+- `cloud-post/pegel-nach-brand-station/k2-zusammenspiel-S3.diff` neu als `git diff` gegen den pm-Kopf **1522407a** (`k2-zusammenspiel.js`, Teil S3, 4 Hunks): `spitze()` (Sturm Stärke 1 über 300 s Kalender, 20 mm) liest `blockVor.fluss` und `block.nach.fluss`, `zurueck.fluss` den Gegenlauf; Aufruf `regen: 1, regenS: 300`. Soll und Richter-Text unverändert.
+- Geprüft: `node --check` GRÜN; `git apply --check` an frischem pm-Baum GRÜN, angewendet byte-gleich zum Kandidaten.
+- `npm run gate:welt-boot` (= `welt-boot.cjs --selbsttest`) war vor dem Schub von Kopf 3 GRÜN (Batterie am Kopf-Baum, 18/18).
+- „Aue über der Krone“ ist meins im Kopf 3 (die Bahn wetter-lagen schneidet sie nicht, Rücknahme 21:08).
+
+Karte 2 gebucht 155 von 1 718 · Status ZWISCHENSTAND.
