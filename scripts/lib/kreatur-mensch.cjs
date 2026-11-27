@@ -148,7 +148,7 @@ async function menschBuehnen() {
                     const sp =
                         wSpur.get(b) ||
                         wSpur
-                            .set(b, { x, z, innen: innen0, ziel: b.ziel, n: new Set(), gesamt: 0, ax: x, az: z })
+                            .set(b, { x, z, innen: innen0, ziel: b.ziel, akt: b.akt, n: new Set(), gesamt: 0, ax: x, az: z })
                             .get(b);
                     const d = ab(P, sp);
                     sp.gesamt += d;
@@ -205,8 +205,9 @@ async function menschBuehnen() {
                     // (`_bewohnerPlatz`), der Weg zurück und der gerückte Stand wechseln kein Ziel
                     // (die Runde der Wache ist Weg IM Werk — koerper TAGES_GESETZ.zeitArt streife „arbeit“, HETUS 2008: „travel
                     // during main job“ —: der Schritt vom Posten in die Runde, von Punkt zu Punkt und zurück wechselt kein Ziel des
-                    // Tags; der Gang von daheim zum ersten Punkt bleibt ein Weg, rollen-des-tages)
-                    const runde = b.akt === "streife" ? sp.akt === "streife" || sp.akt === "arbeit" : sp.akt === "streife" && b.akt === "arbeit"; // prettier-ignore
+                    // Tags; der Gang von daheim zum ersten Punkt bleibt ein Weg, rollen-des-tages; ebenso der Gang über den Markt —
+                    // die Runde des Einkaufs, koerper `tagesKette`: Einkauf auf Einkauf — ist EIN Weg: Weißwasser zählt Geschäfte JE Weg)
+                    const runde = b.akt === "streife" ? sp.akt === "streife" || sp.akt === "arbeit" : (sp.akt === "streife" && b.akt === "arbeit") || (b.akt === "einkauf" && sp.akt === "einkauf"); // prettier-ignore
                     if (b.ziel !== sp.ziel && !runde && ab(sp.ziel, b.ziel) >= A.BEWOHNER.gangM) sp.n.add(((b.tagAb + 24) % 24).toFixed(4)); // prettier-ignore
                     [sp.ziel, sp.akt] = [b.ziel, b.akt];
                     // (am Steuer gehört der Leib dem Wagen: ob er steckt, urteilt der Verkehr — gate:fahr-leben VK `fest`)
@@ -419,6 +420,47 @@ async function menschBuehnen() {
                     },
                 };
                 for (const f of ab) f();
+            }
+            // DIE RÜCKKEHR AN EINEN GEHALTENEN PUNKT (werk-am-ort 3, `_tickBewohner`): wer Platz machte, kehrt zurück, auch wenn
+            // einer dort auf SEINEM Stand ruht — der Weg endet neben ihm (DAS BESETZTE ENDE). Nach dem Tag stellt die Probe je zwei
+            // Ruhende draußen (bis 4 Paare): a ruht auf seinem Stand 0,22 m neben dem von b, b steht 2 m davor, beiseite getreten für
+            // einen, der fort ist; nach 5 Spielminuten wartet keiner mehr beiseite. Bis Kopf 3 wartete er, bis der Punkt leer war
+            // (Stadt, Bündel-Kopf 7 + werk-am-ort 2: wohnhaus #91693 um 7,68 Uhr 2,1 m vor seinem Punkt, wohnhaus #666903 ruhte
+            // 0,22 m daneben). Täter (Selbsttest): `_bewohnerNaechster` ohne `ohne` — das alte Gesetz
+            if (!voll) {
+                const [ab2, K] = [[], 2 * A.PLAYER_WALL_RADIUS + 0.01];
+                if (hat("bewohner-platz-wartet")) decke("_bewohnerNaechster", (alt) => (S2, b, x, z) => alt.call(r, S2, b, x, z), ab2); // prettier-ignore
+                const ruh = S.liste.filter((b) => b.leib && !b.drinnen && b.da && !b.weg && b.ziel && !b.amSteuer && !b.platz && !b.kR && ab(b.leib.position, b.ziel) < 0.3); // prettier-ignore
+                const paare = [];
+                for (let i = 0; i + 1 < ruh.length && paare.length < 4; i += 2) {
+                    const [a, b, Z] = [ruh[i], ruh[i + 1], ruh[i + 1].ziel];
+                    const Pa = { x: Z.x + 0.22, z: Z.z };
+                    let Pb = null;
+                    for (let k = 0; k < 12 && !Pb; k++) {
+                        const P = { x: Z.x + 2 * Math.cos((k * Math.PI) / 6), z: Z.z + 2 * Math.sin((k * Math.PI) / 6) };
+                        if (!r._bewohnerWand(P, P, true) && !r._bewohnerWand(P, Z) && r._bewohnerNaechster(S, b, P.x, P.z) >= K) Pb = P; // prettier-ignore
+                    }
+                    if (!Pb || r._bewohnerWand(Pa, Pa, true)) continue;
+                    const fort = { leib: { position: { x: 1e9, y: 0, z: 1e9 } }, weg: null, drinnen: false };
+                    paare.push({ a, b, fort, alt: [a.ziel.x, a.ziel.z] });
+                    [a.ziel.x, a.ziel.z, a.vx, a.vz] = [Pa.x, Pa.z, 0, 0];
+                    a.leib.position.set(Pa.x, a.leib.position.y, Pa.z);
+                    b.leib.position.set(Pb.x, b.leib.position.y, Pb.z);
+                    Object.assign(b, { platz: fort, da: true, weg: null, vx: 0, vz: 0 });
+                    r._bewohnerRasterLage(S, a);
+                    r._bewohnerRasterLage(S, b);
+                }
+                for (let i = 0; i < Math.round((takte * 5) / 6); i++) takt(DT, { messen: () => {} });
+                const rueckkehr = {
+                    n: paare.length,
+                    wartet: paare
+                        .filter(({ b, fort }) => b.platz === fort && !b.weg)
+                        .map(({ a, b }) => `${wer(b)} ${q3(ab(b.leib.position, b.ziel))} m vor seinem Stand, ${wer(a)} ruht ${q3(ab(a.leib.position, b.ziel))} m daneben`), // prettier-ignore
+                };
+                for (const { a, alt } of paare) [a.ziel.x, a.ziel.z] = alt;
+                for (const f of ab2) f();
+                if (!taeter) sicht[undefined].stadt.rueckkehr = rueckkehr;
+                else if (hat("bewohner-platz-wartet")) sicht["bewohner-platz-wartet"] = { stadt: { haeuser: haeuserIn(S.plan.slots, S.ox, S.oz).length, rueckkehr } }; // prettier-ignore
             }
             return taeter ? null : sicht[undefined].stadt;
         };
@@ -1359,6 +1401,9 @@ async function menschBuehnen() {
             const opfer = tier(ort, "wesen"); // ohne Ort wirft der Wurf beim Namen
             const tat = { x: opfer.position.x, z: opfer.position.z };
             r.damageCreature(opfer, 1e9, { source: "player" });
+            // DER SCHRECK BRAUCHT SEINE REAKTION (kollektiv#2, koerper `schreckZeit`): der Zeuge in der Gefahr-Distanz der Tat
+            // erschrickt nach seiner Reaktionszeit, nicht im Takt der Tat — die Probe geht den Takt, bis er erschrickt (höchstens 3 s)
+            for (let i = 0; i < Math.ceil(3 / dt) && !(r._kreaturFurchtErinnert(g) > 0); i++) schritt();
             const furcht = r._kreaturFurchtErinnert(g);
             // DER VIERTE GANG GEHT DURCH DEN STAND, AN DEM DER ZEUGE JETZT STEHT (Welle SAMEN): er weicht (`_bewohnerWeichen`, sein
             // Weg beginnt im Schlag) — die Probe wartet, bis er wieder steht, misst dort, wie weit er von der Tat fortging (`fort`, gegen
@@ -1413,10 +1458,659 @@ async function menschBuehnen() {
         }
         return { sicht };
     });
+
+    // ── werkort (werk-am-ort, Meisterkarte 2 mensch.menge.bevoelkerung#2 „Stichproben-Personen ± 2 m angetroffen ≥ 20“): die
+    // Stichprobe der Station an der vollen Stadt (`stadtAm`, dasselbe „dorf 7 300“ am Anker): 20 Personen über die Liste gestreut,
+    // die Uhr springt auf 10 (über die Gegen-Stunde, wenn sie nah steht), jeder kommt an (das Werk der Leute ohne Zeit, bis die Zahl
+    // der Offenen fünf Takte ruht), 2 Spiel-Sekunden im Takt des Spiels; je Person ihr Soll der Stunde (`_bewohnerSoll`): drinnen →
+    // drinnen; am Steuer → der Leib ≤ 2 m am Wagen; wer laut der Kette seines Tags geht (koerper `tagesKette`: der Abschnitt der
+    // Stunde, sein Aufbruch `auf` und seine Ankunft `an`), ≤ 2 m am Punkt der Kette — der Rest seines Wegs gegen den Rest, den sie
+    // ihm lässt ((an − Stunde) × Tempo × Sekunden der Stunde); sonst der gezeichnete Leib ≤ 2 m am Ziel. DIE KLASSE: jeder
+    // Gehende der Stadt zur selben Stunde an derselben Zahl. Täter `werk-netz` — der Stand vor werk-am-ort: die Kette misst den
+    // Weg über das Netz des Plans (Stand zu Stand über die Knoten an ihrer Tür, `_bewohnerTuerAm` und tetrapoda `wegLaengen`),
+    // der Leib geht seinen Pfad (`_bewohnerPfad`).
+    await buehne("werkort", async () => {
+        const G = await stadtAm("stadt-voll", "werkort");
+        if (G.fehler) return G;
+        const S = G.S;
+        const L = S.liste;
+        const tag0 = s.dayLengthMinutes;
+        s.dayLengthMinutes = A.DAY_LENGTH_DEFAULT_MINUTES;
+        try {
+            const stunde = () => (((s.timeOfDay % 1) + 1) % 1) * 24;
+            // das Warten der Station (`_weltOffen().leute`, mit Bild samt jedem Kopf, der noch `ankunft` trägt) — ohne Bild zählt
+            // jenes Feld 0 (`stamm/dirigent-takt.js` `o.leute`), darum hier dieselbe Zahl aus der Liste: die Offenen der Ankunft
+            const offen = () => L.reduce((n, b) => n + (b.leib == null || b.ankunft ? 1 : 0), 0);
+            const ankunft = () => {
+                let n = 0;
+                for (let m = Infinity, still = 0, k; still < 5 && n < 3000 && (k = (leute(0), offen())); m = k) {
+                    still = k < m ? 0 : still + 1;
+                    n++;
+                }
+                return n;
+            };
+            const auf = (h) => {
+                const d = Math.abs(stunde() - h);
+                if (Math.min(d, 24 - d) < 0.3) (r.setTimeOfDay(((h + 12) % 24) / 24, "regler"), leute(0));
+                r.setTimeOfDay((h % 24) / 24, "regler");
+                return ankunft();
+            };
+            let uhr = performance.now();
+            // (je Leib die Sekunden, die er mit Weg stand — Vorrang der Fahrbahn, Ausweichen, Hof —, beim Namen der Weitesten)
+            const stand = new Map();
+            const schritt = async (n) => {
+                for (let k = 0; k < n; k++) {
+                    uhr += A.TAKT_DECKEL_S * 1000;
+                    r._gameLoopTick(uhr);
+                    for (const b of L) if (b.weg && !b.drinnen && !(b.tempoJetzt > 0)) stand.set(b, (stand.get(b) || 0) + A.TAKT_DECKEL_S); // prettier-ignore
+                    await sleep();
+                }
+            };
+            const gez = (g) => !!g && !g.userData._drinnen && (g.visible || g.userData._satz === true || !!(r._kzBesitztFeld && r._kzBesitztFeld(g))); // prettier-ignore
+            const q1 = (v) => +v.toFixed(1);
+            // der Punkt der Kette eines Gehenden: der Abschnitt der Stunde, der Rest, den sie ihm lässt, und der Rest seines Wegs
+            // (vom Leib zum nächsten Punkt, dann längs; wer beiseite tritt, `_bewohnerPlatz` — der Schritt ersetzt den Weg, nie das
+            // Soll —, geht von dort seinen Pfad, `_bewohnerPfad`) — null, wer nicht geht
+            const punkt = (b, h) => {
+                const K = b.kette && b.kette.K;
+                if (!K || !b.weg || b.da || b.drinnen || !b.leib) return null;
+                // (der Weg zum Anker: der letzte Abschnitt geht zurück zum Schlaf — endet er nach dem Anker, eng, liegt die Stunde
+                // nach dem Anker noch in der Kette, + 24; bis hier las die Linse dort den Anker ohne Weg: der Nachtwächter #468983
+                // auf dem Heimweg 61 m „daneben“)
+                const Z = K.kette[K.kette.length - 1];
+                const hr0 = (((h - K.v - K.A) % 24) + 24) % 24;
+                const hA = Z.an > 24 && hr0 + 24 < Z.an ? hr0 + 24 : hr0;
+                let i = 0;
+                for (let j = 1; j < K.kette.length && K.kette[j].auf <= hA; j++) i = j;
+                const Ab = K.kette[i];
+                // (ein Kern vor werk-am-ort trägt keine Ankunft: ROT beim Namen, nie ein stilles Verfehlt)
+                if (!Number.isFinite(Ab.an)) throw new Error("die Kette des Tags trägt keine Ankunft (koerper tagesKette `an`)");
+                const v = b.gangTempo ?? b.tempo;
+                const sek = r._bewohnerStundeSek();
+                const plan = Math.max(0, Ab.an - hA) * v * sek;
+                // sein Weg ohne die Punkte um einen Stehenden (`_um`, `_bewohnerUm`: der Tag kennt keinen, der Umweg führt auf
+                // ihn zurück), dahinter sein Pfad zum Ziel, wenn er beiseite trat
+                const E = b.weg[b.weg.length - 1];
+                const Q = b.platz ? r._bewohnerPfad(S, b, E, b.ziel) : null;
+                const wi = Math.min(b.wi | 0, b.weg.length - 1);
+                const W = [...b.weg.slice(wi), ...(Q || [])].filter((q) => !q._um);
+                let ist = W.length ? ab(b.leib.position, W[0]) : 0;
+                for (let k = 1; k < W.length; k++) ist += ab(W[k - 1], W[k]);
+                // DER PUNKT DER KETTE: `plan` Meter vor dem Ende seines Wegs — über den Leib, dahinter die gegangenen Punkte
+                // (reicht der Weg nicht, so weit davor) —; angetroffen heißt, der Leib steht im Raum ≤ 2 m an ihm, wie „am Ziel“;
+                // das Vorzeichen trägt der Rest (hinter: +). Bis hier zählte der Rest − Rest der Kette: der Umweg um einen
+                // Stehenden zählte als Rückstand (jaeger #114167, 10,01 Uhr: der Rest 2,9 m über der Kette, 1,8 m davon der Bogen
+                // um die Patrizier an ihrem Werk)
+                const V = [...b.weg.slice(0, wi).filter((q) => !q._um), b.leib.position, ...W];
+                let [rest, P] = [plan, V[V.length - 1]];
+                for (let k = V.length - 1; k > 0 && rest > 0; k--) {
+                    const l = ab(V[k - 1], V[k]);
+                    const f = Math.min(1, rest / (l || 1));
+                    P = { x: V[k].x + (V[k - 1].x - V[k].x) * f, z: V[k].z + (V[k - 1].z - V[k].z) * f };
+                    rest -= l;
+                }
+                const raum = ab(b.leib.position, P) + Math.max(0, rest);
+                return { i, plan, ist, d: (ist < plan ? -1 : 1) * raum, dWeg: ist - plan, an: Ab.an, auf: Ab.auf, hr: hA, K, beiseite: !!b.platz }; // prettier-ignore
+            };
+            const lauf = async () => {
+                for (const b of L) b.kette = null; // die Kette jedes Kopfs neu, wie das Gesetz sie jetzt rechnet
+                stand.clear();
+                const t0 = performance.now();
+                const n0 = auf(10);
+                const ankunftMs = Math.round(performance.now() - t0);
+                await schritt(Math.round(2 / A.TAKT_DECKEL_S));
+                const h = stunde();
+                const wahl = Array.from({ length: 20 }, (_, i) => L[Math.floor(((i + 0.5) * L.length) / 20)]);
+                const verfehlt = [];
+                let an = 0;
+                for (const b of wahl) {
+                    const z = r._bewohnerSoll(b, h);
+                    const g = b.leib;
+                    const amWagen = !!(z.ziel && b.wagen && b.wagen.entry && z.ziel === b.wagen.entry.position);
+                    const P = amWagen ? null : punkt(b, h);
+                    let ok = false, d = null, wie = "ziel"; // prettier-ignore
+                    // wer laut der Kette noch geht, steht am Punkt der Kette — auch auf dem Weg ins Haus
+                    if (P && P.plan > 0) {
+                        d = Math.abs(P.d);
+                        [ok, wie] = [d <= 2 && gez(g), "kette"];
+                    } else if (z.drinnen) [ok, wie] = [!!b.drinnen || !!(g && g.userData._drinnen), "drinnen"];
+                    else if (amWagen) {
+                        d = g ? ab(g.position, b.wagen.gleitJetzt || b.wagen.entry.position) : null;
+                        [ok, wie] = [!!b.amSteuer && d != null && d <= 2, "wagen"];
+                    } else {
+                        d = g && z.ziel ? ab(g.position, z.ziel) : null;
+                        ok = d != null && d <= 2 && gez(g);
+                    }
+                    if (ok) an++;
+                    else {
+                        const name = Object.entries(b.orte || {}).find(([, o]) => o === z.ziel);
+                        verfehlt.push({
+                            wer: `${b.rolle}/${b.beruf} #${b.heim}`,
+                            akt: z.akt,
+                            wie,
+                            d: d == null ? null : q1(d),
+                            ziel: name ? name[0] : z.ziel ? "fremd" : null,
+                            gez: gez(g),
+                            kette: P && { auf: +P.auf.toFixed(3), an: +P.an.toFixed(3), h: +P.hr.toFixed(3), restPlan: q1(P.plan), restIst: q1(P.ist), dWeg: q1(P.dWeg), stand: q1(stand.get(b) || 0) }, // prettier-ignore
+                        });
+                    }
+                }
+                // DIE KLASSE: jeder, der zur Stunde geht — der Rest seines Wegs gegen den Rest, den die Kette ihm lässt
+                // (sein Bein: der Pfad, den die Kette zu seinem Ziel maß — Länge, Anfang — gegen den Weg seines Tags, den er geht)
+                const bein = (b) => {
+                    const w = ((b.kette && b.kette.pfade) || []).find((q) => q.e === b.ziel);
+                    const T = b.tag && b.tag.pts;
+                    let m = 0;
+                    for (let k = 1; T && k < T.length; k++) m += ab(T[k - 1], T[k]);
+                    return { kettenM: w ? q1(w.m) : null, wegM: T ? q1(m) : null, vonA: w && T ? q1(ab(T[0], w.a)) : null, gemerkt: !!(w && w.pts && b.weg && b.weg.length && w.pts[w.pts.length - 1] === b.weg[b.weg.length - 1]) }; // prettier-ignore
+                };
+                const [dd, weit] = [[], []];
+                let [ohneKette, beiseite] = [0, 0];
+                for (const b of L) {
+                    if (!b.weg || b.da || b.drinnen || !b.leib) continue;
+                    const P = punkt(b, h);
+                    if (P) (dd.push(P.d), (beiseite += P.beiseite ? 1 : 0));
+                    else ohneKette++;
+                    // die Weitesten beim Namen (Abstand zum Punkt der Kette, Rest − Rest der Kette, Abschnitt, Rückstand hinter seinem Tag)
+                    if (P && Math.abs(P.d) > 2) weit.push({ wer: `${b.rolle}/${b.beruf} #${b.heim}`, akt: b.akt, d: q1(P.d), dWeg: q1(P.dWeg), auf: +P.auf.toFixed(3), an: +P.an.toFixed(3), h: +P.hr.toFixed(3), beiseite: P.beiseite, rueck: q1(b.rueck || 0), stand: q1(stand.get(b) || 0), bein: bein(b) }); // prettier-ignore
+                }
+                weit.sort((p, q) => Math.abs(q.d) - Math.abs(p.d));
+                const st = (a) => {
+                    const x = a.slice().sort((p, q) => p - q);
+                    const at = (f) => (x.length ? +x[Math.min(x.length - 1, Math.floor(f * (x.length - 1) + 0.5))].toFixed(2) : null);
+                    return { n: x.length, min: at(0), p10: at(0.1), med: at(0.5), p90: at(0.9), max: at(1) };
+                };
+                const klasse = { gehende: dd.length, ohneKette, beiseite, amPunkt: dd.filter((d) => Math.abs(d) <= 2).length, hinter: dd.filter((d) => d > 2).length, vor: dd.filter((d) => d < -2).length, restM: st(dd), weit: weit.slice(0, 6) }; // prettier-ignore
+                // DER REGEN LÄSST NACH (bevoelkerung#2, `_bewohnerRegenBisWende`): die Uhr springt auf 15 Uhr im Regen 0,45 an jeder
+                // Tür, jeder kommt an; dann sinkt er auf 0,05, 2 Spiel-s im Takt. Wen der Regen heim schickte, dessen Soll kehrt nicht
+                // mitten im Abschnitt um — gezählt, wessen Soll drinnen war und jetzt draußen ist, ohne dass sein trockener Tag oder
+                // der des Regens in den 2 s eine Wende hatte (am Gerät: der Pendler daheim, sein Soll das Werk 376,4 m fort)
+                const R = { rain: 0.45 };
+                const regenZurueck = [];
+                decke("_wetterFeldAm", (f) => function () {
+                    return Object.assign({}, f.apply(this, arguments), { rain: R.rain });
+                }, regenZurueck); // prettier-ignore
+                let umkehr = 0, heimImRegen = 0; // prettier-ignore
+                const umWer = [];
+                try {
+                    for (const b of L) b.nass = null;
+                    auf(15);
+                    const h0 = stunde();
+                    const vor = new Map(L.map((b) => [b, r._bewohnerSoll(b, h0)]));
+                    R.rain = 0.05;
+                    await schritt(Math.round(2 / A.TAKT_DECKEL_S));
+                    const h1 = stunde();
+                    const KC = window.__koerperCore;
+                    for (const b of L) {
+                        const z0 = vor.get(b);
+                        // (eine Wende in den 2 s — der trockenen Kette oder der des Regens, in dem er heim ging — ist eine Grenze
+                        // seines Plans, kein Umkehren mitten im Abschnitt)
+                        const [K, Kn] = [r._bewohnerKette(b, 0), r._bewohnerKette(b, 0.45)];
+                        const [t0, t1] = [KC.tagesZiel(K, h0), KC.tagesZiel(K, h1)];
+                        if (!z0.drinnen || t0.drinnen || t0 !== t1 || KC.tagesZiel(Kn, h0) !== KC.tagesZiel(Kn, h1)) continue;
+                        heimImRegen++;
+                        if (!r._bewohnerSoll(b, h1).drinnen) (umkehr++, umWer.length < 3 && umWer.push(`${b.rolle}/${b.beruf} #${b.heim} ${t0.akt}`)); // prettier-ignore
+                    }
+                } finally {
+                    for (const f of regenZurueck) f();
+                    for (const b of L) b.nass = null;
+                }
+                const nachlass = { heimImRegen, umkehr, wer: umWer };
+                return { bewohner: L.length, ankunftTakte: n0, ankunftMs, uhr: +h.toFixed(3), stichproben: wahl.length, angetroffen: an, verfehlt, klasse, nachlass }; // prettier-ignore
+            };
+            if (!taeter) return await lauf();
+            const sicht = {};
+            for (const [t, [name, fn]] of Object.entries({
+                // die Kette misst über das Netz des Plans: Stand zu Stand über die Knoten an ihrer Tür (der Stand vor werk-am-ort)
+                "werk-netz": ["_bewohnerPfadM", (f) => {
+                    const lang = new Map();
+                    return function (S2, b, a, e) {
+                        const w = f.apply(this, arguments);
+                        const NG = S2.netzGrund;
+                        const [P, Q] = [this._bewohnerTuerAm(NG, a), this._bewohnerTuerAm(NG, e)];
+                        const W = P && (lang.get(P.i) || lang.set(P.i, globalThis.__tetrapodaCore.wegLaengen(NG.knoten.length, NG.kanten, P.i)).get(P.i));
+                        return { ...w, m: P && Q ? P.d + W[Q.i] + Q.d : Infinity };
+                    };
+                }], // prettier-ignore
+                // der Regen lebt im Takt des Felds (das Soll vor werk-am-ort-2): sinkt er, kehrt der Heimgeschickte im Atemzug um
+                "regen-sofort": ["_bewohnerRegenBisWende", () => (b, stunde, nass) => nass],
+            })) {
+                const zurueck = [];
+                decke(name, fn, zurueck);
+                if ([].concat(taeter).includes(t)) sicht[t] = await lauf();
+                for (const f of zurueck) f();
+            }
+            return { sicht };
+        } finally {
+            s.dayLengthMinutes = tag0;
+        }
+    });
+
+    // ── mengebild (MESSUNG, Meisterkarte 2 mensch.menge.bild#2 „≥ 100 Menschen, ≥ 40 gehend; Zwillingssuche 0“): die Station
+    // MENGE_BILD wörtlich an der vollen Stadt — die Pose des Messorts (`_ortPose` „platz“, wie Werkbank `umstellen`), Third, das
+    // Fenster 16:9, die Uhr auf 8, jeder kommt an, 8 Spiel-Sekunden im Takt des Spiels; gezählt je Stand (Hülle mit
+    // `_feldLageVon` und `heim`): gezeichnet, nicht drinnen, die Brust im Frustum, die Sichtlinie frei von Hausgrundrissen,
+    // gehend ≥ 0,5 m; dazu die Täter-Zahl: wer um 8 Uhr wo ist und was er tut
+    await buehne("mengebild", async () => {
+        const G = await stadtAm("stadt-voll", "mengebild");
+        if (G.fehler) return G;
+        // DER NIESEL DES GERÄTS (bild#2): an der Radeon (cecf1d71, 8,05 Uhr) standen 533 drinnen — das Soll der Stunde bei Regen
+        // 0,2 an der Tür (headless trocken 353, bei 0,2 517): die Probe misst die Stadt im Niesel, nie im Sonnenschein des Boots
+        const nieselZurueck = [];
+        decke("_wetterFeldAm", (f) => function () {
+            const w = f.apply(this, arguments);
+            return Object.assign({}, w, { rain: Math.max(w.rain, 0.2) });
+        }, nieselZurueck); // prettier-ignore
+        const S = G.S;
+        const L = S.liste;
+        const tag0 = s.dayLengthMinutes;
+        s.dayLengthMinutes = A.DAY_LENGTH_DEFAULT_MINUTES;
+        try {
+            const stunde = () => (((s.timeOfDay % 1) + 1) % 1) * 24;
+            const offen = () => L.reduce((n, b) => n + (b.leib == null || b.ankunft ? 1 : 0), 0);
+            const ankunft = () => {
+                let n = 0;
+                for (let m = Infinity, still = 0, k; still < 5 && n < 3000 && (k = (leute(0), offen())); m = k) {
+                    still = k < m ? 0 : still + 1;
+                    n++;
+                }
+                return n;
+            };
+            const lauf = async () => {
+                let uhr = performance.now();
+                const schritt = async (n) => {
+                    for (let k = 0; k < n; k++) {
+                        uhr += A.TAKT_DECKEL_S * 1000;
+                        r._gameLoopTick(uhr);
+                        await sleep();
+                    }
+                };
+                const P = r._ortPose([S.ox, S.oz], "platz");
+                [s.yaw, s.pitch] = [P.gier, P.nick || 0];
+                pm.set(P.x, r._voxelSurfaceY(P.x, P.z) + 1.8, P.z);
+                if (s.cameraMode !== "third") r.setCameraMode("third");
+                const cam = s.camera;
+                const asp0 = cam.aspect;
+                cam.aspect = 16 / 9;
+                cam.updateProjectionMatrix();
+                const h0 = stunde();
+                if (Math.min(Math.abs(h0 - 8), 24 - Math.abs(h0 - 8)) < 0.3) (r.setTimeOfDay(20 / 24, "regler"), leute(0));
+                r.setTimeOfDay(8 / 24, "regler");
+                const nAnkunft = ankunft();
+                const leiber = () => s.scene.children.filter((o) => o && o.userData && o.userData._feldLageVon && o.userData.heim != null);
+                const gez = (g) => !g.userData._drinnen && (g.visible || g.userData._satz === true || !!(r._kzBesitztFeld && r._kzBesitztFeld(g))); // prettier-ignore
+                const p0 = new Map(leiber().map((g) => [g, { x: g.position.x, z: g.position.z }]));
+                await schritt(Math.round(8 / A.TAKT_DECKEL_S));
+                cam.aspect = 16 / 9;
+                cam.updateProjectionMatrix();
+                cam.updateMatrixWorld(true);
+                const fr = r._frustumVon(cam); // der EINE Bau des Sichtkegels (die Ein-Schreiber-Wand: kein eigenes Frustum)
+                const auge = cam.getWorldPosition(new T.Vector3());
+                const vor = cam.getWorldDirection(new T.Vector3());
+                const augeImHaus = r._imGrundriss(auge.x, auge.z, 0) === "haus";
+                // wer zu welchem Leib gehört (der Bewohner der Liste, sein Soll der Stunde)
+                const wem = new Map();
+                for (const b of L) if (b.leib) wem.set(b.leib, b);
+                const h = stunde();
+                let imBild = 0, gehend = 0, alle = 0; // prettier-ignore
+                const aus = { drinnen: 0, ungezeichnet: 0, ausserBild: 0, verdeckt: 0 };
+                const gesicht = new Map();
+                const tafel = {}; // je Lage × Akt die Zahl
+                const zaehl = (lage, g) => {
+                    const b = wem.get(g);
+                    const akt = b ? r._bewohnerSoll(b, h).akt + (b.weg && !b.da ? "·weg" : "") : g.userData.markt ? "markt" : "?";
+                    const k = lage + " " + akt;
+                    tafel[k] = (tafel[k] || 0) + 1;
+                };
+                // die außer Bild: binnen 40 m vor dem Auge (im Kegel ±60°) vs. dahinter vs. fern
+                const fern = { kegel40: 0, kegel80: 0, hinter: 0, fern: 0 };
+                for (const g of leiber()) {
+                    alle++;
+                    if (g.userData._drinnen) {
+                        aus.drinnen++;
+                        zaehl("drinnen", g);
+                        continue;
+                    }
+                    if (!gez(g)) {
+                        aus.ungezeichnet++;
+                        continue;
+                    }
+                    const brust = new T.Vector3(g.position.x, g.position.y + 0.4, g.position.z);
+                    if (!fr.containsPoint(brust)) {
+                        aus.ausserBild++;
+                        const dx = brust.x - auge.x, dz = brust.z - auge.z, d = Math.hypot(dx, dz); // prettier-ignore
+                        const c = (dx * vor.x + dz * vor.z) / (d * Math.hypot(vor.x, vor.z) || 1);
+                        if (c < 0) fern.hinter++;
+                        else if (d > 80) fern.fern++;
+                        else if (c > 0.5) fern[d < 40 ? "kegel40" : "kegel80"]++;
+                        else fern.hinter++;
+                        zaehl("ausser", g);
+                        continue;
+                    }
+                    const d = auge.distanceTo(brust);
+                    let frei = true, raus = !augeImHaus; // prettier-ignore
+                    for (let t = 0.6; t < d - 0.6 && frei; t += 0.5) {
+                        const k = t / d, hh = r._imGrundriss(auge.x + (brust.x - auge.x) * k, auge.z + (brust.z - auge.z) * k, 0) === "haus"; // prettier-ignore
+                        if (!raus) raus = !hh;
+                        else if (hh) frei = false;
+                    }
+                    if (!frei) {
+                        aus.verdeckt++;
+                        zaehl("verdeckt", g);
+                        continue;
+                    }
+                    imBild++;
+                    const a = p0.get(g);
+                    const geht = !!a && Math.hypot(g.position.x - a.x, g.position.z - a.z) >= 0.5;
+                    if (geht) gehend++;
+                    zaehl(geht ? "bild-geht" : "bild-steht", g);
+                    const fb = g.userData._feldLageVon.b;
+                    if (fb) {
+                        const k = fb.gestalt + "|" + JSON.stringify(fb.farben || null) + "|" + Number(fb.groesse || 0).toFixed(2);
+                        gesicht.set(k, (gesicht.get(k) || 0) + 1);
+                    }
+                }
+                const zwillinge = [...gesicht.values()].filter((n) => n > 1).reduce((x, n) => x + n, 0);
+                // die Stadt um 8 Uhr: draußen, gehend (mit Weg, nicht da), am Markt
+                const draussen = L.filter((b) => b.leib && !b.drinnen).length;
+                const unterwegs = L.filter((b) => b.leib && !b.drinnen && b.weg && !b.da).length;
+                // DER WEG ZUM MARKT IM REGEN (TAGES_GESETZ.regen.absage, Cools 2010): wer um diese Stunde trocken einkauft, und wie
+                // viele von ihnen der Regen 0,6 (die Tafel des Worts „regen“) heim schickt — das Band der Profis sagt 16,2 % ab, nie jeden
+                const KC = window.__koerperCore;
+                const kauft = L.filter((b) => {
+                    const z = KC.tagesZiel(r._bewohnerKette(b, 0), h);
+                    return z.akt === "einkauf" && !z.drinnen;
+                });
+                const heimImRegen = kauft.filter((b) => KC.tagesZiel(r._bewohnerKette(b, 0.6), h).drinnen).length;
+                const regen = { einkauf: kauft.length, heim: heimImRegen, anteil: kauft.length ? +(heimImRegen / kauft.length).toFixed(3) : null, niesel: 0.2 }; // prettier-ignore
+                cam.aspect = asp0;
+                cam.updateProjectionMatrix();
+                const q1 = (v) => +v.toFixed(1);
+                return { imBild, gehend, zwillinge, leiber: alle, aus, fern, auge: [q1(auge.x), q1(auge.y), q1(auge.z)], pose: [q1(P.x), q1(P.z), +P.gier.toFixed(3)], uhr: +h.toFixed(3), ankunft: nAnkunft, bewohner: L.length, draussen, unterwegs, tafel, einkaeufer: L.filter((b) => b.orte.einkauf).length, runde: L.filter((b) => b.orte.einkauf).reduce((n, b) => n + (b.orte.einkaufRunde || []).length, 0), rundeKurz: S.rundeKurz ?? null, regen }; // prettier-ignore
+            };
+            if (!taeter) return await lauf();
+            const sicht = {};
+            for (const [t, [name, fn]] of Object.entries({
+                // der Einkäufer steht seine ganze Zeit am Markt an EINEM Stand (das Gesetz vor menge-gang: die Kette ohne die Runde)
+                "einkauf-steht": ["_bewohnerKette", (f) => function (b) {
+                    const R = b.orte.einkaufRunde;
+                    b.orte.einkaufRunde = null;
+                    try {
+                        return f.apply(this, arguments);
+                    } finally {
+                        b.orte.einkaufRunde = R;
+                    }
+                }], // prettier-ignore
+                // der Regen schickt JEDEN Einkäufer heim (das Gesetz vor werk-am-ort-2: TAGES_GESETZ.regen ohne `absage`)
+                "regen-jeder": ["_bewohnerKette", (f) => function (b, nass) {
+                    const K = f.apply(this, arguments);
+                    if (!(nass > 0)) return K;
+                    const heim = (p) => (p.akt === "einkauf" && !p.drinnen ? Object.assign({}, p, { ort: b.orte.heim, wo: "heim", drinnen: true }) : p); // prettier-ignore
+                    return Object.assign({}, K, { kette: K.kette.map((e) => Object.assign({}, e, { p: heim(e.p) })) });
+                }], // prettier-ignore
+            })) {
+                const zurueck = [];
+                decke(name, fn, zurueck);
+                if ([].concat(taeter).includes(t)) sicht[t] = await lauf();
+                for (const f of zurueck) f();
+            }
+            return { sicht };
+        } finally {
+            s.dayLengthMinutes = tag0;
+            for (const f of nieselZurueck) f();
+        }
+    });
+
+    // ── schreck (mensch.menge.kollektiv#2): DIE SCHRECK-FRONT am Markt der vollen Stadt — der Rumpf der Station (punkte-maschine
+    // meisterkarte-quelle/punkte/stationen/k2-mensch-menge.js `SCHRECK`, ihre Uhr `STADT` aus k2-mensch-geist.js) wörtlich: um 10 Uhr,
+    // der Gegenlauf 2 Spiel-s ohne Tat, dann die Tat 2 m neben dem Spieler am Platz (`damageCreature` vom Spieler), 6 Spiel-s im Takt
+    // des Spiels; die Front v = Var(d) ÷ Cov(d, t) über den ersten Takt, in dem einer binnen 60 m ≥ 0,5 m weiter vom Opfer steht,
+    // die Flucht = Anteil der Zeugen (≤ zeugeM) nach 6 s ≥ 0,5 m weiter weg. Bis hier erschrak jeder Zeuge im Takt der Tat (Front 51,72).
+    await buehne("schreck", async () => {
+        const G = await stadtAm("stadt-voll", "schreck");
+        if (G.fehler) return G;
+        const S = G.S;
+        const L = S.liste;
+        const tag0 = s.dayLengthMinutes;
+        s.dayLengthMinutes = A.DAY_LENGTH_DEFAULT_MINUTES;
+        const stunde = () => (((s.timeOfDay % 1) + 1) % 1) * 24;
+        const ankunft = () => {
+            let n = 0;
+            for (let m = Infinity, still = 0, k; still < 5 && n < 3000 && (k = (leute(0), L.reduce((x, b) => x + (b.leib == null || b.ankunft ? 1 : 0), 0))); m = k) {
+                still = k < m ? 0 : still + 1;
+                n++;
+            }
+            return n;
+        }; // prettier-ignore
+        const uhrAuf = (h) => {
+            const d = Math.abs(stunde() - h);
+            if (Math.min(d, 24 - d) < 0.3) (r.setTimeOfDay(((h + 12) % 24) / 24, "regler"), leute(0));
+            r.setTimeOfDay((h % 24) / 24, "regler");
+            return ankunft();
+        };
+        let uhr = performance.now();
+        const takt = async (n) => {
+            for (let k = 0; k < n; k++) {
+                uhr += A.TAKT_DECKEL_S * 1000;
+                r._gameLoopTick(uhr);
+                await sleep();
+            }
+        };
+        const lauf = async () => {
+            const P = r._ortPose([S.ox, S.oz], "platz");
+            pm.set(P.x, r._voxelSurfaceY(P.x, P.z) + 1.8, P.z);
+            s.renderer.setAnimationLoop(null);
+            uhrAuf(10);
+            await takt(10);
+            const fx = pm.x + 2, fz = pm.z, o = { x: fx, z: fz };
+            const lage = () => new Map(L.filter((b) => b.leib && !b.drinnen).map((b) => [b, { x: b.leib.position.x, z: b.leib.position.z }]));
+            const abO = (p) => Math.hypot(p.x - o.x, p.z - o.z);
+            const ZM = A.BEWOHNER.zeugeM;
+            const g0 = lage();
+            await takt(20);
+            const g1 = lage();
+            let gegenN = 0, gegenWeg = 0;
+            const vorher = new Set();
+            for (const [b, p] of g0) {
+                const q = g1.get(b);
+                if (q && abO(q) - abO(p) > 0.5) vorher.add(b);
+                if (abO(p) >= ZM || !q) continue;
+                gegenN++;
+                if (abO(q) - abO(p) > 0.5) gegenWeg++;
+            }
+            const opfer = r.spawnCreatureAt(fx, r._voxelSurfaceY(fx, fz), fz, "happy", "wesen", { precise: true, bodySize: 0.6 });
+            if (!opfer) return { fehler: "Spawn des Opfers" };
+            const vor = lage();
+            const zeugen = [...vor].filter(([, p]) => abO(p) < ZM).map(([b]) => b);
+            const tat = r.damageCreature(opfer, 9999, { source: "player", fromPos: { x: pm.x, y: pm.y, z: pm.z } });
+            const KS = S.schreck;
+            const reakt = new Map();
+            for (let k = 1; k <= 60; k++) {
+                await takt(1);
+                for (const [b, p] of vor) {
+                    if (reakt.has(b) || !b.leib) continue;
+                    const d0 = abO(p);
+                    if (d0 > 60) continue;
+                    if (abO(b.leib.position) - d0 >= 0.5) reakt.set(b, { d: d0, t: k * A.TAKT_DECKEL_S });
+                }
+            }
+            const nach = lage();
+            let fl = 0, fn = 0;
+            // wer von den Zeugen nicht floh (nur Befund): nie erschrocken · spät (ab > 5 s) · erschrocken und nicht weg · drinnen
+            const still = { nie: 0, spaet: 0, steht: 0, drinnen: 0 };
+            for (const b of zeugen) {
+                const p = vor.get(b), q = nach.get(b);
+                if (!p || !q) {
+                    if (p) still.drinnen++;
+                    continue;
+                }
+                fn++;
+                if (abO(q) - abO(p) > 0.5) fl++;
+                else {
+                    const e = KS && KS.erschrak.get(b);
+                    const art = !e ? "nie" : e.ab > 5 ? "spaet" : "steht";
+                    still[art]++;
+                    const zl = b.ziel ? +Math.hypot(b.ziel.x - o.x, b.ziel.z - o.z).toFixed(1) : null;
+                    (still.wer || (still.wer = [])).push(`${art} ${b.rolle}/${b.akt} d0 ${abO(p).toFixed(1)} weg ${(abO(q) - abO(p)).toFixed(1)}${e ? " ab " + e.ab.toFixed(1) : ""} ziel@${zl} weichen ${!!b.weichen} schaut ${!!(KS && KS.schaut.has(b))}`); // prettier-ignore
+                }
+            }
+            for (const c of [...(s.creatures || []), ...(s.leichname || [])]) if (c === opfer) r.removeCreature(c);
+            const pts = [...reakt.values()];
+            let front = 0;
+            if (pts.length >= 3) {
+                const md = pts.reduce((x, p) => x + p.d, 0) / pts.length, mt = pts.reduce((x, p) => x + p.t, 0) / pts.length;
+                let cov = 0, vd = 0;
+                for (const p of pts) (cov += (p.d - md) * (p.t - mt)), (vd += (p.d - md) ** 2);
+                front = cov > 1e-9 ? +(vd / cov).toFixed(2) : 999;
+            }
+            // die Zerlegung (nur Befund): je Ring von 5 m die Reagierten, ihre mittlere Zeit, und wer schon ohne Tat wegging
+            const ringe = {};
+            for (const [b, p] of reakt) {
+                const k = Math.min(55, Math.floor(p.d / 5) * 5);
+                const R = ringe[k] || (ringe[k] = { n: 0, t: 0, vorher: 0, ab: 0, abN: 0 });
+                R.n++;
+                R.t += p.t;
+                const e0 = KS && KS.erschrak.get(b);
+                if (e0) (R.ab += e0.ab), R.abN++;
+                if (vorher.has(b)) R.vorher++;
+            }
+            for (const R of Object.values(ringe)) (R.t = +(R.t / R.n).toFixed(2)), (R.ab = R.abN ? +(R.ab / R.abN).toFixed(2) : null);
+            const imKreis = [...vor.values()].filter((p) => abO(p) <= 60).length;
+            return { zeugen: zeugen.length, gezaehlt: fn, flucht: fn ? +(fl / fn).toFixed(3) : null, front, reagiert: pts.length, imKreis, jenseits: pts.filter((p) => p.d > ZM).length, gegenlauf: gegenN ? +(gegenWeg / gegenN).toFixed(3) : null, tat: !!(tat && tat.ok), zeugeM: ZM, uhr: +stunde().toFixed(3), ringe, still }; // prettier-ignore
+        };
+        try {
+            if (!taeter) return await lauf();
+            const sicht = {};
+            for (const [t, [name, fn]] of Object.entries({
+                // die Kunde im selben Takt (das Gesetz vor werk-am-ort-2): jeder draußen binnen zeugeM erschrickt im Takt der Tat
+                "kunde-takt": ["_bewohnerSchreckSieht", () => function () {
+                    return AnazhRealm.BEWOHNER.zeugeM;
+                }], // prettier-ignore
+            })) {
+                const zurueck = [];
+                decke(name, fn, zurueck);
+                if ([].concat(taeter).includes(t)) sicht[t] = await lauf();
+                for (const f of zurueck) f();
+            }
+            return { sicht };
+        } finally {
+            s.dayLengthMinutes = tag0;
+        }
+    });
+
+    // ── seuche (mensch.menge.seuche#2): DER AUSBRUCH DER VOLLEN STADT — der Leser des Kandidaten der Station (cloud-post/
+    // werk-am-ort-2-station): der Ausbruch 0 der Stadt (`_bewohnerSeuche`: die Kontakte aus der Kette jedes Bewohners, gezeichnet
+    // oder nicht, koerper `seucheAusbruch`) — wie viele er trifft, ob die Kurve S-I-R ist, R0 der frühen Fälle im Band des Erregers;
+    // und der Konsum: am Tag seiner Spitze ist jeder, den er mit Symptomen ansteckend hält, im Satz krank (`b.krank` des Tags) und
+    // sein Tag (`tagesKette` krank) hält ihn um 10, 12 und 15 Uhr daheim (oder am Posten, den er wie im Regen hält)
+    await buehne("seuche", async () => {
+        const G = await stadtAm("stadt-voll", "seuche");
+        if (G.fehler) return G;
+        const S = G.S;
+        const KC = window.__koerperCore;
+        const SG = KC.SEUCHE_GESETZ;
+        const lauf = () => {
+            const t0 = performance.now();
+            const A = r._bewohnerSeuche(S, 0);
+            const ms = Math.round(performance.now() - t0);
+            if (!A) return { fehler: "kein Ausbruch: keiner der Stadt hat einen Kontakt" };
+            const beginn = KC.seucheBeginn(S.plan.seed >>> 0, 0);
+            const d = beginn + A.spitze;
+            const L = S.liste;
+            const krankHeute = [];
+            L.forEach((b, i) => {
+                const a = A.tag[i];
+                if (A.symptom[i] && a >= 0 && A.spitze >= a + SG.latentT && A.spitze < a + SG.latentT + SG.ansteckT) krankHeute.push(b);
+            });
+            const imSatz = krankHeute.filter((b) => r._bewohnerLauf(S, b, "krank", d)).length;
+            // daheim — oder am Posten, den der Kranke hält wie im Regen (der Händler, der Fahrer, die Wache: Akt arbeit/streife)
+            const amPosten = (z) => z.akt === "arbeit" || z.akt === "streife";
+            const daheim = krankHeute.filter((b) => {
+                const K = KC.tagesKette(b.same, b.rolle, b.orte, 0, true, () => 0);
+                return [10, 12, 15].every((h) => KC.tagesZiel(K, h).wo === "heim" || amPosten(KC.tagesZiel(K, h)));
+            }).length;
+            const q = A.kurve.filter((x, t) => t % 5 === 0).map((x) => x[2]);
+            // der Grad des Netzes (nur Befund): Kontakte je Bewohner unterwegs und am Krankenbett, ihre Stunden
+            const KK = S.seuche.K;
+            const mw = (f) => +(KK.reduce((x, k) => x + f(k), 0) / KK.length).toFixed(2);
+            const grad = { geht: mw((k) => k.geht.length), gehtH: mw((k) => k.geht.reduce((x, c) => x + c[1], 0)), liegt: mw((k) => k.liegt.length), ohne: KK.filter((k) => !k.geht.length).length }; // prettier-ignore
+            const nichtDaheim = krankHeute.filter((b) => {
+                const K = KC.tagesKette(b.same, b.rolle, b.orte, 0, true, () => 0);
+                return ![10, 12, 15].every((h) => KC.tagesZiel(K, h).wo === "heim" || amPosten(KC.tagesZiel(K, h)));
+            }).slice(0, 4).map((b) => b.rolle + " " + [10, 12, 15].map((h) => KC.tagesZiel(KC.tagesKette(b.same, b.rolle, b.orte, 0, true, () => 0), h).wo).join("/")); // prettier-ignore
+            const r0 = A.r0 == null ? null : +A.r0.toFixed(2);
+            return { bewohner: L.length, faelle: A.faelle, ungezeichnet: L.filter((b, i) => A.tag[i] >= 0 && !b.leib).length, sir: A.sir, r0, band: SG.r0, imBand: r0 != null && r0 >= SG.r0[0] && r0 <= SG.r0[1], wachstum: A.wachstum == null ? null : +A.wachstum.toFixed(3), spitze: A.spitze, tage: A.kurve.length, beginn, krankHeute: krankHeute.length, imSatz, daheim, kurveI5: q, beta: +A.beta.toFixed(5), ms, grad, nichtDaheim }; // prettier-ignore
+        };
+        if (!taeter) return lauf();
+        const sicht = {};
+        for (const [t, [name, fn]] of Object.entries({
+            // die Kette trägt keinen Kontakt außer Haus (der Tag ohne Ort): der Ausbruch bleibt in den Häusern seiner Einschleppungen
+            "kontakt-leer": ["_bewohnerSeucheKontakte", (f) => function () {
+                return f.apply(this, arguments).map((k) => ({ geht: [], liegt: k.liegt }));
+            }], // prettier-ignore
+            // der Satz liest die Seuche nicht (das Gesetz vor werk-am-ort-2: krank nur der Wurf der Woche)
+            "seuche-ungelesen": ["_bewohnerSeucheKrank", () => () => false],
+        })) {
+            const zurueck = [];
+            S.seuche = null;
+            decke(name, fn, zurueck);
+            if ([].concat(taeter).includes(t)) sicht[t] = lauf();
+            for (const f of zurueck) f();
+            S.seuche = null;
+        }
+        return { sicht };
+    });
 }
+
+// das Band der Absage des Einkaufs im Regen (Cools, Moons, Creemers & Wets 2010, Tab. 3: 16,2 %), um die Streuung der Stichprobe
+const MENGEBILD_ABSAGE = [0.05, 0.35];
+// der Anteil der Gehenden, der ± 2 m am Punkt seiner Kette steht (werk-am-ort)
+const WERKORT_AM_PUNKT = 0.9;
 
 // DAS URTEIL (Node) der Proben des Menschen: `soll(bedingung, text)` sammelt im Urteil von kreatur-proben.cjs
 function menschUrteil(name, z, soll) {
+    // DIE MENGE IM BILD (bild#2): ≥ 100 im Bild, ≥ 40 gehend, keine Zwillinge
+    if (name === "mengebild") {
+        if (z.fehler) return soll(false, `mengebild: ${z.fehler}`);
+        soll(z.imBild >= 100, `Menschen im Bild ${z.imBild} (Soll ≥ 100) um ${z.uhr} Uhr`);
+        soll(z.gehend >= 40, `Gehende im Bild ${z.gehend} (Soll ≥ 40)`);
+        soll(z.zwillinge <= 0, `Zwillinge im Bild ${z.zwillinge} (Soll ≤ 0)`);
+        const g = z.regen || { anteil: "ungemessen", einkauf: 0, heim: 0 };
+        soll(g.einkauf >= 20 && g.anteil >= MENGEBILD_ABSAGE[0] && g.anteil <= MENGEBILD_ABSAGE[1], `Einkäufer, die der Regen 0,6 heim schickt: ${g.heim} von ${g.einkauf} (Anteil ${g.anteil}, Soll ${MENGEBILD_ABSAGE.join("–")}: Cools 2010 sagt 16,2 % ab), im Niesel ${g.niesel}`); // prettier-ignore
+    }
+    // DIE SEUCHE (seuche#2): ≥ 100 im Ausbruch, die Kurve S-I-R, R0 im Band des Erregers, und jeder Kranke des Tags krank im Satz
+    // und daheim
+    if (name === "seuche") {
+        if (z.fehler) return soll(false, `seuche: ${z.fehler}`);
+        soll(z.faelle >= 100, `Bewohner im Ausbruch ${z.faelle} von ${z.bewohner} (Soll ≥ 100), Spitze am Tag ${z.spitze} von ${z.tage}, I je 5 Tage ${z.kurveI5.join(" ")}`); // prettier-ignore
+        soll(z.sir, `Kurve in der Form S-I-R: ${z.sir} (Spitze am Tag ${z.spitze} von ${z.tage})`);
+        soll(z.imBand, `R0 der frühen Fälle aus dem Baum der Ansteckung ${z.r0} (Soll ${z.band.join("–")}, Mills 2004), Wachstum r ${z.wachstum} je Tag, β ${z.beta}`);
+        soll(z.krankHeute >= 1 && z.imSatz === z.krankHeute && z.daheim === z.krankHeute, `Kranke am Tag der Spitze ${z.krankHeute}: krank im Satz ${z.imSatz}, daheim (oder am Posten) um 10/12/15 Uhr ${z.daheim}${(z.nichtDaheim || []).length ? " — fort: " + z.nichtDaheim.join(" · ") : ""}; Netz je Bewohner ${JSON.stringify(z.grad)}`); // prettier-ignore
+        return;
+    }
+    // DIE SCHRECK-FRONT (kollektiv#2): die Station am Markt — ≥ 100 Zeugen, Front 3–8 m/s, ≥ 90 % der Zeugen auf der Flucht weg
+    if (name === "schreck") {
+        if (z.fehler) return soll(false, `schreck: ${z.fehler}`);
+        const ringe = Object.entries(z.ringe || {}).map(([k, R]) => `${k} m ${R.n} (${R.t} s, erschrocken ${R.ab} s, ohne Tat weg ${R.vorher})`).join(" · "); // prettier-ignore
+        soll(z.tat && z.zeugen >= 100, `Zeugen der Tat ${z.zeugen} (Soll ≥ 100) um ${z.uhr} Uhr, Tat ${z.tat}`);
+        soll(z.front >= 3 && z.front <= 8, `Schreck-Front ${z.front} m/s (Soll 3–8) — reagiert ${z.reagiert} von ${z.imKreis} binnen 60 m (jenseits ${z.zeugeM} m: ${z.jenseits}), Gegenlauf ohne Tat ${z.gegenlauf}; je Ring: ${ringe}`); // prettier-ignore
+        const w = z.still || {};
+        soll(z.flucht >= 0.9, `Zeugen auf der Flucht weg ${z.flucht} (Soll ≥ 0,9) — ${z.gezaehlt} gezählt; nicht weg: nie erschrocken ${w.nie}, spät ${w.spaet}, erschrocken und stehend ${w.steht}, drinnen ${w.drinnen}${w.wer ? " — " + w.wer.join(" · ") : ""}`); // prettier-ignore
+        return;
+    }
+    // DER MENSCH AN SEINEM ORT (werk-am-ort): die Stichprobe der Station (≥ 20 von 20, wer geht, am Punkt seiner Kette) und die
+    // Klasse — jeder Gehende der Stadt ± 2 m am Punkt der Kette, keiner ohne Kette
+    if (name === "werkort") {
+        if (z.fehler) return soll(false, `werkort: ${z.fehler}`);
+        const was = z.verfehlt.map((v) => `${v.wer} ${v.akt} (${v.wie}) ${v.d == null ? "ohne Abstand" : v.d + " m"}`).join(", ");
+        soll(z.angetroffen >= 20, `Stichproben-Personen ± 2 m angetroffen ${z.angetroffen} von ${z.stichproben} um ${z.uhr} Uhr — nicht angetroffen: ${was}`);
+        const k = z.klasse;
+        soll(k.ohneKette === 0, `Gehende ohne Kette ihres Tags: ${k.ohneKette}`);
+        const N = z.nachlass || { heimImRegen: 0, umkehr: "ungemessen", wer: [] };
+        soll(N.heimImRegen >= 20 && N.umkehr === 0, `der Regen lässt nach (0,45 → 0,05 in 2 s, 15 Uhr): ${N.umkehr} von ${N.heimImRegen} Heimgeschickten kehren mitten im Abschnitt um (${N.wer.join(" · ") || "—"})`); // prettier-ignore
+        soll(k.gehende >= 20 && k.amPunkt >= WERKORT_AM_PUNKT * k.gehende, `der Gehende steht nicht am Punkt seiner Kette: ${k.amPunkt} von ${k.gehende} ± 2 m (Soll ≥ ${100 * WERKORT_AM_PUNKT} %), ${k.hinter} dahinter, ${k.vor} voraus — Abstand zum Punkt der Kette (dahinter +) p10 ${k.restM.p10} · Median ${k.restM.med} · p90 ${k.restM.p90} m (${k.restM.min} … ${k.restM.max})`); // prettier-ignore
+        return;
+    }
     // DIE WEGE (mensch.K3) je Siedlung — das Start-Dorf und die Stadt (Staffel 2: nH ≥ 27): keine Kapsel in einer Wand, jeder
     // Durchgang durch die Tür, 4–10 Wege, 24 Spielstunden ohne Steckenbleiber, auf Wegen ≥ 0,85, ≥ 100 m je Bewohner und
     // Tag, keine Berührung
@@ -1424,6 +2118,7 @@ function menschUrteil(name, z, soll) {
     if (st) soll(!st.fehler && st.haeuser >= 27, `Stadt: ${st.fehler || st.haeuser + " Häuser (Soll nH ≥ 27)"}`);
     if (st && st.stapel) soll(!st.stapel.length, `Stadt: Stände gestapelt: ${st.stapel.length} näher als raumM (${st.stapel.slice(0, 4)})`); // prettier-ignore
     if (st && st.imStueck) soll(!st.imStueck.length, `Stadt: Stände in einem Stück des Platzes: ${st.imStueck.length} (${st.imStueck.slice(0, 4)})`); // prettier-ignore
+    if (st && st.rueckkehr) soll(st.rueckkehr.n >= 1 && !st.rueckkehr.wartet.length, `Stadt: die Rückkehr an einen gehaltenen Punkt: ${st.rueckkehr.wartet.length} von ${st.rueckkehr.n} warten beiseite (${st.rueckkehr.wartet.slice(0, 2)})`); // prettier-ignore
     if (st && st.haendler) soll(!st.haendler.length, `Stadt: Stände ohne Händler: ${st.haendler.length} von ${st.staende} (${st.haendler.slice(0, 4)})`); // prettier-ignore
     // DIE VOLLE STADT (mensch.K1 Staffel 2, ihr Nah-Ring): ≥ 200 Bewohner, ≥ 40 im Nah-Ring mit laufendem Gang
     const ri = st && st.ring;
@@ -1563,7 +2258,7 @@ module.exports = {
     BUEHNEN: `await (${menschBuehnen.toString()})();`,
     // DIE DORF-PROBEN (`startDorf`): ihr Start-Dorf bleibt in der Welt der Seite — sie laufen nach allen anderen, auch nach den
     // Lebens-Proben (die Reihe des Laufs ist die Reihe von PROBEN, je Teil gefiltert)
-    PROBEN: ["bewohner", "begegnung", "zielplan"],
+    PROBEN: ["bewohner", "begegnung", "zielplan", "werkort", "mengebild", "schreck", "seuche"],
     // die Probe mit EINEM Lauf im Selbsttest: alle ihre Täter in ihm, das Urteil je Täter an seiner Sicht (`sicht`)
     EIN_LAUF: ["bewohner", "begegnung"],
     TAETER: {
@@ -1584,6 +2279,7 @@ module.exports = {
             ["bewohner-nord", /der Blick der Stehenden/],
             ["bewohner-daheim", /ohne Platz/],
             ["bewohner-stapel", /Stände gestapelt: [1-9]/],
+            ["bewohner-platz-wartet", /Stadt: die Rückkehr an einen gehaltenen Punkt: [1-9]\d* von \d+ warten beiseite \(\S+ #\d+ [\d.]+ m vor seinem Stand/],
             ["bewohner-im-stand", /Stände in einem Stück des Platzes: [1-9]/],
             ["bewohner-stand-leer", /Stadt: Stände ohne Händler: [1-9]/],
             ["bewohner-wiederkehr", /Wiederkehr nach 1 h Abwesenheit: [1-9]/],
@@ -1604,6 +2300,19 @@ module.exports = {
             ["begegnung-vergessen", /die Erinnerung lenkt den Abstand nicht/],
             ["begegnung-bleibt", /der Zeuge weicht nicht/],
             ["begegnung-zugebaut", /kein freier Weg um den Zeugen/],
+        ],
+        werkort: [
+            ["werk-netz", /der Gehende steht nicht am Punkt seiner Kette: \d+ von \d+/],
+            ["regen-sofort", /der Regen lässt nach \(0,45 → 0,05 in 2 s, 15 Uhr\): [1-9]\d* von \d+ Heimgeschickten kehren/],
+        ],
+        seuche: [
+            ["kontakt-leer", /Bewohner im Ausbruch \d{1,2} von \d+ \(Soll ≥ 100\)/],
+            ["seuche-ungelesen", /Kranke am Tag der Spitze ([1-9]\d*): krank im Satz 0,/],
+        ],
+        schreck: [["kunde-takt", /Schreck-Front (999|\d{2,}(\.\d+)?) m\/s \(Soll 3–8\)/]],
+        mengebild: [
+            ["einkauf-steht", /Gehende im Bild \d+ \(Soll ≥ 40\)/],
+            ["regen-jeder", /Einkäufer, die der Regen 0,6 heim schickt: (\d+) von \1 \(Anteil 1,/],
         ],
     },
     urteil: menschUrteil,

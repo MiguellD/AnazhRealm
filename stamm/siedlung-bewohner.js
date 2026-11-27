@@ -361,6 +361,53 @@ class AnazhRealm_siedlung_bewohner {
     // (`_bewohnerSoll`: der Kranke bleibt daheim), das Werk (`_bestandAnlegen`: das Können), die Hand (`_stoffstromHand`: die
     // Waffe), der Zeuge (`_bewohnerZeuge`: die Wache naht), der Ruf und die Persona (`_findCreatureByName`,
     // `_buildCreaturePersonaPrompt`).
+    // DIE SEUCHE DER STADT (mensch.menge.seuche#2, koerper SEUCHE_GESETZ): der Ausbruch k einer Siedlung ist eine FUNKTION ihres
+    // Samens und der Ketten ihrer Bewohner — wer wen trifft, sagt der Tag jedes Bewohners (`_bewohnerSeucheKontakte`), wer wen
+    // ansteckt, der Kern (`seucheAusbruch`); gerechnet beim ersten Leser im Fenster des Ausbruchs, gehalten an der Siedlung
+    // (`S.seuche`, bis ihre Liste sich ändert). Leser: der Kranke des Tags (`_bewohnerSeucheKrank` → `_bewohnerLauf` „krank“ →
+    // `tagesPlan`: er liegt daheim), die Station seuche#2.
+    _bewohnerSeuche(S, k) {
+        const KC = window.__koerperCore;
+        const L = S.liste || [];
+        let c = S.seuche;
+        if (!c || c.n !== L.length) c = S.seuche = { n: L.length, K: this._bewohnerSeucheKontakte(S), wer: new Map(L.map((b, i) => [b, i])), aus: new Map() }; // prettier-ignore
+        if (!c.aus.has(k)) c.aus.set(k, KC.seucheAusbruch(c.K, S.plan.seed >>> 0, k));
+        return c.aus.get(k);
+    }
+    // DIE KONTAKTE AUS DER KETTE (seuche#2): je Bewohner, gezeichnet oder nicht, sein gesunder und sein kranker Tag (koerper
+    // `tagesKette` ohne Regen, die Wege ohne Zeit) je Viertelstunde als Ort — drinnen das Haus, draußen die Zelle `zellM` seines
+    // Stands (bis hier je Stunde ein Augenblick: an stadt-voll 3,79 Kontakte je Bewohner, β an der Decke)
+    _bewohnerSeucheKontakte(S) {
+        const KC = window.__koerperCore;
+        const zM = KC.SEUCHE_GESETZ.zellM;
+        const zelle = (z) =>
+            z && z.ort ? (z.drinnen ? "d" : "o") + Math.round(z.ort.x / zM) + "/" + Math.round(z.ort.z / zM) : null;
+        const tag = (b, krank) => {
+            const K = KC.tagesKette(b.same, b.rolle, b.orte, 0, krank, () => 0);
+            const je = [];
+            for (let q = 0; q < 96; q++) je.push(zelle(KC.tagesZiel(K, (q + 0.5) / 4)));
+            return je;
+        };
+        const L = S.liste || [];
+        return KC.seucheKontakte(
+            L.map((b) => tag(b, false)),
+            L.map((b) => tag(b, true))
+        );
+    }
+    // krank am Tag d durch die Seuche: der Ausbruch, dessen Fenster d trägt, hält ihn mit Symptomen ansteckend
+    _bewohnerSeucheKrank(S, b, d) {
+        const KC = window.__koerperCore;
+        const G = KC.SEUCHE_GESETZ;
+        if (!S || !S.plan || !Number.isFinite(d)) return false;
+        const k = Math.floor(d / G.zyklusT);
+        const t = Math.floor(d) - KC.seucheBeginn(S.plan.seed >>> 0, k);
+        if (t < 0 || t >= G.zyklusT - G.beginnT) return false;
+        const A = this._bewohnerSeuche(S, k);
+        const i = A && S.seuche.wer.get(b);
+        if (i == null) return false;
+        const a = A.tag[i];
+        return A.symptom[i] && a >= 0 && t >= a + G.latentT && t < a + G.latentT + G.ansteckT;
+    }
     _bewohnerLauf(S, b, feld, tag) {
         const L = AnazhRealm.LEBENSLAUF;
         if (feld === "krank") {
@@ -372,7 +419,7 @@ class AnazhRealm_siedlung_bewohner {
             let h = (b.same ^ Math.imul(sp, 0x9e3779b1)) >>> 0;
             h = Math.imul(h ^ (h >>> 16), 0x85ebca6b);
             h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35);
-            return ((h ^ (h >>> 16)) >>> 0) / 4294967296 < L.krank.anteil;
+            return ((h ^ (h >>> 16)) >>> 0) / 4294967296 < L.krank.anteil || this._bewohnerSeucheKrank(S, b, d);
         }
         if (feld === "waffe") {
             if (!L.wache.rollen.includes(b.rolle)) return null;
@@ -822,12 +869,16 @@ class AnazhRealm_siedlung_bewohner {
         // stand 1,54 m vor seinem Heim-Stand, Werk und Abend lagen einen Schritt auseinander (Steintal 5 von 89, Stadt 21 von
         // 1 391; gate:kreatur-takt bewohner: 3 Wege des Tags, Soll 4–10)
         let seine = null;
-        const frei = function* (x, z, amRand = true, tuer = null, bauten = false) {
+        // (`raumR`: der Stand nimmt seinen Raum gegen jeden vergebenen, `raumM` — der Punkt einer Runde nur zwei Kapseln, `marktStand`
+        // mit `gang`: wer an ihm steht, berührt keinen an seinem Stand. Ohne den Abstand lag der Punkt von wohnhaus #351993 0,28 m
+        // neben dem Stand von kind #846868 — er trat beiseite und stand 3 m vor seinem Punkt, bis die Runde weiterging: ein
+        // Steckenbleiber, Kreatur-Linse bewohner, Stadt 7,87 Uhr)
+        const frei = function* (x, z, amRand = true, tuer = null, bauten = false, raumR = BW.raumM) {
             const [ix, iz] = [Math.floor(x / BW.raumM), Math.floor(z / BW.raumM)];
             for (let i = -1; i <= 1; i++)
                 for (let j = -1; j <= 1; j++)
                     for (let n = 0, l = belegt.get(raumZelle(ix + i, iz + j)) || []; n < l.length; n += 2)
-                        if ((l[n] - x) ** 2 + (l[n + 1] - z) ** 2 < BW.raumM * BW.raumM) return false;
+                        if ((l[n] - x) ** 2 + (l[n + 1] - z) ** 2 < raumR * raumR) return false;
             for (const p of seine || []) if (p && (p.x - x) ** 2 + (p.z - z) ** 2 < BW.gangM * BW.gangM) return false;
             if (amRand && amWeg(x, z)) return false;
             // (kein Stand in einem Stück des Platzes: der Tritt eines Marktstands, der Kreis eines Brunnens — aus dem PLAN, die
@@ -898,9 +949,15 @@ class AnazhRealm_siedlung_bewohner {
         if (!AZ) return AnazhRealm._kernPflichtBruch("fachwerk:platzAnziehung");
         // (der Punkt hinter jeder Theke gehört ihrem Händler: er liegt im Raster des Raums, bevor ein Stand gewürfelt wird)
         for (const P of AZ.punkte) if (P.art === "haendler") legen(S.ox + P.x, S.oz + P.z);
-        const marktStand = function* (g) {
-            const vorn = AZ.punkte.filter((p) => p.art === "gast");
+        // DER PUNKT EINER RUNDE (`gang`, die Runde des Einkaufs unten): vor einer Bude wie der Stand, aber er nimmt keinen Raum —
+        // die Front der Buden ist der Raum, den die Gäste teilen (das Ausweichen der Leiber hält jede Kapsel frei,
+        // `_bewohnerAusweichen`), zu jedem vergebenen Stand hält er zwei Kapseln (`frei`); je Punkt seine Bude (`budeVon`), die
+        // Runde geht jede einmal ab (`ohne`)
+        const budeVon = new WeakMap();
+        const marktStand = function* (g, ohne = null, gang = false) {
+            const vorn = AZ.punkte.filter((p) => p.art === "gast" && !(ohne && ohne.has(p)));
             if (!vorn.length) return null;
+            const raumR = gang ? 2 * AnazhRealm.PLAYER_WALL_RADIUS + 0.01 : BW.raumM;
             for (const amRand of [true, false])
                 for (let v = 0; v < 40; v++) {
                     const L = vorn;
@@ -909,12 +966,14 @@ class AnazhRealm_siedlung_bewohner {
                     const b = (g.axis(`${v}:laengs:markt`) * 2 - 1) * P.halb[1];
                     const [lx, lz] = [P.x + P.qx * a + P.fx * b, P.z + P.qz * a + P.fz * b];
                     const [x, z] = [S.ox + lx, S.oz + lz];
-                    if (!FC.imPlatzStueck(plan, lx, lz, FC.MARKT_GESETZ.saumM, true) && (yield* frei(x, z, amRand))) {
+                    if (
+                        !FC.imPlatzStueck(plan, lx, lz, FC.MARKT_GESETZ.saumM, true) &&
+                        (yield* frei(x, z, amRand, null, false, raumR))
+                    ) {
                         const zu = { x: S.ox + P.zu.x, z: S.oz + P.zu.z };
-                        return nimm(
-                            { x, z, blick: Math.atan2(zu.x - x, zu.z - z), anker: zu, gilt: amPlatzRand },
-                            amRand
-                        );
+                        const st = { x, z, blick: Math.atan2(zu.x - x, zu.z - z), anker: zu };
+                        budeVon.set(st, P);
+                        return gang ? st : nimm(Object.assign(st, { gilt: amPlatzRand }), amRand);
                     }
                     yield;
                 }
@@ -1258,14 +1317,14 @@ class AnazhRealm_siedlung_bewohner {
             const satz = {
                     sied: S,
                     heim: sl.seed >>> 0, rolle, beruf, same, epoche,
-                    orte: { tuer, vor, ein, heim, platz, werk, mahl: ort("mahl"), abend: ort("abend"), besuch: null, spiel: null, einkauf: null, hilft: !!bind.hilft, streife: null },
+                    orte: { tuer, vor, ein, heim, platz, werk, mahl: ort("mahl"), abend: ort("abend"), besuch: null, spiel: null, einkauf: null, einkaufRunde: null, hilft: !!bind.hilft, streife: null },
                     seed: `${plan.seed >>> 0}:${si}:${k}`, atem: g.axis("atem") * 10, leib: null, uhr: 0, takt: 0, frist: null,
                     genom: u, gestalt: u, groesse: u, breite: u, tiefe: u, farben: u, tonZeilen: u, koennen: u, beinL: u, tempo: u, tempoBand: u, gangTempo: u, gangBand: 0, satzOrt: u,
                     nr: u, ruht: u, rk: u, uhrAb: u, animDt: u, d2: u, kreis: u, nah: u, lageNeu: u, ankunft: u, x: u, z: u,
                     blick: u, begegnet: u, kopfY: u,
                     ziel: u, akt: u, drinnenSoll: u, drinnen: u, da: u, hinaus: u, stand: u, tagVon: u, tagAb: u, zielUhr: u,
                     drehen: u, platz: u, weichen: null, brand: null, gegner: null,
-                    ortI: null, wegeM: null, kette: null,
+                    kette: null, pfadM: null,
                     weg: u, wi: u, linie: u, tag: u, wegRest: u, wegRestAb: u, gegangen: u, gehDt: u, gehTakt: u, rueck: u,
                     tempoTag: u, tempoJetzt: u, vx: u, vz: u, grundX: u, grundZ: u, grundH: u, grundGx: 0, grundGz: 0, _gait: u, _gaitW: u, walkPhase: u,
                     wagen: u, amSteuer: u, bestand: null, bestandBild: null, werkzeug: null, beuteTag: u,
@@ -1400,10 +1459,6 @@ class AnazhRealm_siedlung_bewohner {
         // Knoten einmal gemessen) — je Punkt ein Stand am Rand der Gasse (`postenStand`, der Blick fort vom Posten)
         const laengen = new Map();
         const lang = (i) => laengen.get(i) || laengen.set(i, TC.wegLaengen(NG.knoten.length, NG.kanten, i)).get(i);
-        const wegPkt = (a, c) => {
-            const [A, C] = [realm._bewohnerTuerAm(NG, a), realm._bewohnerTuerAm(NG, c)];
-            return A && C ? A.d + lang(A.i)[C.i] + C.d : Infinity;
-        };
         for (let pi = 0; pi < nPosten && posten.length; pi++) {
             const P = posten[pi % posten.length];
             for (const rolle of WL.rollen) {
@@ -1472,42 +1527,42 @@ class AnazhRealm_siedlung_bewohner {
                 wer.orte.werk = st;
             }
         }
-        // DIE WEGE SEINES TAGS (die Ankunft zur Stunde, koerper `tagesKette`): je Wo eines Menschen der Ort des Plans, an dem sein
-        // Stand liegt (der Markt und das Spiel des Abends am Platz, der Händler und die Wache am Platz an ihm, die Wache am Tor
-        // am nächsten Ort ihres Postens), und je Paar seiner Orte die Länge des Wegs über das Netz — dieselbe Quelle, nach der er
-        // gebunden wurde (`tagesWege`), einmal gemessen; die Gehzeit rechnet die Kette aus ihr und dem Tempo seines Gangs
-        const platzI = orte.findIndex((o) => o.art === "platz");
-        const amOrt = (st) => {
-            let [best, dMin] = [null, Infinity];
-            for (const [i, o] of orte.entries()) {
-                const d = Math.hypot(o.x + S.ox - st.x, o.z + S.oz - st.z);
-                if (d < dMin) [best, dMin] = [i, d];
+        // DIE RUNDE DES EINKAUFS (menge-gang, mensch.menge.bild#2; koerper `tagesEinkaufStaende`, `tagesKette`): je Haushalt die
+        // Punkte vor den Buden, die sein Einkäufer nach seinem Stand am Platz abgeht — je Bude des Markts einer, in der Folge
+        // seines Samens, jeder `gangM` von den Ständen seines Hauses am Platz und voneinander (`seine`), gewählt, wenn jede Rolle
+        // steht; wie viele er abgeht, misst der Kern (die Kauf-Buden vorn, dann so viele, wie sein Gehen trägt). Ein Punkt der
+        // Runde nimmt keinen Raum (`marktStand` mit `gang`): die Front der Buden trägt an stadt-voll keinen freien Stand mehr —
+        // Werk, Tisch und Abend am Platz nehmen sie, ein exklusiver Stand je Punkt fand für 452 Punkte der 204 Einkäufer keinen
+        // einzigen. Die Runde gehört dem Haus (EIN Feld `orte.einkaufRunde` für jeden hinter der Tür): wählt `_einkaufAnlegen`
+        // einen anderen, geht er sie; was ihm an Kauf-Buden fehlt, zählt es beim Namen (`S.rundeKurz`)
+        if (typeof KC.tagesEinkaufStaende !== "function")
+            return AnazhRealm._kernPflichtBruch("koerper:tagesEinkaufStaende");
+        const haeuser = new Map();
+        for (const b of liste) {
+            const L = haeuser.get(b.orte.tuer);
+            if (L) L.push(b);
+            else haeuser.set(b.orte.tuer, [b]);
+        }
+        for (const L of haeuser.values()) {
+            const mit = L.filter((b) => b.orte.platz);
+            const w = KC.tagesEinkaeufer(mit.map((b) => ({ same: b.same, rolle: b.rolle })));
+            if (w < 0) continue;
+            const R = [];
+            const buden = new Set();
+            for (let r = 1; ; r++) {
+                yield;
+                seine = [...mit.map((b) => b.orte.platz), ...R];
+                let st = null;
+                try {
+                    st = yield* marktStand(this._rollGenome(`${mit[w].seed}:${r}`, "runde"), buden, true);
+                } finally {
+                    seine = null;
+                }
+                if (!st) break;
+                buden.add(budeVon.get(st));
+                R.push(st);
             }
-            return best;
-        };
-        for (const [i, b] of liste.entries()) {
-            const P = besuche[i];
-            const B = P.bind || {};
-            const am = (j) => (Number.isInteger(j) && j >= 0 ? j : null);
-            const werk =
-                b.rolle === "haendler" || (b.orte.werk && b.orte.werk === b.orte.platz)
-                    ? am(platzI)
-                    : (WL.rollen.includes(b.rolle) || (RO[b.rolle] && RO[b.rolle].tat)) && b.orte.werk
-                      ? amOrt(b.orte.werk)
-                      : (am(B.werk) ?? P.heimI);
-            const I = { heim: P.heimI, platz: am(platzI), spiel: am(platzI), einkauf: am(platzI), werk, mahl: am(B.mahl), abend: am(B.abend), besuch: am(B.besuch) }; // prettier-ignore
-            // (die Punkte der Runde sind keine Orte des Plans: je Punkt ein Index hinter ihnen, sein Weg von Stand zu Stand über das
-            // Netz — `wegPkt`, derselbe Grund; Heim und Werk messen von seinem Stand dort)
-            const R2 = b.orte.streife || [];
-            R2.forEach((s, k) => (I["streife" + k] = orte.length + k));
-            const pkt = (j) => (j >= orte.length ? R2[j - orte.length] : j === werk && b.orte.werk ? b.orte.werk : j === P.heimI ? b.orte.heim : { x: S.ox + orte[j].x, z: S.oz + orte[j].z }); // prettier-ignore
-            const wegeM = new Map();
-            const ids = [...new Set(Object.values(I).filter((j) => j !== null))];
-            for (const x of ids)
-                for (const y of ids)
-                    if (x < y) wegeM.set(x * 65536 + y, y >= orte.length ? wegPkt(pkt(x), pkt(y)) : wegZu(orte[x], orte[y], y)); // prettier-ignore
-            [b.ortI, b.wegeM] = [I, wegeM];
-            if (i % 64 === 0) yield;
+            for (const b of L) b.orte.einkaufRunde = R;
         }
         this._bestandAnlegen(liste);
         this._scheuneAnlegen(S, liste, tueren);
@@ -2161,6 +2216,7 @@ class AnazhRealm_siedlung_bewohner {
         const spV = Math.hypot(SP.vx, SP.vz);
         SP.weg = spV > 0.2 ? SP.zug || (SP.zug = [SP.voraus]) : null;
         if (this._hiebe && this._hiebe.size) this._bewohnerHiebTakt(); // der Zweikampf der Wache mit dem Täter (rollen-des-tages)
+        for (const S of alle.values()) if (S.schreck) this._bewohnerSchreckTakt(S, delta, stunde); // die Tat am Ort (kollektiv#2)
         const FG = AnazhRealm._furchtGesetz().F;
         const kDeckel =
             2 * AnazhRealm.PLAYER_WALL_RADIUS + 0.01 + BW.spielerRaumM * (1 + FG.deckel * FG.fluchtJeFurcht);
@@ -2304,7 +2360,7 @@ class AnazhRealm_siedlung_bewohner {
                     b.hinaus &&
                     this._bewohnerNaechster(S, b, b.orte.tuer.x, b.orte.tuer.z) >= BW.tuerFreiM &&
                     this._bewohnerNaechster(S, b, b.orte.vor.x, b.orte.vor.z) >= BW.tuerFreiM &&
-                    !this._bewohnerImHof(S, b) // der Hof-Gang trägt einen zur Zeit
+                    !this._bewohnerImHof(S, b, false) // der Hof-Gang trägt eine Richtung zur Zeit
                 ) {
                     b.hinaus = false;
                     b.drinnen = false;
@@ -2322,6 +2378,16 @@ class AnazhRealm_siedlung_bewohner {
                 // der Abstand zum Spieler nur, wo er zählen kann (der Deckel des Furcht-Gesetzes: der weiteste Raum)
                 const nahS = !b.drinnen && (bd2 < (kDeckel + spV * BW.ausweichS) ** 2 || (w && w.spieler));
                 const kS = nahS ? this._bewohnerSpielerAbstand(b) : kDeckel;
+                // SEIN STAND IST FREI, wenn keiner näher als `tuerFreiM` an ihm steht — außer wer dort auf SEINEM Stand ruht (kein
+                // Weg, kein Tempo, sein Ziel binnen `tuerFreiM` am selben Punkt): der hält den Punkt seine Zeit lang (die Front der
+                // Buden ist der Raum, den die Gäste teilen, `marktStand` mit `gang`), und der Weg zurück endet neben ihm wie jede
+                // Ankunft an einem besetzten Ende (`_bewohnerAusweichen` „DAS BESETZTE ENDE“). Bis hier wartete er, bis der Punkt
+                // leer war: wohnhaus #91693 trat am zweiten Punkt seiner Runde Platz, wohnhaus #666903 ruhte 0,22 m daneben auf
+                // seinem eigenen — 1 Steckenbleiber 2,1 m vor seinem Punkt (Kreatur-Linse bewohner, Stadt 7,68 Uhr, buendel-mittag 7
+                // a9806b59 mit werk-am-ort 2). Ein Punkt ohne eigenen Raum ist kein Ausweg: die Front trägt ihn nicht (`rundeKurz`
+                // 0 → 439 Kauf-Buden, im Bild gehend 87 → 29 mit `tuerFreiM` je Punkt)
+                const haelt = (o) =>
+                    o.da && !o.weg && !(o.vx || o.vz) && o.ziel && Math.hypot(o.ziel.x - b.ziel.x, o.ziel.z - b.ziel.z) < BW.tuerFreiM; // prettier-ignore
                 // wohin der geht, dem er Platz machte: der Spieler `ausweichS` voraus, der Bewohner zum nächsten Punkt
                 const wv =
                     w && (w.spieler ? SP.voraus : w.weg && !w.drinnen && w.wi < w.weg.length ? w.weg[w.wi] : null);
@@ -2331,7 +2397,7 @@ class AnazhRealm_siedlung_bewohner {
                     w &&
                     b.da &&
                     !b.weg &&
-                    this._bewohnerNaechster(S, b, b.ziel.x, b.ziel.z) >= BW.tuerFreiM &&
+                    this._bewohnerNaechster(S, b, b.ziel.x, b.ziel.z, haelt) >= BW.tuerFreiM &&
                     !(
                         wv &&
                         w.leib &&
@@ -2356,8 +2422,12 @@ class AnazhRealm_siedlung_bewohner {
                     this._streckeBoxAbstand2({ minX: gp.x, maxX: gp.x, minZ: gp.z, maxZ: gp.z }, p.x, p.z, SP.voraus.x, SP.voraus.z) < kS * kS // prettier-ignore
                 )
                     this._bewohnerPlatz(S, b, p, SP.voraus, SP, kS);
-                // DER GANG: ein neues Ziel sucht seinen Weg (gedeckelt je Takt), der Weg trägt den Leib im Tempo des Gesetzes
-                if (!b.da && !b.weg && !b.hinaus && wege < BW.wegeJeTakt) {
+                // DER GANG: ein neues Ziel sucht seinen Weg (gedeckelt je Takt), der Weg trägt den Leib im Tempo des Gesetzes. Der
+                // Erschrockene mit freiem Fortlauf (`erschrak.fort`, kollektiv#2) wartet nicht hinter dem Deckel: sein Lauf beginnt
+                // nach der Reaktionszeit, nicht nach der Schlange — bis werk-am-ort-2 standen die inneren Zeugen 1,7–1,9 s nach dem
+                // Schreck, bis sie 0,5 m fort waren (Front 12,23 m/s statt des Bands 3–8)
+                const flieht = !!S.schreck?.erschrak.get(b)?.fort;
+                if (!b.da && !b.weg && !b.hinaus && (wege < BW.wegeJeTakt || flieht)) {
                     this._bewohnerWeg(S, b);
                     wege++;
                 }
@@ -2599,13 +2669,15 @@ class AnazhRealm_siedlung_bewohner {
     // 1 566), Null-Renderer 3 280 Stände 3,55 s.
     _bewohnerWacheTakt(S) {
         if (S.wache.stand === S.wegeStand || S.listeWerk) return;
-        const trifft = this._bewohnerWechsel(S, S.wegeStand);
+        const seit = S.wegeStand;
+        const trifft = this._bewohnerWechsel(S, seit);
         S.wegeStand = S.wache.stand;
         for (const b of S.liste) this._bewohnerWecken(S, b);
         const gang = this._bewohnerStandPruefen(S, trifft);
         S.listeWerk = (function* (realm) {
             yield* gang;
             realm._bewohnerWegPruefen(S, trifft);
+            yield* realm._bewohnerPfadeWerk(S, seit, trifft); // die gemerkten Pfade der Ketten (werk-am-ort)
         })(this);
     }
 
@@ -2640,7 +2712,11 @@ class AnazhRealm_siedlung_bewohner {
                 this._bewohnerWacheSetzen(S);
                 if (S.plan.staedtisch) this._verkehrAnlegen(S); // die Wagen der Stadt und ihre Fahrer (Leiter mensch.netz.verkehr)
                 this._einkaufAnlegen(S); // der Einkäufer je Haushalt (koerper `tagesEinkaeufer`), wenn jede Rolle steht
-                S.listeWerk = this._bewohnerStandPruefen(S, null);
+                // die Stände, dann die Pfade der Ketten (`_bewohnerPfadeWerk`, werk-am-ort): die Ankunft liest sie gemerkt
+                S.listeWerk = (function* (realm) {
+                    yield* realm._bewohnerStandPruefen(S, null);
+                    yield* realm._bewohnerPfadeWerk(S);
+                })(this);
                 continue;
             }
             if (S.lebt) continue;
@@ -2832,34 +2908,116 @@ class AnazhRealm_siedlung_bewohner {
         return 2 * AnazhRealm.PLAYER_WALL_RADIUS + 0.01 + raum;
     }
 
-    // DIE ZEUGEN (mensch.K5): jeder Bewohner draußen auf `zeugeM` um den Ort o, an dem der Spieler ein Wesen schlägt
-    // (`damageCreature`), erinnert die Gewalt — das EINE Gedächtnis (`_creatureRemember` auf seinem Leib), das Furcht-Gesetz wiegt
-    // sie (`gewalt`); bei der nächsten Begegnung lässt er dem Spieler mehr Raum (`_bewohnerSpielerAbstand`). DER ORT ERINNERT
-    // (siedlung.K4 Staffel 2): sah ein Bewohner die Tat, trägt das Gedächtnis seines Orts sie als Akte (`settlementCells[k].akten`,
-    // die Uhr der Welt, die letzten `WACHSTUM.aktenMax`) — ihre Furcht bremst sein Wachstum (fachwerk `wachstum`); er weicht.
+    // DIE ZEUGEN (mensch.K5): die Tat des Spielers am Ort o (`damageCreature` an einem Wesen) hört jeder Bewohner draußen auf
+    // `zeugeM` — DER ORT ERINNERT (siedlung.K4 Staffel 2): hörte sie einer, trägt das Gedächtnis seines Orts sie als Akte
+    // (`settlementCells[k].akten`, die Uhr der Welt, die letzten `WACHSTUM.aktenMax`), ihre Furcht bremst sein Wachstum (fachwerk
+    // `wachstum`). DER SCHRECK WANDERT (kollektiv#2, koerper SCHRECK_GESETZ): erschrecken lässt die Tat nur, wer sie sieht — wer in
+    // ihrer Gefahr-Distanz steht (`_bewohnerSchreckSieht`); jeder andere erst, wenn er einen Fliehenden in ihr sieht
+    // (`_bewohnerSchreckTakt`, je nach seiner Reaktionszeit); wer sie nur hört (`schreckHoerweite`), bleibt stehen und schaut
+    // (`schaut`). Bis hier erinnerte jeder auf zeugeM die Tat im Takt der Tat und wich im selben: an stadt-voll die Front
+    // 51,72 m/s, die Flucht 0,777 (die Station kollektiv#2).
     _bewohnerZeuge(o) {
         const R2 = AnazhRealm.BEWOHNER.zeugeM ** 2;
+        const KC = window.__koerperCore;
+        const g2 = this._bewohnerSchreckSieht() ** 2;
+        const h2 = KC.schreckHoerweite(1) ** 2;
         const cells = (this.state.worldMeta || {}).settlementCells || {};
-        const stunde = ((((Number.isFinite(this.state.timeOfDay) ? this.state.timeOfDay : 0.5) % 1) + 1) % 1) * 24; // wie der Takt
         for (const S of (this._bewohnerSiedlungen || new Map()).values()) {
+            const frist = new Map();
+            const schaut = new Set();
             let sah = false;
-            let belegt = null;
-            for (const b of S.liste || [])
-                if (b.leib && !b.drinnen && (b.leib.position.x - o.x) ** 2 + (b.leib.position.z - o.z) ** 2 < R2) {
-                    this._creatureRemember(b.leib, "gewalt", { von: "spieler" });
-                    sah = true;
-                    if (b.waffe) {
-                        this._bewohnerNahen(S, b, o, stunde); // die Wache flieht nicht, sie naht
-                        continue;
-                    }
-                    belegt = belegt || new Set(S.liste.map((x) => x.ziel));
-                    this._bewohnerWeichen(S, b, o, stunde, belegt);
-                }
-            const c = sah && cells[S.key];
+            for (const b of S.liste || []) {
+                if (!b.leib || b.drinnen) continue;
+                const d2 = (b.leib.position.x - o.x) ** 2 + (b.leib.position.z - o.z) ** 2;
+                if (d2 < R2) sah = true;
+                if (d2 < g2) frist.set(b, KC.schreckZeit(b.same));
+                else if (d2 < h2) schaut.add(b);
+            }
+            if (!sah && !schaut.size) continue;
+            S.schreck = {
+                o: { x: o.x, z: o.z },
+                uhr: 0,
+                frist,
+                schaut,
+                erschrak: new Map(),
+                quellen: [],
+                belegt: null,
+            };
+            if (!sah) continue;
+            const c = cells[S.key];
             if (!c || !c.wachs) continue;
             c.akten = (c.akten || []).concat([{ t: this.state.spielZeit, type: "gewalt" }]);
             c.akten.splice(0, c.akten.length - globalThis.__fachwerkCore.WACHSTUM.aktenMax);
         }
+    }
+    // die Distanz, in der einer die Gefahr sieht — die Tat und jeden, der sichtbar vor ihr flieht (koerper SCHRECK_GESETZ.gefahrM)
+    _bewohnerSchreckSieht() {
+        return window.__koerperCore.SCHRECK_GESETZ.gefahrM;
+    }
+    // DER SCHRECK IM TAKT (kollektiv#2): die Uhr des Schrecks läuft mit dem Takt der Bewohner (dt); wessen Frist um ist, erschrickt —
+    // er erinnert die Gewalt (das EINE Gedächtnis, `_creatureRemember`), die Wache naht (`_bewohnerNahen`), jeder andere weicht
+    // (`_bewohnerWeichen`); wer `fortM` von seinem Stand beim Schreck fort ist, flieht sichtbar und ist selbst die Gefahr: jeder
+    // draußen, der den Schrei hört (`schreckHoerweite` der Erschrockenen, er wächst mit ihnen), und der die Tat oder einen Fliehenden
+    // binnen gefahrM sieht, erhält seine Frist (koerper `schreckZeit`); wer hört und keine Frist hat, schaut. Der Erschrockene läuft
+    // zuerst gerade fort (`fort`: die Richtung von der Tat weg, bis er gefahrM weiter steht), wo die Linie frei ist.
+    // Steht keine Frist mehr offen und flieht keiner mehr an, endet der Schreck (nach `reaktS` + `streuS` je ein Takt ohne Neues).
+    _bewohnerSchreckTakt(S, dt, stunde) {
+        const K = S.schreck;
+        const KC = window.__koerperCore;
+        const G = KC.SCHRECK_GESETZ;
+        const R2 = KC.schreckHoerweite(1 + K.erschrak.size) ** 2;
+        const g2 = this._bewohnerSchreckSieht() ** 2;
+        const o = K.o;
+        K.uhr += Math.max(0, dt || 0);
+        const d2 = (p, q) => (p.x - q.x) ** 2 + (p.z - q.z) ** 2;
+        let anlauf = false;
+        for (const [b, e] of K.erschrak) {
+            if (e.gefahr || e.wache || !b.leib) continue;
+            if (d2(b.leib.position, e) >= G.fortM ** 2) [e.gefahr, K.quellen] = [true, K.quellen.concat([b])];
+            else if (K.uhr - e.ab < G.reaktS + 2 * G.streuS) anlauf = true;
+        }
+        for (const b of S.liste) {
+            if (!b.leib || b.drinnen || K.frist.has(b) || K.erschrak.has(b)) continue;
+            const p = b.leib.position;
+            if (d2(p, o) >= R2) continue;
+            K.schaut.add(b);
+            if (d2(p, o) < g2 || K.quellen.some((q) => q.leib && !q.drinnen && d2(p, q.leib.position) < g2))
+                K.frist.set(b, K.uhr + KC.schreckZeit(b.same));
+        }
+        for (const [b, t] of K.frist) {
+            if (t > K.uhr) continue;
+            K.frist.delete(b);
+            K.schaut.delete(b);
+            if (!b.leib || b.drinnen) continue;
+            const [px, pz] = [b.leib.position.x, b.leib.position.z];
+            const d = Math.hypot(px - o.x, pz - o.z) || 1;
+            // der Fortlauf: gerade von der Tat weg über freies Land, sonst wie das Tier ±0,5, ±1 rad daneben (`_bewohnerWeichen`) —
+            // bis hier lief nur, wessen gerade Linie frei war; wem ein Haus im Rücken stand, ging seinen Weg: 0,5–3,5 s bis 0,5 m fort
+            let fort = null;
+            for (const w of b.waffe ? [] : [0, 0.5, -0.5, 1, -1]) {
+                const [ux, uz] = [((px - o.x) * Math.cos(w) - (pz - o.z) * Math.sin(w)) / d, ((px - o.x) * Math.sin(w) + (pz - o.z) * Math.cos(w)) / d]; // prettier-ignore
+                const q = { x: px + ux * G.gefahrM, z: pz + uz * G.gefahrM };
+                if (
+                    this._landAt(q.x, q.z) &&
+                    !["haus", "bau"].includes(this._imGrundriss(q.x, q.z, 0.5)) &&
+                    !this._bewohnerWand({ x: px, z: pz }, q)
+                ) {
+                    // prettier-ignore
+                    fort = { ux, uz, x: px, z: pz };
+                    break;
+                }
+            }
+            K.erschrak.set(b, { x: px, z: pz, ab: K.uhr, gefahr: false, wache: !!b.waffe, fort });
+            this._creatureRemember(b.leib, "gewalt", { von: "spieler" });
+            if (b.waffe) {
+                this._bewohnerNahen(S, b, o, stunde); // die Wache flieht nicht, sie naht
+                continue;
+            }
+            K.belegt = K.belegt || new Set(S.liste.map((x) => x.ziel));
+            this._bewohnerWeichen(S, b, o, stunde, K.belegt);
+            anlauf = true;
+        }
+        if (!K.frist.size && !anlauf) S.schreck = null;
     }
     // DER ZEUGE WEICHT (kollektiv#1, w28-zeugen-weichen): wer die Tat am Ort o sah und sie fürchtet (`_kreaturFurchtErinnert` > 0),
     // verlässt ihren Kreis — die Flucht aus zweiter Hand des EINEN Furcht-Gesetzes (tetrapoda `fluchtRadius`, B = die Tat und `zeugeM`).
@@ -3190,16 +3348,18 @@ class AnazhRealm_siedlung_bewohner {
     // Wagen fuhr: zwei Orte für einen Menschen (bevoelkerung#1, main 7de938ab, Radeon: der Fahrer an Ort 0 und 1 zu jeder der
     // vier Uhren 5–18 m neben seinem Soll, ungezählt).
     // DIE KETTE SEINES TAGS (koerper `tagesKette`, die Ankunft zur Stunde): der Aufbruch je Abschnitt um die Gehzeit seines Wegs
-    // davor — die Länge über das Netz (`wegeM`, `_bewohnerListe`) ÷ das Tempo seines Gangs (`gangTempo` hält es während eines
-    // Laufs) ÷ die Sekunden der Stunde (`_bewohnerStundeSek`). Gemerkt, solange ihre Eingänge stehen: der Regen an seiner Tür,
-    // das Feld seines Lebenslaufs, seine Rolle, sein Werk, sein Stand am Platz, sein Besuch, das Spiel des Abends, sein Einkauf.
-    // Vor seiner Geburt (kein Leib, kein Tempo) geht er keinen Weg: die Kette ohne Gehzeit, ungemerkt.
+    // davor — die Länge des Pfads, den sein Leib vom Stand des vorigen Abschnitts zum Stand dieses geht (`_bewohnerPfadM`, werk-am-ort)
+    // ÷ das Tempo seines Gangs (`gangTempo` hält es während eines Laufs) ÷ die Sekunden der Stunde (`_bewohnerStundeSek`). Gemerkt,
+    // solange ihre Eingänge stehen: der Regen an seiner Tür, das Feld seines Lebenslaufs, seine Rolle, sein Werk, sein Stand am
+    // Platz, sein Besuch, das Spiel des Abends, sein Einkauf, jeder ihrer Pfade (`pfade`).
+    // Vor seiner Geburt (kein Leib, kein Tempo) geht er keinen Weg: die Kette ohne Gehzeit, ungemerkt — ihre Pfade misst sie
+    // schon (das Werk der Pfade, `_bewohnerPfadeWerk`).
     // DER EINKAUF DES HAUSHALTS (koerper TAGES_GESETZ.einkauf, `tagesEinkaeufer`): je Haushalt — die Leute hinter EINER Tür — geht
     // EINER am Markt-Morgen zum Markt; der Kern wählt ihn aus Samen und Rolle der Seinen (der Erwachsene, dessen Werk am
     // spätesten beginnt; wer einen Posten hat, nur, wenn kein anderer da ist). Gewählt, wenn jede Rolle steht (nach dem Händler
     // am Stand, der Wache und dem Fahrer am Steuer), unter denen mit Stand am Platz — die Liste gab ihn dem Einkäufer nach der
-    // Rolle seines Hauses zuerst (`_bewohnerListe`). Sein Ort ist sein Stand am Platz (`orte.einkauf`), die Kette liest den Weg
-    // dorthin wie zum Markt (`ortI.einkauf`); er kauft für die Erwachsenen seines Hauses (`orte.einkaufFuer`, koerper
+    // Rolle seines Hauses zuerst (`_bewohnerListe`). Sein Ort ist sein Stand am Platz (`orte.einkauf`), die Kette misst den Pfad
+    // dorthin (`_bewohnerPfadM`); er kauft für die Erwachsenen seines Hauses (`orte.einkaufFuer`, koerper
     // `tagesEinkaufFuer`); ein Haushalt ohne Stand am Platz kauft nicht (laut gezählt: `S.ohneEinkauf`). Bis
     // hier ging jeder Mensch jeden Morgen über den Markt (morgenPlatzH 1 h): an stadt-voll 1 356 Gänge, um 8 Uhr 140 mit dem Markt
     // zum Ziel, und die Leute des Markts standen erst mit ihrem Werk dort.
@@ -3216,12 +3376,16 @@ class AnazhRealm_siedlung_bewohner {
             else H.set(b.orte.tuer, [b]);
         }
         S.ohneEinkauf = 0;
+        // (die Stände, die der Runde eines Einkäufers fehlen: die Liste stellte seinem Haus weniger, als der Kern ihm gibt —
+        // die Buden voll, oder sie stellte sie einem anderen, den die Rolle danach nahm)
+        S.rundeKurz = 0;
         for (const L of H.values()) {
             const mit = L.filter((b) => b.orte.platz);
             const w = KC.tagesEinkaeufer(mit.map((b) => ({ same: b.same, rolle: b.rolle })));
             if (w >= 0) {
                 mit[w].orte.einkauf = mit[w].orte.platz;
                 mit[w].orte.einkaufFuer = KC.tagesEinkaufFuer(L.map((b) => ({ same: b.same, rolle: b.rolle })));
+                S.rundeKurz += Math.max(0, KC.tagesEinkaufStaende(mit[w].same) - 1 - (mit[w].orte.einkaufRunde || []).length); // prettier-ignore
             } else if (KC.tagesEinkaeufer(L.map((b) => ({ same: b.same, rolle: b.rolle }))) >= 0) S.ohneEinkauf++;
         }
     }
@@ -3231,37 +3395,65 @@ class AnazhRealm_siedlung_bewohner {
         const o = b.orte;
         const k = b.kette;
         const v = b.gangTempo ?? b.tempo;
+        const S = b.sied;
         // prettier-ignore
-        if (k && k.regen === regen && k.krank === b.krank && k.rolle === b.rolle && k.werk === o.werk && k.platz === o.platz && k.besuch === o.besuch && k.spiel === o.spiel && k.einkauf === o.einkauf && k.einkaufFuer === o.einkaufFuer && k.v === v) return k.K;
-        const [I, W, sek] = [b.ortI, b.wegeM, this._bewohnerStundeSek()];
-        // DER WEG OHNE NETZ ZÄHLT BEIM NAMEN, nie still als null Gehzeit: ein Ort seines Tags ohne Index (`ohne.ort`) oder ohne Weg
-        // im Netz (`tagesWege` → Infinity, `ohne.netz`) trägt die Kette als Zahl mit dem Paar der Orte (`K.ohne`) — die Probe liest sie
+        if (k && k.regen === regen && k.krank === b.krank && k.rolle === b.rolle && k.werk === o.werk && k.platz === o.platz && k.besuch === o.besuch && k.spiel === o.spiel && k.einkauf === o.einkauf && k.einkaufFuer === o.einkaufFuer && k.runde === o.einkaufRunde && k.v === v && k.pfade.every((w) => this._bewohnerPfadM(S, b, w.a, w.e) === w)) return k.K;
+        const sek = this._bewohnerStundeSek();
+        // DER WEG OHNE PFAD ZÄHLT BEIM NAMEN, nie still als null Gehzeit: ein Abschnitt ohne Stand (`ohne.ort`) oder ohne Weg
+        // (`_bewohnerPfadM` → Infinity, `ohne.netz`) trägt die Kette als Zahl mit dem Paar der Orte (`K.ohne`) — die Probe liest sie
         const ohne = { ort: 0, netz: 0, wo: [] };
-        const geh = (von, nach) => {
-            if (!(v > 0)) return 0;
-            const [i, j] = [I && I[von], I && I[nach]];
-            if (i == null || j == null) return (ohne.ort++, ohne.wo.push(von + ">" + nach), 0);
-            if (i === j) return 0;
-            const m = W.get(Math.min(i, j) * 65536 + Math.max(i, j));
-            if (Number.isFinite(m)) return m / (v * sek);
-            return (ohne.netz++, ohne.wo.push(von + ">" + nach), 0);
+        const pfade = [];
+        // sein Stand je Abschnitt, wie ihn das Soll nennt: drinnen die Tür, sonst der Ort des Plans (am Steuer der Stand, an dem
+        // er ein- und aussteigt)
+        const stand = (P) => (P ? (P.drinnen ? o.tuer : P.ort) : null);
+        const geh = (von, nach, P0, P1) => {
+            const [a, e] = [stand(P0), stand(P1)];
+            if (!a || !e) return (ohne.ort++, ohne.wo.push(von + ">" + nach), 0);
+            if (a === e) return 0;
+            const w = this._bewohnerPfadM(S, b, a, e);
+            pfade.push(w);
+            if (!Number.isFinite(w.m)) return (ohne.netz++, ohne.wo.push(von + ">" + nach), 0);
+            return v > 0 ? w.m / (v * sek) : 0;
         };
         const K = KC.tagesKette(b.same, b.rolle, o, regen, b.krank, geh);
         K.ohne = ohne;
-        if (v > 0) b.kette = { K, regen, krank: b.krank, rolle: b.rolle, werk: o.werk, platz: o.platz, besuch: o.besuch, spiel: o.spiel, einkauf: o.einkauf, einkaufFuer: o.einkaufFuer, v }; // prettier-ignore
+        if (v > 0) b.kette = { K, regen, krank: b.krank, rolle: b.rolle, werk: o.werk, platz: o.platz, besuch: o.besuch, spiel: o.spiel, einkauf: o.einkauf, einkaufFuer: o.einkaufFuer, runde: o.einkaufRunde, v, pfade }; // prettier-ignore
         return K;
+    }
+    // DER REGEN HÄLT BIS ZUR WENDE (mensch.menge.bevoelkerung#2): wen der Regen an seiner Tür heim schickte, der geht nicht in
+    // dem Atemzug wieder los, in dem er nachlässt — der Regen seines Plans ist der höchste seit dem Beginn des Abschnitts, in dem
+    // er stieg, bis zu dessen Wende (die nächste Grenze seiner Kette, koerper `tagesKette`); steigt er, gilt er sofort. Cools et
+    // al. 2010 (TRR 2157, Tab. 3/4): wer im Regen umplant, verschiebt den Weg (Einkauf ≈ 24 %) oder sagt ihn ab — keiner kehrt
+    // mitten im Abschnitt um. Gehalten wird nur, was der Takt der Stunde liest (die Uhr des Spiels: `stunde` = jetzt); jede
+    // andere Frage (die Wende, die Probe einer anderen Stunde) liest den gehaltenen Regen nur in seinem Abschnitt und Spiel-Fenster.
+    // Bis hier lebte das Soll im Takt des Felds: am Gerät (Radeon, cecf1d71) stand der Pendler daheim, 2 Spiel-s später sank der
+    // Regen unter seine Schwelle, und sein Soll nannte das Werk 376,4 m fort (bevoelkerung#2 angetroffen 18 von 20).
+    _bewohnerRegenBisWende(b, stunde, nass) {
+        const st = this.state;
+        const jetzt = ((((Number.isFinite(st.timeOfDay) ? st.timeOfDay : 0.5) % 1) + 1) % 1) * 24;
+        const um = (x) => ((x % 24) + 24) % 24;
+        const H = b.nass;
+        const gilt = H && st.spielZeit - H.t < H.dauer * this._bewohnerStundeSek() && um(stunde - H.ab) < H.dauer;
+        if (gilt && nass < H.wert) return H.wert;
+        if (Math.min(um(stunde - jetzt), um(jetzt - stunde)) > 1e-6) return nass;
+        const K = this._bewohnerKette(b, nass);
+        const h = um(stunde - K.v - K.A);
+        const w = K.kette.find((e) => e.auf > h + 1e-9);
+        b.nass = { wert: nass, ab: stunde, t: st.spielZeit, dauer: w ? w.auf - h : 24 - h };
+        return nass;
     }
     _bewohnerSoll(b, stunde) {
         const KC = window.__koerperCore;
         if (!KC || typeof KC.tagesPlan !== "function") return AnazhRealm._kernPflichtBruch("koerper:tagesPlan");
         const o = b.orte;
         // der Regen an seiner Tür (wetter-am-ort: das EINE Wetter-Feld am Ort, `_wetterFeldAm`)
-        const regen = this._wetterFeldAm(
+        const nass = this._wetterFeldAm(
             o.tuer.x,
             o.tuer.z,
             undefined,
             this._tuerFeldAus || (this._tuerFeldAus = {})
         ).rain;
+        const regen = this._bewohnerRegenBisWende(b, stunde, nass);
         // DER KRANKE BLEIBT DAHEIM (mensch.menge.seuche#1): das Feld seines Lebenslaufs am Tag der Prozesse (`b.krank`) ist ein
         // Eingang des Plans — der Kern setzt ihn vor seine Tür, der Posten (Fahrer, Wache) hält seine Schicht: kein Wagen der
         // Stadt steht, keine Vertretung, die den Plan eines Zweiten liest (VK am Kopf e0714e46: „die Stadt steht nach 39102 Takten")
@@ -3536,7 +3728,11 @@ class AnazhRealm_siedlung_bewohner {
             g.rotation.y = b.drehen;
             b.drehen = null;
         }
-        b.zielUhr = NaN; // er steht, wo sein Tag ihn jetzt sieht: nichts aufzuholen
+        // er steht, wo sein Tag ihn jetzt sieht: nichts aufzuholen — und von hier an zählt sein Fortschritt gegen seine Uhr
+        // (`_bewohnerGehen`), wer einen Weg geht. Bis werk-am-ort 2 lief er ohne Uhr bis zur nächsten Wende: ein Umweg um einen
+        // Stehenden blieb Rückstand (stadt-voll 10 Uhr, jaeger #114167 auf dem Weg zum Besuch 1,47 m Umweg nach 1,7 s, 2,0 m
+        // hinter seiner Kette)
+        [b.zielUhr, b.gegangen] = [b.weg ? b.uhr : NaN, 0];
         // DIE ANKUNFT NIMMT KEINEM DEN RAUM (mensch.K3 Staffel 2, siedlung.K3): der Tag ist f(Same, t) ohne die anderen — zwei
         // Wege, die dasselbe Netz-Stück teilen, setzten zwei Ankommende 0,57 m auseinander (das Hangdorf um 12,50 Uhr: der
         // Feldarbeiter #809070 und der Hofmann #724672 auf dem Umweg um #809070, Berührung vor dem ersten Schritt). Wer neben
@@ -3588,10 +3784,7 @@ class AnazhRealm_siedlung_bewohner {
         return this._kalender().tagS / AnazhRealm.WELT_GESETZ_ERDE.kalender.tagStunden;
     }
 
-    // DER WEG (mensch.K2, „nie durch Hauswände"): vom Stand des Leibs zum Ziel — die Tür liegt in der Wand: wer aus ihr tritt
-    // oder in sie geht, geht über den Punkt vor ihr (`orte.vor`, `BEWOHNER.vorM`); dazwischen die Strecke (`_bewohnerStrecke`).
-    // DER HOF (`orte.ein`): beim Hof-Haus geht er von dort auf der Achse vor das Tor, wo die Strecke beginnt und endet; wer im
-    // Hof steht (auf der Achse ± 1,5 m), geht von dort. Jeder geht in seiner Spur (`spurM` quer zum Weg, aus dem Samen).
+    // DER WEG (mensch.K2, „nie durch Hauswände"): vom Stand des Leibs zum Ziel über seinen Pfad (`_bewohnerPfad`).
     _bewohnerWeg(S, b) {
         const g = b.leib;
         const o = b.orte;
@@ -3603,20 +3796,17 @@ class AnazhRealm_siedlung_bewohner {
         const von = b.stand || (nahTuer ? o.tuer : { x: lage.x, z: lage.z });
         b.tagVon = null;
         const ziel = b.ziel;
-        const [lx, lz, px, pz] = o.ein ? [o.ein.x - o.tuer.x, o.ein.z - o.tuer.z, von.x - o.tuer.x, von.z - o.tuer.z] : [0, 0, 0, 0]; // prettier-ignore
-        const L2 = lx * lx + lz * lz, t = L2 > 0 && von !== o.tuer ? (px * lx + pz * lz) / L2 : -1, hof = t > -0.05 && t < 1 && (px * lz - pz * lx) ** 2 < 2.25 * L2; // prettier-ignore
-        const vorweg = von === o.tuer ? (o.ein ? [o.vor, o.ein] : [o.vor]) : hof && ziel !== o.tuer ? [o.ein] : [], nachweg = ziel === o.tuer ? (o.ein && !hof ? [o.ein, o.vor] : [o.vor]) : [], a = vorweg.length ? vorweg[vorweg.length - 1] : von, e = nachweg.length ? nachweg[0] : ziel; // prettier-ignore
-        const spur = (((b.same >>> 8) & 255) / 255 - 0.5) * 2 * AnazhRealm.BEWOHNER.spurM;
-        const strecke = a === e ? [] : this._bewohnerStrecke(S, a, e, spur, Math.sign(spur), true, b);
+        // den Pfad, den die Kette seines Tags maß und das Werk der Pfade am jetzigen Stand der Wache prüfte, geht er (`_bewohnerPfadM`,
+        // `gemerkt`), jeden anderen misst er hier
+        const w = this._bewohnerPfadM(S, b, von, ziel, true);
+        const pts = w && w.stand === S.wache.stand ? w.pts && w.pts.slice() : this._bewohnerPfad(S, b, von, ziel);
         // kein Weg (laut, `_bewohnerStrecke`): er bleibt, wo er steht — nie geradeaus durch die Wand
-        if (!strecke) {
+        if (!pts) {
             b.da = true;
             b.wegRest = 0;
             return;
         }
-        const pts = vorweg.concat(strecke);
         if (von === b.stand && Math.hypot(g.position.x - von.x, g.position.z - von.z) > 1e-3) pts.unshift(von); // vom Stand
-        if (e !== ziel) pts.push(...nachweg.slice(1), ziel);
         if (!pts.length) pts.push(ziel);
         // je Punkt der Rest-Weg bis zum Ziel (die Linse liest, dass er schrumpft)
         const rest = new Float64Array(pts.length);
@@ -3632,6 +3822,71 @@ class AnazhRealm_siedlung_bewohner {
         const h = Math.hypot(pts[0].x - g.position.x, pts[0].z - g.position.z);
         b.wegRest = h + rest[0];
         b.gegangen = (b.gegangen || 0) + Math.hypot(pts[0].x - von.x, pts[0].z - von.z) - h;
+    }
+
+    // DER PFAD (werk-am-ort): die Punkte des Wegs vom Stand `von` zum Ziel, ohne `von` selbst — die Tür liegt in der Wand: wer aus
+    // ihr tritt oder in sie geht, geht über den Punkt vor ihr (`orte.vor`, `BEWOHNER.vorM`); dazwischen die Strecke
+    // (`_bewohnerStrecke`). DER HOF (`orte.ein`): beim Hof-Haus geht er von dort auf der Achse vor das Tor, wo die Strecke
+    // beginnt und endet; wer im Hof steht (auf der Achse ± 1,5 m), geht von dort. Jeder geht in seiner Spur (`spurM` quer zum
+    // Weg, aus dem Samen). null: kein Weg (laut, `_bewohnerStrecke`). Seine zwei Leser: der Gang (`_bewohnerWeg`) und die
+    // Gehzeit der Kette seines Tags (`_bewohnerPfadM`) — EIN Weg, den der Leib geht und den die Kette misst.
+    _bewohnerPfad(S, b, von, ziel) {
+        const o = b.orte;
+        const [lx, lz, px, pz] = o.ein ? [o.ein.x - o.tuer.x, o.ein.z - o.tuer.z, von.x - o.tuer.x, von.z - o.tuer.z] : [0, 0, 0, 0]; // prettier-ignore
+        const L2 = lx * lx + lz * lz, t = L2 > 0 && von !== o.tuer ? (px * lx + pz * lz) / L2 : -1, hof = t > -0.05 && t < 1 && (px * lz - pz * lx) ** 2 < 2.25 * L2; // prettier-ignore
+        const vorweg = von === o.tuer ? (o.ein ? [o.vor, o.ein] : [o.vor]) : hof && ziel !== o.tuer ? [o.ein] : [], nachweg = ziel === o.tuer ? (o.ein && !hof ? [o.ein, o.vor] : [o.vor]) : [], a = vorweg.length ? vorweg[vorweg.length - 1] : von, e = nachweg.length ? nachweg[0] : ziel; // prettier-ignore
+        const spur = (((b.same >>> 8) & 255) / 255 - 0.5) * 2 * AnazhRealm.BEWOHNER.spurM;
+        const strecke = a === e ? [] : this._bewohnerStrecke(S, a, e, spur, Math.sign(spur), true, b);
+        if (!strecke) return null;
+        const pts = vorweg.concat(strecke);
+        if (e !== ziel) pts.push(...nachweg.slice(1), ziel);
+        return pts;
+    }
+
+    // DER GEMERKTE PFAD (werk-am-ort): der Weg, den sein Leib vom Stand `a` zum Stand `e` geht (`_bewohnerPfad`), je Mensch und
+    // Paar gemerkt { m, pts, stand, … } (m die Länge, pts seine Punkte; m = Infinity, pts null: kein Weg) — er gilt, solange beide
+    // Stände liegen, wo sie lagen (ein gerückter Stand misst neu, `_bewohnerStandPruefen`) und solange Wagen fahren oder nicht
+    // (der Gehweg der Trasse, `_bewohnerStrecke`); `stand` ist der Stand der Wache, an dem er gemessen oder zuletzt geprüft wurde
+    // (`_bewohnerPfadeWerk`). Zwei Leser: die Kette seines Tags (`_bewohnerKette`, die Länge) und der Gang (`_bewohnerWeg`, die
+    // Punkte — `gemerkt`: nur, was gemerkt gilt, nie neu gemessen). Bis werk-am-ort maß die Kette den Weg über das Netz des Plans
+    // (`wegeM` aus koerper `tagesWege`, Ort zu Ort über ihre Anker), der Leib ging seinen Pfad von Stand zu Stand: an stadt-voll
+    // (main a954d698) standen um 10,01 Uhr 8 von 70 Gehenden ± 2 m am Punkt der Kette (Rest − Rest der Kette Median +8,7 m).
+    _bewohnerPfadM(S, b, a, e, gemerkt = false) {
+        const vk = !!(S.verkehr && S.verkehr.wagen.length);
+        const zu = b.pfadM && b.pfadM.get(a);
+        const w0 = zu && zu.get(e);
+        if (w0 && w0.ax === a.x && w0.az === a.z && w0.ex === e.x && w0.ez === e.z && w0.vk === vk) return w0;
+        if (gemerkt) return null;
+        const pts = this._bewohnerPfad(S, b, a, e);
+        const w = { m: pts ? 0 : Infinity, pts, a, e, ax: a.x, az: a.z, ex: e.x, ez: e.z, vk, stand: S.wache.stand };
+        for (let i = 0, p = a; pts && i < pts.length; p = pts[i++]) w.m += Math.hypot(pts[i].x - p.x, pts[i].z - p.z);
+        const M = b.pfadM || (b.pfadM = new Map());
+        (zu || M.set(a, new Map()).get(a)).set(e, w);
+        return w;
+    }
+
+    // DAS WERK DER PFADE (werk-am-ort, Lehre 14: im Takt-Planer, nie im Takt der Leute): je Mensch prüft es jeden gemerkten Pfad,
+    // dessen Stand der Wache nicht der jetzige ist — trägt eines seiner Beine eine Wand, deren Hülle seit seinem Stand wechselte
+    // (`_bewohnerBeinZu`; `trifft` die Wechsel seit `seit`, älter oder ohne Buch: jede Wand), misst er neu, sonst gilt er am
+    // jetzigen Stand; ein Pfad ohne Weg misst immer neu. Dann misst die Kette seines Tags, was ihr fehlt (`_bewohnerSoll`) —
+    // auch vor seiner Geburt. Je Pfad und je Mensch ein Schritt. Bis es ihn prüft, liest die Kette den gemerkten Pfad, der Gang
+    // misst seinen Weg selbst (`_bewohnerWeg`).
+    *_bewohnerPfadeWerk(S, seit = null, trifft = null) {
+        const bis = S.wache.stand;
+        for (const b of S.liste) {
+            for (const zu of b.pfadM ? b.pfadM.values() : [])
+                for (const w of [...zu.values()]) {
+                    if (w.stand === bis) continue;
+                    const T = seit != null && w.stand >= seit ? trifft : null;
+                    let zu2 = !w.pts;
+                    for (let i = 0, p = w.a; !zu2 && i < w.pts.length; p = w.pts[i++]) zu2 = this._bewohnerBeinZu(b, p, w.pts[i], T); // prettier-ignore
+                    if (!zu2) w.stand = bis;
+                    else (zu.delete(w.e), this._bewohnerPfadM(S, b, w.a, w.e));
+                    yield;
+                }
+            this._bewohnerSoll(b, 0);
+            yield;
+        }
     }
 
     // DIE GERADE (mensch.K3): frei in gerader Linie (`_bewohnerWand`) → [ziel]; schneidet EIN Bau sie, geht er um ihn — über
@@ -3819,10 +4074,12 @@ class AnazhRealm_siedlung_bewohner {
             }
         // DIE SEITE DES GEHWEGS (Leiter mensch.netz.verkehr): wo Wagen fahren, geht er die Seite, die ihn weniger über die Fahrbahn führt
         // (`_verkehrFahrbahnM`; gleich viel: seine) — bis w4-verkehr-c2 ging jeder die Seite seines Samens: vom Markt zur Tür des
-        // Gasthauses querte der Weg vier Arme der Kreuzung (stadt-voll 23 Uhr, 7:1:1: 22,5 m von 94,6 m auf der Fahrbahn)
+        // Gasthauses querte der Weg vier Arme der Kreuzung (stadt-voll 23 Uhr, 7:1:1: 22,5 m von 94,6 m auf der Fahrbahn). Die
+        // andere Seite misst nur bis zur eigenen (`genug`): das Urteil `<` bleibt bit-gleich, ihr Rest fällt.
         if (beide && seite && breit < Infinity) {
             const anders = this._bewohnerStrecke(S, von, ziel, spur, -seite, false, wer);
-            if (anders && this._verkehrFahrbahnM(S, von, anders) < this._verkehrFahrbahnM(S, von, pts)) return anders;
+            const fp = anders ? this._verkehrFahrbahnM(S, von, pts) : 0;
+            if (anders && this._verkehrFahrbahnM(S, von, anders, fp) < fp) return anders;
         }
         return pts;
     }
@@ -4011,6 +4268,12 @@ class AnazhRealm_siedlung_bewohner {
             const vr = (vx || vz) && this._verkehrVorrang(S, x0, z0, vx, vz, b);
             if (vr) lenk = vr === true ? { vx: 0, vz: 0 } : vr; // er wartet am Rand, oder er räumt die Bahn quer
         }
+        // DER HÖRENDE SCHAUT (kollektiv#2, `_bewohnerSchreckTakt`): wer den Schrei der Tat hört und nicht erschrak, bleibt stehen
+        if (S.schreck && S.schreck.schaut.has(b)) lenk = { vx: 0, vz: 0 };
+        // DER ERSCHROCKENE LÄUFT GERADE FORT (kollektiv#2, `_bewohnerSchreckTakt`): von der Tat weg, bis er gefahrM gelaufen ist
+        const fort = S.schreck && !b.drinnen && S.schreck.erschrak.get(b)?.fort;
+        if (fort && Math.hypot(x0 - fort.x, z0 - fort.z) < window.__koerperCore.SCHRECK_GESETZ.gefahrM)
+            lenk = { vx: fort.ux * b.tempo, vz: fort.uz * b.tempo };
         const bewegt = this._bewohnerSchritt(b, dtW, lenk);
         b.vx = (g.position.x - x0) / dt;
         b.vz = (g.position.z - z0) / dt;
@@ -4375,12 +4638,16 @@ class AnazhRealm_siedlung_bewohner {
     // vor das Tor des Hof-Hauses (± 1,5 m, wie `_bewohnerWeg` den Hof misst) liegt zwischen den Mauern des Hofs, dort weicht keiner
     // aus — ein enger Ort jedes Hof-Hauses, der EINEN trägt. Die Achse gehört dem Haus: über sie geht nur, wer in ihm wohnt (der
     // Besuch, der Kunde, der Händler stehen vor dem Tor, wo der Gang am Netz hängt), also fragt jeder die Achse seines Heims, und
-    // alle Bewohner eines Hauses fragen dieselbe. Wer außer b auf ihr geht — `hinaus`: nur wer zum Tor geht (sein nächster Punkt
-    // ist das Tor) —: der erste, sonst null. Leser: die Tür (wer hinaus soll, tritt erst aus ihr, wenn die Achse frei ist) und der Gang (wer hinein will,
+    // alle Bewohner eines Hauses fragen dieselbe. Sie trägt EINE Richtung zur Zeit: wer außer b ihm auf ihr entgegengeht —
+    // `hinein` (b will hinein): wer zum Tor geht (sein nächster Punkt ist das Tor); sonst (b will hinaus): wer nicht zum Tor geht —:
+    // der erste, sonst null. Wer vor ihm in seine Richtung geht, sperrt nie; den Abstand hinter ihm hält die Tür (`tuerFreiM`).
+    // Leser: die Tür (wer hinaus soll, tritt erst aus ihr, wenn ihm keiner entgegenkommt) und der Gang (wer hinein will,
     // wartet vor dem Tor, solange einer auf ihr hinausgeht). Bis hier fragte die Tür nur ihren Punkt und den vor ihr: um 8,45 Uhr
     // trat das Kind von haus_provenzalisch #81761 auf die 9 m lange Achse, auf der der Werkstatt-Mann heimging, beide standen
-    // Bug an Bug zwischen den Mauern (Stadt, Kopf 99b234d7: 2 Steckenbleiber, Wahl 0/0, jede Richtung eine Wand)
-    _bewohnerImHof(S, b, hinaus = false) {
+    // Bug an Bug zwischen den Mauern (Stadt, Kopf 99b234d7: 2 Steckenbleiber, Wahl 0/0, jede Richtung eine Wand). Bis werk-am-ort 2
+    // sperrte die Achse auch dem, der dem Ersten folgte: der Werkstatt-Mann von #28191 wartete 5 s drinnen, bis sein Hausgenosse
+    // das Tor hinter sich hatte, und stand 3,4 m hinter seinem Tag (gate:kreatur-takt bewohner, Wiederkehr, 12,7 Uhr)
+    _bewohnerImHof(S, b, hinein) {
         const o = b.orte;
         if (!o.ein || !S.raster) return null;
         const [M, R] = [AnazhRealm.BEWOHNER.rasterM, 1.5];
@@ -4393,7 +4660,7 @@ class AnazhRealm_siedlung_bewohner {
         for (let i = Math.floor((Math.min(a.x, e.x) - R) / M); i <= Math.floor((Math.max(a.x, e.x) + R) / M); i++)
             for (let j = Math.floor((Math.min(a.z, e.z) - R) / M); j <= Math.floor((Math.max(a.z, e.z) + R) / M); j++)
                 for (const w of S.raster.get(i * 2097152 + j) || []) {
-                    if (w === b || w.drinnen || !w.leib || !w.weg || (hinaus && !amTor(w))) continue; // wer im Hof steht, sperrt ihn nie
+                    if (w === b || w.drinnen || !w.leib || !w.weg || amTor(w) !== hinein) continue; // wer im Hof steht, sperrt ihn nie
                     const [px, pz] = [w.leib.position.x - a.x, w.leib.position.z - a.z];
                     const t = (px * lx + pz * lz) / L2;
                     if (t > -0.05 && t < 1 && (px * lz - pz * lx) ** 2 < R * R * L2) return w; // im Hof, nie jenseits des Tors
@@ -4401,8 +4668,9 @@ class AnazhRealm_siedlung_bewohner {
         return null;
     }
 
-    // DER NÄCHSTE LEIB um (x, z) im Raster seiner Siedlung (`S.raster`), außer b: sein Abstand (Infinity: keiner nah).
-    _bewohnerNaechster(S, b, x, z) {
+    // DER NÄCHSTE LEIB um (x, z) im Raster seiner Siedlung (`S.raster`), außer b und jedem, den `ohne` nennt: sein Abstand
+    // (Infinity: keiner nah).
+    _bewohnerNaechster(S, b, x, z, ohne = null) {
         const M = AnazhRealm.BEWOHNER.rasterM;
         const K = 2 * AnazhRealm.PLAYER_WALL_RADIUS + 0.01;
         const [ix, iz] = [Math.floor(x / M), Math.floor(z / M)];
@@ -4414,7 +4682,7 @@ class AnazhRealm_siedlung_bewohner {
         for (let i = -1; i <= 1; i++)
             for (let j = -1; j <= 1; j++)
                 for (const o of S.raster.get((ix + i) * 2097152 + iz + j) || [])
-                    if (o !== b && !o.drinnen && o.leib)
+                    if (o !== b && !o.drinnen && o.leib && !(ohne && ohne(o)))
                         d = Math.min(
                             d,
                             Math.hypot(o.leib.position.x - x, o.leib.position.z - z) - (o.kR ? o.kR - K : 0)
@@ -4705,17 +4973,23 @@ class AnazhRealm_siedlung_bewohner {
     _bewohnerWegPruefen(S, trifft = null) {
         for (const b of S.liste) {
             if (!b.weg || !b.leib) continue;
-            const o = b.orte;
             let p = { x: b.leib.position.x, z: b.leib.position.z };
             for (let i = b.wi; i < b.weg.length; p = b.weg[i++]) {
-                const q = b.weg[i];
-                const tuerBein = q === o.tuer || (q === o.vor && (p === o.tuer || (i === b.wi && b.stand === o.tuer)));
-                if (tuerBein || (trifft && !trifft(p, q)) || !this._bewohnerWand(p, q)) continue;
+                if (!this._bewohnerBeinZu(b, p, b.weg[i], trifft, i === b.wi && b.stand === b.orte.tuer)) continue;
                 b.weg = b.wegRestAb = b.wi = null;
                 b.stand = null;
                 break;
             }
         }
+    }
+
+    // DAS BEIN NACH EINEM WECHSEL der Wache: es trägt eine Wand, deren Hülle seither wechselte (`trifft`, null: jede) — nie das
+    // Bein durch die eigene Tür (die Tür liegt in der Wand; `ausTuer`: das erste Bein dessen, der von ihr ging). Zwei Leser:
+    // der Rest des Wegs (`_bewohnerWegPruefen`) und das Werk der Pfade (`_bewohnerPfadeWerk`).
+    _bewohnerBeinZu(b, p, q, trifft, ausTuer = false) {
+        const o = b.orte;
+        if (q === o.tuer || (q === o.vor && (p === o.tuer || ausTuer))) return false;
+        return (!trifft || trifft(p, q)) && !!this._bewohnerWand(p, q);
     }
 
     // DIE WECHSEL SEIT EINEM STAND der Wache (ihr Buch, `_blockerWacheMelden`): die Probe, ob eine Strecke a → e eine Hülle
@@ -5207,6 +5481,9 @@ class AnazhRealm_siedlung_bewohner {
             }
         }
         if (S.wache && this._blockerWachen) this._blockerWachen.delete(S.wache);
+        // der Zweikampf ihrer Wache geht mit (`_hiebe`): bis werk-am-ort-2 endete er nach dem Abschied und rief das Ziel des
+        // Bewohners in der geräumten Siedlung (Kreatur-Linse schreck → begegnung: loop-wurf in `_bewohnerStrecke`, S.wache fehlt)
+        if (this._hiebe) for (const [b, F] of this._hiebe) if (F.S === S) this._hiebe.delete(b);
         // DIE FERNE SIEDLUNG IST IHR PLAN (heap-register, „der Speicher folgt dem Blick“): ihr Eintrag behält GENAU das Gedächtnis
         // der Siedlung (`BEWOHNER_ERINNERUNG`: Schlüssel, Plan, Ursprung und der Grund ihres Netzes, den die Wege zu den Nachbarn
         // auch fern lesen) — jedes andere Feld ist eine Funktion der Liste, und der Takt legt es neu, sobald sie wiederkehrt
