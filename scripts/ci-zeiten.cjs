@@ -8,7 +8,7 @@
 "use strict";
 const { execSync, spawnSync } = require("child_process");
 const yaml = require("js-yaml");
-const { klasseDesLaufs, LAEUFER_PLAETZE, PULS_S, ueber } = require("./lib/ci-klasse.cjs");
+const { klasseDesLaufs, LAEUFER_PLAETZE, PULS_S, pulsFristMin, ueber } = require("./lib/ci-klasse.cjs");
 const { alleLaeufe, apiMit } = require("./ci-kopf.cjs");
 const { hauptLauf, ausDatei, path, fs, jsonLesen, ROOT: root } = require("./lib/welt-boot.cjs");
 
@@ -156,6 +156,18 @@ async function messe(api, jetzt, alt = {}, pause = 2000, gelandet = gelandetAmMa
     return { out, gelesen, ohne };
 }
 
+// DIE FRIST DES PULSES im Text von check.yml: timeout-minutes des Jobs puls = `pulsFristMin` der schwersten Puls-Gruppe im Plan
+// (dieselbe Formel wie gate:ci-deckung (T) FRIST) — aus der gelandeten Tafel, nie von Hand (z810: die Hand-Zahl 15 riss am Zug)
+function pulsFristIn(yml, planS) {
+    const von = yml.indexOf("\n    puls:\n");
+    if (von < 0) throw new Error(`${WORKFLOW}: kein Job puls`);
+    const bis = von + 1 + yml.slice(von + 1).search(/\n {4}[\w-]+:\n|$/);
+    let n = 0;
+    const puls = yml.slice(von, bis).replace(/^( {8}timeout-minutes: )\d+$/m, (m, x) => (n++, x + pulsFristMin(planS)));
+    if (n !== 1) throw new Error(`${WORKFLOW}: der Job puls trägt keine timeout-minutes-Zeile`);
+    return yml.slice(0, von) + puls + yml.slice(bis);
+}
+
 // die Lage in check.yml: im Job voll je Schritt seine Gruppe, die Matrix und ihre Klassen; im Job echt je Schritt seine Frist
 function verteile(jetzt, out) {
     const skripte = jsonLesen("package.json").scripts || {};
@@ -185,6 +197,15 @@ function verteile(jetzt, out) {
     }
     let yml = Z.join("\n");
     jetzt = yaml.load(yml);
+    // der Plan der schwersten Puls-Gruppe NACH dem Wandern (Vorbereitung + ihre Schritte — die Waage der Wand)
+    const pulsPlan = Math.max(
+        ...jetzt.jobs.puls.strategy.matrix.gruppe.map((g) =>
+            jetzt.jobs.puls.steps
+                .filter((s) => String(s.if).endsWith("== " + g))
+                .reduce((a, s) => a + z(s), out.vorbereitung_s)
+        )
+    );
+    yml = pulsFristIn(yml, pulsPlan);
     const alle = jetzt.jobs.voll.steps.filter((s) => s.name && s.run && schritte[s.name] && !VORBEREITUNG.test(s.name));
     const pt = (s) => /\bnpm run playtest\b(?!:)/.test(s.run);
     const packe = (gs, k) => {
@@ -264,11 +285,11 @@ function verteile(jetzt, out) {
     if (von >= 0) yml = yml.slice(0, von) + echt + yml.slice(bis);
     fs.writeFileSync(path.join(root, WORKFLOW), yml);
     console.log(
-        `${WORKFLOW}: ${nr.size} Schritte in ${best.g.length} Voll-Gruppen, die schwerste mit Mitfahrern ${(best.max / 60).toFixed(1)} min, Frist ${vollFrist} min · ${fristen} echt-Fristen — es wiegt npm run gate:ci-deckung`
+        `${WORKFLOW}: ${nr.size} Schritte in ${best.g.length} Voll-Gruppen, die schwerste mit Mitfahrern ${(best.max / 60).toFixed(1)} min, Frist ${vollFrist} min · Puls ${(pulsPlan / 60).toFixed(1)} min, Frist ${pulsFristMin(pulsPlan)} min · ${fristen} echt-Fristen — es wiegt npm run gate:ci-deckung`
     );
 }
 
-module.exports = { messe, skriptZeiten, schreibe };
+module.exports = { messe, pulsFristIn, skriptZeiten, schreibe };
 
 // die Tafel auf der Platte: flache Objekte auf einer Zeile (je Schritt, je Tor, je Karte)
 function schreibe(out) {

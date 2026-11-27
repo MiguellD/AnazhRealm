@@ -70,3 +70,11 @@ der Art (`leben-core` `streifRadiusM(M, kost)` = √(A/π), A nach Lindstedt, Mi
 18 m ± 10 m × bodySize war ihr Zwilling (der Hirsch streifte 13 m am Spieltag, nachher 543 m). Additiv außerhalb der
 Rezepte: `kostDerGattung(g, T)`, die EINE Diät-Schwelle für Temperament und Streifgebiet. Wächter: gate:studio-vertrag
 (`wandern.leashBaseM` kehrt nicht zurück), gate:daten-contract (dieser Fingerabdruck).
+
+**Vertrags-Akt 27.11.2026 (kunst-am-leib 3 — DAS BRETT TRÄGT SEINEN LEIB):** `koerper-core.js` neu gemintet
+(`1827ac1f7d23…` → `94d4f918958c…`, klang- und tetrapoda-core byte-gleich). Additiv genau EINE Wurzel:
+`PRESETS.mensch.fx.motion.presets.brett` (28 Felder, 455 → 483; kein Feld fiel, keines änderte sich). Ohne diese Wurzel
+ist das kanonische JSON byte-gleich (geprüft, Feld für Feld). Der Spieler am Brett trägt einen eigenen Leib (über die
+Partie gebeugt, der Lidschlag des Lesers) statt den des Handwerks (`pwalk`); der Blick am Blindpaar der Station
+mensch.sport.kunst#1 trennte beide Künste vorher nicht. Derselbe Akt in v1: `recipes.json` (+ Manifest). Wächter:
+gate:koerper-kern L7 („drei Künste, drei Leiber“), gate:daten-contract (dieser Fingerabdruck).

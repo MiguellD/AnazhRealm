@@ -76,8 +76,13 @@
     // prettier-ignore
     var START_PARAMS = {skinTone:'karamell',height:1.0,mass:0.35,tone:0.5,age:0.15,gender:1.0,hairLen:1.0,hairVol:1.0,arms:0.0,skinTone:'karamell',hairStyle:'mittel',hairColor:'darkbrown',top:'tshirt',topColor:'navy',bottom:'pants',bottomColor:'charcoal',shoes:'sneaker',shoeColor:'white'};
     // ── Die Emotions-/Gang-Profile (byte-treu Lab Z.118) — das motion-Feld ──
+    // (kunst-am-leib 3) `brett` — der Spieler am Brett steht über die Partie gebeugt: das Auge ~1,68 m (0,936 × 1,80 m, Drillis &
+    // Contini 1966), das Brett auf dem Tisch 0,6 m vor ihm (SPIEL_GESETZ.feld.standM / 2; Tischhöhe 0,74 m, DIN EN 527-1, ANGENOMMEN:
+    // die Welt zeichnet keinen Tisch) → der Blick 57,5° unter der Waagrechten; das Auge trägt 29° davon (Hill & Kroemer 1986, Human
+    // Factors 28:127, bevorzugte Senkung), Kopf und Rumpf den Rest: headX 0,30 + spineX 0,12 + bodyX 0,08 = 0,50 rad (28,6°). Der Lidschlag
+    // des Lesers: 4,5 statt 17 je Minute in Ruhe (Bentivoglio et al. 1997, Mov Disord 12:1028) → blinkRate 0,5 × 4,5/17 = 0,13
     // prettier-ignore
-    var MOTION = {idle:{headY:0,headX:0,headZ:0,spineY:0,spineX:0,spineZ:0,bodyX:0,bodyZ:0,armL:0,armR:0,armLX:0,armRX:0,elbowL:0.14,elbowR:0.14,hipLX:0,hipRX:0,hipLZ:0,hipRZ:0,kneeL:0,kneeR:0,breath:0.042,sway:0.022,freq:1.25,kpMul:1.0,irisSpeed:0.3,blinkRate:0.5},joy:{headY:0,headX:-0.14,headZ:0.04,spineY:0,spineX:-0.08,spineZ:0,bodyX:-0.05,bodyZ:0,armL:0.6,armR:0.6,armLX:-0.2,armRX:-0.2,elbowL:0.55,elbowR:0.55,hipLX:0,hipRX:0,hipLZ:0,hipRZ:0,kneeL:0,kneeR:0,breath:0.07,sway:0.04,freq:3.2,kpMul:0.35,irisSpeed:1.0,blinkRate:0.8},sad:{headY:0,headX:0.18,headZ:0.04,spineY:0,spineX:0.07,spineZ:0.02,bodyX:0.05,bodyZ:0,armL:0.08,armR:0.08,armLX:0.05,armRX:0.05,elbowL:0.3,elbowR:0.3,hipLX:0,hipRX:0,hipLZ:0,hipRZ:0,kneeL:0,kneeR:0,breath:0.012,sway:0.003,freq:0.5,kpMul:2.2,irisSpeed:0.04,blinkRate:0.18},angry:{headY:0,headX:-0.08,headZ:0,spineY:0,spineX:-0.06,spineZ:0,bodyX:-0.06,bodyZ:0,armL:0.15,armR:0.15,armLX:-0.15,armRX:-0.15,elbowL:0.5,elbowR:0.5,hipLX:0,hipRX:0,hipLZ:-0.08,hipRZ:0.08,kneeL:0,kneeR:0,breath:0.048,sway:0.006,freq:2.5,kpMul:1.3,irisSpeed:0.03,blinkRate:0.5},fear:{headY:0,headX:-0.06,headZ:0,spineY:0,spineX:0.08,spineZ:0.02,bodyX:0.06,bodyZ:0,armL:-0.08,armR:-0.08,armLX:0.12,armRX:0.12,elbowL:0.6,elbowR:0.6,hipLX:0,hipRX:0,hipLZ:0,hipRZ:0,kneeL:0,kneeR:0,breath:0.06,sway:0.022,freq:4.5,kpMul:1.8,irisSpeed:1.5,blinkRate:0.25},run:{headY:0,headX:0,headZ:0,spineY:0,spineX:0,spineZ:0,bodyX:0,bodyZ:0,armL:0,armR:0,armLX:0,armRX:0,armLZ:0,armRZ:0,elbowL:0,elbowR:0,hipLX:0,hipRX:0,hipLZ:0,hipRZ:0,kneeL:0,kneeR:0,breath:0.06,sway:0.012,freq:2.0,kpMul:1.1,irisSpeed:0.12,blinkRate:0.35},pwalk:{headY:0,headX:-0.03,headZ:0,spineY:0,spineX:0.05,spineZ:0,bodyX:0.04,bodyZ:0,armL:0,armR:0,armLX:0,armRX:0,armLZ:0,armRZ:0,elbowL:0,elbowR:0,hipLX:0,hipRX:0,hipLZ:0,hipRZ:0,kneeL:0,kneeR:0,breath:0.05,sway:0.01,freq:1.6,kpMul:1.0,irisSpeed:0.2,blinkRate:0.45},slide:{headY:0,headX:-0.2,headZ:0,spineY:0,spineX:0.3,spineZ:0,bodyX:0.2,bodyZ:0,armL:0,armR:0,armLX:0,armRX:0,armLZ:0,armRZ:0,elbowL:0,elbowR:0,hipLX:0,hipRX:0,hipLZ:0,hipRZ:0,kneeL:0,kneeR:0,breath:0.05,sway:0,freq:2.0,kpMul:1.4,irisSpeed:0.1,blinkRate:0.3},fight:{headY:0,headX:-0.06,headZ:0,spineY:0,spineX:0.06,spineZ:0,bodyX:-0.04,bodyZ:0,armL:0.1,armR:0.1,armLX:-0.45,armRX:-0.45,elbowL:1.35,elbowR:1.35,hipLX:0,hipRX:0,hipLZ:-0.12,hipRZ:0.12,kneeL:0,kneeR:0,breath:0.04,sway:0.01,freq:2.8,kpMul:1.25,irisSpeed:0.08,blinkRate:0.35},showcase:{headY:0,headX:-0.03,headZ:0,spineY:0,spineX:-0.02,spineZ:0,bodyX:-0.02,bodyZ:0,armL:0.15,armR:0.15,armLX:0,armRX:0,elbowL:0.2,elbowR:0.2,hipLX:0,hipRX:0,hipLZ:0,hipRZ:0,kneeL:0,kneeR:0,breath:0.025,sway:0.015,freq:1.0,kpMul:1.0,irisSpeed:0.4,blinkRate:0.4}};
+    var MOTION = {idle:{headY:0,headX:0,headZ:0,spineY:0,spineX:0,spineZ:0,bodyX:0,bodyZ:0,armL:0,armR:0,armLX:0,armRX:0,elbowL:0.14,elbowR:0.14,hipLX:0,hipRX:0,hipLZ:0,hipRZ:0,kneeL:0,kneeR:0,breath:0.042,sway:0.022,freq:1.25,kpMul:1.0,irisSpeed:0.3,blinkRate:0.5},joy:{headY:0,headX:-0.14,headZ:0.04,spineY:0,spineX:-0.08,spineZ:0,bodyX:-0.05,bodyZ:0,armL:0.6,armR:0.6,armLX:-0.2,armRX:-0.2,elbowL:0.55,elbowR:0.55,hipLX:0,hipRX:0,hipLZ:0,hipRZ:0,kneeL:0,kneeR:0,breath:0.07,sway:0.04,freq:3.2,kpMul:0.35,irisSpeed:1.0,blinkRate:0.8},sad:{headY:0,headX:0.18,headZ:0.04,spineY:0,spineX:0.07,spineZ:0.02,bodyX:0.05,bodyZ:0,armL:0.08,armR:0.08,armLX:0.05,armRX:0.05,elbowL:0.3,elbowR:0.3,hipLX:0,hipRX:0,hipLZ:0,hipRZ:0,kneeL:0,kneeR:0,breath:0.012,sway:0.003,freq:0.5,kpMul:2.2,irisSpeed:0.04,blinkRate:0.18},angry:{headY:0,headX:-0.08,headZ:0,spineY:0,spineX:-0.06,spineZ:0,bodyX:-0.06,bodyZ:0,armL:0.15,armR:0.15,armLX:-0.15,armRX:-0.15,elbowL:0.5,elbowR:0.5,hipLX:0,hipRX:0,hipLZ:-0.08,hipRZ:0.08,kneeL:0,kneeR:0,breath:0.048,sway:0.006,freq:2.5,kpMul:1.3,irisSpeed:0.03,blinkRate:0.5},fear:{headY:0,headX:-0.06,headZ:0,spineY:0,spineX:0.08,spineZ:0.02,bodyX:0.06,bodyZ:0,armL:-0.08,armR:-0.08,armLX:0.12,armRX:0.12,elbowL:0.6,elbowR:0.6,hipLX:0,hipRX:0,hipLZ:0,hipRZ:0,kneeL:0,kneeR:0,breath:0.06,sway:0.022,freq:4.5,kpMul:1.8,irisSpeed:1.5,blinkRate:0.25},run:{headY:0,headX:0,headZ:0,spineY:0,spineX:0,spineZ:0,bodyX:0,bodyZ:0,armL:0,armR:0,armLX:0,armRX:0,armLZ:0,armRZ:0,elbowL:0,elbowR:0,hipLX:0,hipRX:0,hipLZ:0,hipRZ:0,kneeL:0,kneeR:0,breath:0.06,sway:0.012,freq:2.0,kpMul:1.1,irisSpeed:0.12,blinkRate:0.35},pwalk:{headY:0,headX:-0.03,headZ:0,spineY:0,spineX:0.05,spineZ:0,bodyX:0.04,bodyZ:0,armL:0,armR:0,armLX:0,armRX:0,armLZ:0,armRZ:0,elbowL:0,elbowR:0,hipLX:0,hipRX:0,hipLZ:0,hipRZ:0,kneeL:0,kneeR:0,breath:0.05,sway:0.01,freq:1.6,kpMul:1.0,irisSpeed:0.2,blinkRate:0.45},slide:{headY:0,headX:-0.2,headZ:0,spineY:0,spineX:0.3,spineZ:0,bodyX:0.2,bodyZ:0,armL:0,armR:0,armLX:0,armRX:0,armLZ:0,armRZ:0,elbowL:0,elbowR:0,hipLX:0,hipRX:0,hipLZ:0,hipRZ:0,kneeL:0,kneeR:0,breath:0.05,sway:0,freq:2.0,kpMul:1.4,irisSpeed:0.1,blinkRate:0.3},fight:{headY:0,headX:-0.06,headZ:0,spineY:0,spineX:0.06,spineZ:0,bodyX:-0.04,bodyZ:0,armL:0.1,armR:0.1,armLX:-0.45,armRX:-0.45,elbowL:1.35,elbowR:1.35,hipLX:0,hipRX:0,hipLZ:-0.12,hipRZ:0.12,kneeL:0,kneeR:0,breath:0.04,sway:0.01,freq:2.8,kpMul:1.25,irisSpeed:0.08,blinkRate:0.35},showcase:{headY:0,headX:-0.03,headZ:0,spineY:0,spineX:-0.02,spineZ:0,bodyX:-0.02,bodyZ:0,armL:0.15,armR:0.15,armLX:0,armRX:0,elbowL:0.2,elbowR:0.2,hipLX:0,hipRX:0,hipLZ:0,hipRZ:0,kneeL:0,kneeR:0,breath:0.025,sway:0.015,freq:1.0,kpMul:1.0,irisSpeed:0.4,blinkRate:0.4},brett:{headY:0,headX:0.3,headZ:0,spineY:0,spineX:0.12,spineZ:0,bodyX:0.08,bodyZ:0,armL:0,armR:0,armLX:0,armRX:0,armLZ:0,armRZ:0,elbowL:0.14,elbowR:0.14,hipLX:0,hipRX:0,hipLZ:0,hipRZ:0,kneeL:0,kneeR:0,breath:0.04,sway:0.01,freq:1.0,kpMul:1.0,irisSpeed:0.1,blinkRate:0.13}};
 
     // ═══════════════════════════════════════════════════════════════════════
     //  B4 PARAMS — die acht numerischen Lab-Slider als DATEN (worlds/
@@ -5531,7 +5536,7 @@
         // false`, am Posten und auf ihrer Runde; im Hieb ficht sie in der Haltung des Kampfs und der Stufe ihres Könnens wie jeder
         // in einer benannten Kunst, LEIB_SATZ.kunst — kunst-am-leib 2: bis hier stand der beste Kämpfer der Stadt, eine Wache,
         // im Zweikampf neutral, 0 Züge)
-        haltung: Object.freeze({ arbeit: "pwalk", hilft: "pwalk", mittag: "showcase", besuch: "showcase", abend: "sad", spiel: "joy", wettkampf: "pwalk", zweikampf: "fight", brett: "pwalk", zuschauen: "joy", jagd: "pwalk", fischfang: "pwalk", hieb: "fight" }), // prettier-ignore
+        haltung: Object.freeze({ arbeit: "pwalk", hilft: "pwalk", mittag: "showcase", besuch: "showcase", abend: "sad", spiel: "joy", wettkampf: "pwalk", zweikampf: "fight", brett: "brett", zuschauen: "joy", jagd: "pwalk", fischfang: "pwalk", hieb: "fight" }), // prettier-ignore
         // DIE ZEIT-ART JE AKT (tages-gesetz, Entscheid des Koordinators 25.11.; Leser: gate:mensch-zuege `zuordnen`, die Station
         // mensch.geist.absicht#1): jeder Akt des Tags (`tagesPlan`, das Spiel des Abends) trägt GENAU EINE Art seiner Zeit — die
         // Hauptgruppen der Zeitbudget-Forschung: arbeit (Szalai 1972 „work“; HETUS 2008 Guidelines, Eurostat, Code 1 Erwerb),
@@ -5675,9 +5680,15 @@
             korrektur: Object.freeze([0, 1]),
             nach: 0.45,
             kurz: 0.25,
-            // Steife (Einfrieren der Freiheitsgrade; `pose` rad je Achse, `schulter` ihr genommener Anteil am Zug): Vereijken et al. 1992, J Mot Behav 24:133 — Größen ANGENOMMEN
+            // Steife (Einfrieren der Freiheitsgrade, Vereijken et al. 1992, J Mot Behav 24:133 — die Richtung; `schulter` ihr genommener Anteil am Zug, ANGENOMMEN)
             steife: Object.freeze([0, 1]),
-            pose: Object.freeze({ headX: 0.16, spineX: 0.07, elbowL: 0.3, elbowR: 0.3, kneeL: -0.04, kneeR: -0.04 }),
+            // (kunst-am-leib 3) DIE HALTUNG DES ANFÄNGERS IM STANDBILD (`pose`, rad je Achse des Profils beim Lehrling, × `steife`) —
+            // der Prüfer sieht EIN Bild, nicht den Takt: Takayasu et al. 2019, Am J Surg 217:12–16 (Naht am Laparoskop, 20 Chirurgen,
+            // Experte ↔ Novize, optische Bewegungserfassung): der Experte hält die Arme ~7° lockerer am Leib, beugt die Ellbogen ~10°
+            // mehr, sein Rumpf beugt thorakolumbal ~10° weniger → der Anfänger: Rumpf +10° (spineX 0,175), die Arme 7° vom Leib
+            // (armL/armR 0,122), die Ellbogen 10° gestreckter (−0,175). Der Kopf gesenkt zum Werk (+0,16) und die Knie (−0,04)
+            // ANGENOMMEN. Bis hier beugte der Lehrling die Ellbogen 0,3 MEHR — gegen die Quelle.
+            pose: Object.freeze({ headX: 0.16, spineX: 0.175, armL: 0.122, armR: 0.122, elbowL: -0.175, elbowR: -0.175, kneeL: -0.04, kneeR: -0.04 }), // prettier-ignore
             schulter: 0.6,
         }),
         // DIE TRACHT DES TAGS — das Soll der Kleidung aus der Luft um 6 Uhr (Schiavon & Lee 2013, Building and Environment 59:250–260,
@@ -9296,7 +9307,7 @@
         seiten: 2, // die Zeilen je Stand im Satz und im Feld je tragendem Bein (das rechte, das linke)
         ruhe: Object.freeze({ pronation: 1.2, ellbogen: 0.25, daumen: 0.035, daumenBis: 0.2 }), // rad: die Arme hängen (stand-lebt 3)
         blick: Object.freeze({ rad: Object.freeze([0, 0.56, -0.56]), wende: 0.4 }), // die Gier des Kopfs je Fixation, s je Wende
-        tun: Object.freeze({ showcase: "reden", pwalk: "hand" }), // je Profil des Stands die Arbeit der Hände
+        tun: Object.freeze({ showcase: "reden", pwalk: "hand", brett: "setzen" }), // je Profil des Stands die Arbeit der Hände
         // (kunst-am-leib) die Tat einer Kunst, wo das Profil selbst keine trägt: nur ein Name mit der Stufe einer Kunst
         // (LEIB_SATZ.stufe) führt sie — wer im Zweikampf steht, stößt aus der Deckung; der Spieler in Garde („fight“ ohne Stufe)
         // stößt nie von selbst. 3 Stöße je Seite und Zyklus (ein Stoß je 1,2 s, die Seiten im Wechsel), der Ellbogen streckt (−)
@@ -9305,6 +9316,11 @@
             reden: Object.freeze({ je: 2, hub: 0.5, schulter: 0.35, ellbogen: 1.2 }), // rad: Beugung vor, Ellbogen
             hand: Object.freeze({ je: 4, hub: 0.6, schulter: 0.5, ellbogen: 0.9 }),
             stoss: Object.freeze({ je: 3, hub: 0.35, schulter: 0.55, ellbogen: -1.1 }),
+            // (kunst-am-leib 3) der Spieler am Brett setzt mit EINER Hand (`seite` 1, die rechte: links schreiben 10,6 %, Papadatou-Pastou
+            // et al. 2020, Psychol Bull 146:481): je Zug der Partie zwei Griffe — in die Schale, aufs Feld —, die Welt rafft die Partie
+            // auf zwei Züge je Zyklus (zugS 8 s, ANGENOMMEN); die Schulter beugt vor zum Brett, der Ellbogen beugt wenig (die Hand
+            // wendet sich dem Feld zu — gestreckt holte er die Hand des steifen Lehrlings zurück: Hub 4 statt 23 cm)
+            setzen: Object.freeze({ je: 4, hub: 0.3, schulter: 0.7, ellbogen: 0.2, seite: 1 }),
         }),
     });
     // das Bein, das trägt (+1: das rechte trägt, das linke ist das Spielbein — die Pose des Labors; −1 gespiegelt), zur Uhr t der
@@ -9392,8 +9408,11 @@
     // (kunst-am-leib) Ein Tun im Gesetz des Könnens (`leibTunKunst`) beginnt jeden Zug zu seiner Zeit, mit seinem Ausschlag; wer
     // nachkorrigiert, dessen erste Teilbewegung fällt um `kurz` kürzer und niedriger, und die zweite (`nach` hoch) setzt auf ihrem
     // Rückweg an — zwei Gipfel je Zug statt einem.
+    // (kunst-am-leib 3) Ein Tun EINER Hand (`seite`) trägt keinen Versatz: er teilt die Takte zweier Hände; die eine Hand greift im
+    // Takt der linken Seite, den die Zeilen des Satzes nahe ihrer Spitze treffen (`leibStandZeile` — versetzt fiele die rechte
+    // bei 4 Griffen je Zyklus auf u 0 und ⅓, beide außerhalb des Hubs 0,3: die ferne Hand stünde still)
     function leibTunWert(t, s, A) {
-        var x = leibStandPhase(t) * A.je + (s ? GESTE.versatz : 0),
+        var x = leibStandPhase(t) * A.je + (s && A.seite == null ? GESTE.versatz : 0),
             n = Math.floor(x),
             u = x - n;
         if (A.zeit) {
@@ -9669,6 +9688,7 @@
         var AT = w < 0.999 && r.standTun && r.standTun.je > 0 ? r.standTun : null;
         if (AT)
             for (var si = 0; si < 2; si++) {
+                if (AT.seite != null && si !== AT.seite) continue; // (kunst-am-leib 3) das Tun EINER Hand
                 var arm = si ? r.armR : r.armL,
                     hb = leibTunWert(t, si, AT) * (1 - w);
                 if (!hb || !arm) continue;
