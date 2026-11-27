@@ -2985,10 +2985,10 @@
    "summe": {
     "kriterien": 33,
     "sprossen": 223,
-    "heute": 21,
+    "heute": 24,
     "kern": 0,
     "kernDazu": 0,
-    "anteilHeute": 10.5,
+    "anteilHeute": 12,
     "anteilKern": 0
    },
    "perspektiven": [
@@ -3170,7 +3170,7 @@
        "richter": "1 000 Saaten × 10 Punkte: Konsistenz ≥ 95 %, Blindbewertung „lebendige Welt“ ≥ 80 %"
       }
      ],
-     "heute": 1,
+     "heute": 3,
      "kern": 0,
      "fuss": "ungemessen",
      "beleg": "Waldgrenze unter dem Sommer-Schnee und Feuchte-Arten GRÜN, aber die Palme folgt dem Rauschen `lebendig` (stamm/feld-leben.js) statt Wärme: ROT an Sprosse 1; ein Klimafeld Temperatur × Niederschlag fehlt.",
@@ -3962,7 +3962,7 @@
        "richter": "Klima-Zeitraffer: Zugscheide verschiebt sich mit der Isotherme"
       }
      ],
-     "heute": 1,
+     "heute": 2,
      "kern": 0,
      "fuss": "ungemessen",
      "beleg": "Leine 18 m × Körpergröße (tetrapoda-core.js:225), Wildwechsel zur Tränke aus Durst — headless; Streifgebiet im Fenster nie gemessen; keine Wanderung.",
@@ -17586,10 +17586,10 @@
    "summe": {
     "kriterien": 33,
     "sprossen": 213,
-    "heute": 24,
+    "heute": 26,
     "kern": 0,
     "kernDazu": 0,
-    "anteilHeute": 10.9,
+    "anteilHeute": 11.7,
     "anteilKern": 0
    },
    "perspektiven": [
@@ -17850,7 +17850,7 @@
        "richter": "Klima-Zonen im Bild gegen Energie-Bilanz-Modell ±5 K in ≥ 90 %"
       }
      ],
-     "heute": 1,
+     "heute": 3,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "Mechanik von Sprosse 1 steht: Jahres-Welle jahrTage: 365 (gelaende-core.js:1304,1317), Laub, Schnee, Wasser lesen sie. Bild-Preis in der Szene des Richters an beiden Geräten nicht gemessen.",
@@ -20098,11 +20098,11 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 140,
+  "heute": 145,
   "davonKopplungen": 33,
   "kern": 2,
   "kernDazu": 2,
-  "anteilHeute": 7.3,
+  "anteilHeute": 7.6,
   "anteilKern": 0,
   "kapitel": 7,
   "perspektiven": 42,
@@ -20112,8 +20112,8 @@
    "ungemessen": 113
   },
   "gliederLeitern": 9,
-  "beide": 66,
-  "nachwache": 74
+  "beide": 70,
+  "nachwache": 75
  },
  "zusammengelegt": [
   {
