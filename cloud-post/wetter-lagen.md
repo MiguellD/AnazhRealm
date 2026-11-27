@@ -1,5 +1,12 @@
 # Stand-Blatt wetter-lagen (Sprosse `karte2.planet.wetter.lagen#2`) — oberster Abschnitt = jüngster Stand
 
+## 27.11. — Schub 2: der Prototyp der Lage hält die Station (headless), der Schnitt in phyto-core läuft
+
+- Prototyp (EINE Phase ζ des Durchzugs längs der Zug-Koordinate s, Zyklus 40 Takte; Front-Stärke, Druck und Drehung lesen dieselbe ζ; die drei alten Wellen nur noch als Textur): **stimmt 0 % → 86 %**, Drehung ≥ 15° 0 % → 98 %, Druckfall 0 → 88 %, Abfolge 52 → 88 %, 50 von 50 Passagen; die 7 Fehl-Passagen sind Fenster, deren erster Regen der Schauer des Nebentrogs hinter der Kaltfront ist (Druck steigt dort — richtig so).
+- Verteilung der Zeilen alt → neu: klar 27 → 44 % · nebel 15 → 24 % · bewoelkt 21 → 17 % · regen 25 → 13 % · sturm 13 → 3 % (nass 38 → 16 %).
+- Band: Bjerknes & Solberg 1922 (Ci → As → Ns, Druckfall vor der Front, Rechtsdrehung an der Front, Schauer dahinter); Hess & Brezowsky 1952 / Gerstengarbe & Werner 2010 (PIK 119): Lage ≥ 3 Tage, häufigste Andauer 3 Tage, WZ 15,7 % des Jahres; Kaltfront-Drehung Beispiel 225° → 290°.
+- Offen jetzt: Schnitt in `phyto-core.js` (wetterAt · windRichtung · windWeg · frontVerteilung), Linse in gate:wetter-wache, check:statik.
+
 ## 27.11. — Sitzung 3, Schub 1: die Täter-Zahl am heutigen main 52937c92
 
 **Die rote Zeile gilt am heutigen main.** Akte `vision/richter/planet.wetter.lagen.2.f0a89f7e-gtx.json` (GTX 1060, 23.11.), wörtlich:
