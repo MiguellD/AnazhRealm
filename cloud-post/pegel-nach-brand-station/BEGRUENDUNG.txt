@@ -19,3 +19,13 @@ Der Patch `k2-zusammenspiel-S3.diff` steht gegen den pm-Kopf 1522407ae4129f05c24
 (meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js, Teil S3, 4 Hunks): `spitze()` nach `fluss`, `blockVor.fluss` und
 `aus.block.nach.fluss` lesen sie, `aus.zurueck.fluss` den Gegenlauf, die Aufruf-Argumente tragen `regen: 1, regenS: 300`.
 Geprüft: `node --check` am gepatchten Stand; `git apply --check` an einem frischen Baum aus dem pm-Kopf GRÜN, angewendet byte-gleich.
+Am pm-Kopf 429c6cf9e6ff2d25333cb23ef48b60d35083040b steht derselbe Patch: `git apply --check` GRÜN (27.11. 23:55).
+
+ZWEITER KANDIDAT `k2-planet-S1-auge.diff` (karte2.planet.wetter.extreme#1, Teil S1, das Beleg-Bild), gegen den pm-Kopf
+429c6cf9e6ff2d25333cb23ef48b60d35083040b (meisterkarte-quelle/punkte/stationen/k2-planet.js, 1 Hunk): `M.auge` bekommt die Pose
+am Messort der Wiese (−280,4/−1045,6, Augenhöhe `py "+1.7"`) mit dem Blick auf ihren Fluss (−258,4/−1132,8, `ly "+0"`) — ohne px
+schoss das Auge an der Kamera des Spiels, wo der Spieler stand: „kein nahWiese im Bild: 0.0 % < 15.0 %“ (GTX 1060, Kopf 0d0e4c05).
+Gemessen (headless, Büschel der Nah-Wiese im Blickkegel ±30°, 1–25 m | 1–8 m): Messort-Blick 626 | 64 · diese Pose 620 | 62 ·
+die Aue des Bachs (−399,9/−847,5) 207 | 0 (die Aue trägt kein Nahfeld-Gras: verworfen). Soll, Richter und Zahl unverändert.
+Geprüft: `node --check` am gepatchten Stand, `git apply --check` an frischem pm-Baum GRÜN. Das Bild selbst ist ungefahren: unter
+swiftshader steht die Welt hier nicht (gpu-process, „DIE WELT STEHT NICHT nach 4300 Takten“) — der Richter ist die GTX 1060.
