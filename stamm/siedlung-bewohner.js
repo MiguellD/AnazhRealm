@@ -431,11 +431,11 @@ class AnazhRealm_siedlung_bewohner {
         const ps = plan.seed >>> 0;
         if (feld === "vorname" || feld === "familie" || feld === "name") {
             // DIE SPRACHE DES ORTS (kultur-aus-klima): das EINE Sprachgesetz des Fachwerk-Studios (fachwerk `spracheVon`: die Region
-            // des Plans ist die Familie, der Same des Orts das Blatt ihres Stammbaums) — dasselbe, das den Ort nennt (`ORTSNAME`):
-            // Ort und Leute einer Region klingen verwandt
+            // des Plans ist die Familie, die Mundart seines Orts — `plan.mundart`, sprache#4 — die Blätter ihres Stammbaums) —
+            // dasselbe, das den Ort nennt (`ORTSNAME`): Ort und Leute einer Region klingen verwandt, Nachbarn im Tal sprechen gleich
             const FC = globalThis.__fachwerkCore;
             if (!FC || typeof FC.sprachName !== "function") return AnazhRealm._kernPflichtBruch("fachwerk:sprachName");
-            const S2 = FC.spracheVon(plan.region, ps);
+            const S2 = FC.spracheVon(plan.region, plan.mundart);
             const vorname = FC.sprachName(S2, "vorname", b.seed);
             // die Familie ist der Haushalt (Laslett): der Stamm aus dem Samen des Hauses, die Endung das Wort der Sprache für das Haus
             const familie = FC.sprachName(S2, "familie", `${ps}:${b.heim}`);
@@ -447,7 +447,7 @@ class AnazhRealm_siedlung_bewohner {
             // Menge (klang.js `_bewohnerLautTakt`: ihre Silben-Kerne sind die Vokale seiner Stimme)
             const FC = globalThis.__fachwerkCore;
             if (!FC || typeof FC.sprachSatz !== "function") return AnazhRealm._kernPflichtBruch("fachwerk:sprachSatz");
-            return FC.sprachSatz(FC.spracheVon(plan.region, ps), `${b.seed}:${tag}`);
+            return FC.sprachSatz(FC.spracheVon(plan.region, plan.mundart), `${b.seed}:${tag}`);
         }
         if (feld === "freunde" || feld === "kreis") {
             // die Sympathie-Gruppe ohne den Haushalt: je Platz ein Mensch eines anderen Hauses des Plans, das Leute trägt. `kreis`
@@ -5604,7 +5604,7 @@ AnazhRealm.BEWOHNER_ERINNERUNG = Object.freeze([
 ]);
 // DER LEBENSLAUF (bewohner-satz, `_bewohnerLauf`): die Bänder, aus denen der Satz eines Bewohners rechnet — je Feld EINE äußere Quelle.
 AnazhRealm.LEBENSLAUF = Object.freeze({
-    // die Namen: das Lautgesetz des Fachwerk-Studios (fachwerk `SPRACHE_GESETZ`, `spracheVon` — Region und Same des Orts; WALS 1A/2A/12A)
+    // die Namen: das Lautgesetz des Fachwerk-Studios (fachwerk `SPRACHE_GESETZ`, `spracheVon` — Region und Mundart des Orts; WALS 1A/2A/12A)
     // Dunbar-Schichten (Zhou, Sornette, Hill & Dunbar 2005): Stütz-Gruppe 5 · Sympathie-Gruppe 15 · 50 · 150 — der Besuch gilt der Sympathie-Gruppe
     freunde: Object.freeze({ gruppe: 15, schichten: Object.freeze([15, 50, 150]) }),
     // Ericsson, Krampe & Tesch-Römer 1993: Übung ab ~5 bis 20 J — die besten Geiger 10 000 h, die guten 7 500, die Lehrer 4 000, Amateur-Pianisten 2 000; die Form nach Newell & Rosenbloom 1981 (Zeit je Versuch ∝ N^−α)

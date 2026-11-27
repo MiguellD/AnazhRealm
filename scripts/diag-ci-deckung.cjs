@@ -13,7 +13,7 @@ const R6 = require("./lib/ci-klasse.cjs");
 const { klasseDesLaufs, GROSS_S, LAEUFER_PLAETZE, PULS_S, ueber, R6_SHELL } = R6;
 const { schluessel } = require("./ci-schluessel.cjs");
 const { kopfUrteil } = require("./ci-kopf.cjs");
-const { messe } = require("./ci-zeiten.cjs");
+const { messe, pulsFristIn } = require("./ci-zeiten.cjs");
 const {
     taeterFaelle,
     selbsttestEnde,
@@ -152,9 +152,8 @@ const imVollenLauf = (doc, job) =>
 // laufen auf SwiftShader bis 2,8× langsamer, die Kamera-Leib-Linse am selben Kopf 319 s und 841 s), ihr Deckel hält 1,2 × die Gruppe (T).
 const RAND_S = 30;
 const DECKEL_MIN = 45;
-// (T) FRIST am Puls: seine Tafel trägt den MEDIAN (voll den p90). Der langsamste gelandete Lauf der Statik trug 1,32 × den Median
-// (586 s gegen 444 s, neun Zug-Kandidaten 26.–27.11.); mit demselben Rand 1,2 wie in voll hält die Frist 1,6 × den Plan.
-const PULS_FRIST = 1.6;
+// (T) FRIST am Puls: die EINE Formel in lib/ci-klasse.cjs (`pulsFristMin`) — der Schreiber ci-zeiten.cjs setzt mit ihr die Frist.
+const { PULS_FRIST, pulsFristMin } = R6;
 const VORBEREITUNG = [
     ["checkout", (s) => String(s.uses).startsWith("actions/checkout@")],
     ["setup-node", (s) => String(s.uses).startsWith("actions/setup-node@")],
@@ -1069,7 +1068,7 @@ function waage(doc, zeiten, alterVon = seitKopf, sperrt = LINIE) {
                     `(T) FRIST: „${wer}" trägt im langsamen Lauf ${minuten(summe)} min, timeout-minutes ${J["timeout-minutes"]} hält nicht 1,2 × davon`
                 );
             // z795 (27.11.): der Puls 1 lief am Zug-Kandidaten zweimal in seinen Deckel 10 min — abgebrochen ist kein Urteil
-            if (art === "push" && PULS_FRIST * summe > 60 * J["timeout-minutes"])
+            if (art === "push" && J["timeout-minutes"] < pulsFristMin(summe))
                 v.push(
                     `(T) FRIST: „${wer}" trägt im Median ${minuten(summe)} min, timeout-minutes ${J["timeout-minutes"]} hält nicht ${String(PULS_FRIST).replace(".", ",")} × davon`
                 );
@@ -2277,7 +2276,25 @@ async function selbsttestZeiten() {
     const wache = tn.schritte.A?.s === 300 && tn.schritte.A?.n === 1;
     const ww = tn.schritte.A ? `A ${tn.schritte.A.s} s aus ${tn.schritte.A.n} Lauf` : `A fehlt (${tn.e || "—"})`;
     console.log(`  ${wache ? "✅" : "❌"} Selbsttest „die Nachwache auf main wiegt voll, ein Arbeits-Zweig nie" → ${ww}`);
+    // z810 (27.11.): der Zug maß die Statik neu (Plan 9,4 min), die Puls-Frist stand von Hand auf 15 — der Schreiber setzt sie
+    // jetzt selbst, mit der Formel der Wand; die Frist von voll bleibt, wo sie steht
+    const ymlP = "jobs:\n    puls:\n        runs-on: x\n        timeout-minutes: 15\n        steps: []\n    voll:\n        timeout-minutes: 32\n";
+    const nachP = pulsFristIn(ymlP, 564);
+    const ohneP = (() => {
+        try {
+            return pulsFristIn(ymlP.replace("        timeout-minutes: 15\n", ""), 564) && "grün";
+        } catch (e) {
+            return e.message;
+        }
+    })();
+    const frist =
+        nachP === ymlP.replace("timeout-minutes: 15", "timeout-minutes: 16") &&
+        pulsFristIn(ymlP, 444 + 20) === ymlP.replace("timeout-minutes: 15", "timeout-minutes: 13") &&
+        /keine timeout-minutes-Zeile/.test(ohneP);
+    const wf = `Plan 564 s → ${(nachP.match(/puls:[^]*?timeout-minutes: (\d+)/) || [])[1]} min, voll ${(nachP.match(/voll:\n +timeout-minutes: (\d+)/) || [])[1]} · ohne Zeile: ${ohneP}`;
+    console.log(`  ${frist ? "✅" : "❌"} Selbsttest „der Schreiber setzt die Puls-Frist aus der Tafel (z810: 15 von Hand riss an 9,4 min)" → ${wf}`);
     return (ok ? [] : [`ci-zeiten an einer leeren API: ${u}`]).concat(
+        frist ? [] : [`der Schreiber setzt die Puls-Frist nicht aus der Tafel: ${wf}`],
         gut ? [] : [`der Täter-Lauf ${T.slice(0, 8)} vergiftet die Tafel: ${w}`],
         bleibt ? [] : [`das Neu-Messen wirft den Eintrag eines neuen Schritts aus der Tafel: ${wb}`],
         wache ? [] : [`die Nachwache auf main wiegt nicht (oder ein Arbeits-Zweig wiegt mit): ${ww}`]
