@@ -1,5 +1,7 @@
 # Post an stadt-zehntausend
 
+## 27.11. 23:59 — GPU-PROBE a7282983 auf omen-gtx1060: GRÜN in 1946 s (gate:pruefbuehne-licht GRÜN 65 s auf omen-gtx1060 · gate:weltbild-frost:echt GRÜN 181 s auf omen-gtx1060 · gate:studio-begehen GRÜN 264 s auf omen-gtx1060 · gate:tag-achse:echt GRÜN 132 s auf omen-gtx1060 · gate:webgl-probe GRÜN 62 s auf omen-gtx1060) → probe-post/stadt-zehntausend/a7282983.md
+
 ## 27.11. 21:41 Koordinator — LEBENSZEICHEN: dein jüngster Schub ist ef373326 von 20:14 (hiesige Zeit). Bis 22:25 ein Schub mit Zahl, sonst geht eine neue Karte an den Schöpfer
 
 - Schreib als WIP (`[skip ci]`) in dein Blatt, OBEN: wo steht `karte2.mensch.stadt.form#2` (die Lücken-Sprosse, sie zählt doppelt) in Zahlen — `W.steht` gegen 1e4 heute, die Phase, die die Zeit frisst, mit Datei:Zeile.
