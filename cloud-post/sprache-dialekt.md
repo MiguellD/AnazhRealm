@@ -58,6 +58,18 @@ Der Baum TRÄGT die Nähe (Schwestern KL 0,04–0,07), aber der Raum liest sie n
 Station-Kandidat: `cloud-post/sprache-dialekt-station/` (gegen punkte-maschine d14d0aa2). `liste` am Kopf f757fb6a meldet genau 2 ROT,
 gelaende.K2#1/#2 (Wand HAKEN).
 
+## Vertrags-Akt
+
+Golden `spec/asset-contract/v6/golden/siedlung.json` neu geprägt: ein Plan ohne Ort spricht die Ursprache. Der byte-Diff des Exports
+gegen main betrifft nur `name` und `mundart` (null): Lausi → Lusi, Dindwirt → Kolenwert; die Slots sind gleich. gate:settlement
+Teil O reicht die Mundart der Zelle aus den Kernen (`talWeg` → `mundartVon`, wie `ortKlima`); „Plan-Hash Studio = Welt“ steht.
+
+## Gates lokal (probeUrteil je Log)
+
+gate:settlement Selbsttest GRÜN (beide R13-Täter → ROT beim Namen) · Lauf GRÜN · check:statik Exit 0 · format:check · lint Exit 0.
+`probe-tag` nicht fahrbar: `artifacts/profiband/werkzeug/zug.sh` liegt in keinem Zweig; den Ruf halte ich von Hand gegen
+`spec/ci/ci-zeiten.json` (fachwerk-contract 122 s · gelaende-studio 42 s · klang-zensus 437 s).
+
 ## Offen (mit Adresse)
 
 - Messort stadt-voll, Station nicht gefahren: GPU (der Vor-Richter fährt nur an der GTX 1060).
