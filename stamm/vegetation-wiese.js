@@ -2617,7 +2617,19 @@ class AnazhRealm_vegetation_wiese {
     // Der Boden ist Materie: liest DASSELBE Feld wie der Terrain-Shader (`worldFieldAt`); die dominante
     // der vier Achsen nennt das Material an (x,z). Keine Biom-Tabelle — was der Spieler SIEHT, bekommt
     // er beim Graben.
-    _terrainMaterialAt(x, z, y) {
+    // DAS KORN (karte2.planet.relief.boden#2): `aus` (optional) trägt das Korn des Bodens am Ort — dasselbe Feld, das die Farbe
+    // der Sohle und Bank zeichnet (gelaende-core `korn` → `sedimentFarbe` in `_bodenFarbeAt`): `kornMm` (Median), `kornKlasse`
+    // (Wentworth), `herkunft` (bett · aue · hang · schutt · wind), `laufM` (die Lauf-Länge nach Hack). Ohne `aus` fragt der Stoff
+    // das Feld nicht (der Kontakt je Bild zahlt nichts).
+    _terrainMaterialAt(x, z, y, aus) {
+        if (aus) {
+            const G = globalThis.__gelaendeCore;
+            const a = {};
+            aus.kornMm = G.korn(this._gelaende(), x, z, a);
+            aus.kornKlasse = G.KORN_KLASSEN[G.kornKlasse(aus.kornMm)][0];
+            aus.herkunft = a.herkunft;
+            aus.laufM = a.lauf;
+        }
         const f = typeof this.worldFieldAt === "function" ? this.worldFieldAt(x, z) : null;
         if (!f) return "stein";
         // EIN MARSCH DURCH DIE SÄULE (front-brand): der Höhen-Term der Feuchte und die Strata fragen DIESELBE Oberfläche der
