@@ -1,7 +1,7 @@
 {
  "sha": "eef726c747050e60042a4a0c9f65fea3ff3e9077",
  "geraet": "gtx",
- "zeit": "2026-11-27T10:05:09.198Z",
+ "zeit": "2026-11-27T10:20:31.308Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.geist.gespraech#2": {
@@ -1012,6 +1012,429 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.same.preis.ausdauer#1": {
+   "gruen": false,
+   "zahl": "kein Anfang in dieser Sitzung (profiband.K4#1 fuhr in einer früheren Sitzung dieses Laufs) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "kein Anfang in dieser Sitzung (profiband.K4#1 fuhr in einer früheren Sitzung dieses Laufs) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-27T10:17:27.216Z",
+   "abdruck": "f7f6385a7cbf",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "11336@mwytblwm"
+  },
+  "karte2.mensch.macht.recht#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER Error: /eval ohne Antwort binnen 40 s |     at ClientRequest.<anonymous> ([eval]:58:62) |     at Object.onceWrapper (node:events:622:28) |     at ClientRequest.emit (node:events:508:28) |     at Socket.emitRequestTimeout (node:_http_client:927:9)",
+   "exit": 2,
+   "minuten": 0.83,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER Error: /eval ohne Antwort binnen 40 s |     at ClientRequest.<anonymous> ([eval]:58:62) |     at Object.onceWrapper (node:events:622:28) |     at ClientRequest.emit (node:events:508:28) |     at Socket.emitRequestTimeout (node:_http_client:927:9)",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 49.8,
+   "fremd": {
+    "s": 52.4,
+    "takte": 24,
+    "fremdS": 23.36,
+    "kerne": 0.446,
+    "fensterKerne": 0.722,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.44
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      3.17
+     ],
+     [
+      "bash.exe sk/wacht5.sh",
+      2.81
+     ]
+    ],
+    "dienerS": 11.3,
+    "diener": [
+     [
+      "System",
+      4.16
+     ],
+     [
+      "dwm.exe",
+      3.38
+     ]
+    ],
+    "geraetS": 35.66,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      26.25
+     ],
+     [
+      "svchost.exe",
+      8.77
+     ],
+     [
+      "SearchIndexer.exe",
+      0.38
+     ]
+    ],
+    "eigenS": 97.06,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-27T10:20:31.308Z",
+   "abdruck": "2c9130abcfb3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.nahrung.tier#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-27T10:17:11.338Z",
+   "abdruck": "dd0fb912caa9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "11336@mwytblwm"
+  },
+  "karte2.leben.tiere.masse#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-27T10:17:11.366Z",
+   "abdruck": "5f316e994d1d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "11336@mwytblwm"
+  },
+  "karte2.planet.wasser.gezeiten#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-27T10:17:11.397Z",
+   "abdruck": "3359157673e9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "11336@mwytblwm"
+  },
+  "karte2.erleben.klang.stimme#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-27T10:17:11.430Z",
+   "abdruck": "2a841240456c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "11336@mwytblwm"
+  },
+  "karte2.leben.oeko.netz#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-27T10:17:11.460Z",
+   "abdruck": "d5b980754f6b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "11336@mwytblwm"
+  },
+  "karte2.leben.evolution.fremde-physik#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-27T10:17:11.493Z",
+   "abdruck": "2a065cefeaec",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "11336@mwytblwm"
+  },
+  "karte2.same.kopplung.aufwaerts#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-27T10:17:11.549Z",
+   "abdruck": "a4dd3c536d8b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "11336@mwytblwm"
+  },
+  "karte2.same.kopplung.ereignis#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-27T10:17:11.549Z",
+   "abdruck": "2e8810ba0e83",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.aufwaerts#1",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "11336@mwytblwm"
+  },
+  "karte2.same.kopplung.gewalt#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-27T10:17:11.549Z",
+   "abdruck": "4740884c8374",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.aufwaerts#1",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "11336@mwytblwm"
+  },
+  "karte2.same.kopplung.kohaerenz#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-27T10:17:11.549Z",
+   "abdruck": "90d34fa9d678",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.aufwaerts#1",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "11336@mwytblwm"
+  },
+  "karte2.same.kopplung.terraform#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-27T10:17:11.549Z",
+   "abdruck": "6bfa5fe3e6c0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.aufwaerts#1",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "11336@mwytblwm"
   }
+ },
+ "sitzung": {
+  "start": "2026-11-27T10:02:29.969Z",
+  "ordner": "sitzung-20261127-110229",
+  "port": 7804,
+  "warten": 0.02,
+  "bootS": 7.2,
+  "grundstellungS": [
+   0.4
+  ],
+  "proben": 2,
+  "freigaben": [],
+  "geraet": {
+   "name": "GTX 1060",
+   "adapter": "NVIDIA GeForce GTX 1060",
+   "preis": true
+  },
+  "offen": [
+   "karte2.same.preis.ausdauer#1",
+   "karte2.mensch.macht.recht#1",
+   "karte2.mensch.nahrung.tier#2",
+   "karte2.leben.tiere.masse#1",
+   "karte2.planet.wasser.gezeiten#1",
+   "karte2.erleben.klang.stimme#1",
+   "karte2.leben.oeko.netz#2",
+   "karte2.leben.evolution.fremde-physik#1",
+   "karte2.same.kopplung.aufwaerts#1",
+   "karte2.same.kopplung.ereignis#2",
+   "karte2.same.kopplung.gewalt#1",
+   "karte2.same.kopplung.kohaerenz#1",
+   "karte2.same.kopplung.terraform#1"
+  ],
+  "orte": [
+   {
+    "ort": "genesis",
+    "vor": "karte2.planet.kosmos.himmelsmechanik#1",
+    "s": 28.1,
+    "takte": 649,
+    "chunks": 81,
+    "nach": "der Grundstellung"
+   }
+  ],
+  "wegeTueren": [],
+  "felder": [
+   {
+    "probe": "profiband.K4#1",
+    "weg": [
+     "__ortZeit",
+     "__weltaktSpionBuch",
+     "__wetterSpionBuch",
+     "__buehneUhr",
+     "__impostorRttBaked",
+     "__flussBibliothekS",
+     "__zensusCalls",
+     "__k4"
+    ]
+   },
+   {
+    "probe": "karte2.planet.kosmos.himmelsmechanik#1",
+    "weg": [
+     "__linse___aufnahmeRuhig",
+     "__imSchuss",
+     "__ruheBilder",
+     "__wegProbe",
+     "__abbruchEpoche"
+    ]
+   }
+  ],
+  "wirt": [
+   {
+    "probe": "profiband.K4#1",
+    "anders": [
+     "r._bildZeit",
+     "r._wolkenZeit",
+     "r._weltaktGehalten",
+     "r._setWeather",
+     "r._feuchteLeser",
+     "r._knotenRate",
+     "r.state.weather",
+     "window.__ortSchritt"
+    ],
+    "wie": {
+     "r._bildZeit": "neu: () => S.T",
+     "r._wolkenZeit": "neu: () => S.T",
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
+     "r._feuchteLeser": "neu: (px, pz, py) => this._feuchteAt(px, pz, py)",
+     "r._knotenRate": "neu: function (N, ro) { const t0 = performance.now(); const s = kr.apply(this, argume",
+     "r.state.weather": "neu: () => wert",
+     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+    },
+    "haelt": [],
+    "heap": [
+     null,
+     313.3
+    ],
+    "ungemessen": null
+   },
+   {
+    "probe": "karte2.planet.kosmos.himmelsmechanik#1",
+    "anders": [
+     "window.__tagKurve",
+     "window.__wieseMessen",
+     "window.__wieseUrteil",
+     "window.__ortSchritt",
+     "window.__aufnahmeRuhig",
+     "window.__linse___tagKurve"
+    ],
+    "wie": {
+     "window.__tagKurve": "getauscht: function tagKurve(o) { return (async () => { const T = window.THREE; const rend ",
+     "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
+     "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
+     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit",
+     "window.__aufnahmeRuhig": "neu: function ausgabeAufnahme(W, H, warm, opt) { return (async () => { const T = wind",
+     "window.__linse___tagKurve": "neu: function tagKurve(o) { return (async () => { const T = window.THREE; const rend "
+    },
+    "haelt": [
+     "window.__linse___aufnahmeRuhig = window.__aufnahmeRuhig; window.__aufnahmeRuhig = function ausgabeAufnahme(W, H, warm, o"
+    ],
+    "heap": [
+     255.9,
+     1202.9
+    ],
+    "ungemessen": "den Kontext der Probe hält noch: window.__linse___aufnahmeRuhig = window.__aufnahmeRuhig; window.__aufnahmeRuhig = function ausgabeAufnahme(W, H, warm, o — Heap nach der Rücknahme 255.9 → 1202.9 MB (+947 > 64)"
+   }
+  ],
+  "messHalt": [
+   {
+    "probe": "profiband.K4#1",
+    "halt": -1000000000,
+    "zurueck": 0
+   },
+   {
+    "probe": "karte2.planet.kosmos.himmelsmechanik#1",
+    "gehalten": [
+     "skala",
+     "spiegel"
+    ],
+    "offen": []
+   }
+  ],
+  "wanderung": [
+   {
+    "probe": "karte2.planet.kosmos.himmelsmechanik#1",
+    "ort": "genesis",
+    "m": 1082.54,
+    "dreh": 0.401
+   }
+  ],
+  "grund": "die Welt trägt nicht mehr vor karte2.same.preis.ausdauer#1: /fenster ohne Antwort binnen 30 s — offen: karte2.same.preis.ausdauer#1, karte2.mensch.macht.recht#1, karte2.mensch.nahrung.tier#2, karte2.leben.tiere.masse#1, karte2.planet.wasser.gezeiten#1, karte2.erleben.klang.stimme#1, karte2.leben.oeko.netz#2, karte2.leben.evolution.fremde-physik#1, karte2.same.kopplung.aufwaerts#1, karte2.same.kopplung.ereignis#2, karte2.same.kopplung.gewalt#1, karte2.same.kopplung.kohaerenz#1, karte2.same.kopplung.terraform#1",
+  "ciBlicke": 4,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 495,
+   "frameP95": 74.96,
+   "taktP95": 66.21,
+   "vramMax": 157.9,
+   "seiten": 3,
+   "marken": 2,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "karte2.planet.kosmos.himmelsmechanik#1",
+     "m": 1083,
+     "ringVor": 4,
+     "ringMin": -1
+    }
+   ],
+   "zapfen": 820,
+   "luecken": 1,
+   "letzteLuecke": "kein Renderer"
+  },
+  "fahrtS": 875.8,
+  "minuten": 14.75
  }
 }
