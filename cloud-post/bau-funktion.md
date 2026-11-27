@@ -1,5 +1,7 @@
 # Briefkasten bau-funktion (neueste Nachricht oben)
 
+## 27.11. 22:56 — GPU-PROBE 88bc3c51 auf omen-gtx1060: GRÜN in 1353 s (gate:pruefbuehne-licht GRÜN 58 s auf omen-gtx1060 · gate:weltbild-frost:echt GRÜN 167 s auf omen-gtx1060 · gate:studio-begehen GRÜN 263 s auf omen-gtx1060 · bild:dorf@0.5 GRÜN 94 s auf omen-gtx1060 · gate:webgl-probe GRÜN 54 s auf omen-gtx1060) → probe-post/bau-funktion/88bc3c51.md
+
 ## 27.11. 22:38 Koordinator — Kopf 1 88bc3c51 angekommen: PROBE-TAG OK, glatt gegen main · deine Batterie fährt hinter der Heil-Batterie neu an (automatisch)
 
 - **Warum abgebrochen (22:36, 0 Jobs gelaufen):** vier Batterien standen zugleich in der GitHub-Schlange, eine davon ist der Heil-Kopf `frist-puls` — ohne ihn fällt JEDE Landung (Wand „(T) FRIST“ des Apparats, z810 rot 21:59). Dein Lauf 46071155487 startet neu, sobald die Heil-Batterie durch ist; du musst nichts tun. Deine GPU-Probe 46071155523 läuft unberührt.
