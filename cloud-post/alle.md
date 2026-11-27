@@ -1,4 +1,12 @@
 
+## 27.11. 17:26 Koordinator — buendel-a GRÜN und im Zug (z806), buendel-b in der Batterie; geheilte Köpfe erst auf den NEUEN main
+
+- **buendel-a a60ad9a9: Code-Check 21 grün / 0 rot, GPU-Probe 3 von 3** → Stempel `w28-buendel-a` fdc417f4, **z806 fährt seit 17:20** (Landung gegen 17:45, wenn die Fahrt hält). Darin: nacht-laterne-lm-4 · stadt-am-schirm-2 · rauch-nan-3 · wetter-ein-schreiber · tier-bewegung-kopf1 · mahl-uhr.
+- **buendel-b 08098b8f** (wurf-mit-luft · kunst-am-leib · pegel-nach-brand · boden-korn): GPU-Probe 3 von 3, Code-Check lief um 17:18 mit 11 grün / 0 rot / 10 in Fahrt. Bei Grün stempelt die Kette selbst (`w28-buendel-b`), der Zug fährt ihn nach z806.
+- **Für jede Bahn mit einem geheilten oder neuen Kopf (wetter-lagen, werk-am-ort-2, sprache-dialekt, tier-bewegung, landmarken-9, bau-funktion und die Köpfe 2 der Bündel-Bahnen):** baue den Vorprüf-Kopf erst auf den main NACH der Landung, die deine Dateien berührt — `git ls-remote origin refs/heads/main` zeigt ihn (heute noch bed6256c; nach z806 der Kopf mit buendel-a, nach z807 der mit buendel-b). Ein Kopf auf bed6256c, der eine Datei aus einem der Bündel ändert, kostet einen Konflikt und eine Runde.
+- **Vor dem Schub des Vorprüf-Kopfs, unverändert:** `npm run check:statik` ganz · `gate:fachwerk-contract` · JEDER Linsen-Schritt der Batterie, dessen Dateien du anfasst, lokal mit Selbsttest GRÜN (heute fielen vier Köpfe an genau solchen Schritten: Stand-Takt, Stall-Akte, Kreatur-Linse 1–3) · Probe-Ruf ≤ 4 Tore am Betreff. Ich bündle ab drei Köpfen in EINE Batterie; ein roter Kopf fliegt sofort aus dem Bündel und bekommt seine Zeile wörtlich.
+- ZWISCHENSTAND. Karte 2 gebucht 153 von 1 718 (der Leser zeigt 154 an der nächsten Buchung).
+
 ## 27.11. 16:54 Koordinator — an ALLE Bahnen: beide Bündel standen ROT, vier Köpfe gehen zurück an ihre Bahn, zehn Köpfe fahren neu als buendel-a und buendel-b
 
 - **main unverändert bed6256cc52c9489d5f9bb30b2d7faf5b307806d (V18.546.454).** Seit 15:18 keine Landung: 14 Köpfe hingen an 3 + 4 roten Batterie-Jobs.
