@@ -1,0 +1,88 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.447",
+  "sha": "031f4700b44ed32ea4362ff2744f8fa71fa5fc2e"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 0,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "nvidia pascal",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 2.89,
+   "deckung": 0.0226,
+   "taeter": {
+    "Rinde baum_tanne": 0.0208,
+    "Gelände": 0.0017
+   },
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": false,
+  "vor": "Laub baum_kiefer",
+  "vorAbstand": 2.71,
+  "leiber": null,
+  "abstand": 5.78,
+  "gestalt": [
+   "baum_tanne 2246"
+  ],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   140.667,
+   85.323,
+   -168.327
+  ],
+  "blick": [
+   -0.69172,
+   -0.20752,
+   -0.69171
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 58.4,
+  "sigma": 41.7,
+  "schwarz": 0.0068,
+  "weiss": 0
+ },
+ "ok": false,
+ "zeile": "ABNAHME ROT [Ziel Blickziel verdeckt von Laub baum_kiefer in 2.71 m] · beweis · Sicht 0.0 % · Ziel Blickziel im Bild VERDECKT 5.78 m · Luma 58.4 σ 41.7 schwarz 0.7 % weiß 0.0 % · Stand 18.546.447 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal",
+ "rot": [
+  {
+   "feld": "ziel.frei",
+   "grund": "Ziel Blickziel verdeckt von Laub baum_kiefer in 2.71 m"
+  }
+ ],
+ "urteil": "ROT"
+}

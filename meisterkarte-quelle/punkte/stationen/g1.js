@@ -120,6 +120,15 @@ const K2_PROBE = {
     sek: 10,
     mutiert: true,
 };
+// DER GRABEN ALLEIN (27.11.): Staffel 1 (= karte2.mensch.nahrung.erdbau#1 „Spieler gräbt, Wasser folgt“) urteilt nur (a) Third — in
+// der geteilten Probe beendete der Wurf der Ferne (d) die Probe vor dem ersten Graben (proben-welt.cjs `nurGraben`); Staffel 2 bleibt
+// an K2_PROBE und trägt (b)(d) samt dem Wurf beim Namen. Seit 27.11. (erdbau-graben): am Fluss der Mess-Wiese im warmen Ring, der
+// Mess-Halt getaut für genau den Akt des Spielers, die Spur endet am Ereignis (Edit steht, Welt ruht) — Radeon (a) 93,2 s → ≤ 45 s
+const K2_GRABEN = {
+    befehl: PW.torBefehl(PW.wasserGraben, "{KOORD}", "graben"),
+    sek: 10,
+    mutiert: true,
+};
 
 // ───────── DIE WELT-PROBE (p3-stationen-g12, 01.11.): sieben Kriterien ohne Station in EINER Welt am Null-Renderer ─────────
 // physik.K4 · physik.K5 · stoffe.K4 · wetter.K4 · feld.K5 (hier) und luftwasser.K3 · luftwasser.K4 (stationen/g2.js) messen, was
@@ -3616,7 +3625,7 @@ module.exports = [
         kriterium: "gelaende.K2",
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        probe: K2_PROBE,
+        probe: K2_GRABEN,
         gpu: true,
         zeit: true,
         minuten: 6,
@@ -3634,12 +3643,17 @@ module.exports = [
             const je = (a) => neu.filter((x) => x.abstand === a && x.gefuelltMs != null && x.gefuelltMs <= 2000).length;
             const bilder = g.reduce((s, x) => s + (x.bilder || 0), 0);
             const ms = neu.map((x) => x.gefuelltMs).filter((v) => v != null);
+            // DER KLICK OHNE EDIT (27.11.): das Verb graben, doch der Boden blieb (`edit` 0 — bis 27.11. hielt der Mess-Halt jeden Akt des
+            // Spielers, stamm/feld-dsl.js `_weltaktGehalten`: Radeon c072c864 „gefüllt 0 von 4“) — ROT beim Namen, vor jeder anderen Zahl
+            const ohne = g.filter((x) => x.edit === 0).length;
             // je Probe höchstens EIN Klick an einen Busch (das Verb abbau statt graben; bis 29.10. 8 von 10)
             const gruen =
-                lauf.exit === 0 && !t.fehler && g.length >= alle.length - 1 && doppelt === 0 && ueber === 0 && leer === 0 && langsam.length === 0 && je(1) >= 1 && je(3) >= 1;
+                lauf.exit === 0 && !t.fehler && ohne === 0 && g.length >= alle.length - 1 && doppelt === 0 && ueber === 0 && leer === 0 && langsam.length === 0 && je(1) >= 1 && je(3) >= 1;
             return {
                 gruen,
                 zahl:
+                    (ohne ? ohne + " von " + g.length + " Graben-Klicks ohne Edit (der Boden blieb) · " : "") +
+                    "gefüllt " + neu.length + " von " + g.length + " · " +
                     g.length + " von " + alle.length + " Gräben über das Verb, in " + bilder + " Bildern doppelt " + doppelt + " und über dem Spiegel " +
                     ueber + ", gefüllt nach " + (ms.length ? Math.min(...ms) + "–" + Math.max(...ms) + " ms" : "?") + " (1 m " + je(1) + ", 3 m " + je(3) +
                     (langsam.length ? ", " + langsam.length + " nicht ≤ 2 s" : "") + ")" + (t.fehler ? " · " + t.fehler : ""),
