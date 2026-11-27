@@ -132,6 +132,54 @@ Art „auge“: auch mit Gesetz bleibt die Sprosse bis zum Blindpaar am Gerät o
 Konsonanten als Quelle aus Rauschen und Verschluss im EINEN `stimmPuffer`, Band: Klatt 1980, die Parallel-Zweige für Frikative) und den
 Satz an den Akt binden. Das Urteil spricht das Ohr.
 
+### sprache#5 Täter 1 geschnitten (WIP 88c3e75, 27.11. 22:43, über Kopf 2, kein Vorprüf-Kopf vor dem Urteil)
+
+Der Schnitt an der EINEN Wurzel, der Lautung des Satzes:
+- **fachwerk `sprachSilben(satz, L)`** ersetzt `sprachKerne`; Leser, Linse und Doku fallen in derselben Welle (Lehre 3).
+  - Jede Silbe ist { an, k, ab } mit Lauten der Tafel `SPRACH_LAUTE` (Art, Ort, Stimme).
+  - Die Schrift wird als längste Buchstabenfolge gelesen; die Familie liest z und w nach ihrer `schrift`.
+  - Die Grenze ist der maximale Anlaut unter steigender Sonorität (Clements 1990), dazu das s-Cluster.
+  - Je Familie neu: `einsatz` behaucht/unbehaucht (Lisker & Abramson 1964).
+- **klang `stimmRede`:** die Dauern nach Klatt 1979 (ICPhS, Tafel 1 INHDUR/MINDUR und Regeln 2–11, an der Quelle gelesen).
+- **klang `stimmPuffer` spricht sie:**
+  - Reibung über einen parallelen Bandpass am Gipfel des Orts (Jongman, Wayland & Wong 2000, Tafeln 1–3 gelesen), ihr Pegel am Vokal desselben Lauts.
+  - Knall, Verschluss mit Stimmbalken in der vorstimmhaften Reihe, VOT als Behauchung durch dieselbe Kaskade.
+  - Nasal, Liquid und Gleitlaut als leise Stimme.
+- **Wirt** `_bewohnerLautTakt`: Teile nach Silben-Dauer (`mengeSilben(sek, rede)`, `mengeSek(rede)`).
+
+Gemessen, node, 24–60 Sätze je Familie:
+- **%V je Familie** (Rede aus Kernen 1,00 →):
+
+  | Familie | %V |
+  |---|---|
+  | mitteleuropa | 0,48 |
+  | alpin | 0,544 |
+  | mediterran | 0,654 |
+  | nordisch | 0,541 |
+  | fernost | 0,675 |
+  | antik | 0,506 |
+
+  Band 0,40–0,54 nach Ramus, Nespor & Mehler 1999; die Klassenmittel 41,2 · 44,2 · 53,1 % hat Dellwo, Abb. 1, gelesen.
+- **Gipfel nach Jongmans Messung** (Mann/Frau im Wechsel): f 7 850 / 7 678 · s 6 800 / 6 882 · v 7 225 / 7 678 · ʃ 3 825 / 3 712 · z 7 250 / 6 882 Hz.
+- **Konsonanten im Ohr** 0 → alle (jeder Laut der Silbe ein Segment).
+- **Byte-Beweis:** Die Laute ohne Satz (Gruß · Lachen · Mühe · Seufzer · Halten) sind byte-gleich, 54 von 54 Puffern.
+- **Bild:** Spektrogramm vorher ↔ nachher mit Knall, Reibung und Nasal sichtbar (Blick-Sonde im Scratchpad).
+
+Linse gate:klang-zensus (Sp):
+- %V ≤ 0,70 je Familie und der Gipfel je Frikativ ±15 % zu Jongman.
+- Selbsttest S29 „die Rede ohne An- und Abglied“, also der Stand am main, ist **ROT** mit 7 Befunden: 6 Familien mit %V 1, dazu „kein Frikativ“.
+
+Ehrlich offen:
+- mediterran und fernost liegen über dem Band (0,654 / 0,675 gegen ≤ 0,54). Klatts Dauern sind Englisch, ein Sprecher. Das Japanische trägt kurze Kurzvokale, das Italienische lange Konsonanten. Messname `Sp %V außer Band`.
+- QUELLE UNGEPRUEFT im Wert:
+  - x (velar);
+  - die Breite der Rausch-Gipfel;
+  - Pegel und Lage von Knall und Behauchung;
+  - Pegel und Form der Sonoranten;
+  - die Dauern von x · ts · pf.
+
+Täter 2 (Satz ↔ Handlung) wartet auf die Entscheidung zum Soll.
+
 ## Antwort auf 19:50 (Stand 2. Merge d. h. main 948f68ee herein, 730f25b4)
 
 Die Stall-Akte steht an meinem Stand GRÜN („✅ eigene Ränge neben rang: Träger keiner statt FREMD keiner · gepflanzt 2/2 gefasst“,
