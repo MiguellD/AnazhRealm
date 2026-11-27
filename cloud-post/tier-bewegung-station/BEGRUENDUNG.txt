@@ -1,0 +1,28 @@
+Stations-Kandidat tier-bewegung (karte2.leben.tiere.bewegung#2) — Diff gegen meisterkarte-quelle/punkte/stationen/k2-leben.js am Kopf
+des Zweigs `punkte-maschine` (27.11.). Soll und Richter-Text bleiben wörtlich; geändert ist nur der LESER des Fischs.
+
+Warum: die Station las den Strouhal nie (k2-leben.js:2269 `nimm(2, { fussfallAbw, massDekaden }, …)` — „strouhal ungemessen“) und
+zählte den Fisch über `s.fischPool.mesh.count` an der Pose des Spielers (kein Bach in Sicht: „gezeichnet 0“). Der Fisch-Teil des
+Umfangs stand als fester Satz im `nimm` — er konnte nie fallen, auch nicht, wenn das Spiel die Körperwelle trägt.
+
+Was der Kandidat tut:
+1. Er holt die EINE Fisch-Probe der Gang-Linse über `H.quelle("scripts/diag-tier-gang.cjs", […, "FISCH_SOLL", "FISCH"])` — dieselbe
+   Quelle wie LAUF/SCHLUPF, nie abgeschrieben. FISCH stellt den Spieler ans Ufer des nächsten fließenden Bachs (jenseits der
+   Flucht), fährt den echten `_fischTakt` 12 s mit dt 1/60 und misst am GEZEICHNETEN Leib (Instanz-Matrizen von `fischPool`):
+   St = f·A/U je stetem Fisch, die Biegung (Kopf- gegen Schwanz-Glied). Er stellt alles zurück (Spieler, Uhr, Karte der Fische, Pool).
+2. `strouhal` = Median der steten Fische (mit ≥ 3 Schlägen); dazu im Zeugen `fisch` { gezeichnet, stet, strouhal, imBand, biegung }.
+3. Der Umfangs-Satz wird aus dem Gemessenen gebaut: „kein Laufvogel“ bleibt (das Spiel trägt keinen), „der Fisch ein starrer Leib …“
+   fällt nur bei Biegung ≥ 0,1 rad, „Massen … Dekaden“ nur bei ≥ 3 Dekaden.
+
+Erwartung am Vorprüf-Kopf (headless gemessen, Null-Renderer, Bach −162/257 am Boot-Ort): 40 Fische gezeichnet, 22 stet, St Median 0,325
+(0,316–0,335, 22 von 22 im Band 0,2–0,4), Biegung 0,42 rad. Die Station bleibt ROT mit „Umfang nicht erzeugbar: kein Laufvogel;
+Massen des Bestands über 1.354 Dekaden“ — der Laufvogel und die 3 Dekaden sind offen (siehe Stand-Blatt), nicht dieses Kopfs.
+
+Messort: die Gang-Probe fährt an der Boot-Pose des Spielers und am nächsten Bach (kein stadt-voll) — der Vor-Richter darf an der
+GTX 1050 oder 1060 fahren.
+
+Wände: `node punkte.cjs liste` nicht gefahren (der Zweig `punkte-maschine` ist in der Wolke nicht ausgecheckt, nur diese Datei per
+roher Adresse); die Leiter fährt FISCH in ≈ 0,5 s zusätzlich (12 s Spielzeit, gemessen 279–458 ms in der Seite); kein Fächern im Kern.
+
+Selbsttest der Probe (gate:tier-gang, 27.11.): mit dem starren Leib gepflanzt (alle Glieder auf der Achse, Gier-Wippe 2,5 Hz · 0,1 rad)
+misst sie Biegung 0 rad → ROT mit „Täter: tetrapoda FISCH_GESETZ / fischLeib (der starre Leib ohne Körperwelle)“; gesund GRÜN.
