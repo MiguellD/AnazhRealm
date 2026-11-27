@@ -758,6 +758,23 @@ function stationVerdict(s) {
                 fk.windPreisOhneMerken?.lesen > (fk.windPreis?.soll ?? Infinity),
                 "frei-mutante: ohne das Merken (`K.wind`) fragt der Löser den Wind nicht öfter (vakuös: die Probe zählt nicht)",
             ],
+            // same.physik.flug#2: der Ball — Drall lenkt ihn wie die Messung (±25 %), er prallt mit der Stoßzahl seiner Stoffe (±10 %)
+            // (main 7e73426e: der Ball eine Kiste, Drall ohne Wirkung, Abprall aus 2 m auf Stein 0,354 m — EINE Zahl 0,2 je Paar)
+            [
+                fk.ball?.kugel === true && fk.ball.ablenkAbwPct <= 25,
+                `frei-drall: der Freistoß mit Drall lenkt ${fk.ball?.ablenkung} m gegen die Rechnung ${fk.ball?.rechnung} m (${fk.ball?.ablenkAbwPct} %, ≤ 25; Kugel ${fk.ball?.kugel}) — Täter die Magnus-Kraft in \`_freiZiehen\` / die Kugel in \`_freiKoerperSetzen\` (stamm/koerper-frei.js)`,
+            ],
+            [
+                fk.ball?.prallAbwPct <= 10,
+                `frei-prall: der Ball springt aus 2 m auf Stein ${fk.ball?.prallH} m — Stoßzahl ${fk.ball?.prallAbwPct} % neben dem FIFA-Band (≤ 10) — Täter \`_freiPrallZahl\` (stamm/koerper-frei.js)`,
+            ],
+            [
+                fk.ball?.zerfallPct >= 4 && fk.ball.zerfallPct <= 8,
+                `frei-drall-zerfall: der Drall des Balls fällt bis kurz nach dem Scheitel um ${fk.ball?.zerfallPct} % (Band der Messungen 4–8 %) — Täter FREI.luft.drallZerfall / \`_freiZiehen\` (stamm/koerper-frei.js)`,
+            ],
+            [fk.ballOhneMagnus?.ablenkAbwPct > 25, "frei-mutante: ohne Magnus lenkt der Drall den Ball wie die Rechnung (vakuös)"],
+            [!(fk.ballOhneZerfall?.zerfallPct >= 4), "frei-mutante: ohne Zerfall fällt der Drall doch (vakuös)"],
+            [fk.ballPrallEins?.prallAbwPct > 10, "frei-mutante: mit EINER Stoßzahl 0,2 prallt der Ball wie das FIFA-Band (vakuös)"],
             [!ruht(fk.schwerelos), "frei-mutante: ohne Schwere ruhen die Kisten am Boden (vakuös)"],
             [fk.fassOhneStoss && fk.fassOhneStoss.kipp < 45, "frei-mutante: ohne Stoß kippt das Fass (vakuös)"],
         ]),
@@ -2325,6 +2342,10 @@ hauptLauf(async () => {
                 ohneLuft: { stein: { weite: 11.9, rechnung: 11.402, abwPct: 4.4 }, feder: { weite: 11.9, rechnung: 0.507, abwPct: 2247 } },
                 windPreis: { lesen: 120, soll: 120, koerper: 20, schritte: 30 },
                 windPreisOhneMerken: { lesen: 600, soll: 120, koerper: 20, schritte: 30 },
+                ball: { kugel: true, ablenkung: 0.95, rechnung: 1.0, ablenkAbwPct: 5, prallH: 1.3, prallAbwPct: 5.3, zerfallPct: 5.6 },
+                ballOhneMagnus: { kugel: true, ablenkung: 0, rechnung: 1.0, ablenkAbwPct: 100, prallH: 1.3, prallAbwPct: 5.3, zerfallPct: 0 },
+                ballPrallEins: { kugel: true, ablenkung: 0.95, rechnung: 1.0, ablenkAbwPct: 5, prallH: 0.07, prallAbwPct: 77.9, zerfallPct: 5.6 },
+                ballOhneZerfall: { kugel: true, ablenkung: 0.98, rechnung: 1.0, ablenkAbwPct: 2, prallH: 1.3, prallAbwPct: 5.3, zerfallPct: 0 },
             },
             spielerWagen: {
                 a: {
@@ -2553,6 +2574,38 @@ hauptLauf(async () => {
                 "ohne das Merken fragt er nicht öfter",
                 { frei: { ...gutS.frei, windPreisOhneMerken: gutS.frei.windPreis } },
                 "frei-mutante: ohne das Merken",
+            ],
+            // same.physik.flug#2 an main 7e73426e: der Ball eine Kiste ohne Magnus-Kraft, EINE Stoßzahl 0,2 für jedes Paar
+            [
+                "der Ball ist eine Kiste ohne Magnus-Kraft (main)",
+                { frei: { ...gutS.frei, ball: { ...gutS.frei.ballOhneMagnus, kugel: false } } },
+                "frei-drall",
+            ],
+            [
+                "EINE Stoßzahl 0,2 für jedes Paar (main)",
+                { frei: { ...gutS.frei, ball: gutS.frei.ballPrallEins } },
+                "frei-prall",
+            ],
+            [
+                "ohne Magnus lenkt er nicht anders",
+                { frei: { ...gutS.frei, ballOhneMagnus: gutS.frei.ball } },
+                "frei-mutante: ohne Magnus",
+            ],
+            [
+                "mit EINER Stoßzahl prallt er nicht anders",
+                { frei: { ...gutS.frei, ballPrallEins: gutS.frei.ball } },
+                "frei-mutante: mit EINER Stoßzahl",
+            ],
+            // der Drall ohne Zerfall (vor dem Schnitt): er dreht nach dem Scheitel wie beim Schuss
+            [
+                "der Drall zerfällt nicht",
+                { frei: { ...gutS.frei, ball: gutS.frei.ballOhneZerfall } },
+                "frei-drall-zerfall",
+            ],
+            [
+                "ohne Zerfall fällt der Drall doch",
+                { frei: { ...gutS.frei, ballOhneZerfall: gutS.frei.ball } },
+                "frei-mutante: ohne Zerfall",
             ],
             // der wandernde Fuss an 55a540d7~1: das stehende Fass im Gras gewann +18 J in 8 s und schlief nie
             [

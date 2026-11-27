@@ -1057,7 +1057,8 @@ je Klasse die zwei Speicher der Kaskade, 50 Zahlen im Stand statt jedes Stempels
 Einzugsgebiet, die Länge stromauf nach Hack `hackLaenge`; der Kanal trägt sie je Segment, das Wasser-Feld je See-Zelle), dem Korn
 nach Herkunft `korn(L, x, z, aus)` (karte2.planet.relief.boden#2: Bett — Sternberg-Abrieb `kornBett` über die Hack-Länge, Aue,
 Hang, Wind; die Tafel `KORN`, die Wentworth-Klassen `KORN_KLASSEN` mit `kornKlasse`, die Farbe des Sediments `sedimentFarbe`, die
-Boden-Farbe am Fluss und `_terrainMaterialAt` lesen es) und den
+Boden-Farbe am Fluss und `_terrainMaterialAt` lesen es; die Sohle des fließenden Wassers `flussSohle` mit der Tafel `SOHLE`, voll ab
+0,3 m unter dem Spiegel, und die Bank des Kanals `flussBank` bis zum Saum, den er schneidet, tragen sein Korn ins Bild) und den
 Klassen am Rechteck `pegelKlassen` (die Marke des Chunks), dem Abfluss nach Brand `BRAND_ABFLUSS`/`pegelBrand` (same.kopplung.stoerung#3:
 die Taten „brand“ des Wirts, gewogen mit ihrer Asche, stromab durch das Knoten-Netz; je Knoten hebt der verbrannte Anteil seines
 Einzugsgebiets den Abflussbeiwert des Regens 0,3 → 0,56 nach SCS-CN 95 — BAER; Moody & Martin 2001 —, die Tafel trägt je

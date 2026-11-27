@@ -4346,9 +4346,13 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                         // Uhr 40 000 zurück: Overlay, Fraß des Gaus und Narbe tragen Stempel der Welt-Uhr, und derselbe Herd trug
                         // 0,31 · 1,03 · 0,458 m/s. `gesetz` tauscht das Gesetz des Brands für diesen einen Lauf (im `finally` zurück, kein
                         // Flag im Spiel), `wind` „aus" (ohne m/s) oder die Uhr des GESETZTEN Winds (`_windAt` am Herd zu dieser Uhr, überall
-                        // und jederzeit derselbe), `bett` das GESETZTE BETT (s. u.), `vor` misst nach dem Stellen der Uhr, vor dem Zünden
+                        // und jederzeit derselbe) mit seiner GESETZTEN RICHTUNG `richtung` (Grad, atan2(z, x)): sie gewinnt über den EINEN
+                        // Leser der Richtung (`_windDirAt`, den `_windAt` und jeder Wind-Leser des Brands liest) — die Richtung zur Uhr trägt
+                        // seit planet.wetter.lagen#2 die Drehung der Lage (phyto-core `windRichtung`), und der Kopf des Herds „grob“ stand an
+                        // der Uhr 41 150 nicht mehr längs der Achse (1,0° → 38,7° zum Gitter, BLIND); `bett` das GESETZTE BETT (s. u.), `vor`
+                        // misst nach dem Stellen der Uhr, vor dem Zünden
                         const [B0, uhrRueck] = [AnazhRealm.BRAND, []];
-                        const herd = async (n, uhr, { gesetz = {}, wind, bett = false, vor = () => {} } = {}) => {
+                        const herd = async (n, uhr, { gesetz = {}, wind, richtung, bett = false, vor = () => {} } = {}) => {
                             if (st.spielZeit > uhr) uhrRueck.push([+st.spielZeit.toFixed(1), uhr]);
                             r._weltUhrNeu(Math.max(uhr, st.spielZeit));
                             r.setTimeOfDay(0.5, "regler");
@@ -4360,6 +4364,10 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                             else if (wind != null) {
                                 r._windAt = (x, z, t, aus) => P._windAt.call(r, MESS.x, MESS.z, wind, aus);
                                 r._windWob = () => P._windWob.call(r, wind);
+                                if (richtung != null) {
+                                    const D = { x: Math.cos((richtung * Math.PI) / 180), z: Math.sin((richtung * Math.PI) / 180) };
+                                    r._windDirAt = () => D;
+                                }
                             }
                             // DAS GESETZTE BETT (FENSTER-BETT): der EINE Schreiber des Betts im Brand ist `_brandStoff` (stamm/feld-brand.js,
                             // das Gemessene `_brandBett`) — lebendig selbst hat drei Schreiber, die erst im Leser `auraAt` zusammenlaufen
@@ -4391,6 +4399,7 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                                 AnazhRealm.BRAND = B0;
                                 delete r._windAt;
                                 delete r._windWob;
+                                delete r._windDirAt;
                                 delete r._brandStoff;
                             }
                         };
@@ -4401,22 +4410,22 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                         loeschen();
                         // DIE WAHRHEIT DER FRONT (FRONT-TREUE · FRONT-MIT · FENSTER-BETT · FENSTER-UHR): derselbe Herd auf dem gesetzten
                         // Bett im gesetzten Wind zu drei Uhren des Winds, an denen sein Kopf längs einer Achse, schräg und diagonal zum
-                        // Gitter der Zellen steht (`_windDirAt`, der Mäander der Saat: 41 150 · 40 766 · 40 713) — das Vorrücken des Kopfs
+                        // Gitter der Zellen steht (die Stärke der Uhren 41 150 · 40 766 · 40 713, die Richtung gesetzt: 90° · 22,5° · 45°) — das Vorrücken des Kopfs
                         // ist R des Gesetzes; der diagonale noch zweimal: wieder (dieselbe Uhr des Winds, eine spätere der Welt) und am
                         // langsamsten Läufer (leeres Budget, EIN Stück je Bild) — drei Starts, dieselben Zahlen; dazu die Mutante des
                         // groben Gitters (nur die vier diagonalen Nachbarn: längs der Achse zackt die Front), an der FRONT-TREUE fallen
                         // muss — vier Nachbarn längs der Achsen bissen nicht (eine Gerade durchs Gitter kreuzt Kanten, nie Ecken)
                         const VIER = B0.nachbarn.slice(4);
                         const wahr = {};
-                        for (const [name, uhr, wind, gesetz] of [
-                            ["achse", 37100, 41150],
-                            ["schraeg", 37500, 40766],
-                            ["diagonal", 37900, 40713],
-                            ["wieder", 38300, 40713],
-                            ["langsam", 38700, 40713, { budgetMs: 0, mindestJeBild: 1 }],
-                            ["grob", 39100, 41150, { nachbarn: VIER }],
+                        for (const [name, uhr, wind, richtung, gesetz] of [
+                            ["achse", 37100, 41150, 90],
+                            ["schraeg", 37500, 40766, 22.5],
+                            ["diagonal", 37900, 40713, 45],
+                            ["wieder", 38300, 40713, 45],
+                            ["langsam", 38700, 40713, 45, { budgetMs: 0, mindestJeBild: 1 }],
+                            ["grob", 39100, 41150, 90, { nachbarn: VIER }],
                         ]) {
-                            const L = await herd(300, uhr, { wind, bett: true, gesetz });
+                            const L = await herd(300, uhr, { wind, richtung, bett: true, gesetz });
                             wahr[name] = { windUhr: wind, zellen: st.brandFeld.size, koepfe: L.koepfe, mit: L.mit, alle: L.alle, vor: L.vor, R: L.R, winkel: L.winkel, schritte: L.schritte, bilder: L.bilder, deckel: L.deckel, bett: L.bett };
                             loeschen();
                         }
