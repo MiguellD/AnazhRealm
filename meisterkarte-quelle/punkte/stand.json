@@ -6377,7 +6377,7 @@
   },
   "karte2.erleben.klang.stimme": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.klang.stimme#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, stamm/siedlung-bewohner.js) · karte2.erleben.klang.stimme#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/licht-linsen.cjs +1) — zuletzt an a954d698: die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN · karte2.erleben.klang.stimme#2 radeon: ungemessen (R10) · karte2.erleben.klang.stimme#2 gtx: Station seit der Messung geändert · karte2.erleben.klang.stimme#3 radeon: ungemessen (R10) · karte2.erleben.klang.stimme#3 gtx: Station seit der Messung geändert · karte2.erleben.klang.stimme#4 radeon: ungemessen (R10) · karte2.erleben.klang.stimme#4 gtx: Station seit der Messung geändert · karte2.erleben.klang.stimme#5 radeon: ungemessen (R10) · karte2.erleben.klang.stimme#5 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.klang.stimme#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, stamm/siedlung-bewohner.js) · karte2.erleben.klang.stimme#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/licht-linsen.cjs +1) — zuletzt an 45bad33f: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[ · karte2.erleben.klang.stimme#2 radeon: ungemessen (R10) · karte2.erleben.klang.stimme#2 gtx: Station seit der Messung geändert · karte2.erleben.klang.stimme#3 radeon: ungemessen (R10) · karte2.erleben.klang.stimme#3 gtx: Station seit der Messung geändert · karte2.erleben.klang.stimme#4 radeon: ungemessen (R10) · karte2.erleben.klang.stimme#4 gtx: Station seit der Messung geändert · karte2.erleben.klang.stimme#5 radeon: ungemessen (R10) · karte2.erleben.klang.stimme#5 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.erleben.klang.stimme#1",
@@ -6396,7 +6396,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/licht-linsen.cjs +1) — zuletzt an a954d698: die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/licht-linsen.cjs +1) — zuletzt an 45bad33f: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -11322,7 +11322,7 @@
   },
   "karte2.leben.evolution.fremde-physik": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.evolution.fremde-physik#1 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#1 gtx: Station seit der Messung geändert · karte2.leben.evolution.fremde-physik#2 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#2 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#3 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#3 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#4 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#4 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#5 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#5 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#6 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#6 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#7 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.leben.evolution.fremde-physik#1 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#1 gtx: Station seit der Messung geändert — zuletzt an 45bad33f: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[ · karte2.leben.evolution.fremde-physik#2 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#2 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#3 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#3 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#4 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#4 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#5 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#5 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#6 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#6 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#7 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.evolution.fremde-physik#1",
@@ -11340,7 +11340,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Station seit der Messung geändert — zuletzt an 45bad33f: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[",
      "ungemessen": true,
      "beide": true
     },
@@ -12628,7 +12628,7 @@
   },
   "karte2.leben.oeko.netz": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 8 Saaten · 29 ansässige Bestände · Stunde 8 gegen 2: 0.34–1.81× · außer Band 0 · Takte an der Kappe 0 · [linse-gpu] amd/rdna-3 an 7de938ab radeon — offen: karte2.leben.oeko.netz#1 gtx: Konsum seit der Messung geändert (R6: save-server.js, scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs +31) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49988861111111105\"}) — offen, UNGEMESSEN · karte2.leben.oeko.netz#2 radeon: Station seit der Messung geändert · karte2.leben.oeko.netz#2 gtx: Station seit der Messung geändert · karte2.leben.oeko.netz#3 radeon: ungemessen (R10) · karte2.leben.oeko.netz#3 gtx: ungemessen (R10) · karte2.leben.oeko.netz#4 radeon: ungemessen (R10) · karte2.leben.oeko.netz#4 gtx: ungemessen (R10) · karte2.leben.oeko.netz#5 radeon: ungemessen (R10) · karte2.leben.oeko.netz#5 gtx: ungemessen (R10) · karte2.leben.oeko.netz#6 radeon: ungemessen (R10) · karte2.leben.oeko.netz#6 gtx: ungemessen (R10) · karte2.leben.oeko.netz#7 radeon: ungemessen (R10) · karte2.leben.oeko.netz#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: 8 Saaten · 29 ansässige Bestände · Stunde 8 gegen 2: 0.34–1.81× · außer Band 0 · Takte an der Kappe 0 · [linse-gpu] amd/rdna-3 an 7de938ab radeon — offen: karte2.leben.oeko.netz#1 gtx: Konsum seit der Messung geändert (R6: save-server.js, scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs +31) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49988861111111105\"}) — offen, UNGEMESSEN · karte2.leben.oeko.netz#2 radeon: Station seit der Messung geändert · karte2.leben.oeko.netz#2 gtx: Station seit der Messung geändert — zuletzt an 45bad33f: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[ · karte2.leben.oeko.netz#3 radeon: ungemessen (R10) · karte2.leben.oeko.netz#3 gtx: ungemessen (R10) · karte2.leben.oeko.netz#4 radeon: ungemessen (R10) · karte2.leben.oeko.netz#4 gtx: ungemessen (R10) · karte2.leben.oeko.netz#5 radeon: ungemessen (R10) · karte2.leben.oeko.netz#5 gtx: ungemessen (R10) · karte2.leben.oeko.netz#6 radeon: ungemessen (R10) · karte2.leben.oeko.netz#6 gtx: ungemessen (R10) · karte2.leben.oeko.netz#7 radeon: ungemessen (R10) · karte2.leben.oeko.netz#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.oeko.netz#1",
@@ -12667,7 +12667,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Station seit der Messung geändert — zuletzt an 45bad33f: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[",
      "ungemessen": true
     },
     {
@@ -28295,7 +28295,7 @@
   },
   "karte2.planet.kopplung.gegenwart": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S2 gipfelProzent 99 % gegen Soll ≥ 95 % ✓ · Zeuge: die Welt geändert an 4c9e6aab radeon · gehalten: S2 gipfelProzent 99 % gegen Soll ≥ 95 % ✓ · Zeuge: die Welt geändert an 4c9e6aab gtx · gehalten: S6 ohneUrsache 0 gegen Soll = 0 ✓ · Zeuge: die Welt geändert an 1feab29c gtx — offen: karte2.planet.kopplung.gegenwart#1 radeon: Station seit der Messung geändert · karte2.planet.kopplung.gegenwart#1 gtx: Station seit der Messung geändert · karte2.planet.kopplung.gegenwart#3 radeon: ungemessen (R10) · karte2.planet.kopplung.gegenwart#3 gtx: ungemessen (R10) · karte2.planet.kopplung.gegenwart#4 radeon: ungemessen (R10) · karte2.planet.kopplung.gegenwart#4 gtx: Station seit der Messung geändert · karte2.planet.kopplung.gegenwart#5 radeon: ungemessen (R10) · karte2.planet.kopplung.gegenwart#5 gtx: Station seit der Messung geändert · karte2.planet.kopplung.gegenwart#6 radeon: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: S2 gipfelProzent 99 % gegen Soll ≥ 95 % ✓ · Zeuge: die Welt geändert an 4c9e6aab radeon · gehalten: S2 gipfelProzent 99 % gegen Soll ≥ 95 % ✓ · Zeuge: die Welt geändert an 4c9e6aab gtx · gehalten: S6 ohneUrsache 0 gegen Soll = 0 ✓ · Zeuge: die Welt geändert an 1feab29c gtx — offen: karte2.planet.kopplung.gegenwart#1 radeon: Station seit der Messung geändert · karte2.planet.kopplung.gegenwart#1 gtx: Station seit der Messung geändert — zuletzt an 45bad33f: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[ · karte2.planet.kopplung.gegenwart#3 radeon: ungemessen (R10) · karte2.planet.kopplung.gegenwart#3 gtx: ungemessen (R10) · karte2.planet.kopplung.gegenwart#4 radeon: ungemessen (R10) · karte2.planet.kopplung.gegenwart#4 gtx: Station seit der Messung geändert · karte2.planet.kopplung.gegenwart#5 radeon: ungemessen (R10) · karte2.planet.kopplung.gegenwart#5 gtx: Station seit der Messung geändert · karte2.planet.kopplung.gegenwart#6 radeon: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.planet.kopplung.gegenwart#1",
@@ -28313,7 +28313,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Station seit der Messung geändert — zuletzt an 45bad33f: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[",
      "ungemessen": true,
      "beide": true
     },
@@ -30873,7 +30873,7 @@
   },
   "karte2.planet.wasser.gezeiten": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.wasser.gezeiten#1 radeon: Station seit der Messung geändert · karte2.planet.wasser.gezeiten#1 gtx: Station seit der Messung geändert · karte2.planet.wasser.gezeiten#2 radeon: ungemessen (R10) · karte2.planet.wasser.gezeiten#2 gtx: ungemessen (R10) · karte2.planet.wasser.gezeiten#3 radeon: ungemessen (R10) · karte2.planet.wasser.gezeiten#3 gtx: ungemessen (R10) · karte2.planet.wasser.gezeiten#4 radeon: ungemessen (R10) · karte2.planet.wasser.gezeiten#4 gtx: ungemessen (R10) · karte2.planet.wasser.gezeiten#5 radeon: ungemessen (R10) · karte2.planet.wasser.gezeiten#5 gtx: ungemessen (R10) · karte2.planet.wasser.gezeiten#6 radeon: ungemessen (R10) · karte2.planet.wasser.gezeiten#6 gtx: ungemessen (R10) · karte2.planet.wasser.gezeiten#7 radeon: ungemessen (R10) · karte2.planet.wasser.gezeiten#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.planet.wasser.gezeiten#1 radeon: Station seit der Messung geändert · karte2.planet.wasser.gezeiten#1 gtx: Konsum seit der Messung geändert (R6: stamm/stoff-material.js) · karte2.planet.wasser.gezeiten#2 radeon: ungemessen (R10) · karte2.planet.wasser.gezeiten#2 gtx: ungemessen (R10) · karte2.planet.wasser.gezeiten#3 radeon: ungemessen (R10) · karte2.planet.wasser.gezeiten#3 gtx: ungemessen (R10) · karte2.planet.wasser.gezeiten#4 radeon: ungemessen (R10) · karte2.planet.wasser.gezeiten#4 gtx: ungemessen (R10) · karte2.planet.wasser.gezeiten#5 radeon: ungemessen (R10) · karte2.planet.wasser.gezeiten#5 gtx: ungemessen (R10) · karte2.planet.wasser.gezeiten#6 radeon: ungemessen (R10) · karte2.planet.wasser.gezeiten#6 gtx: ungemessen (R10) · karte2.planet.wasser.gezeiten#7 radeon: ungemessen (R10) · karte2.planet.wasser.gezeiten#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.planet.wasser.gezeiten#1",
@@ -30891,8 +30891,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/stoff-material.js)",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -33803,7 +33804,7 @@
   },
   "karte2.same.kopplung.aufwaerts": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.aufwaerts#1 radeon: Station seit der Messung geändert · karte2.same.kopplung.aufwaerts#1 gtx: Station seit der Messung geändert · karte2.same.kopplung.aufwaerts#2 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#2 gtx: ungemessen (R10) · karte2.same.kopplung.aufwaerts#3 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#3 gtx: ungemessen (R10) · karte2.same.kopplung.aufwaerts#4 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#4 gtx: ungemessen (R10) · karte2.same.kopplung.aufwaerts#5 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#5 gtx: ungemessen (R10) · karte2.same.kopplung.aufwaerts#6 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#6 gtx: ungemessen (R10) · karte2.same.kopplung.aufwaerts#7 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#7 gtx: ungemessen (R10) · karte2.same.kopplung.aufwaerts#8 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#8 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.aufwaerts#1 radeon: Station seit der Messung geändert · karte2.same.kopplung.aufwaerts#1 gtx: Station seit der Messung geändert — zuletzt an 45bad33f: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[ · karte2.same.kopplung.aufwaerts#2 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#2 gtx: ungemessen (R10) · karte2.same.kopplung.aufwaerts#3 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#3 gtx: ungemessen (R10) · karte2.same.kopplung.aufwaerts#4 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#4 gtx: ungemessen (R10) · karte2.same.kopplung.aufwaerts#5 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#5 gtx: ungemessen (R10) · karte2.same.kopplung.aufwaerts#6 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#6 gtx: ungemessen (R10) · karte2.same.kopplung.aufwaerts#7 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#7 gtx: ungemessen (R10) · karte2.same.kopplung.aufwaerts#8 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#8 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.same.kopplung.aufwaerts#1",
@@ -33821,7 +33822,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Station seit der Messung geändert — zuletzt an 45bad33f: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[",
      "ungemessen": true,
      "beide": true
     },
@@ -34110,7 +34111,7 @@
      "gruen": true,
      "zahl": "S2 brennendHa 1,024 ha gegen Soll ≥ 1 ha ✓ · meidenProzent 100 % gegen Soll = 100 % ✓ · Zeuge: 1 ha brennt, Frame p95 im Preis P, die Front lag auf ihren Wegen und sie mieden sie",
      "sha": "54b89949812d0fe6e2a9ff0bba31fb18f1ae9afb",
-     "grund": "Station seit der Messung geändert",
+     "grund": "Station seit der Messung geändert — zuletzt an 45bad33f: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[",
      "gehalten": true
     },
     {
@@ -34207,7 +34208,7 @@
   },
   "karte2.same.kopplung.gewalt": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.gewalt#1 radeon: Station seit der Messung geändert · karte2.same.kopplung.gewalt#1 gtx: Station seit der Messung geändert · karte2.same.kopplung.gewalt#2 radeon: ungemessen (R10) · karte2.same.kopplung.gewalt#2 gtx: ungemessen (R10) · karte2.same.kopplung.gewalt#3 radeon: ungemessen (R10) · karte2.same.kopplung.gewalt#3 gtx: ungemessen (R10) · karte2.same.kopplung.gewalt#4 radeon: ungemessen (R10) · karte2.same.kopplung.gewalt#4 gtx: ungemessen (R10) · karte2.same.kopplung.gewalt#5 radeon: ungemessen (R10) · karte2.same.kopplung.gewalt#5 gtx: ungemessen (R10) · karte2.same.kopplung.gewalt#6 radeon: ungemessen (R10) · karte2.same.kopplung.gewalt#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.gewalt#1 radeon: Station seit der Messung geändert · karte2.same.kopplung.gewalt#1 gtx: Station seit der Messung geändert — zuletzt an 45bad33f: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[ · karte2.same.kopplung.gewalt#2 radeon: ungemessen (R10) · karte2.same.kopplung.gewalt#2 gtx: ungemessen (R10) · karte2.same.kopplung.gewalt#3 radeon: ungemessen (R10) · karte2.same.kopplung.gewalt#3 gtx: ungemessen (R10) · karte2.same.kopplung.gewalt#4 radeon: ungemessen (R10) · karte2.same.kopplung.gewalt#4 gtx: ungemessen (R10) · karte2.same.kopplung.gewalt#5 radeon: ungemessen (R10) · karte2.same.kopplung.gewalt#5 gtx: ungemessen (R10) · karte2.same.kopplung.gewalt#6 radeon: ungemessen (R10) · karte2.same.kopplung.gewalt#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.same.kopplung.gewalt#1",
@@ -34225,7 +34226,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Station seit der Messung geändert — zuletzt an 45bad33f: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[",
      "ungemessen": true,
      "beide": true
     },
@@ -34458,7 +34459,7 @@
   },
   "karte2.same.kopplung.kohaerenz": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.kohaerenz#1 radeon: Station seit der Messung geändert · karte2.same.kopplung.kohaerenz#1 gtx: Station seit der Messung geändert · karte2.same.kopplung.kohaerenz#2 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#2 gtx: ungemessen (R10) · karte2.same.kopplung.kohaerenz#3 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#3 gtx: ungemessen (R10) · karte2.same.kopplung.kohaerenz#4 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#4 gtx: ungemessen (R10) · karte2.same.kopplung.kohaerenz#5 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#5 gtx: ungemessen (R10) · karte2.same.kopplung.kohaerenz#6 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#6 gtx: ungemessen (R10) · karte2.same.kopplung.kohaerenz#7 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.kohaerenz#1 radeon: Station seit der Messung geändert · karte2.same.kopplung.kohaerenz#1 gtx: Station seit der Messung geändert — zuletzt an 45bad33f: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[ · karte2.same.kopplung.kohaerenz#2 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#2 gtx: ungemessen (R10) · karte2.same.kopplung.kohaerenz#3 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#3 gtx: ungemessen (R10) · karte2.same.kopplung.kohaerenz#4 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#4 gtx: ungemessen (R10) · karte2.same.kopplung.kohaerenz#5 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#5 gtx: ungemessen (R10) · karte2.same.kopplung.kohaerenz#6 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#6 gtx: ungemessen (R10) · karte2.same.kopplung.kohaerenz#7 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.same.kopplung.kohaerenz#1",
@@ -34476,7 +34477,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Station seit der Messung geändert — zuletzt an 45bad33f: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[",
      "ungemessen": true,
      "beide": true
     },
@@ -34728,7 +34729,7 @@
   },
   "karte2.same.kopplung.terraform": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.terraform#1 radeon: Station seit der Messung geändert · karte2.same.kopplung.terraform#1 gtx: Station seit der Messung geändert · karte2.same.kopplung.terraform#2 radeon: ungemessen (R10) · karte2.same.kopplung.terraform#2 gtx: ungemessen (R10) · karte2.same.kopplung.terraform#3 radeon: ungemessen (R10) · karte2.same.kopplung.terraform#3 gtx: ungemessen (R10) · karte2.same.kopplung.terraform#4 radeon: ungemessen (R10) · karte2.same.kopplung.terraform#4 gtx: ungemessen (R10) · karte2.same.kopplung.terraform#5 radeon: ungemessen (R10) · karte2.same.kopplung.terraform#5 gtx: ungemessen (R10) · karte2.same.kopplung.terraform#6 radeon: ungemessen (R10) · karte2.same.kopplung.terraform#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.terraform#1 radeon: Station seit der Messung geändert · karte2.same.kopplung.terraform#1 gtx: Station seit der Messung geändert — zuletzt an 45bad33f: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[ · karte2.same.kopplung.terraform#2 radeon: ungemessen (R10) · karte2.same.kopplung.terraform#2 gtx: ungemessen (R10) · karte2.same.kopplung.terraform#3 radeon: ungemessen (R10) · karte2.same.kopplung.terraform#3 gtx: ungemessen (R10) · karte2.same.kopplung.terraform#4 radeon: ungemessen (R10) · karte2.same.kopplung.terraform#4 gtx: ungemessen (R10) · karte2.same.kopplung.terraform#5 radeon: ungemessen (R10) · karte2.same.kopplung.terraform#5 gtx: ungemessen (R10) · karte2.same.kopplung.terraform#6 radeon: ungemessen (R10) · karte2.same.kopplung.terraform#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.same.kopplung.terraform#1",
@@ -34746,7 +34747,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Station seit der Messung geändert — zuletzt an 45bad33f: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[",
      "ungemessen": true,
      "beide": true
     },
@@ -36750,7 +36751,7 @@
   },
   "karte2.same.preis.ausdauer": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.preis.ausdauer#1 radeon: Station seit der Messung geändert — zuletzt an 99649186: kein Anfang in dieser Sitzung (profiband.K4#1 fuhr in einer früheren Sitzung dieses Laufs) — offen, UNGEMESSEN · karte2.same.preis.ausdauer#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, klang-core.js +39) — zuletzt an 45bad33f: die Dauer misst nie über ein Neuladen: die Welt hing vor karte2.same.preis.ausdauer#1, die Sitzung ging durch die Tür — offen, UNGEMESSEN · karte2.same.preis.ausdauer#2 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#2 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#3 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#3 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#4 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#4 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#5 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#5 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#6 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.same.preis.ausdauer#1 radeon: Station seit der Messung geändert — zuletzt an 99649186: kein Anfang in dieser Sitzung (profiband.K4#1 fuhr in einer früheren Sitzung dieses Laufs) — offen, UNGEMESSEN · karte2.same.preis.ausdauer#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, klang-core.js +39) — zuletzt an c3631992: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[ · karte2.same.preis.ausdauer#2 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#2 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#3 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#3 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#4 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#4 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#5 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#5 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#6 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.preis.ausdauer#1",
@@ -36768,7 +36769,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, klang-core.js +39) — zuletzt an 45bad33f: die Dauer misst nie über ein Neuladen: die Welt hing vor karte2.same.preis.ausdauer#1, die Sitzung ging durch die Tür — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, klang-core.js +39) — zuletzt an c3631992: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -37588,7 +37589,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 343,
+  "konsum": 344,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37756,10 +37757,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3279
+  "ohne": 3278
  },
  "kopfVoll": "38194f8373828ba681647f1fb6c41255c41f7fd1",
- "zeit": "2026-11-27T00:03:38.152Z",
+ "zeit": "2026-11-27T00:10:10.602Z",
  "vorher": "38194f83",
  "bilanz": {
   "gewinn": [],
