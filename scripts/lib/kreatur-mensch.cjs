@@ -2319,7 +2319,8 @@ module.exports = {
         ],
         seuche: [
             ["kontakt-leer", /Bewohner im Ausbruch \d{1,2} von \d+ \(Soll ≥ 100\)/],
-            ["seuche-ungelesen", /Kranke am Tag der Spitze ([1-9]\d*): krank im Satz 0,/],
+            // im Satz bleibt nur, wer seinen gewöhnlichen kranken Tag hat (`LEBENSLAUF.krank.anteil`): weniger als die Kranken
+            ["seuche-ungelesen", /Kranke am Tag der Spitze ([1-9]\d*): krank im Satz (?!\1,)\d+,/],
         ],
         schreck: [["kunde-takt", /Schreck-Front (999|\d{2,}(\.\d+)?) m\/s \(Soll 3–8\)/]],
         mengebild: [
