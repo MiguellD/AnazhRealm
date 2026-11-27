@@ -2,6 +2,7 @@
 
 ## 27.11. — Kopf 3 übernommen; die Station extreme#1 S1 gegen main 948f68ee gefahren
 
+- 19:08 Wartezimmer: Briefkasten unverändert, main 9a75d61c.
 - 18:26 Kopf 3 im main gelandet (`w28-wetter-lagen-3`, V18.546.457 = main 9a75d61c); `wetter-lagen` trägt den main, Unterschied nur dieses Blatt. Briefkasten unverändert.
 - 17:44 Wartezimmer: Briefkasten unverändert seit 16:59, main 948f68ee, Kopf 3 31678001 wartet auf den Stempel `w28-wetter-lagen-3`.
 - Kopf 3 31678001 (Rang statt Hand-Median, Zeile 830) ist in `wetter-lagen` gemergt (4d933e1), Basis jeder Folge-Arbeit. Gelernt: wer `scripts/diag-*.cjs` anfasst, fährt die Stall-Akte `npm run gate:welt-boot` lokal — am gemergten Baum Exit 0.
