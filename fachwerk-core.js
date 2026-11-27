@@ -2077,6 +2077,7 @@
   let TURM_LAGE=null;   // die Lage des Turms (turm), die die Uhr liest
   function bedarf(){ const g=grp(); if(!BG||ROUND) return g;
     const N=P.nur||{}, FERN=N.fern===true, LEER=FERN||N.moebel===false, glasOK=N.fenster!==false, zF=-Dp/2;
+    const GASSE=!FERN&&!P.__nurMass;   // die Gasse vor dem Haus (BEDARF_GESTALT `gasse`): nah und Stufe 1, nie Masse, nie fern
     const R=r=>(LEER&&r==='moebel')?'lattung':(LEER&&r==='feuer')?'dunkel':r;
     const seiteE=OCC.has('E')?-1:1;   // die freie Giebelseite (dieselbe Wahl wie der Turm)
     const neigt=(cx,zW,yW,zA,yA,b,dick,role)=>{ const t=zW-zA, h=yW-yA, len=Math.hypot(t,h), a=-Math.atan2(h,t);   // eine Platte von der Wand (zW,yW) zur Traufe (zA,yA)
@@ -2108,7 +2109,7 @@
     if(BG.ausleger){ const A=BG.ausleger, xa=(doorW/2+ps+0.75), ya=Math.min(levels[0].top+0.3,eaveY-0.25), zm=zF-A.aus/2;   // der Ausleger der Gaststube: Arm, Strebe, das Schild quer zur Front
       beam(g,xa,ya,zm,0.07,0.07,A.aus,'dunkel'); beam(g,xa,ya-0.28,zF-0.03,0.14,0.7,0.06,'dunkel'); strut(g,xa,ya-0.6,zF-0.02,xa,ya-0.02,zF-A.aus*0.65,0.05,'dunkel');
       const sy=ya-0.12-A.schild[1]/2, sz=zF-A.aus+0.1+A.schild[0]/2; beam(g,xa,sy,sz,0.05,A.schild[1],A.schild[0],'putz'); beam(g,xa,sy,sz,0.03,A.schild[1]+0.1,A.schild[0]+0.1,'dunkel'); }
-    if(BG.bank&&!LEER){ [-1,1].forEach(i=>{   // Möbel der Gaststube auf der Gasse: nie Masse des Baus (der Mass-Bau baut ohne Möbel, `MASSNUR`)
+    if(BG.bank&&GASSE){ [-1,1].forEach(i=>{   // Möbel der Gaststube auf der Gasse: nie Masse des Baus (der Mass-Bau baut ohne Möbel, `MASSNUR`)
       const xc=i*(doorW/2+ps+1.55), zt=zF-1.8; if(Math.abs(xc)+0.85>W/2) return;   // Tisch und zwei Bänke je Seite der Tür
       beam(g,xc,0.75,zt,1.6,0.06,0.72,'lattung'); [-0.62,0.62].forEach(dx=>beam(g,xc+dx,0.36,zt,0.08,0.72,0.56,'lattung'));   // helles Holz: der Tisch steht vor der dunklen Wand
       [-0.62,0.62].forEach(dz=>{ beam(g,xc,0.45,zt+dz,1.6,0.05,0.3,'lattung'); beam(g,xc-0.6,0.21,zt+dz,0.06,0.42,0.24,'lattung'); beam(g,xc+0.6,0.21,zt+dz,0.06,0.42,0.24,'lattung'); }); }); }
@@ -2116,6 +2117,19 @@
       WALLS.forEach(w=>{ if(!w.horiz||w.fixed>0||!w.win||w.yLo>baseY+0.8) return; const c=(w.lo+w.hi)/2, wd=winW(w)+0.1, y0=w.win.cy-w.win.ch/2, y1=w.win.cy+w.win.ch/2;
         beam(g,c,y0-0.05,zF-La.tief/2,wd,0.06,La.tief,'lattung'); [-1,1].forEach(i=>strut(g,c+i*(wd/2-0.08),y0-0.45,zF-0.02,c+i*(wd/2-0.08),y0-0.08,zF-La.tief*0.8,0.05,'dunkel'));
         beam(g,c,y1+0.05+Math.sin(a)*La.klappe/2,zF-Math.cos(a)*La.klappe/2,wd,0.05,La.klappe,'lattung',[a,0,0]); }); }
+    if((BG.werkbank||BG.stapel)&&GASSE){ const frei=W/2-doorW/2-ps-0.35, zt=zF-1.35;   // die Arbeit im Freien: je Seite des Tors die Werkbank und der Stapel
+      const neben=(s,l)=>{ const lb=Math.min(l,frei); return lb>=1.2?{x:s*(doorW/2+ps+0.3+lb/2),l:lb}:null; };
+      const WB=BG.werkbank, wb=WB&&neben(seiteE,WB.l);
+      if(wb){ beam(g,wb.x,WB.h-0.05,zt,wb.l,0.1,WB.t,'lattung');                                                  // das Blatt
+        [-1,1].forEach(i=>[-1,1].forEach(k=>beam(g,wb.x+i*(wb.l/2-0.12),(WB.h-0.1)/2,zt+k*(WB.t/2-0.08),0.1,WB.h-0.1,0.1,'holz')));
+        beam(g,wb.x,0.18,zt,wb.l-0.2,0.05,WB.t-0.1,'holz'); beam(g,wb.x-seiteE*(wb.l/2-0.15),WB.h-0.12,zt-WB.t/2-0.06,0.3,0.14,0.1,'dunkel');   // Ablage und Vorderzange
+        addSolid(wb.x,WB.h/2,zt,wb.l,WB.h,WB.t,'bedarf'); }
+      const ST=BG.stapel, sp=ST&&neben(-seiteE,ST.l);
+      if(sp){ const lagen=6, lh=ST.h/lagen;
+        [-1,0,1].forEach(i=>beam(g,sp.x+i*(sp.l/2-0.2),0.05,zt,0.1,0.1,ST.t,'dunkel'));                          // die Unterleger
+        for(let k=0;k<lagen;k++){ const y=0.1+k*lh; beam(g,sp.x,y+(lh-0.03)/2,zt,sp.l,lh-0.03,ST.t,'lattung');      // je Lage die Bretter und die Stapellatten darüber
+          if(k<lagen-1) [-1,0,1].forEach(i=>beam(g,sp.x+i*(sp.l/2-0.2),y+lh-0.015,zt,0.04,0.03,ST.t+0.04,'dunkel')); }
+        addSolid(sp.x,(ST.h+0.1)/2,zt,sp.l,ST.h+0.1,ST.t,'bedarf'); } }
 
     if(BG.erker&&levels.length>1){ const E=BG.erker, L=levels[1], eb=Math.min(E.b,W*0.4), et=E.t, zm=zF-et/2;   // der Erker der Sala am ersten Obergeschoss, über der Tür
       beam(g,0,(L.y+L.top)/2,zm,eb,L.top-L.y,et,'gefach'); beam(g,0,L.y-0.2,zm+0.08,eb-0.3,0.4,et-0.16,'stein');
@@ -2995,7 +3009,12 @@
     //            nach dem Erntewagen · Werkstatt: „eine breite Toröffnung“ (Bauforschung BW, Schwarzwaldhaus) — 2,2 m Hypothese, unter dem Tenntor
     //   esse     Schmiedeherd (museum-digital bawue 105171): H 0,75 · B 2,10 · L 1,75 m, der Rauchfang über dem Herd; die Schmiede 5,3 × 5,2 m
     //            (Roscheider Hof, museum-digital rlp 54868) — der Beschlagstand davor offen unter dem Vordach, Fläche aus seiner Zeile
-    //   ausleger Nasenschild: Werbeanlagen-Satzung Nürnberg, Ausladung ≤ 1,0 m; VG Regensburg RN 6 K 20.1379 (2021): 0,97 m
+    //   ausleger Wirtshaus-Ausleger des 19. Jh. (Schmiedeeisen, Auktionsstück mit quadratischem Schild): Ausladung L 2,02 m; das Schild
+    //            H 0,75 · Br 0,64 m (Bayerisches Nationalmuseum, ovales Eisenschild) — die Satzung Nürnberg (≤ 1,0 m) ist Recht von heute
+    //   werkbank Tischlerbank (museum-digital rlp 33575): L 2,00 · B 0,61 · H 0,84 m, vor dem Tor im Freien
+    //   stapel   Bretter im Freien auf Unterlegern und Stapellatten — 2,4 × 0,9 × 0,9 m: Hypothese (ohne Messwert), offen an bedarf#2
+    //   gasse    was die Gasse vor dem Haus trägt (Tisch und Bank, Werkbank, Stapel), steht nah UND in der Stufe 1 — dort liest der Blick
+    //            aus 20–30 m die Funktion; nie Masse des Baus (der Mass-Bau `__nurMass`), nie fern
     //   saal     der Saal im Obergeschoss bis 6 m unter die Balken (Nachrichtenblatt der Denkmalpflege BW, Bauforschung) — 4,0 m gesetzt
     //   uhr      Zifferblätter der Ortskirchen: 1,20 m (Kirchdaun) · 1,50 m (Laumersheim) · 1,70 m (Schönaich) — das Band 1,2–1,7 m
     //   chor     Saalkirche mit eingezogenem Chor (Propylaeum Heidelberg, Grabung): Schiff 18 m lang, ≤ 9 m breit, Chor außen 5,5–6 m
@@ -3007,7 +3026,7 @@
     //            20°: Hypothese (ohne Messwert), offen an bedarf#2
     // prettier-ignore
     const BEDARF_GESTALT={
-      gaststube:{ wo:'strasse', fenster:{takt:1, wd:1.3, eg:[1.0,1.3]}, ausleger:{aus:0.97, schild:[0.9,0.7]}, bank:{n:2} },
+      gaststube:{ wo:'strasse', fenster:{takt:1, wd:1.3, eg:[1.0,1.3]}, ausleger:{aus:2.02, schild:[0.64,0.75]}, bank:{n:2} },
       esse_werkraum:{ wo:'kern', schlot:{b:1.2, t:1.0, ueber:1.0} },
       beschlagstand:{ wo:'strasse', vordach:{tief:2.5, traufe:2.4}, esse:{b:2.1, h:0.75, l:1.75}, trog:[1.35,0.42,0.5] },
       trinkstube:{ wo:'strasse', saal:{h:4.0}, fenster:{takt:1, wd:1.2, saal:[1.9,2.4]} },
@@ -3018,7 +3037,7 @@
       chor:{ wo:'kern', chor:{breite:0.62}, kreuz:{h:1.8, b:0.9} },
       // Feuer: die Feuerordnungen der Frühen Neuzeit verboten Herd und offenes Licht in Scheune und Tenne (Heu und Stroh) — die Tenne baut keinen Herd
       tenne:{ wo:'kern', tor:{w:[3.2,4.8], h:[3.4,4.4]}, ohneFeuer:{} },
-      werkraum:{ wo:'strasse', tor:{w:[2.2,2.2], h:[2.3,2.3]}, fenster:{takt:1, wd:1.3, eg:[1.0,1.3]}, laden:{tief:0.6, klappe:0.7, winkel:20} },
+      werkraum:{ wo:'strasse', tor:{w:[2.2,2.2], h:[2.3,2.3]}, fenster:{takt:1, wd:1.3, eg:[1.0,1.3]}, laden:{tief:0.6, klappe:0.7, winkel:20}, werkbank:{l:2.0, t:0.61, h:0.84}, stapel:{l:2.4, t:0.9, h:0.9} },
     };
     // die Gestalt einer Nutzung: je Raum ihrer Zeile an seiner Lage die Merkmale des Gesetzes (m² des Raums als `m2`); null ohne Merkmal
     // prettier-ignore
