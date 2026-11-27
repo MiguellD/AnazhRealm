@@ -1,7 +1,7 @@
 {
  "sha": "031f4700b44ed32ea4362ff2744f8fa71fa5fc2e",
  "geraet": "gtx",
- "zeit": "2026-11-27T03:11:08.200Z",
+ "zeit": "2026-11-27T03:15:49.447Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.kultur.sprache#2": {
@@ -209,6 +209,76 @@
    },
    "zeit": "2026-11-27T03:11:08.200Z",
    "abdruck": "ff636cfdbfc5",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.sport.kunst#1": {
+   "gruen": false,
+   "zahl": "S1 ROT: fehlender Leser: der Anfänger ist nicht sichtbar ungeschickt: Meister {\"handwerk\":427,\"tanz\":8,\"kampf\":6,\"brett\":8} und Anfänger {\"handwerk\":574,\"tanz\":745,\"kampf\":1088,\"brett\":642} in 4 von 3 Künsten stehen im Lebenslauf (b.uebung), kein Leib liest ihr Können — Haltung (koerper-core tagesHaltung: Akt, Rolle), Gang  (koerper-core.js tagesHaltung · stamm/siedlung-bewohner.js _bewohnerGemuet) · gemessen 4 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.31,
+   "grund": "ROT: S1 ROT: fehlender Leser: der Anfänger ist nicht sichtbar ungeschickt: Meister {\"handwerk\":427,\"tanz\":8,\"kampf\":6,\"brett\":8} und Anfänger {\"handwerk\":574,\"tanz\":745,\"kampf\":1088,\"brett\":642} in 4 von 3 Künsten stehen im Lebenslauf (b.uebung), kein Leib liest ihr Können — Haltung (koerper-core tagesHaltung: Akt, Rolle), Gang  (koerper-core.js tagesHaltung · stamm/siedlung-bewohner.js _bewohnerGemuet) · gemessen 4 · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k716b096dc76c",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k79b20c35c4c1",
+   "s": 18.5,
+   "fremd": {
+    "s": 20.2,
+    "takte": 9,
+    "fremdS": 13.11,
+    "kerne": 0.65,
+    "fensterKerne": 0.8,
+    "namen": [
+     [
+      "bash.exe sk/wacht3.sh",
+      2.48
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      1.92
+     ],
+     [
+      "OneDrive.Sync.Service.exe silentConfig",
+      1.13
+     ]
+    ],
+    "dienerS": 8.28,
+    "diener": [
+     [
+      "dwm.exe",
+      3.88
+     ],
+     [
+      "System",
+      2.42
+     ]
+    ],
+    "geraetS": 27.69,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      19.86
+     ],
+     [
+      "svchost.exe",
+      7.28
+     ],
+     [
+      "SearchIndexer.exe",
+      0.23
+     ]
+    ],
+    "eigenS": 50.84,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-27T03:15:49.447Z",
+   "abdruck": "64bbef8b031b",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
