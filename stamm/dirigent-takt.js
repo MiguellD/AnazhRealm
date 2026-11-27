@@ -1734,14 +1734,16 @@ class AnazhRealm_dirigent_takt {
         this._bestaeuberTakt(delta); // die Bestäuber lesen Blüte, Wind, Feuchte und Tag (luftwasser.K4)
         this._perfSenseLap("creatures", _ct);
         // DER WETTER-ZUG AUF DER WELT-UHR (wetter.K1, feld.K2#2): je `WETTER_ZUG_SEK` (120 s) der Welt-Uhr (`spielZeit`) EIN Zug
-        // (`_wetterZugZiehen`). Steht das Wort des Spielers (`wetterWort`), ruht er; der Halt einer Messung verbraucht seinen Zug
-        // (danach steht das Wetter bis zum nächsten); er wartet auf die Bühne.
+        // (`_wetterZugZiehen`). Steht das Wort des Spielers (`wetterWort`) oder der Halt einer Messung, zählt er seinen Zug und
+        // zieht nicht (danach steht das Wetter bis zum nächsten): der Zug bleibt eine Funktion der Welt-Uhr, auch unter dem Wort,
+        // das jetzt auch sein Gesetz schreibt (wetter-ein-schreiber; vorher stand er unter dem Wort, und zwei Seiten mit Wort
+        // trugen denselben alten Zug, gleich welche Uhr galt — gate:mp-sync (e)(f) Selbsttest). Er wartet auf die Bühne.
         const st = this.state;
         this._pegelUhr(); // der Pegel folgt der Welt-Uhr: der Regen fließt über die Lag-Zeit seines Laufs ab, die Dürre senkt ihn
         const zug = Math.floor(st.spielZeit / AnazhRealm.WETTER_ZUG_SEK);
-        if (st.wetterWort || zug === this._wetterZug || !this._buehneSteht()) return;
+        if (zug === this._wetterZug || !this._buehneSteht()) return;
         this._wetterZug = zug;
-        if (!this._messHalt()) this._wetterZugZiehen(zug);
+        if (!st.wetterWort && !this._messHalt()) this._wetterZugZiehen(zug);
     }
 
     // DER ZUG `zug` ZIEHT: das Wort des Wunschs der Welt aus dem Fenster des Zugs davor (`_wunschDesZugs` — Nexus, seine Gesetze,

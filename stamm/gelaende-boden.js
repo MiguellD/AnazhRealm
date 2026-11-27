@@ -2707,7 +2707,21 @@ class AnazhRealm_gelaende_boden {
         const aboveWater = y - uf.see;
         const aboveFluss = uf.fluss !== null ? y - uf.fluss : null;
         let schlick = ss(-0.5, -4, aboveWater);
-        if (aboveFluss !== null) schlick = Math.max(schlick, uf.ufer * ss(-0.5, -4, aboveFluss));
+        // DAS KORN DER SOHLE (karte2.planet.relief.boden#2): wo der Fluss den Grund trägt, ist das Sediment sein Korn (gelaende-core
+        // `korn` → `sedimentFarbe`: Kies grau, Sand hell, Schluff der Schlick) — EINE Frage des Felds je Vertex, nur am Fluss; See,
+        // Meer und Watt bleiben Schlick und Strand (byte-gleich). Der Faden rechnet dieselben Zeilen (voxel-worker `bodenFarbe`).
+        const flussSchlick = aboveFluss !== null ? uf.ufer * ss(-0.5, -4, aboveFluss) : 0;
+        const seeSchlick = schlick;
+        if (flussSchlick > schlick) schlick = flussSchlick;
+        let kornFarbe = null;
+        const kornAm = () =>
+            kornFarbe ||
+            (kornFarbe = globalThis.__gelaendeCore.sedimentFarbe(
+                P,
+                globalThis.__gelaendeCore.korn(this._gelaende(), x, z),
+                [0, 0, 0]
+            ));
+        const amFluss = (f, s0, z0) => (f > s0 ? z0.map((v, k) => v + (kornAm()[k] - v) * (1 - s0 / f)) : z0);
         // Das Watt (die Gezeit, gelaende-core `wattSchlick`): wo das Meer den Grund mehr als ein Achtel der Zeit deckt, liegt Schlick
         if (uf.watt) schlick = Math.max(schlick, globalThis.__gelaendeCore.wattSchlick(aboveWater));
         // Strand: Glocken-Profil über dem Wasser (`_waterLevelAt` O(1) für Ozean; See-Vertices bekommen den
@@ -2715,7 +2729,7 @@ class AnazhRealm_gelaende_boden {
         // (λ~290 m), (c) karge Fels-Patches ohne Sand. Die Glocke trägt bis 0,6 + 1,9 m — das Fenster schneidet sie nie
         // (bis Welle L endete es bei 2,0 m: ein Sprung im Strand jeder breiten Glocke).
         const imStrand = (a) => a !== null && a > -1.3 && a < 2.5;
-        mix(sed, schlick);
+        mix(amFluss(flussSchlick, seeSchlick, sed), schlick);
         if (imStrand(aboveWater) || (uf.ufer > 0 && imStrand(aboveFluss))) {
             const widthNoise = (sandNoise.noise2D(x * 0.0018, z * 0.0018) + 1) * 0.5; // [0, 1]
             const intenseNoise = (sandNoise.noise2D(x * 0.0034 + 17, z * 0.0034 - 9) + 1) * 0.5;
@@ -2724,8 +2738,10 @@ class AnazhRealm_gelaende_boden {
                 const intensity = 0.25 + 0.55 * intenseNoise; // [0.25, 0.8]
                 const glocke = (a) => Math.max(0, 1 - Math.abs(a - 0.6) / width);
                 let shoreBlend = glocke(aboveWater);
-                if (aboveFluss !== null) shoreBlend = Math.max(shoreBlend, uf.ufer * glocke(aboveFluss));
-                mix(sand, shoreBlend * intensity);
+                const seeBlend = shoreBlend;
+                const flussBlend = aboveFluss !== null ? uf.ufer * glocke(aboveFluss) : 0;
+                if (flussBlend > shoreBlend) shoreBlend = flussBlend;
+                mix(amFluss(flussBlend, seeBlend, sand), shoreBlend * intensity);
             }
             // widthNoise <= 0.18 → karge Stelle, Sand bleibt aus (Stone/
             // Earth gewinnt). Spielt mit den V9.60-b.1-Hochseen zusammen:

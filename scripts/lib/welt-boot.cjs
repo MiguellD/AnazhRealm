@@ -144,9 +144,14 @@ function pufferLesen(puffer, wer, renderer = st.renderer) {
         throw new Error(`DIE PUFFER-LESUNG (${wer}): ${q?.name || q?.constructor.name} liegt nicht auf der GPU`);
     return renderer.getArrayBufferAsync(puffer);
 }
+// … und er endet am Abbruch wie der Schlaf (rauch-nan Kopf 3): zählte die Epoche `__abbruchEpoche` hoch, während er auf das Bild
+// wartete, wirft er beim Erwachen — bis hier wartete die Arbeit eines toten Rufers Bild um Bild weiter (eine Leiter über ihren Deckel,
+// same.kopplung.aufwaerts#1 an der Radeon: die Wache las ihren Kontext noch lebend, „Kontext gehalten“, UNGEMESSEN)
 async function seitenTakt() {
+    const e = globalThis.__abbruchEpoche;
     const vor = r._weltStand ? r._weltStand.takte : -1;
     await new Promise((ok) => requestAnimationFrame(ok));
+    if (globalThis.__abbruchEpoche !== e) throw new Error("ABGEBROCHEN: der Rufer ist fort");
     if ((r._weltStand ? r._weltStand.takte : -1) === vor) r._gameLoopTick(performance.now());
 }
 // DIE BEDIENUNG DER STAFFEL 2 (spielgang.K3#2, `await __bedienung2()` · Reload · `await __bedienung2(vor)`): EINE Probe, zwei
@@ -2072,25 +2077,35 @@ const urteilEnde = (rot, roteZeile, grueneZeile) => {
 // `Runtime.terminateExecution` stellt er am Haupt-Faden vorbei zu und beendet, was eben rechnet; dann zählt die Epoche des Abbruchs in
 // der Seite hoch (`__abbruchEpoche`): jeder Schlaf, der vor ihr begann, wirft beim Erwachen (`sleep`), die Arbeit, die eben wartete,
 // endet an ihrem nächsten Schritt. Antwortet die Seite nicht binnen 2 s (eine wartende Arbeit begann eben ihren nächsten synchronen
-// Schritt), bricht `abbrechen` noch einmal ab, höchstens 5-mal. Rückgabe die Zahl der Abbrüche bis zur Antwort (0: keine)
+// Schritt), bricht `abbrechen` noch einmal ab, höchstens 5-mal.
+// ERST DAS WORT, DANN DER ABBRUCH (rauch-nan Kopf 3): `terminateExecution` beendet „die laufende ODER DIE NÄCHSTE“ Ausführung (CDP) und
+// läuft durch KEIN finally — ruhte die Seite, traf er den nächsten Bild-Takt mitten in r184 `_renderScene` (vendor/three.webgpu.min.js
+// sichert `_handleObjectFunction` und stellt es ohne finally zurück): die Hülle stand für immer im Feld, `_callDepth` blieb gezählt
+// (gezeiten#1 GTX 1050 am 0078a6e2, „die Probe ließ die Zeichenkette verändert … _handleObjectFunction getauscht“, kein Wurf im Strom).
+// Darum erst die Epoche (die tote Arbeit endet an ihrem nächsten Schlaf oder Bild, `sleep` · `seitenTakt`, und ihr finally läuft);
+// nur eine Seite, die binnen 1 s nicht antwortet (sie rechnet synchron), bekommt den Abbruch — er trifft dann, was rechnet.
+// Rückgabe die Zahl der Abbrüche bis zur Antwort (0: das Wort allein trug), -1: die Seite antwortete nie
 async function seitenAbbruch(page) {
     const cdp = await page.target().createCDPSession();
     let e = 0;
     return async () => {
         e++;
+        const wort = (ms) => Promise.race([page.evaluate((n) => (window.__abbruchEpoche = n), e).then(() => 1, () => 0), sleep(ms)]);
+        if (await wort(1000)) return 0;
         for (let i = 1; i <= 5; i++) {
             await cdp.send("Runtime.terminateExecution").catch(() => 0);
-            if (await Promise.race([page.evaluate((n) => (window.__abbruchEpoche = n), e).then(() => 1, () => 0), sleep(2000)])) return i;
+            if (await wort(2000)) return i;
         }
-        return 0;
+        return -1;
     };
 }
 // DER EINE RUF an die Werkbank (POST JSON, ohne Frist; kein JSON: `{ roh }`) — der Rufer trägt seine Arbeit (`x-rufer: traegt`):
-// stirbt er vor der Antwort, bricht die Werkbank sie in der Seite ab (`seitenAbbruch`)
-function werkbankRuf(port, weg, nutzlast) {
+// stirbt er vor der Antwort, bricht die Werkbank sie in der Seite ab (`seitenAbbruch`). `signal` (ein AbortSignal, rauch-nan Kopf 3):
+// der Rufer gibt seine Arbeit auf, ohne zu sterben — die Leiter am Deckel ihrer Probe; die Werkbank bricht sie ab wie die eines Toten
+function werkbankRuf(port, weg, nutzlast, signal) {
     return new Promise((res, rej) => {
         const req = http.request(
-            { host: "127.0.0.1", port, path: weg, method: "POST", headers: { "Content-Type": "application/json", "x-rufer": "traegt" } },
+            { host: "127.0.0.1", port, path: weg, method: "POST", headers: { "Content-Type": "application/json", "x-rufer": "traegt" }, signal },
             (r) => {
                 let d = "";
                 r.on("data", (c) => (d += c));
@@ -2422,6 +2437,10 @@ async function selbsttest() {
         ),
         "/abbruch.html":
             "<!doctype html><script>__los=()=>{(async()=>{for(;;)await sleep(20)})().catch((x)=>(__wort=x.message));setTimeout(()=>{for(const e=performance.now()+6e3;performance.now()<e;);},200)}</script>",
+        // der Bild-Takt wie r184 `_renderScene` (ein Feld getauscht und ohne finally zurück, die Tiefe gezählt, 40 ms je Bild) und eine
+        // Arbeit, die Bild um Bild wartet (`__seitenTakt`) — der Abbruch an der ruhenden Seite (unten `bildAbbruch`)
+        "/abbruch-bild.html":
+            "<!doctype html><script>window.anazhRealm={_weltStand:{takte:0},_gameLoopTick(){}};window.R={f:'ur',tiefe:0};(function bild(){requestAnimationFrame(bild);const u=R.f;R.f='huelle';R.tiefe++;for(const e=performance.now()+40;performance.now()<e;);R.f=u;R.tiefe--;})();__los=()=>{(async()=>{try{for(;;)await __seitenTakt()}finally{window.__fin=1}})().catch((x)=>(__wort=x.message))}</script>",
         "/wirft.html": `<!doctype html><meta charset="utf-8"><script>setTimeout(function(){console.log('[ERROR] STOFF: die Post-Kette');AnazhRealm={BRUCH_BUCH_MAX:9,BRUCH_WIEDER_MS:50};anazhRealm={state:{logBuffer:[],displayedLogs:[]},flushLog(){},${["log", "_bruchMelden", "_loopErrorBoundary"].map(glied)},_gameLoopTick(){throw Error('__handWurf')}};for(i=7;i--;)r._loopErrorBoundary(Error('__taktWurf'));__handTakt();function __werfer(){throw new Error('__seitenWurf')}function __leser(){__werfer()}function __rufer(){__leser()}__rufer()},50)</script>`,
     };
     const server = statikServer({ seiten });
@@ -2528,6 +2547,45 @@ async function selbsttest() {
         return ms < 2500 && /^ABGEBROCHEN/.test(wort) ? "" : `${ms} ms, ${wort}`;
     };
     const [abbruch, abbruchMutante] = [await abbruchProbe(), await abbruchProbe(true)];
+    // DER ABBRUCH AN DER RUHENDEN SEITE (rauch-nan Kopf 3; gezeiten#1 GTX 1050 am 0078a6e2: „_handleObjectFunction getauscht“, kein Wurf;
+    // aufwaerts#1 Radeon am 96fb9575: „Kontext gehalten“): die Seite zeichnet Bild um Bild wie r184 `_renderScene` (ein Feld getauscht,
+    // ohne finally zurück, die Tiefe gezählt) und eine tote Arbeit wartet Bild um Bild (`__seitenTakt`). Nach dem Abbruch ist der
+    // Bild-Takt ganz (ur, Tiefe 0) und die Arbeit endet beim Wort ABGEBROCHEN mit ihrem finally. MUTANTE „der Abbruch zuerst“ (die
+    // Fassung bis Kopf 3: terminateExecution vor dem Wort): er trifft den Bild-Takt — ROT beim Namen; MUTANTE „der Bild-Takt ohne Epoche“
+    // (`__seitenTakt` bis Kopf 3): die Arbeit wartet weiter — ROT beim Namen
+    const abbruchZuerst = async (page) => {
+        const cdp = await page.target().createCDPSession();
+        return async () => {
+            for (let i = 1; i <= 5; i++) {
+                await cdp.send("Runtime.terminateExecution").catch(() => 0);
+                if (await Promise.race([page.evaluate(() => (window.__abbruchEpoche = 1)).then(() => 1, () => 0), sleep(2000)])) return i;
+            }
+            return -1;
+        };
+    };
+    const bildAbbruch = async (mutante) => {
+        const p = await browser.newPage();
+        await server.zeige(p, undefined, "abbruch-bild.html", "load");
+        const ab = mutante === "zuerst" ? await abbruchZuerst(p) : await seitenAbbruch(p);
+        await p.evaluate((ohne) => {
+            if (ohne)
+                __seitenTakt = async () => {
+                    const vor = r._weltStand ? r._weltStand.takte : -1;
+                    await new Promise((ok) => requestAnimationFrame(ok));
+                    if ((r._weltStand ? r._weltStand.takte : -1) === vor) r._gameLoopTick(performance.now());
+                };
+            __los();
+        }, mutante === "takt");
+        await sleep(500);
+        await ab();
+        await sleep(400);
+        const [f, tiefe, wort, fin] = await p.evaluate(() => [R.f, R.tiefe, window.__wort, window.__fin]);
+        await p.close();
+        return f === "ur" && tiefe === 0 && /^ABGEBROCHEN/.test(wort) && fin === 1
+            ? ""
+            : `Bild-Takt ${f}/Tiefe ${tiefe}, die wartende Arbeit ${wort || "wartet weiter"}${fin === 1 ? "" : " (ihr finally lief nie)"}`;
+    };
+    const [bildAb, bildZuerst, bildTakt] = [await bildAbbruch(), await bildAbbruch("zuerst"), await bildAbbruch("takt")];
     // DER EINE SAMMLER: der Wurf einer Seite (auch in einem eigenen Kontext) steht beim Namen in der Liste und macht das
     // Prozess-Ende ROT — ein eigener pageerror-Sammler einer Linse daneben ist ein Zwilling (werkbank.cjs startet sein Fenster selbst)
     const kontext = await browser.createBrowserContext();
@@ -2849,6 +2907,10 @@ async function selbsttest() {
         schlafWand,
         [seitenSchlaf === String(sleep), `die Seite schläft mit ${seitenSchlaf}`],
         [!abbruch && !!abbruchMutante, `Abbruch: ${abbruch || "die Seite antwortet, die wartende Arbeit endet"} · die Mutante ${abbruchMutante || "BLIND"}`],
+        [
+            !bildAb && !!bildZuerst && !!bildTakt,
+            `Abbruch an der ruhenden Seite: ${bildAb || "der Bild-Takt bleibt ganz, die wartende Arbeit endet mit ihrem finally"} · die Mutante der Abbruch zuerst ${bildZuerst || "BLIND"} · die Mutante der Bild-Takt ohne Epoche ${bildTakt || "BLIND"}`,
+        ],
         tuerWand,
         rangWand,
         [ruhig.length === 0, `ruhig (0,8 s Block): keine Akte — ${ruhig.length ? ruhig[0].urteil : "keine"}`],

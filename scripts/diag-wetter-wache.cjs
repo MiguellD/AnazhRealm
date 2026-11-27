@@ -27,6 +27,9 @@
 //       Winds = Integral seiner Richtung, gleiche Saat → gleiches Feld, stetig, der Eingriff trägt sein Feld, wo das Lee den Zug
 //       trägt, jedes Paar Ort ↔ Lee-Partner hält mit = ohne (Bilanz Ziel + Lee ±10 %), der Luv-Hang regnet mehr als der Lee-Hang,
 //       auch im Eingriff (`ortRot`); KAMM in der Welt: ein gehobener Kamm (`fillVoxel`) hebt den Regen am Grat (`kammRot`).
+//   (GZ) EIN SCHREIBER (wetter-ein-schreiber, im Selbsttest am Wirt): zwei Seiten einer Welt, das Gesetz des Spielers und ein
+//       später Wunsch der Welt mitten im Reload — das Wetter (Wort, Übergang) ist auf beiden Seiten dasselbe, das Gesetz schreibt
+//       das Wort wie der Spieler; unter dem Wort zählt der Zug die Welt-Uhr (`zweiSchreiber`).
 //   (L) LAND-MEER-LUFT (klima-kontinent, im Selbsttest am echten Kern planet-core): das Δ des Orts trägt das Klima von Land, Meer und
 //       Luft — Regenschatten am Kamm, Nebel an der Auftriebs-Küste, die Spanne West ↔ Ost —, der Gipfel steht auf Konvergenz
 //       (ks liest die Grenze jemals) und das Eis auf der Kälte des Orts; fünf gepflanzte Täter fallen je an ihrer Klinge und nennen
@@ -241,6 +244,97 @@ function grundSelbsttest() {
     if (!(mw.anders.length === 1 && mw.anders[0] === "weather"))
         rot.push(`(GW) der Täter „der Stand trägt das rohe Wort“ fällt nicht rot beim Wetter (${JSON.stringify(mw)})`);
     return { rot, zahl: { grund: b.kalGrund, nach: b.kal, mutante: mk.kal, wetter: b.wetter, mutanteWetter: mw.anders.join(" ") } };
+}
+// (GZ) DER EINE SCHREIBER DES WETTERS (wetter-ein-schreiber, am Wirt im vm: zwei Seiten EINER Welt, `grundWirt`, die echten Wege):
+// A spricht das Gesetz des Spielers (`GESETZ_VORLAGEN[0]` „wann immer es regnet, dann setze wetter sunny", der Chat-Weg `dslRun` als
+// human), B trägt es über den Draht (`_p2pMsgDsl`). Der Zug k, dessen Front am Ort regnet, zieht auf beiden Seiten — A mit dem
+// Wunsch seiner Welt aus dem Fenster davor („rule:emotion:sorrow", `_wunschAkt`), dessen Akt B SPÄT erreicht (nach dem Reload,
+// `_akteNachholen`) —, das Gesetz feuert in seinen Scheiben (`_tickWorldRules`). Gelesen wird das Wetter beider Seiten wie im
+// Abdruck von gate:mp-sync (f) (Wort und Übergang), nach dem späten Akt: gleich. Vorher (CI 140255711447, Nachwache am main
+// 2a2e8a54, „A sunny von rule:human · B rainy von rule:emotion:sorrow“, am main 920fa974 hier wörtlich): der Zweig `gesetz` schrieb
+// `state.weather` neben dem Zug, der späte Wunsch zog den Zug auf B neu (`_wunschNimm` → `_wetterZugZiehen`) und überschrieb das
+// Gesetz nur dort. Dann (GZ Zug) gehen beide Seiten zwei Züge weiter unter dem Wort, der echte Takt `_loopWeatherAndGrowth`
+// (die Kreaturen ruhen): der Zug zählt die Welt-Uhr. Je Täter als Mutante am Text des Stamms ROT beim Namen. → { a, b, k, zug }
+const SCHREIBER_TAETER = {
+    gesetz: [
+        [
+            "_setWeather",
+            '        if (wer === "spieler" || wer === "gesetz") {\n            this.state.wetterWort = name;\n            this.state.wetterWuensche = [];\n        }\n',
+            '        if (wer === "spieler") {\n            this.state.wetterWort = name;\n            this.state.wetterWuensche = [];\n        } else if (wer === "gesetz" && this.state.wetterWort) this.state.wetterWort = name;\n',
+        ],
+    ],
+    zug: [
+        [
+            "_loopWeatherAndGrowth",
+            "if (zug === this._wetterZug || !this._buehneSteht()) return;\n        this._wetterZug = zug;\n        if (!st.wetterWort && !this._messHalt()) this._wetterZugZiehen(zug);",
+            "if (st.wetterWort || zug === this._wetterZug || !this._buehneSteht()) return;\n        this._wetterZug = zug;\n        if (!this._messHalt()) this._wetterZugZiehen(zug);",
+        ],
+    ],
+};
+function zweiSchreiber(taeter) {
+    const R = require("path").join(__dirname, "..");
+    const seite = (id) => {
+        const w = require("./lib/stamm.cjs").grundWirt(R, taeter);
+        w.draht = [];
+        w.r.p2pSend = (m) => w.draht.push(m); // der Draht der Seite: was sie sendet, liegt hier, bis die Probe es zustellt
+        return Object.assign(w, { id });
+    };
+    const [a, b] = [seite("A"), seite("B")];
+    const Z = a.A.WETTER_ZUG_SEK;
+    // die Welt-Uhr bestellt die Probe bei der Welt: die Geburt einmal (`_weltUhrNeu`), danach nur vor (`_weltUhrNimm`)
+    let geboren = false;
+    const uhr = (t) => {
+        for (const x of [a, b]) geboren ? x.r._weltUhrNimm(t) : x.r._weltUhrNeu(t);
+        geboren = true;
+    };
+    const zieht = (k) => [a, b].forEach((x) => ((x.r._wetterZug = k), x.r._wetterZugZiehen(k)));
+    const front = (k) => a.r._wetterAmOrt(1, 3, k * Z); // der Ort beider Spieler (`grundWirt`)
+    let k = 3;
+    while (front(k) !== "rainy" || front(k - 1) === "rainy") k++;
+    uhr((k - 1) * Z + 1);
+    zieht(k - 1);
+    const regel = a.r._regelAusSatz(a.A.GESETZ_VORLAGEN[0]).program;
+    a.r.dslRun(regel, { source: "human" });
+    b.r._p2pMsgDsl({ peerId: "A", type: "dsl", program: regel, w: a.st.spielZeit }, { peerId: "B" });
+    uhr(k * Z - 0.5);
+    a.r._setWeather("rainy", "rule:emotion:sorrow"); // der Wunsch der Welt von A: ein Akt auf dem Draht
+    const spaet = a.draht.splice(0);
+    uhr(k * Z + 0.1);
+    zieht(k);
+    for (let t = k * Z + 0.5; t <= k * Z + 7; t += 0.5) {
+        uhr(t);
+        [a, b].forEach((x) => x.r._tickWorldRules(t));
+    }
+    for (const m of spaet) b.r._p2pMsgDsl(Object.assign({ peerId: "A" }, m), { peerId: "B" });
+    const lies = ({ st }) => {
+        const wt = st.weatherTransition;
+        return `${JSON.stringify([st.weather, wt && [wt.from, wt.to, wt.startedAt, wt.dauer]])} von ${st.wetterSchreiber}`;
+    };
+    const [la, lb] = [lies(a), lies(b)];
+    // (GZ Zug) zwei Züge weiter, der echte Takt des Wetters (die Kreaturen, Bewohner, Vögel ruhen: ihre Glieder sind still)
+    uhr((k + 2) * Z + 1);
+    const still = ["updateCreatures", "_tickBewohner", "_tickVerkehr", "_vogelTakt", "_fischTakt", "_bestaeuberTakt", "_perfSenseLap", "_pegelUhr"]; // prettier-ignore
+    for (const x of [a, b]) {
+        for (const g of still) x.r[g] = () => {};
+        x.r._buehneSteht = () => true;
+        x.r._loopWeatherAndGrowth(0);
+    }
+    return { a: la, b: lb, k, zug: [a, b].map((x) => x.r._wetterZug), wort: [a, b].map((x) => x.st.wetterWort), regeln: [a, b].map((x) => x.st.worldRules.length) }; // prettier-ignore
+}
+function zweiSchreiberSelbsttest() {
+    const [h, mg, mz] = [null, SCHREIBER_TAETER.gesetz, SCHREIBER_TAETER.zug].map(zweiSchreiber);
+    const kern = (s) => s.replace(/ von .*$/, "");
+    const rot = [];
+    if (h.regeln[0] !== h.regeln[1] || h.regeln[0] < 1) rot.push(`(GZ) B trägt das Gesetz von A nicht (Regeln ${h.regeln.join(" · ")}) — die Probe ist blind`); // prettier-ignore
+    if (kern(h.a) !== kern(h.b))
+        rot.push(`(GZ) ZWEI SCHREIBER DES WETTERS: nach dem späten Akt A ${h.a} · B ${h.b} (Zug ${h.k}) — Täter stamm/bild-himmel.js _setWeather (das Gesetz schreibt neben dem Wort) ↔ _wunschNimm → _wetterZugZiehen`); // prettier-ignore
+    if (!(h.wort[0] === "sunny" && h.zug.every((z) => z === h.k + 2)))
+        rot.push(`(GZ) DER ZUG UNTER DEM WORT steht: Wort ${h.wort.join(" · ")}, Zug ${h.zug.join(" · ")} statt ${h.k + 2} — Täter stamm/dirigent-takt.js _loopWeatherAndGrowth (das Wort hält den Zähler des Zugs)`); // prettier-ignore
+    if (kern(mg.a) === kern(mg.b))
+        rot.push(`(GZ) Selbsttest: der alte Zweig (das Gesetz schreibt neben dem Wort) fällt nicht rot (A ${mg.a} · B ${mg.b})`);
+    if (mz.zug.every((z) => z === mz.k + 2))
+        rot.push(`(GZ) Selbsttest: der alte Takt (das Wort hält den Zähler) fällt nicht rot (Zug ${mz.zug.join(" · ")})`);
+    return { rot, zahl: { k: h.k, a: h.a, b: h.b, zug: h.zug.join("·"), ma: mg.a, mb: mg.b, mzug: mz.zug.join("·") } };
 }
 // (K) die Probe im Seiten-Kontext (eine frische Welt, der echte Takt `_gameLoopTick`): je Tag-Länge `o.minuten` ein Fenster von
 // `o.sek` Sekunden Welt-Uhr; gelesen die Tage des Lichts (`worldMeta.tag` + `timeOfDay`), des Tags der Prozesse (`_weltTag`), des
@@ -648,6 +742,98 @@ function kammRot(K) {
     if (!(K.wort && K.wort[0] > 0 && K.wort[1] - K.wort[0] <= 1e-9))
         return [`(O) WORT: der Spieler sagt „rainy“ auf dem Kamm mit ${K.edits} Edits — Regen dort ${K.wort ? r4(K.wort[0]) + " … " + r4(K.wort[1]) : "ungemessen"} über 200 Uhren: Regen 0 unter Regen-Wetter an einem Ort mit Edit, das trockene Lee kappt das Wort (phyto-core wetterZug)`]; // prettier-ignore
     return [];
+}
+// ── (A) ABFLUSS NACH BRAND (same.kopplung.stoerung#3, gelaende-core `pegelBrand`): der Pegel liest den verbrannten Anteil seines
+// Einzugsgebiets. Am Bach nächst dem Spieler (8 Punkte, Ebene-1-Glied) ein leichter Regen (die Stärke `rho` über `stundenS`, unter
+// der Krone — dort trägt der Hub den Abfluss), die Tiefe ohne Brand; dann jede 16-m-Zelle ±`brandM` um den Bach eine Tat „brand“
+// (`_tatSchreiben`, das Gedächtnis des Brands): der Regen fließt stärker ab, die Tiefe steigt. GEPFLANZT am lebenden Kern: der
+// Pegel ohne die Kopplung (`pegelBrand` → null) — dieselbe Messung muss ROT fallen; GEGENLAUF: die Taten zurück, die Tiefe byte-gleich.
+// Am main 7e73426e (vor dem Schnitt) las die Tiefe mit Brand wie ohne (der Abfluss kannte keine Brandfläche). Leser: `brandAbflussRot`.
+async function brandAbflussProbe(a) {
+    const K = globalThis.__gelaendeCore;
+    const cs = AnazhRealm.LIFE_FIELD.cell;
+    const wm = st.worldMeta;
+    const mitte = (v) => (Math.floor(v / cs) + 0.5) * cs;
+    const p0 = st.playerMesh.position;
+    const P = (r._hydroFor(p0.x, p0.z).rivers || [])
+        .flatMap((v) => v.points || [])
+        .sort((p, q) => Math.hypot(p.x - p0.x, p.z - p0.z) - Math.hypot(q.x - p0.x, q.z - p0.z))
+        .slice(0, 8);
+    if (P.length < 8) return { punkte: P.length };
+    const tiefe = () => {
+        let s = 0;
+        for (const p of P) {
+            const b = r._voxelSurfaceY(p.x, p.z);
+            s += Math.max(0, r._atlasWaterLevelAt(p.x, p.z, b) - b);
+        }
+        return s / P.length;
+    };
+    const [L0, rs0, pz0] = [wm.taten, st.regenStempel, st.pegelZustand];
+    const t0 = Math.floor(r._kalenderZeit());
+    const zurueck = leihe(r, { _kalenderZeit: () => t0 + a.stundenS, _scheduleEditSave() {}, _nahStreuTat() {}, _weltRegt() {} });
+    const [nf, sn, idx] = [r._nachwuchsFaellig, r._sukzessionNeu, r._tatIdx];
+    const lauf = () => {
+        st.regenStempel = [t0, 0, t0 + 1, a.rho, t0 + 1 + a.stundenS, a.rho];
+        st.pegelZustand = null;
+        r._pegelStand = null; // die Tafel neu aus dem Gesetz — der gepflanzte Kern liest sonst die Brand-Karte des Caches
+        r._regenGen = (r._regenGen | 0) + 1;
+        r._pegelTakt();
+        return tiefe();
+    };
+    const aus = { punkte: P.length };
+    try {
+        aus.ohne = lauf();
+        r._sukzessionNeu = [];
+        wm.taten = Array.isArray(L0) ? L0.slice() : [];
+        const n = Math.round(a.brandM / cs);
+        const [cx, cz] = [mitte(P[0].x), mitte(P[0].z)];
+        for (let i = -n; i <= n; i++) for (let j = -n; j <= n; j++) r._tatSchreiben("brand", cx + i * cs, cz + j * cs);
+        aus.zellen = (2 * n + 1) ** 2;
+        aus.mit = lauf();
+        globalThis.__gelaendeCore = Object.freeze(Object.assign({}, K, { pegelBrand: () => null })); // der Kern ist gefroren: die Hülle tauscht
+        aus.gepflanzt = lauf();
+        globalThis.__gelaendeCore = K;
+        wm.taten = L0;
+        r._tatIdx = idx;
+        aus.gegen = lauf();
+    } finally {
+        globalThis.__gelaendeCore = K;
+        wm.taten = L0;
+        [r._nachwuchsFaellig, r._sukzessionNeu, r._tatIdx] = [nf, sn, idx];
+        zurueck();
+        st.regenStempel = rs0;
+        st.pegelZustand = pz0;
+        r._pegelStand = null;
+        r._regenGen = (r._regenGen | 0) + 1;
+        r._pegelTakt();
+    }
+    return aus;
+}
+// das Band: die Tiefe mit verbranntem Einzugsgebiet ≥ BRAND_ABFLUSS_BAND × ohne (b = 1 trägt den Beiwert 0,56 statt 0,3; unter der
+// Krone hebt das die Tiefe um 13–17 %, Manning q^0,6), der Gegenlauf byte-gleich
+const BRAND_ABFLUSS_BAND = 1.08;
+function brandAbflussRot(B) {
+    const r3 = (v) => (Number.isFinite(v) ? +v.toFixed(3) : v);
+    if (!(B.punkte >= 8 && B.ohne > 0)) return [`(A) BACH: ${B.punkte} Fluss-Punkte, Tiefe ohne Brand ${r3(B.ohne)} — die Probe misst keinen Bach`];
+    const v = [];
+    if (!(B.mit >= BRAND_ABFLUSS_BAND * B.ohne))
+        v.push(`(A) BRAND: ${B.zellen} verbrannte Zellen um den Bach — Tiefe im Regen ${r3(B.ohne)} → ${r3(B.mit)} m (×${r3(B.mit / B.ohne)}, Soll ≥ ×${BRAND_ABFLUSS_BAND}): der Abfluss liest den Brand seines Einzugsgebiets nicht (gelaende-core pegelBrand · pegelTafel)`); // prettier-ignore
+    if (B.gegen !== B.ohne)
+        v.push(`(A) GEGENLAUF: die Taten zurück — Tiefe ${r3(B.ohne)} → ${r3(B.gegen)} m: der Pegel trägt den Brand über seine Taten hinaus`);
+    return v;
+}
+function brandAbflussSelbsttest() {
+    const B = { punkte: 8, zellen: 2601, ohne: 0.548, mit: 0.638, gepflanzt: 0.548, gegen: 0.548 };
+    const v = brandAbflussRot(B).map((x) => `brand-abfluss: der grüne Befund fällt rot: ${x}`);
+    for (const [name, o, klinge] of [
+        ["der Pegel ohne die Kopplung (pegelBrand → null)", { mit: 0.548 }, "BRAND"],
+        ["der Pegel hält den Brand nach den Taten", { gegen: 0.6 }, "GEGENLAUF"],
+        ["kein Bach am Spieler", { punkte: 0 }, "BACH"],
+    ]) {
+        const rot = brandAbflussRot(Object.assign({}, B, o));
+        if (!(rot.length === 1 && rot[0].startsWith(`(A) ${klinge}:`))) v.push(`brand-abfluss: der Täter „${name}" fällt nicht genau einmal an (A) ${klinge} rot`);
+    }
+    return v;
 }
 // die gepflanzten Täter des Kerns (EINE Zeile getauscht, `kernGepflanzt`): jeder fällt an genau seiner Klinge
 const ORT_TAETER = [
@@ -1261,7 +1447,7 @@ if (SELBSTTEST) {
     const v = wetterSelbsttest()
         .map((x) => "wetter: " + x)
         .concat(himmelSelbsttest().map((x) => "himmel: " + x))
-        .concat(uhrSelbsttest(), kalenderSelbsttest(), jahrLaubSelbsttest());
+        .concat(uhrSelbsttest(), kalenderSelbsttest(), jahrLaubSelbsttest(), brandAbflussSelbsttest());
     const ort = ortSelbsttest();
     v.push(...ort.v);
     const O = ort.O;
@@ -1304,6 +1490,12 @@ if (SELBSTTEST) {
     const Gz = grund.zahl;
     console.log(
         `  (G) Grundstellung am Wirt · Kalender ${Gz.grund} → ${Gz.nach} (gepflanzt Tag-Länge nach der Kette: ${Gz.mutante}) · Wetter ohne Wort reist als ${Gz.wetter} (gepflanzt rohes Wort: ${Gz.mutanteWetter})`
+    );
+    const zs = zweiSchreiberSelbsttest();
+    v.push(...zs.rot);
+    const Zs = zs.zahl;
+    console.log(
+        `  (GZ) Ein Schreiber, zwei Seiten, Zug ${Zs.k}, später Akt bei B · A ${Zs.a} · B ${Zs.b} · Zug unter dem Wort ${Zs.zug} (gepflanzt Gesetz neben dem Wort: A ${Zs.ma} · B ${Zs.mb}; Wort hält den Zähler: ${Zs.mzug})`
     );
     const U = (b, n, ohne) => {
         const vor = { himmel: 2, wind: 2, böe: 1.1, wasser: ohne === "T" ? 3 : 2 };
@@ -1835,6 +2027,7 @@ hauptLauf(async () => {
     const JL = await page3.evaluate(jahrWinterProbe, { schrittSek: SCHRITT_SEK });
     JL.feld = await page3.evaluate(jahrFeldProbe, { praesenz: JL.praesenz });
     const KAMM = await page3.evaluate(kammProbe);
+    const BRAND = await page3.evaluate(brandAbflussProbe, { rho: 0.004, stundenS: 1800, brandM: 400 });
     const lab = await browser.newPage();
     await server.zeige(lab, 60000, "worlds/terrain/index.html");
     await lab.waitForFunction("typeof updateWorld === 'function' && typeof camera === 'object' && camera");
@@ -1903,7 +2096,13 @@ hauptLauf(async () => {
     console.log(
         `  Kamm · ${KAMM.edits} Füllungen quer zum Wind: Regen auf dem Grat ${KAMM.kamm[0].toFixed(4)} → ${KAMM.kamm[1].toFixed(4)}, ${KAMM.schrittM} m windab ${KAMM.lee[0].toFixed(4)} → ${KAMM.lee[1].toFixed(4)} · das Wort „rainy“ auf dem Grat ${KAMM.wort[0].toFixed(4)} … ${KAMM.wort[1].toFixed(4)} (200 Uhren)`
     );
-    const rot = [...urteil(S, H), ...kalenderRot(KAL), ...jahrLaubRot(JL), ...kammRot(KAMM)];
+    const r3 = (v) => (Number.isFinite(v) ? v.toFixed(3) : v);
+    const gepflanztRot = brandAbflussRot(Object.assign({}, BRAND, { mit: BRAND.gepflanzt }));
+    console.log(
+        `  Abfluss nach Brand · ${BRAND.punkte} Punkte am Bach, ${BRAND.zellen} verbrannte Zellen: Tiefe im Regen ${r3(BRAND.ohne)} → ${r3(BRAND.mit)} m (×${r3(BRAND.mit / BRAND.ohne)}) · Gegenlauf ${r3(BRAND.gegen)} m · gepflanzt pegelBrand → null: ${r3(BRAND.gepflanzt)} m ${gepflanztRot.length ? "→ ROT an (A) BRAND ✅" : "blieb grün ❌"}`
+    );
+    const rot = [...urteil(S, H), ...kalenderRot(KAL), ...jahrLaubRot(JL), ...kammRot(KAMM), ...brandAbflussRot(BRAND)];
+    if (!gepflanztRot.length) rot.push("(A) GEPFLANZT: der Pegel ohne die Kopplung (pegelBrand → null) fällt am lebenden Kern nicht rot");
     wandEnde(
         rot,
         "unter der Bühne dreht kein Schreiber das Wetter; frei gehen Uhr und Wetter nach dem Wort des Spielers, die Welt" +

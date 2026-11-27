@@ -1607,15 +1607,69 @@ waldTakt.port1.onmessage = () => {
 // headless kalt bis zum Bild 58 562, von denen der Haupt-Faden jeden selbst urteilte).
 // Ein Erdbau mit Kasten fällt nur die Zellen seines Kastens (`waldFaellt`), voll fallen die ältesten (`geborenRaum`); bis
 // w14-strom-tempo legte jeder Erdbau (ein neuer Stand) und jedes volle Gedächtnis den Bestand ganz neu an.
-let waldGeboren = { stand: null, karte: new Map() };
-// Der Kasten [ga, gb, ha, hb] der Wald-Zellen, deren geborene Darts ein Erdbau fällt (`_forestDartsFallen` des Mains): beide
-// Gedächtnisse verlieren sie (der Wald-Faden je "cx,cz", die Kamm-Krone je cx · 2^20 + cz).
+// DAS GEDÄCHTNIS HÄLT DIE ZAHLEN, NICHT DIE OBJEKTE (stadt-am-schirm, Gebot 7): je Zelle ihre geborenen Darts gepackt,
+// WALD_GEBOREN Zahlen je Dart [x, z, Art, s, T, prio, keep, totRoll, rotY, seed, surfaceY, schluss, gelichtet] in EINEM
+// Float64Array, die Art als Index in `arten`; ein Auftrag entpackt die Zellen, die er liest, EINMAL (`imAuftrag`: dasselbe Feld
+// je Zelle, an ihm hängen die Kassen des Urteils im Kern), sie fallen mit ihm. Bis hier hielt es die Dart-Objekte, an ihnen die
+// Fächer und Fenster des Urteils (phyto-core `_zellFaecher` · `_fensterMemo` · `_dachMemo` · `_vorherMemo`) — headless 29,2 kB je
+// Zelle, und die Fenster überlebender Zellen hielten die gefallenen Nachbarn fest: an der Schranke wuchs der Heap weiter
+// (120² Zellen, dann 600 m Gang: 440 → 611 MB bei 15 432 → 13 377 Zellen); gepackt 3,2 kB je Zelle.
+// DAS URTEIL HÄLT, WAS DER HAUPT-FADEN LIEST: je gefragte Zelle ihre stehenden Darts (`forestStehende`, rein in den Geborenen
+// ihrer Zellen ±FOREST_URTEIL_REICH) als die Zeile der Antwort, WALD_GEBOREN Zahlen je Dart, die Art als Index in `arten` —
+// ein Auftrag nach einem verworfenen (ein Erdbau seit dem Auftrag, `_waldDartsAn`) kopiert sie, statt Fenster und Fächer neu
+// zu rechnen; ein Erdbau fällt sie im Kasten ±FOREST_URTEIL_REICH (`waldFaellt`).
+const WALD_GEBOREN = 13;
+let waldGeboren = { stand: null, karte: new Map(), urteil: new Map(), arten: [], artIdx: new Map() };
+function waldPacken(W, a) {
+    const p = new Float64Array(a.length * WALD_GEBOREN);
+    for (let i = 0, j = 0; i < a.length; i++, j += WALD_GEBOREN) {
+        const d = a[i];
+        let ai = W.artIdx.get(d.sp);
+        if (ai === undefined) W.artIdx.set(d.sp, (ai = W.arten.push(d.sp) - 1));
+        [p[j], p[j + 1], p[j + 2], p[j + 3], p[j + 4], p[j + 5]] = [d.x, d.z, ai, d.s, d.T, d.prio];
+        [p[j + 6], p[j + 7], p[j + 8], p[j + 9], p[j + 10], p[j + 11]] = [
+            d.keep,
+            d.totRoll,
+            d.rotY,
+            d.seed,
+            d.surfaceY,
+            d.schluss,
+        ];
+        p[j + 12] = d.gelichtet ? 1 : 0;
+    }
+    return p;
+}
+// die Darts einer Zelle, wie `planForestCell` sie gebiert (dieselben Felder in derselben Reihe, `gelichtet` nur am genommenen)
+function waldEntpacken(W, p) {
+    const a = new Array(p.length / WALD_GEBOREN);
+    for (let i = 0, j = 0; j < p.length; i++, j += WALD_GEBOREN) {
+        const d = {
+            x: p[j],
+            z: p[j + 1],
+            sp: W.arten[p[j + 2]],
+            s: p[j + 3],
+            T: p[j + 4],
+            prio: p[j + 5],
+            keep: p[j + 6],
+        };
+        [d.totRoll, d.rotY, d.seed, d.surfaceY, d.schluss] = [p[j + 7], p[j + 8], p[j + 9], p[j + 10], p[j + 11]];
+        if (p[j + 12]) d.gelichtet = true;
+        a[i] = d;
+    }
+    return a;
+}
+// Der Kasten [ga, gb, ha, hb] der Wald-Zellen, deren geborene Darts ein Erdbau fällt (`_forestDartsFallen` des Mains): der
+// Wald-Faden verliert sie (je "cx,cz"); die Kamm-Krone (je cx · 2^20 + cz) die Zellen, deren Stand sie lesen — den Kasten
+// ±FOREST_URTEIL_REICH (das Fenster des Urteils).
 function waldFaellt(k) {
     const [ga, gb, ha, hb] = k;
-    for (let gx = ga; gx <= gb; gx++)
-        for (let gz = ha; gz <= hb; gz++) {
-            waldGeboren.karte.delete(gx + "," + gz);
-            kammGeboren.karte.delete(gx * 1048576 + gz);
+    for (let gx = ga; gx <= gb; gx++) for (let gz = ha; gz <= hb; gz++) waldGeboren.karte.delete(gx + "," + gz);
+    const R = self.__phytoCore.FOREST_URTEIL_REICH;
+    for (let gx = ga - R; gx <= gb + R; gx++)
+        for (let gz = ha - R; gz <= hb + R; gz++) {
+            waldGeboren.urteil.delete(gx + "," + gz);
+            kammStand.neu.delete(gx * 1048576 + gz);
+            kammStand.alt.delete(gx * 1048576 + gz);
         }
 }
 // DIE SCHRANKE DER GEBORENEN (Mirror `AnazhRealm._waldGeborenRaum`): über `cap` fallen die ältesten bis auf drei Viertel.
@@ -1635,35 +1689,66 @@ function waldDarts(msg) {
     const n = (z.length / 2) | 0;
     const ctx = waldCtx(msg);
     if (msg.stand == null || waldGeboren.stand !== msg.stand)
-        waldGeboren = { stand: msg.stand == null ? null : msg.stand, karte: new Map() };
+        waldGeboren = {
+            stand: msg.stand == null ? null : msg.stand,
+            karte: new Map(),
+            urteil: new Map(),
+            arten: [],
+            artIdx: new Map(),
+        };
     geborenRaum(waldGeboren.karte, fernK().geboren);
-    const K = waldGeboren.karte;
+    geborenRaum(waldGeboren.urteil, fernK().geboren);
+    const W = waldGeboren;
+    const imAuftrag = new Map();
     const geboren = (cx, cz) => {
         const k = cx + "," + cz;
-        let a = K.get(k);
-        if (!a) K.set(k, (a = self.__phytoCore.planForestCell(cx, cz, msg.seedInt, ctx)));
+        let a = imAuftrag.get(k);
+        if (a) return a;
+        const p = W.karte.get(k);
+        if (p) a = waldEntpacken(W, p);
+        else W.karte.set(k, waldPacken(W, (a = self.__phytoCore.planForestCell(cx, cz, msg.seedInt, ctx))));
+        imAuftrag.set(k, a);
         return a;
     };
     const pack = ctx.F.pack;
     const arten = [];
-    const artIdx = new Map();
-    const zahl = [];
+    const lokal = []; // Index in W.arten → Index in `arten` dieser Antwort (in der Reihe des ersten Auftritts)
     const anzahl = new Int32Array(n);
+    const zeilen = new Array(n);
+    let summe = 0;
     for (let k = 0; k < n; k++) {
-        const out = self.__phytoCore.forestStehende(z[k * 2], z[k * 2 + 1], geboren, pack);
-        anzahl[k] = out.length;
-        for (const d of out) {
-            let ai = artIdx.get(d.sp);
-            if (ai === undefined) {
-                ai = arten.length;
-                arten.push(d.sp);
-                artIdx.set(d.sp, ai);
+        const kk = z[k * 2] + "," + z[k * 2 + 1];
+        let u = W.urteil.get(kk);
+        if (!u) {
+            const out = self.__phytoCore.forestStehende(z[k * 2], z[k * 2 + 1], geboren, pack);
+            u = new Float64Array(out.length * WALD_GEBOREN);
+            for (let i = 0, j = 0; i < out.length; i++, j += WALD_GEBOREN) {
+                const d = out[i];
+                let ai = W.artIdx.get(d.sp);
+                if (ai === undefined) W.artIdx.set(d.sp, (ai = W.arten.push(d.sp) - 1));
+                [u[j], u[j + 1], u[j + 2], u[j + 3], u[j + 4], u[j + 5]] = [d.x, d.z, ai, d.s, d.T, d.prio];
+                [u[j + 6], u[j + 7], u[j + 8], u[j + 9]] = [d.keep, d.totRoll, d.rotY, d.seed];
+                [u[j + 10], u[j + 11]] = [d.surfaceY == null ? NaN : d.surfaceY, d.schluss];
+                u[j + 12] = d.alter == null ? 1 : d.alter;
             }
-            zahl.push(d.x, d.z, ai, d.s, d.T, d.prio, d.keep, d.totRoll, d.rotY, d.seed);
-            zahl.push(d.surfaceY == null ? NaN : d.surfaceY, d.schluss, d.alter == null ? 1 : d.alter);
+            W.urteil.set(kk, u);
         }
+        zeilen[k] = u;
+        anzahl[k] = u.length / WALD_GEBOREN;
+        summe += u.length;
     }
-    const werte = new Float64Array(zahl);
+    const werte = new Float64Array(summe);
+    for (let k = 0, o = 0; k < n; k++) {
+        const u = zeilen[k];
+        werte.set(u, o);
+        for (let j = o + 2; j < o + u.length; j += WALD_GEBOREN) {
+            const gi = werte[j];
+            let ai = lokal[gi];
+            if (ai === undefined) ai = lokal[gi] = arten.push(W.arten[gi]) - 1;
+            werte[j] = ai;
+        }
+        o += u.length;
+    }
     self.postMessage(
         {
             type: "wald-darts-result",
@@ -1975,7 +2060,7 @@ function applyStateDelta(delta) {
         return;
     }
     // DER WALD FÄLLT IM KASTEN (w14-strom-tempo, `_forestDartsFallen`): mit dem Erdbau, der ihn wirft, verlieren die
-    // Gedächtnisse der geborenen Darts (`waldGeboren`, `kammGeboren`) die Zellen [ga, gb] × [ha, hb] — im selben Zustand, kein
+    // Gedächtnisse (`waldGeboren` die Zellen [ga, gb] × [ha, hb], `kammStand` ihr Fenster dazu) — im selben Zustand, kein
     // Wald-Takt dazwischen. Bis w14-strom-tempo trug der Stand des Mains den Erdbau, und jeder Ort warf beide ganz.
     if (delta.waldFall) waldFaellt(delta.waldFall);
     // die Ränder der Siedlungen reisen mit jedem Erdbau (`_erdbauWirkt`: der Saum am Siedlungsrand, w20-wald-kosten)
@@ -3691,17 +3776,25 @@ function bodenFarbe(x, y, z, out, fussM) {
     const aboveWater = y - uf.see;
     const aboveFluss = !ab && uf.fluss !== null ? y - uf.fluss : null;
     let schlick = ss(-0.5, -4, aboveWater);
-    if (aboveFluss !== null) schlick = Math.max(schlick, uf.ufer * ss(-0.5, -4, aboveFluss));
-    // Das Watt (die Gezeit, gelaende-core wattSchlick): wo das Meer den Grund mehr als ein Achtel der Zeit deckt, liegt Schlick
-    if (uf.watt) schlick = Math.max(schlick, G.wattSchlick(aboveWater));
+    // DAS KORN DER SOHLE (Mirror von \`_bodenFarbeAt\`, bit-identisch): wo der Fluss den Grund trägt, ist das Sediment sein Korn
+    // (gelaende-core \`korn\` → \`sedimentFarbe\`) — EINE Frage des Felds je Vertex, nur am Fluss; mit fussM tragen die Bänder des
+    // Abdrucks den Fluss (\`flussAbdruck\`)
+    let flussSchlick = aboveFluss !== null ? uf.ufer * ss(-0.5, -4, aboveFluss) : 0;
+    const seeSchlick = schlick;
+    let kornFarbe = null;
+    const kornAm = () => kornFarbe || (kornFarbe = G.sedimentFarbe(P, G.korn(state, x, z), [0, 0, 0]));
+    const amFluss = (f, s0, z0) => (f > s0 ? z0.map((v, k) => v + (kornAm()[k] - v) * (1 - s0 / f)) : z0);
     const imStrand = (a) => a !== null && a > -1.3 && a < 2.5;
     let flussStrand = false;
     if (ab)
         for (let i = 0; i < ab.n; i++) {
-            schlick = Math.max(schlick, ab.mu[i] * ss(-0.5, -4, y - ab.sp[i]));
+            flussSchlick = Math.max(flussSchlick, ab.mu[i] * ss(-0.5, -4, y - ab.sp[i]));
             if (ab.mu[i] > 0 && imStrand(y - ab.sp[i])) flussStrand = true;
         }
-    mix(P.sediment, schlick);
+    if (flussSchlick > schlick) schlick = flussSchlick;
+    // Das Watt (die Gezeit, gelaende-core wattSchlick): wo das Meer den Grund mehr als ein Achtel der Zeit deckt, liegt Schlick
+    if (uf.watt) schlick = Math.max(schlick, G.wattSchlick(aboveWater));
+    mix(amFluss(flussSchlick, seeSchlick, P.sediment), schlick);
     if (imStrand(aboveWater) || (uf.ufer > 0 && imStrand(aboveFluss)) || flussStrand) {
         const widthNoise = (sandNoise.noise2D(x * 0.0018, z * 0.0018) + 1) * 0.5;
         const intenseNoise = (sandNoise.noise2D(x * 0.0034 + 17, z * 0.0034 - 9) + 1) * 0.5;
@@ -3710,9 +3803,11 @@ function bodenFarbe(x, y, z, out, fussM) {
             const intensity = 0.25 + 0.55 * intenseNoise;
             const glocke = (a) => Math.max(0, 1 - Math.abs(a - 0.6) / width);
             let shoreBlend = glocke(aboveWater);
-            if (aboveFluss !== null) shoreBlend = Math.max(shoreBlend, uf.ufer * glocke(aboveFluss));
-            if (ab) for (let i = 0; i < ab.n; i++) shoreBlend = Math.max(shoreBlend, ab.mu[i] * glocke(y - ab.sp[i]));
-            mix(P.sand, shoreBlend * intensity);
+            const seeBlend = shoreBlend;
+            let flussBlend = aboveFluss !== null ? uf.ufer * glocke(aboveFluss) : 0;
+            if (ab) for (let i = 0; i < ab.n; i++) flussBlend = Math.max(flussBlend, ab.mu[i] * glocke(y - ab.sp[i]));
+            if (flussBlend > shoreBlend) shoreBlend = flussBlend;
+            mix(amFluss(flussBlend, seeBlend, P.sand), shoreBlend * intensity);
         }
     }
     // die PFADE: die Fluss-Bänke als getrampelte, gepackte Erde
@@ -4802,17 +4897,37 @@ function fernRingTeile(x, z, law, fuss, schutt, gen) {
 // trägt (phyto-core `forestKammKronen`) — der Plan (`planForestCell`) mit dem FERN-LESER des Bodens: die Fläche ist das Gesetz
 // ohne Detail (dieselbe Funktion, die der Ring zeichnet und die Station als Kamm misst, `_terrainMacroSurfaceY(x, z, false)`),
 // Wasser, Steilheit (±2 m wie `bodenSteilheit`), Feuchte, Ort und Same wie der Wald-Faden (`waldCtx`); das Urteil der
-// Kronen-Schüchternheit ist das EINE `forestStehende`. Das Gedächtnis der geborenen Darts hält je Same und Stand (`stand` des
-// Mains) — der nächste Anker liest die Zellen des letzten. Per Transfer zurück: je Baum KAMM_FELDER Zahlen, die Arten.
-let kammGeboren = { schluessel: null, karte: new Map() };
+// Kronen-Schüchternheit ist das EINE `forestStehende`. Per Transfer zurück: je Baum KAMM_FELDER Zahlen, die Arten.
+// DAS GEDÄCHTNIS HÄLT, WAS SEIN LESER LIEST (stadt-am-schirm, Gebot 7): je Band-Zelle ihre stehenden Kronen des Dachs
+// (`forestStehende` nurDach) gepackt, KAMM_ZELLE Zahlen je Baum [x, z, Art, s, T, Fuß] in EINEM Float64Array, die Art als Index
+// in `arten` — je Same und Stand (`stand` des Mains), die Zellen des Ankers (`neu`) und des letzten (`alt`), bis der neue seinen
+// Kreis gelesen hat. Die geborenen Darts (`planForestCell`) leben nur im Auftrag: bis hier hielt das Gedächtnis sie selbst, mit
+// Fächern und Fenstern ≈ 10 kB je Zelle, bis 65 536 Zellen — an der Stadt 490 MB, 82 % des kamm-Fadens (Radeon, s = 48).
+const KAMM_ZELLE = 6;
+const KAMM_LEER = new Float64Array(0);
+let kammStand = { schluessel: null, anker: null, az: 0, neu: new Map(), alt: new Map(), arten: [], artIdx: new Map() };
+function kammPacken(KS, stehen) {
+    if (!stehen.length) return KAMM_LEER;
+    const p = new Float64Array(stehen.length * KAMM_ZELLE);
+    for (let i = 0, j = 0; i < stehen.length; i++, j += KAMM_ZELLE) {
+        const t = stehen[i];
+        let ai = KS.artIdx.get(t.sp);
+        if (ai === undefined) KS.artIdx.set(t.sp, (ai = KS.arten.push(t.sp) - 1));
+        [p[j], p[j + 1], p[j + 2], p[j + 3], p[j + 4], p[j + 5]] = [t.x, t.z, ai, t.s, t.T, t.surfaceY];
+    }
+    return p;
+}
 function kammKrone(msg) {
     const pc = self.__phytoCore;
     if (!pc || typeof pc.forestKammKronen !== "function")
         throw new Error("Kamm-Krone: phyto-core forestKammKronen fehlt (KERN-PFLICHT)");
     const schluessel = state.seed + "|" + msg.seedInt + "|" + msg.stand;
-    if (kammGeboren.schluessel !== schluessel || kammGeboren.karte.size > 65536)
-        kammGeboren = { schluessel, karte: new Map() };
-    const K = kammGeboren.karte;
+    if (kammStand.schluessel !== schluessel)
+        kammStand = { schluessel, anker: null, az: 0, neu: new Map(), alt: new Map(), arten: [], artIdx: new Map() };
+    const KS = kammStand;
+    const anker = msg.ax + "," + msg.az;
+    if (KS.anker !== anker) [KS.anker, KS.az, KS.alt, KS.neu] = [anker, 0, KS.neu, new Map()];
+    KS.az += (msg.azBis == null ? 2 * Math.PI : msg.azBis) - (msg.azVon || 0);
     const law = (x, z) => G.hoehe(state, x, z, false);
     let [bx, bz, by] = [NaN, NaN, null];
     const ctx = {
@@ -4834,11 +4949,27 @@ function kammKrone(msg) {
         feuchteAt: (x, z, sy) => feuchteAt(x, z, sy),
         ortFrei: (x, z, T) => ortFrei(x, z, T),
     };
+    // die geborenen Darts der Zellen, die dieser Auftrag liest (Band-Zellen und ihr Fenster ±FOREST_URTEIL_REICH): sie
+    // fallen mit ihm
+    const imAuftrag = new Map();
     const geboren = (cx, cz) => {
         const k = cx * 1048576 + cz;
-        let a = K.get(k);
-        if (!a) K.set(k, (a = pc.planForestCell(cx, cz, msg.seedInt, ctx)));
+        let a = imAuftrag.get(k);
+        if (!a) imAuftrag.set(k, (a = pc.planForestCell(cx, cz, msg.seedInt, ctx)));
         return a;
+    };
+    const stehende = (cx, cz) => {
+        const k = cx * 1048576 + cz;
+        let p = KS.neu.get(k);
+        if (!p) {
+            if ((p = KS.alt.get(k))) KS.alt.delete(k);
+            else p = kammPacken(KS, pc.forestStehende(cx, cz, geboren, ctx.F.pack, true));
+            KS.neu.set(k, p);
+        }
+        const out = new Array(p.length / KAMM_ZELLE);
+        for (let i = 0, j = 0; j < p.length; i++, j += KAMM_ZELLE)
+            out[i] = { x: p[j], z: p[j + 1], sp: KS.arten[p[j + 2]], s: p[j + 3], T: p[j + 4], surfaceY: p[j + 5] };
+        return out;
     };
     const t0 = self.performance ? self.performance.now() : Date.now();
     const r = pc.forestKammKronen({
@@ -4856,11 +4987,11 @@ function kammKrone(msg) {
         tiefeM: msg.tiefeM,
         saumM: msg.saumM,
         cell: ctx.F.cell,
-        pk: ctx.F.pack,
         hoehe: law,
-        geboren,
+        stehende,
         art: (sp) => msg.arten[sp] || null,
     });
+    if (KS.az >= 2 * Math.PI - 1e-9) KS.alt = new Map(); // der Anker las seinen Kreis: die Zellen des letzten fallen
     const ms = (self.performance ? self.performance.now() : Date.now()) - t0;
     return {
         antwort: { baeume: r.baeume, arten: r.arten, zellen: r.zellen, rufe: r.rufe, kandidaten: r.kandidaten, ms },

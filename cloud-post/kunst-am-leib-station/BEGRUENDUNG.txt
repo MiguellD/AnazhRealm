@@ -1,0 +1,27 @@
+Stations-Kandidat karte2.mensch.sport.kunst#1 (Bahn kunst-am-leib, Welle 27.11.) — NICHT gesetzt; Basis: punkte-maschine (k2-mensch-sport.js, faecher.cjs byte-gleich dem Zweig am 27.11.)
+
+WARUM S1 MISST STATT K.leser: der Täter der roten Zeile („kein Leib liest ihr Können“) ist gefallen — koerper LEIB_SATZ.koennen + leibKunst
+formen Takt, Streuung von Periode und Endpunkt, Teilbewegungen (Ruck), Steife und Schwanken; der Leib liest es über die EINE Naht (der
+Name „<grund>/meister|geselle|lehrling“ aus tagesHaltung → leibSatzProfil · leibStandTun → _animateHumanoidRig).
+
+k2-mensch-sport.diff
+- neue Seiten-Funktion KUNST: je Kunst (Werk · Zweikampf · Brett) der Meister (Können ≥ 1, der höchste) und der Anfänger (< 0,5, der
+  niedrigste) der Stadt aus b.uebung — die Schwellen von UEBUNG —, über _bewohnerGemuet im Akt der Kunst an das Rig eines NAHEN Leibs der
+  Stadt, 3 Zyklen à 30 Hz; der Zug = Anteil des Tuns an der Schulter (Rig mit ↔ ohne leibStandTun), das Schwanken = SD der Hüfte.
+- S1: trennt der Leib in 3 von 3 Künsten (der Anfänger greift seltener, CV des Ausschlags ≥ 2×, Teile Meister ≤ 1,05 und Anfänger ≥ +0,5,
+  Hüfte ≥ 1,5× — dieselben Schwellen wie die Linse L7 in scripts/diag-koerper-kern.cjs), schießt die Station das Bild an der Pose ihres
+  auge-Texts (der nächste nahe Leib im Akt einer Kunst, 3 m vor ihm, Augenhöhe) und ruft K.auge; sonst K.leser mit der Messzeile.
+- sprossen[1]: `erwartet: "nicht"` und `fehlt` fallen; auge.pose und auge.vorbild (der Richter-Text) bleiben Wort für Wort.
+- headless geprüft: KUNST im Wirt (grundWirt, ein Rig aus dem Guss): handwerk Züge 23 ↔ 11 · CV 0,051 ↔ 0,149 · Teile 1 ↔ 2 · Hüfte
+  7,07 ↔ 14,35 mrad; kampf 18 ↔ 12 · 0,050 ↔ 0,153 · 1 ↔ 2 · 7,07 ↔ 14,35; brett wie handwerk. An main eef726c4 (vor dem Schnitt) misst
+  dieselbe Messung ROT: kampf 0 Züge, handwerk CV 0,261 ↔ 0,276, Teile 1 ↔ 1, Hüfte gleich.
+
+faecher.diff — Fach „Ist der Mensch in der Bildmitte ein Meister oder ein Anfänger seiner Kunst?“
+- jeder Bewohner der vollen Stadt, den sein Plan um 10 Uhr draußen in einen Akt einer Kunst stellt (_bewohnerSoll, LEIB_SATZ.kunst),
+  3 m vor ihm in seiner Blickrichtung, Augenhöhe 1,6 m; Wahrheit = b.uebung.<kunst>.koennen an den Schwellen des Gesetzes (≥ 1 Meister,
+  < 0,5 Anfänger; „haupt“ liest b.uebung.haupt), je 22 je Klasse im Wechsel (imWechsel) → 44 Posen ≥ MIN 40, nach Abstand.
+- Selbsttest: 15 GRÜN · 0 ROT (vorher 14 · 0); die neue Zeile prüft Klassen-Schwelle, je ≥ 20 und den Wechsel.
+
+Ehrlich offen: ein Standbild trägt Haltung (Steife: Kopf +0,16 rad, Ellbogen) und einen Augenblick des Zugs, nicht Takt und Nachsetzen —
+die Bewegung urteilt S1 an Zahlen; ob der Blindtest am Bild ≥ 80 % trägt, sagt erst das Blatt (GPU, nicht gefahren). Tanz hat keinen
+Akt in der Welt (kunst#3) — die Klasse Tanz fehlt im Fach, nicht still: LEIB_SATZ.kunst nennt keinen Tanz-Akt.

@@ -4064,8 +4064,9 @@
     //   DAS BAND: die Zone des Kamms je Auge (± tiefeM um den Punkt des höchsten Winkels, der Kamm in [dVon, dBis]), darin, wo ein
     //     Baum der Höhe hMax den Kamm erreicht (θ(d) + hMax/d ≥ Θ) — im Schritt der Zelle, je Probe die Zelle und quer ihre
     //     Nachbarn bis zur halben Azimut-Breite;
-    //   DER BESTAND der Band-Zellen: `geboren(cx, cz)` (der Plan des Rufers, sein Gedächtnis) und das EINE Urteil der
-    //     Kronen-Schüchternheit (`forestStehende`, Packung pk);
+    //   DER BESTAND der Band-Zellen: `stehende(cx, cz)` des Rufers — die Kronen des Dachs, die das EINE Urteil der
+    //     Kronen-Schüchternheit stehen lässt (`forestStehende` nurDach über `planForestCell`, sein Gedächtnis), je Baum
+    //     x, z, sp, s, T, surfaceY;
     //   DER UMRISS: je stehendem Dart die Krone seiner Art (`art(sp)` → { h: Wipfel-Höhe der Größe 1 in m, ansatz: Kronen-Ansatz
     //     als Anteil der Höhe, nadel }) × seine Größe s, ihr Radius T des Plans; er bleibt, wenn sein Wipfel für ein Auge über
     //     Θ − `saumM`/d steht (er trägt den Umriss gegen den Himmel).
@@ -4151,7 +4152,7 @@
         const aus = [];
         const AP = new Map();
         for (const [cx, cz] of zellen.values()) {
-            const stehen = forestStehende(cx, cz, o.geboren, o.pk, true);
+            const stehen = o.stehende(cx, cz);
             for (let j = 0; j < stehen.length; j++) {
                 const t = stehen[j];
                 let p = AP.get(t.sp);
