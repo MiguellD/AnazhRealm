@@ -1652,7 +1652,8 @@ class AnazhRealm_siedlung_wege {
         const K = this._spielerKapsel(this._trittKapsel || (this._trittKapsel = {}));
         this._tritt(pm, K.x, K.z, st.isInAir !== true && st.playerUnderwater !== true, true);
     }
-    _tritt(leib, x, z, steht, spieler) {
+    // `last` (fahrzeug-medium-2): wie viele Tritte des Fußes der Schritt in die Zelle trägt — der Fuß 1, das Rad `TRITT.rad`.
+    _tritt(leib, x, z, steht, spieler, last = 1) {
         const T = AnazhRealm.TRITT;
         const i = Math.floor(x / T.zelleM);
         const j = Math.floor(z / T.zelleM);
@@ -1672,7 +1673,7 @@ class AnazhRealm_siedlung_wege {
         const schwach = this._trittSchwach || (this._trittSchwach = new Map());
         const key = i + "," + j;
         const jetzt = this._trittJetzt();
-        const n = Math.round((this._trittZahl(x, z) + 1) * T.standN) / T.standN;
+        const n = Math.round((this._trittZahl(x, z) + last) * T.standN) / T.standN;
         const zeile = [n, Math.floor(jetzt * T.standT) / T.standT];
         const stufe = AnazhRealm._trittStufe(n);
         if (stufe > 0) {
@@ -1680,7 +1681,15 @@ class AnazhRealm_siedlung_wege {
             this._trittSchrieb = (this._trittSchrieb || 0) + 1;
             schwach.delete(key);
         } else schwach.set(key, zeile);
-        const wk = this.state.wegeKarte;
+        if (!(stufe > 0)) return;
+        // DER ERSTE PFAD ZENTRIERT DIE KARTE SOFORT (wie die erste Krone und die erste Siedlung): der Umzug malt jede Zelle des
+        // Stands (`_wegeStufeMalen` samt den Tritten, `trittGemalt`), diese eingeschlossen. Bis hier fiel der Tritt vor dem ersten
+        // Takt der Karte still: der Stand trug den Pfad, die Wege-Karte nicht, und Wiese, Boden-Stoff (`_kontaktStoffAt`) und
+        // Shader lasen bis zum nächsten Pfad-Sprung der Zelle keine Erde (gate:vehicle-drive B-k an der Radeon: 90 Tritte je
+        // Zelle, gemalt 0 von 24, Erde 0 von 24 — der gestellte GT fuhr vor dem ersten Takt der Karte)
+        const wk = this._wegeKarteEnsure();
+        const pm = this.state.playerMesh;
+        if (wk && pm && wk.stufen.some((s) => !s.zentriert)) this._tickWegeKarte(pm.position);
         const nah = wk && wk.stufen[0];
         if (!nah || !nah.zentriert || !(stufe > (wk.trittGemalt.get(key) || 0))) return;
         this._wegeKarteMale(nah, this._trittForm(i, j, stufe));
@@ -1705,6 +1714,12 @@ class AnazhRealm_siedlung_wege {
         const alt = (wm && wm.tritt && wm.tritt[key]) || (this._trittSchwach && this._trittSchwach.get(key));
         const n = alt ? alt[0] * Math.exp(-(this._trittJetzt() - alt[1]) / T.erholTage) : 0;
         return n >= T.vergessen ? n : 0;
+    }
+    // DIE DURCHFAHRTEN an (x, z) (fahrzeug-medium-2): das Feld zählt in Tritten des Fußes, das Rad trägt `TRITT.rad` je Durchfahrt
+    // (`_fahrRad`) — die Rinne liest die Zahl der Räder, die vor ihm gruben, ein Fuß zählt ein `TRITT.rad`-tel. Leser: `_fahrRad`
+    // und die Station mensch.fahrzeug.medium S2 (vehicle-core `radImBoden`, k).
+    _trittDurchfahrten(x, z) {
+        return this._trittZahl(x, z) / AnazhRealm.TRITT.rad;
     }
     // Die Kacheln der Wiese und der Nah-Streu über der Zelle `key` fallen (sie wachsen auf dem Pfad neu)
     _trittWiese(key) {
@@ -3363,7 +3378,11 @@ _stammZonen(AnazhRealm, [AnazhRealm_siedlung_wege]);
 // Stufen, der PFAD (stoffe.K4: „ein 100× gegangener Weg wird Pfad (Gras-Dichte −60 %)“ — der Anteil der Halme, den die Wiese auf
 // ihm höchstens trägt; die erste Stufe, die das hält, ist 6/8 bei 27,7 Tritten, `_trittStufe`), der Versatz, der kein Schritt
 // ist (m), der Takt der Uploads (ms) und das Raster des Stands: die Zahl je Achtel-Tritt, die Zeit je Spiel-Stunde (die Erholung
-// verschiebt sich um ≤ 2,1 ‰ der Zahl).
+// verschiebt sich um ≤ 2,1 ‰ der Zahl). DAS RAD TRITT SCHWERER (fahrzeug-medium-2, `rad`): die Durchfahrt eines Rads trägt 4,5
+// Tritte des Fußes in die Zelle — Weaver & Dale 1978 (J. Appl. Ecol. 15, Bergwiese Poa pratensis / Festuca idahoensis, Montana;
+// zitiert USDA Forest Service SDTDC 0423-1201, Kap. 3): 200 Durchfahrten eines Motorrads nahmen 9× so viel Bewuchs wie 200
+// Wanderer, zwei Räder in EINER Spur = 4,5 je Rad. Bis hier trat das Rad wie ein Fuß: 10 Durchfahrten eines Wagens trugen der
+// Zelle seiner Spur 20 Tritte, die Wege-Karte malt erst ab 27,7 — die Spur blieb unsichtbar (rinne_sichtbar).
 AnazhRealm.TRITT = Object.freeze({
     zelleM: 0.5,
     halbM: 0.55,
@@ -3377,6 +3396,7 @@ AnazhRealm.TRITT = Object.freeze({
     uploadMs: 250,
     standN: 8,
     standT: 24,
+    rad: 4.5,
 });
 AnazhRealm.WEGE_KARTE = Object.freeze({
     stufen: Object.freeze([
