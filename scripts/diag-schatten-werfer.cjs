@@ -1059,14 +1059,34 @@ function probe(selbsttest) {
         const satzWerfer = new Set();
         if (st.chunkSaetze)
             for (const s of st.chunkSaetze.values()) if (s.spec.schatten === true) satzWerfer.add(s.mesh);
-        const fremd = [];
-        for (const top of st.scene.children) {
-            if (top.isBundleGroup || top === st.gpuWahlWirt || frei.has(top) || satzWerfer.has(top)) continue;
-            top.traverse((o) => {
-                if (o.isMesh && o.castShadow === true) fremd.push((top.name || top.type) + " > " + (o.name || o.type));
-            });
+        // jede werfende Nah-Streu, deren Hüllen die Box LIEST (`_kaskadenHuellen`, der Konsum — nie die Liste der Senken): ihre
+        // Familie ist bekannt, jede Stufe trägt dieselben Pflanzen (landmarken-9: `streuNah:geroell` am Ring-Stand der Ankunft)
+        const fremdVon = (huellen) => {
+            const bekannt = new Set(satzWerfer);
+            let streu = 0;
+            for (const fam of st.nahStreu ? st.nahStreu.familien.values() : [])
+                if (fam.senken.some((a) => a.wurf && [...a.bloecke.values()].some((b) => huellen.has(b.huelle))))
+                    for (const a of fam.senken) a.mesh && (bekannt.add(a.mesh), streu++);
+            const fremd = [];
+            for (const top of st.scene.children) {
+                if (top.isBundleGroup || top === st.gpuWahlWirt || frei.has(top) || bekannt.has(top)) continue;
+                top.traverse((o) => {
+                    if (o.isMesh && o.castShadow === true) fremd.push((top.name || top.type) + " > " + (o.name || o.type));
+                });
+            }
+            return { fremd, streu };
+        };
+        const { fremd, streu } = fremdVon(new Set(r._kaskadenHuellen({ huellen: [] })));
+        aus.w6 = { fremd: fremd.slice(0, 8), n: fremd.length, tot: aus.w6Tot, totOben: aus.w6TotOben, streu };
+        // die Mutante: die Box ohne die Hüllen der Nah-Streu (der Stand bis landmarken-9) — W6 nennt jede werfende Senke
+        if (selbsttest) {
+            const ns = st.nahStreu;
+            st.nahStreu = null;
+            const ohne = new Set(r._kaskadenHuellen({ huellen: [] }));
+            st.nahStreu = ns;
+            const m = fremdVon(ohne).fremd.filter((x) => x.startsWith("streuNah:"));
+            aus.s6 = { n: m.length, erster: m[0] || null };
         }
-        aus.w6 = { fremd: fremd.slice(0, 8), n: fremd.length, tot: aus.w6Tot, totOben: aus.w6TotOben };
         if (tot?.parent) r.removeCreature(tot);
     }
 
@@ -1372,14 +1392,16 @@ function probe(selbsttest) {
         );
         check(
             "W6 jeder Werfer ist der Box bekannt (Bundle · Satz · Tier, lebend und gefallen · Spieler · Bauplan-Bau)",
-            a.w6.n === 0 && a.w6.tot === true && a.w6.totOben === true,
+            a.w6.n === 0 && a.w6.tot === true && a.w6.totOben === true && a.w6.streu > 0,
             a.w6.n
                 ? a.w6.fremd.join(" | ")
+                : !(a.w6.streu > 0)
+                  ? "keine werfende Nah-Streu, deren Hüllen die Box liest (die Probe ist für die Streu vakuös)"
                 : !a.w6.tot
                   ? "kein Gefallener in der Szene (die Probe ist für die Gefallenen vakuös)"
                   : !a.w6.totOben
                     ? "der Gefallene wirft, aber die Box kennt ihn nicht (_kaskadenWerferOben liest nur die Wesen)"
-                    : "keine fremde Werfer-Klasse, die Box kennt den Gefallenen"
+                    : `keine fremde Werfer-Klasse, die Box kennt den Gefallenen und ${a.w6.streu} Senken der werfenden Nah-Streu`
         );
         const w10t = (w) =>
             `Masken ${w.masken.join("/")} (Soll ${w.soll}) · ${w.gesehen} gesehen, ${w.werfer} Werfer, ${w.lichter} Lichter` +
@@ -1458,6 +1480,11 @@ function probe(selbsttest) {
                 "S3 Selbsttest: die alte Hüllen-Regel (nur Bundles) macht W5 rot",
                 !!a.s3 && a.s3.talDrin === false && a.s3.hangWirft === false,
                 a.s3
+            );
+            check(
+                "S6 Selbsttest: die Box ohne die Hüllen der Nah-Streu (bis landmarken-9) macht W6 rot und nennt die Senke",
+                !!a.s6 && a.s6.n > 0,
+                a.s6 ? `${a.s6.n} Senken fremd, zuerst ${a.s6.erster}` : "kein Lauf"
             );
             check(
                 "S8 Selbsttest: die alte Regel (der ganze Ring in jedem Pass) macht W7 rot",

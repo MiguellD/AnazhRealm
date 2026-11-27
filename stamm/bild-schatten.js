@@ -1058,6 +1058,16 @@ class AnazhRealm_bild_schatten {
                 if (s.spec.schatten !== true || !this._chunkSatzGrund(s)) continue;
                 for (const b of s.bloecke.values()) if (b.huelle && !b.huelle.isEmpty()) aus.push(b.huelle);
             }
+        // die stehende Nah-Streu wirft (`_streuNahSenke` wurf: Holz und Stein): je Kachel die Hülle ihrer Pflanzen, gelesen an der
+        // Senke der nahen Stufe ihrer Familie (jede Stufe trägt dieselben Pflanzen; `_streuNahEin`) — bis landmarken-9 kannte die
+        // Box sie nicht (gate:schatten-werfer W6: `streuNah:geroell` am Ring-Stand der Ankunft)
+        const ns = this.state.nahStreu;
+        if (ns)
+            for (const fam of ns.familien.values())
+                for (const a of fam.senken) {
+                    if (!a.wurf || a.stufe !== fam.nah || !a.mesh || !a.mesh.parent) continue;
+                    for (const b of a.bloecke.values()) if (b.huelle) aus.push(b.huelle);
+                }
         return aus;
     }
 
