@@ -1,0 +1,158 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.450",
+  "sha": "eef726c747050e60042a4a0c9f65fea3ff3e9077"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 0,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0,
+   "taeter": {},
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Herde",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": {
+   "n": 1,
+   "naechster": 44.56,
+   "name": "Leib tier:wesen"
+  },
+  "abstand": 46.36,
+  "gestalt": [
+   "tier:wesen 0",
+   "tier:wesen 1",
+   "tier:wesen 2",
+   "tier:wesen 3",
+   "tier:wesen 4"
+  ],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -569.3,
+   54.826,
+   -867.15
+  ],
+  "blick": [
+   0.61237,
+   -0.36466,
+   -0.70145
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 100.6,
+  "sigma": 40.7,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "wahl": {
+  "versucht": 2,
+  "gewaehlt": 10,
+  "posen": [
+   {
+    "k": 0,
+    "kamera": [
+     -573.43,
+     38.41,
+     -928.06
+    ],
+    "rot": [
+     "Ziel Herde verdeckt von an Punkt 1 Boden-Schicht in 20.06 m"
+    ],
+    "ms": 560
+   },
+   {
+    "k": 10,
+    "kamera": [
+     -569.3,
+     54.826,
+     -867.15
+    ],
+    "rot": [],
+    "ms": 3427
+   }
+  ],
+  "ms": 3987
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Herde im Bild frei 46.36 m, verdeckt nur von Leibern: 1 Punkt, nächster 44.56 m (Leib tier:wesen) · Luma 100.6 σ 40.7 schwarz 0.0 % weiß 0.0 % · Stand 18.546.450 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 2 Posen",
+ "rot": [],
+ "urteil": "GRÜN",
+ "klasse": {
+  "ausdruck": "^tier",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "kenn": {
+   "n": 8,
+   "tw": 1440,
+   "th": 810,
+   "ms": 2279,
+   "wechsel": 941129
+  },
+  "rinde": null,
+  "toene": [
+   "tier-satz=255/80/80",
+   "tier:bestaeuber=80/255/80",
+   "tier:fisch=80/120/255",
+   "tier:wesen=255/220/60"
+  ],
+  "klassen": {
+   "tier-satz": {
+    "objekte": 4,
+    "pixel": 58
+   },
+   "tier:bestaeuber": {
+    "objekte": 1,
+    "pixel": 9
+   },
+   "tier:wesen": {
+    "objekte": 55,
+    "pixel": 260
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\eef726c7-radeon\\karte2.leben.tiere.masse_1-herde-3.maske.png"
+ }
+}
