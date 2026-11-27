@@ -1,7 +1,7 @@
 {
  "sha": "45bad33ff93297aed1d46e24df214ff014d1d0d8",
  "geraet": "gtx",
- "zeit": "2026-11-27T01:39:23.087Z",
+ "zeit": "2026-11-27T02:20:14.670Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.kultur.sprache#1": {
@@ -2872,6 +2872,70 @@
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.same.kopplung.aufwaerts#1",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.verstaendigung#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 51.4 s · S1 warf: /eval ohne Antwort binnen 40 s",
+   "exit": 0,
+   "minuten": 0.87,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 51.4 s · S1 warf: /eval ohne Antwort binnen 40 s",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 51.5,
+   "fremd": {
+    "s": 52.8,
+    "takte": 24,
+    "fremdS": 23.27,
+    "kerne": 0.441,
+    "fensterKerne": 0.808,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      2.75
+     ],
+     [
+      "Explorer.EXE",
+      2.23
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      2.02
+     ]
+    ],
+    "dienerS": 13.33,
+    "diener": [
+     [
+      "System",
+      5.09
+     ],
+     [
+      "dwm.exe",
+      3.78
+     ]
+    ],
+    "geraetS": 43.78,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      29.66
+     ],
+     [
+      "svchost.exe",
+      11.27
+     ],
+     [
+      "SearchIndexer.exe",
+      1.73
+     ]
+    ],
+    "eigenS": 88.41,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-27T02:20:14.670Z",
+   "abdruck": "55183cc3768b",
+   "port": 7804,
+   "bahn": "sitzung",
    "modus": "session"
   }
  }

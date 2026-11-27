@@ -1,0 +1,9 @@
+$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
+[linse-gpu] nvidia/pascal
+@@ 11.2 s · am Messort stadt-voll (ego) nach 11.2 s, 249 Takte, Anlauf stand
+@@ 11.4 s · Verständigung: Bewohner 1356 (nah 112), Text-Träger an Gräbern 0, Wörter 0, Kreaturen 4 (mit Zeichen 0)
+@@ 51.4 s · S1 warf: /eval ohne Antwort binnen 40 s
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal
