@@ -2869,13 +2869,16 @@ const hang = (x, z) => (Math.atan(Math.hypot((K.hoehe(L, x + 2, z, true) - K.hoe
 const posen = [];
 for (let p = 0; p < 30; p++) { const x0 = (zf() - 0.5) * 3000, z0 = (zf() - 0.5) * 3000; for (let i = 0; i < 9; i++) { const x = x0 + (i % 3) * 10, z = z0 + Math.floor(i / 3) * 10; const a = {}; K.hoehe(L, x, z, true, a); posen.push([R3(hang(x, z)), R3(a.schutt || 0), R3(r._feuchteAt(x, z)), r._bodenKlasseAt(x, z)]); } }
 const lf = K.flussLaeufe(L, -3000, -3000, 3000, 3000, 50).filter((l) => l.k === 0).sort((a, b) => b.glieder.length - a.glieder.length).slice(0, 20);
-const laeufe = lf.map((l) => { const b = l.glieder.flatMap((g) => g.bahn); const st = []; for (let i = 0; i < b.length; i += Math.max(1, Math.floor(b.length / 8))) { const y = r._voxelSurfaceY(b[i].x, b[i].z); st.push(y === null ? null : r._terrainMaterialAt(b[i].x, b[i].z, y - 0.2)); } return st; });
+// DAS KORN DER SOHLE (S2): derselbe Leser an denselben Punkten mit \`aus\` — die Korngröße nach Herkunft (gelaende-core \`korn\`) und
+// der Weg stromab entlang der Bahn
+const korn = [];
+const laeufe = lf.map((l) => { const b = l.glieder.flatMap((g) => g.bahn); const st = [], kr = []; let weg = 0; for (let i = 0, j = 0; i < b.length; i++) { if (i) weg += Math.hypot(b[i].x - b[i - 1].x, b[i].z - b[i - 1].z); if (i !== j) continue; j += Math.max(1, Math.floor(b.length / 8)); const y = r._voxelSurfaceY(b[i].x, b[i].z); const a = {}; st.push(y === null ? null : r._terrainMaterialAt(b[i].x, b[i].z, y - 0.2, a)); if (Number.isFinite(a.kornMm)) kr.push([R3(weg), a.kornMm, a.kornKlasse, a.herkunft]); } korn.push(kr); return st; });
 const tiefen = [0.2, 0.5, 1, 2, 4, 8, 11, 13, 16, 20];
 const saeule = (x, z) => { const y = r._voxelSurfaceY(x, z); if (y === null) return null; const m = tiefen.map((d) => r._terrainMaterialAt(x, z, y - d)); let dick = null; for (let i = 1; i < m.length && dick === null; i++) if (m[i] !== m[0]) dick = tiefen[i]; return { y, m, dick, lagen: new Set(m).size }; };
 const paare = [];
 for (let p = 0; p < 50; p++) { const x0 = (zf() - 0.5) * 3000, z0 = (zf() - 0.5) * 3000; const c = []; for (let i = 0; i < 9; i++) { const x = x0 + ((i % 3) - 1) * 100, z = z0 + (Math.floor(i / 3) - 1) * 100; const q = saeule(x, z); if (q) c.push(q); } if (c.length < 2) continue; c.sort((a, b) => b.y - a.y); paare.push([R3(c[0].y), c[0].dick, R3(c[c.length - 1].y), c[c.length - 1].dick, c[0].lagen, c[0].m.join("|")]); }
 const klassen = {}; for (let p = 0; p < 100; p++) { const k = r._bodenKlasseAt((zf() - 0.5) * 6000, (zf() - 0.5) * 6000); klassen[k] = (klassen[k] || 0) + 1; }
-return { posen, laeufe, paare, klassen, strata: r.constructor.STRATA_STEIN_DEPTH, ms: Math.round(performance.now() - t0) };
+return { posen, laeufe, korn, paare, klassen, strata: r.constructor.STRATA_STEIN_DEPTH, ms: Math.round(performance.now() - t0) };
 `);
             const P = w.posen || [];
             const steil = P.filter((x) => x[0] >= 30), flach = P.filter((x) => x[0] < 10);
@@ -2943,7 +2946,15 @@ return { posen, laeufe, paare, klassen, strata: r.constructor.STRATA_STEIN_DEPTH
                     taeter: (RB.fehler.length && !RB.gemessen ? "Leser fehlt: " + RB.fehler[0].fehler + " · " : "") + "kein Foto-Korpus der Erde als Zahl: die Welt zeichnet Fels/Schutt an " + zz(W1.stoffSteilProzent) + " % der " + W1.steilePunkte + " Punkte ≥ 30° (Schutthang " + zz(W1.schuttSteilProzent) + " %; der Fels beginnt erst an der Steile 0,42 ≈ 55°, stamm/daten.js:646 TERRAIN_GEOLOGY.rockLo), Moos an " + zz(W1.moosFeuchtProzent) + " % der feuchten Felsen (" + zz(W1.moosTrockenProzent) + " % der trockenen) — die Anteile gleichen Hangs und Klimas der Erde stehen nirgends (unklar), das Blindpaar nur am Gerät · " + RB.akte,
                 };
             }
-            aus[2] = { werte: { laeufe: (w.laeufe || []).length, stoffeDerSohle: stoffe.size }, zeuge: { laeufe: (w.laeufe || []).length, stoffe: [...stoffe] }, nicht: "keine Korngröße in der Welt: der Boden kennt Stoffe (" + [...stoffe].join(", ") + "), kein Korn nach Herkunft (stamm/vegetation-wiese.js:2362 _terrainMaterialAt)" };
+            // S2 DAS KORN STROMAB: je Lauf der Rang (Spearman) Weg stromab ↔ −Korngröße an seinen Punkten, der Rang der Station ist der
+            // Median der Läufe; die Stufen sind die Wentworth-Klassen, die der Leser nennt
+            const spear = (a, b) => { const rk = (v) => { const o = v.map((x, i) => [x, i]).sort((p, q) => p[0] - q[0]); const R = new Array(v.length); for (let i = 0; i < o.length; ) { let j = i; while (j + 1 < o.length && o[j + 1][0] === o[i][0]) j++; for (let k = i; k <= j; k++) R[o[k][1]] = (i + j) / 2; i = j + 1; } return R; }; const ra = rk(a), rb = rk(b), n = a.length, ma = ra.reduce((s, x) => s + x, 0) / n, mb = rb.reduce((s, x) => s + x, 0) / n; let sab = 0, saa = 0, sbb = 0; for (let i = 0; i < n; i++) { sab += (ra[i] - ma) * (rb[i] - mb); saa += (ra[i] - ma) ** 2; sbb += (rb[i] - mb) ** 2; } return saa > 0 && sbb > 0 ? sab / Math.sqrt(saa * sbb) : null; };
+            const kr = (w.korn || []).filter((st) => st.length >= 4);
+            const rhos = kr.map((st) => spear(st.map((q) => q[0]), st.map((q) => -q[1]))).filter((v) => v !== null).sort((a, b) => a - b);
+            const kornStufen = new Set(kr.flat().map((q) => q[2])).size;
+            aus[2] = !rhos.length
+                ? M.nicht("keine Korngröße in der Welt: der Boden kennt Stoffe (" + [...stoffe].join(", ") + "), kein Korn nach Herkunft (stamm/vegetation-wiese.js _terrainMaterialAt nennt kein kornMm)", { laeufe: (w.laeufe || []).length })
+                : { werte: { rang: R3(rhos[rhos.length >> 1]), laeufe: rhos.length }, zeuge: { laeufe: rhos.length, kornStufen, rangMin: R3(rhos[0]), klassen: [...new Set(kr.flat().map((q) => q[2]))], herkunft: kr.flat().reduce((o, q) => ((o[q[3]] = (o[q[3]] || 0) + 1), o), {}), quelleMuendungMm: kr.slice(0, 3).map((st) => [R3(st[0][1]), R3(st[st.length - 1][1])]) } };
             aus[3] = {
                 werte: { orte: pa.length, kuppeDuennerProzent: mitDick.length ? R3((100 * mitDick.filter((x) => x[1] < x[3]).length) / mitDick.length) : null, lagenMax: pa.length ? Math.max(...pa.map((x) => x[4])) : null, maechtigkeitM: mitDick.length ? mitDick[0][1] : null },
                 zeuge: { orte: pa.length, saeulen: pa.slice(0, 6), strata: w.strata },
@@ -2987,9 +2998,8 @@ return { posen, laeufe, paare, klassen, strata: r.constructor.STRATA_STEIN_DEPTH
                 soll: [K.soll(BO, 2, "Rang ≥ 0,7", { key: "rang" }), K.soll(BO, 2, "20 Läufen", { key: "laeufe", rel: "≥" })],
                 zeuge: zMin({ laeufe: 20, kornStufen: 2 }),
                 zeugeText: "20 Läufe, das Korn der Sohle in ≥ 2 Stufen gezählt",
-                taeter: "stamm/vegetation-wiese.js _terrainMaterialAt (kein Korn)",
-                nicht: "keine Korngröße",
-                leser: "stamm/vegetation-wiese.js:2362 _terrainMaterialAt — der Boden nennt einen Stoff (erde, stein, glut, quarz), keine Korngröße nach Herkunft",
+                taeter: "gelaende-core.js korn (das Korn nach Herkunft: Bett, Aue, Hang, Wind) · stamm/vegetation-wiese.js _terrainMaterialAt",
+                leser: "stamm/vegetation-wiese.js _terrainMaterialAt(x, z, y, aus) — aus.kornMm, aus.kornKlasse: das Korn der Sohle, dasselbe Feld, das die Boden-Farbe am Fluss zeichnet (stamm/gelaende-boden.js _bodenFarbeAt, voxel-worker.js bodenFarbe)",
                 gruen: gut({ rang: 0.78, laeufe: 20 }, { laeufe: 20, kornStufen: 4 }),
                 attrappen: [{ name: "der Rang ohne Korn in der Welt", roh: gut({ rang: 0.78, laeufe: 20 }, { laeufe: 20, kornStufen: 0 }) }],
             },
