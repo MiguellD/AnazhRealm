@@ -1,0 +1,187 @@
+{
+ "sha": "c6038905cd1a4615f0930da27f4a01e59eae9a17",
+ "geraet": "gtx",
+ "zeit": "2026-11-27T00:28:37.859Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "karte2.leben.tiere.wanderung#2": {
+   "gruen": false,
+   "zahl": "S2 ausdehnungM 36,838 m gegen Soll ≥ 100 m ✗ · spieltage 0,25 Spieltage gegen Soll ≥ 1 Spieltage ✗ · Täter: tetrapoda-core.js wandern.leashBaseM (die Leine um den Anker) / stamm/daten.js FAUNA_MAX_AGE_MS",
+   "exit": 0,
+   "minuten": 1.62,
+   "grund": "ROT: S2 ausdehnungM 36,838 m gegen Soll ≥ 100 m ✗ · spieltage 0,25 Spieltage gegen Soll ≥ 1 Spieltage ✗ · Täter: tetrapoda-core.js wandern.leashBaseM (die Leine um den Anker) / stamm/daten.js FAUNA_MAX_AGE_MS",
+   "gpu": "nvidia/pascal",
+   "konsum": "k97ddda08072c",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 3
+   },
+   "konsumBoot": "k0f91bf40e6d9",
+   "s": 96.6,
+   "fremd": {
+    "s": 98.7,
+    "takte": 45,
+    "fremdS": 103.98,
+    "kerne": 1.053,
+    "fensterKerne": 1.438,
+    "namen": [
+     [
+      "OneDrive.exe background launchedViaOneDriveLauncher",
+      72.84
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      7.86
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.28
+     ]
+    ],
+    "dienerS": 27.91,
+    "diener": [
+     [
+      "System",
+      12.08
+     ],
+     [
+      "dwm.exe",
+      9.63
+     ]
+    ],
+    "geraetS": 24.77,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      12.39
+     ],
+     [
+      "svchost.exe",
+      10.66
+     ],
+     [
+      "SearchIndexer.exe",
+      0.67
+     ]
+    ],
+    "eigenS": 253.25,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-27T00:28:37.859Z",
+   "abdruck": "0ecef723f564",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "k97ddda08072c": "bVXRbqMwEPyXPLbnGgIUsNQHp/TUnK5S+glrszY0BCIbwimn+/cTJJAA3SckZr3jmVn4uzqC3IPGpy9blSu2elj9WFk4IbFoTmievuyKrWLprtFj/FKUc/7awaTJj7WlaQ6a1DkaoqHUT7JvebgDFLmgIErIDkgaU2NeXEHqGZxAMNq+cb2jVNEzTVo+1ht/eZkfUwhMK1KDwuEQB70gQjYHNlaDQAKN6gdfwYEf47PLaF9Rwj8SOlYrOd+1tN1F73znB5vldAFlOr2B68bwHDLebjnnn3N8mgPWpMhLO8x30zBWDrvN/Fj0GGjJGTAr0FybMHJdXwykN500nVyzRlU01k6GRV4arCNGaTzHarS5zGpyNJXA8goX8Tp0gW3axb31sSHqnhEIAZGYa54BlhrNhIPjSdUJ/ieaH7qHAxogJWRXaOx44VrctKGUvi+5FD3xfsRAPHCDVMGksTOXnjqBUz6pXf9SDyg1xk2OEL003sosN4epXMrHteOx30uKNoMUDdlXth7RHoa+Iy4rtE3ohUu0mXfeLjd4CADRXWBoRPn7QktbqboFg0QfmyE0PgZhwDjfLsA1HA6DPan0UM6NtHUX9Hsa61gFgc8ofbwszPLSl7UgZ8wLHHMrQy9mr4k/B58MHAgIbXKlBvdFIFX8XVhbLGoiqqoepHTD0PM6Scp7w3e9lds7rxP96X/85PptGoEt5zu94N9PqUw9kBcgPN9nSicRpZGao3NTkxZkNgqkBELMaCvnB5/RFKhxIqdyXVinrP/kjGz94eFxEuTzwu1zjp3QpW3soLQEXwTsG2taNHsB5f4K9D3HDSP2i3O++eC7qTCv+rIOCZ+uUtzHtcXPZCrjZdARJT2aSuXd15Fm0NgMivr2P/n3Hw==",
+  "k0f91bf40e6d9": "jZXRcpswEEX/xY9NFYGBAJrJgxwyTdpJ4/QPVmIFxBgYCaKOO/33DtjYBvLQfWKYu9rL2Qv8WTUgd5Dh7bupqxVbfVl9XRn4QGJQf6C+fTcrtoqlu0aP8WNRzvm3XiZ10bSGloWgICrI90g63WJR3sqhTd2BEwhG7SPPtpQqeqCJ5ed64Pf382NKgWlNWlA4HuKgF0TI5sLOZCCQQKeGwSdx4Md45zI6VJTwl4Sey0rOt5babfQ0O0xAlU6du24MdyHj9plz/jZ3mRaALSmLyoxz3TSMlcMus14WPRosOQDmJepTE0au64vR7KZH0mOaNaqyM2YyLPLSYB0xSuO5NkNTyLwlja4FVie5iNehC2xjF7SzpiPq2hEIAZGYs84Bqwz1xIPjSdWD/h3ND93BHjWQCvKTNHa8cC0ubCilT0sv5WB8GDEaD9wgVTBp7Jd6BJzySW2Hu9moUueYybMkW8bNyLzQ+yku5ePa8eYMTA4parKrTXtWehj6jji+Fc8JPfqINvPOy4ON+wOA6CosNKL8acHR1Kq1oJFkTTcGxscgDBjPFukyLez342pS6aFcPEDbh/zaxjpWQeAzSm9OSBd4jq8EOWBR4jmzMvRi9pD4c/GHhj0BkelCqXHzIpAq/iyoFsuWiLpuR5RuGHoeox6trpf90/IHzl8ua35Nyl9+W36/eZyu/wf//tmEWrejcQHC832mbBJRGqm5utAtsSDzMxwlEOI5xAPqEjOcYFSuC+uUDZ+XsRJ/vLiZhPew2PKhwB5wZTozEpbgi+CYjlOKn6fJtah3AqrdqcH3HDeMGOdJxl/49orKK+fvjbL8v+ttw4dBDUra6FoV/ZeR5tCZHMr28ov4+w8="
+ },
+ "sitzung": {
+  "start": "2026-11-27T00:27:57.452Z",
+  "ordner": "sitzung-20261127-012757",
+  "port": 7804,
+  "warten": 0.02,
+  "bootS": 7.3,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "geraet": {
+   "name": "GTX 1060",
+   "adapter": "NVIDIA GeForce GTX 1060",
+   "preis": true
+  },
+  "orte": [
+   {
+    "ort": null,
+    "vor": "karte2.leben.tiere.wanderung#2",
+    "s": 27.1,
+    "takte": 830,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "felder": [
+   {
+    "probe": "karte2.leben.tiere.wanderung#2",
+    "weg": [
+     "__rafferEnde",
+     "__rafferKurz",
+     "__wetterSpionBuch",
+     "__weltaktSpionBuch",
+     "__buehneUhr",
+     "__imSchuss",
+     "__nahSpeicher",
+     "__letzteSpiegel",
+     "__letzteTeilung"
+    ]
+   }
+  ],
+  "wirt": [
+   {
+    "probe": "karte2.leben.tiere.wanderung#2",
+    "anders": [
+     "r._bildZeit",
+     "r._wolkenZeit",
+     "r._setWeather",
+     "r._weltaktGehalten",
+     "r.state.weather",
+     "window.__raffer",
+     "window.__rafferRest"
+    ],
+    "wie": {
+     "r._bildZeit": "neu: () => S.T",
+     "r._wolkenZeit": "neu: () => S.T",
+     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "r.state.weather": "neu: () => wert",
+     "window.__raffer": "neu: (soll, schritt, name) => { const t0 = performance.now(); let n = 0; for (; n < s",
+     "window.__rafferRest": "neu: () => window.__rafferEnde - performance.now()"
+    },
+    "haelt": [],
+    "heap": [
+     199.6,
+     231.8
+    ],
+    "ungemessen": null
+   }
+  ],
+  "messHalt": [
+   {
+    "probe": "karte2.leben.tiere.wanderung#2",
+    "halt": -1000000000,
+    "zurueck": 0
+   },
+   {
+    "probe": "karte2.leben.tiere.wanderung#2",
+    "gehalten": [
+     "skala",
+     "spiegel",
+     "tiere"
+    ],
+    "offen": []
+   }
+  ],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 3800,
+   "frameP95": 24.99,
+   "taktP95": 15.05,
+   "vramMax": 144.7,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 170,
+   "luecken": 1,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+  },
+  "fahrtS": 214.1,
+  "minuten": 3.7
+ }
+}
