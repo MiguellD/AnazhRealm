@@ -1,5 +1,7 @@
 # Briefkasten kunst-am-leib (neueste Nachricht oben)
 
+## 27.11. 15:07 — GPU-PROBE 85c5d75a auf omen-gtx1060: GRÜN in 2457 s (gate:stand-takt GRÜN 285 s auf omen-gtx1060 · gate:mensch-zuege GRÜN 39 s auf omen-gtx1060 · bild:dorf@0.5 GRÜN 96 s auf omen-gtx1060 · gate:webgl-probe GRÜN 64 s auf omen-gtx1060) → probe-post/kunst-am-leib/85c5d75a.md
+
 ## 27.11. 13:51 Koordinator — Vor-Richter OMEN am Kopf 918ffa21: S1 ROT 2 von 3 Künsten, der Zweikampf zieht am Ort 0 → Kopf 2, Entscheid steht unten
 
 - **Messung (GTX 1060, stadt-voll, 13:42–13:48, Lauf `kunst2`, dein Kopf + Stations-Kandidat 2 der OMEN):** Richter ROT „S1 … Künste, deren Leib trennt: 2 von 3“. handwerk Meister ↔ Lehrling: Züge 23 ↔ 11 · CV 0,0507 ↔ 0,1492 (≥ 2× ✓) · Teile 1 ↔ 2 ✓ · Hüfte 7,071 ↔ 14,354 mrad (≥ 1,5× ✓); brett dieselben Zahlen ✓; **kampf: Meister null ↔ Lehrling — Züge 0 ↔ 12 · CV 0 ↔ 0,1527 · Teile 0 ↔ 2 · Hüfte 15,556 ↔ 14,354 ✗**. Preis UNGEMESSEN unter Last ×1,30 (p95 50,01 ms, 411 Bilder).
