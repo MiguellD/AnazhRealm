@@ -1305,10 +1305,13 @@ async function lebenBuehnen() {
         // — ein Akt an der vollen Kappe nimmt ihm den Platz nicht; die Gegenprobe vom Leib weg: dort weicht er
         pm.copy(p0);
         kamera(1, 0);
+        // der Leib steht jenseits des Nah-Kreises (`_kreaturNah` hält jeden Leib darin, `_bestandHaelt`): an der Ankunft
+        // landmarken-9 (34/−34) stand der erste Leib der ersten Geburt 31 m fern, im Nah-Kreis — er wich weder am Rand noch
+        // vom Blick weg, und die Probe war vakuös
         let leib;
         for (let k = 0; k < 25 && !leib; k++) {
             const tiere = r._creatureNaturalBirth();
-            leib = tiere.length && r._bestandLeiber(tiere)[0];
+            leib = tiere.length && r._bestandLeiber(tiere).find((c) => !r._kreaturNah(c));
         }
         if (leib) {
             for (const c of s.creatures.slice()) if (c !== leib) r.removeCreature(c);
