@@ -1,5 +1,5 @@
 diff --git a/meisterkarte-quelle/punkte/stationen/k2-erleben.js b/meisterkarte-quelle/punkte/stationen/k2-erleben.js
-index cc8f5e1..714d5af 100644
+index cc8f5e1..c62f4a1 100644
 --- a/meisterkarte-quelle/punkte/stationen/k2-erleben.js
 +++ b/meisterkarte-quelle/punkte/stationen/k2-erleben.js
 @@ -4,6 +4,13 @@
@@ -16,7 +16,32 @@ index cc8f5e1..714d5af 100644
  const { SAATEN } = require("./sitzung-seite.js");
  const LEITERN = [];
  
-@@ -198,11 +205,227 @@ const LANDMARKE_AN = async (r, T, a) => {
+@@ -86,12 +93,22 @@ const LANDMARKE_AN = async (r, T, a) => {
+         }
+     }
+     const kam0 = { x: p.x, z: p.z, yaw: st.yaw };
+-    const an = r._genesisAnkunft();
+-    r._loopCamera(performance.now());
++    // EINE KAMERA FÜR BILD UND GESETZ (der Zeuge am Gerät, Gebot 4): nach dem Schuss (`a.schuss` = Auge, ivp und Maß der Tiefe DESSELBEN
++    // Schusses, `__letzteSpiegel`) rechnet das Gesetz unter dessen Kamera — keine zweite Ankunft, kein zweites Loop-Bild (zeuge3, GTX
++    // 27.11.: die Kamera der dritten Person glättet über die Zeit, `_kamT`; das zweite `_loopCamera` stand 0,17 m neben dem Bild)
++    const an = a.schuss ? { glied: "schuss", x: p.x, z: p.z, yaw: st.yaw } : r._genesisAnkunft();
++    if (!a.schuss) r._loopCamera(performance.now());
+     // der Kegel der Kamera, wie die Welt steht: ihre Weite die des Fern-Rings (`_weltKameraFern`, stamm/bild-sicht.js) — eine frische
+     // Welt (und jede headless) trägt bis zum Ring ihr Boot-far 1 000 m, die Marke in 1–3 km fiele am Ladezustand, nie an der Sicht
+     if (typeof r._weltKameraFern !== "function") return { fehlt: "die Weite der stehenden Welt: stamm/bild-sicht.js `_weltKameraFern` fehlt (landmarken-geologie-8 Kopf 4)" };
+     const kam = st.camera.clone();
++    if (a.schuss) {
++        const E = new T.Vector3().fromArray(a.schuss.auge);
++        kam.position.copy(E);
++        kam.aspect = a.schuss.tw / a.schuss.th;
++        kam.lookAt(new T.Vector3(0, 0, 0.5).applyMatrix4(new T.Matrix4().fromArray(a.schuss.ivp)));
++        kam.updateMatrixWorld(true);
++    }
+     kam.far = Math.max(kam.far, r._weltKameraFern());
+     kam.updateProjectionMatrix();
+     const F = r._frustumVon(kam, true);
+@@ -198,11 +215,238 @@ const LANDMARKE_AN = async (r, T, a) => {
          Object.assign(w, { art: best.q.art, d: +best.q.d.toFixed(1), hoehe: +best.q.h.toFixed(2), durchlass: +T0[1].toFixed(4), durchlassRgb: T0.map((t) => +t.toFixed(4)), hinter: best.hinter, vorHimmel: best.hinter === "himmel" });
          if (best.k) Object.assign(w, { c0: +best.k.c0.toFixed(4), sonne: +best.k.sonne.toFixed(3), albedo: best.k.albedo.map((a) => +a.toFixed(3)) });
          if (best.punkt) Object.assign(w, { dHinter: best.dh, durchlassHinter: +r._luftDurchlass(auge, best.punkt)[1].toFixed(4) });
@@ -46,9 +71,9 @@ index cc8f5e1..714d5af 100644
 +const ZEUGE_KLASSE = () => "^feld-pass$";
 +const ZEUGE_MIN = () => ({ marke: 25, grund: 12, abstand: 0.03, saaten: 3 });
 +// die Seite: die Saat betreten (der Satz des Spielers, wie `SAATEN`), die Kamera der Ankunft zurück; die Heimat merkt der erste Ruf
-+const ZEUGE_HIN = async (r, T, arg) => {
++const ZEUGE_HIN = async (r, T, arg, gesetz) => {
 +    const st = r.state;
-+    const Z = (window.__zeugeWelten = window.__zeugeWelten || { heim: st.worldMeta && st.worldMeta.worldId, besucht: [], spieler: st.playerMesh ? st.playerMesh.visible : null });
++    const Z = (window.__zeugeWelten = window.__zeugeWelten || { heim: st.worldMeta && st.worldMeta.worldId, besucht: [], spieler: st.playerMesh ? st.playerMesh.visible : null, spiegel: window.__letzteSpiegel, teilung: window.__letzteTeilung });
 +    if (!Z.heim) return { fehlt: "die Sitzung trägt keine Welt (worldMeta.worldId)" };
 +    const vor = r.activeWorldGet();
 +    r.processChatCommand("neue welt saat " + arg.saat);
@@ -59,10 +84,18 @@ index cc8f5e1..714d5af 100644
 +    // (GTX 27.11. 07:2x am b32c6773: „die Welt trägt die Saat <vorige> statt <diese>“ an allen drei Saaten, um eine versetzt)
 +    const sn = r.state;
 +    if (!sn.worldMeta || sn.worldMeta.seed !== arg.saat) return { fehlt: "die Welt trägt die Saat " + (sn.worldMeta && sn.worldMeta.seed) + " statt " + arg.saat };
-+    r._genesisAnkunft();
-+    r._loopCamera(performance.now());
-+    const c = sn.camera;
-+    return { kamera: [...c.position.toArray(), ...c.getWorldDirection(new T.Vector3()).multiplyScalar(20).add(c.position).toArray()], fov: c.fov };
++    // die Ankunft und ihr Loop-Bild EINMAL: das Gesetz an der Ankunft (`gesetz` = LANDMARKE_AN mit zeugeBild, wie die Saat es liest)
++    // nennt Auge und Marke. Das Bild blickt vom Auge der Ankunft auf die Marke: das Blickziel ¼° über ihrem Gipfel (dort zeigt das Bild
++    // Himmel oder den Hang dahinter — frei; zeuge3: 20 m vor der Linse lag am Hang Gelände in 8,79 m, ABNAHME ROT), ihr Fuß kein
++    // Beweis (`fuss: false`: hinter einer Kuppe zeigt die Marke nur ihren Gipfel, wie das Gesetz sie sichtbar nennt)
++    const w = await gesetz(r);
++    if (w.fehlt) return { fehlt: "das Gesetz an der Ankunft: " + w.fehlt };
++    if (w.kontrastFehlt) return { fehlt: "das Gesetz an der Ankunft: " + w.kontrastFehlt };
++    const G = w.zeugeBild;
++    if (!G) return { fehlt: "an der Ankunft trägt das Gesetz keine sichtbare Marke mit Kontrast (Ursache " + w.ursache + ")" };
++    const m = G.marke, d = Math.hypot(m.x - G.auge.x, m.z - G.auge.z);
++    const ziel = [m.x, m.fuss + m.h + Math.tan((0.25 * Math.PI) / 180) * d, m.z];
++    return { kamera: [G.auge.x, G.auge.y, G.auge.z, ...ziel], fov: sn.camera.fov, marke: m.art + "#" + m.seed + " " + Math.round(d) + " m" };
 +};
 +// die Seite: die Heimat der Sitzung zurück (der Weg von „wechsle zu“ wie `SAATEN`), die Welten des Zeugen fallen
 +const ZEUGE_HEIM = async (r) => {
@@ -73,6 +106,9 @@ index cc8f5e1..714d5af 100644
 +    let fort = 0;
 +    for (const w of Z.besucht) if (zurueck && r.deleteWorld(w)) fort++;
 +    if (r.state.playerMesh && Z.spieler != null) r.state.playerMesh.visible = Z.spieler;
++    // die Tiefe und Teilung der Schüsse des Zeugen (`__letzteSpiegel`, `__letzteTeilung`) zurück auf den Stand davor — der Preis-Lauf
++    // nach der Probe trägt keine Bilder des Zeugen im Heap
++    for (const [k, v] of [["__letzteSpiegel", Z.spiegel], ["__letzteTeilung", Z.teilung]]) if (v === undefined) delete window[k]; else window[k] = v;
 +    return { zurueck: !!zurueck && r.state.worldMeta.worldId === Z.heim, geloescht: fort };
 +};
 +// die Seite, NACH dem Schuss: das Gesetz unter der Bühne des Bilds (`gesetz` = LANDMARKE_AN mit zeugeBild), die Maske der Marke und der
@@ -82,7 +118,7 @@ index cc8f5e1..714d5af 100644
 +    const S = window.__letzteSpiegel, TL = window.__letzteTeilung;
 +    if (!S || !S.tiefe || typeof S.punkt !== "function" || !S.vp) return { fehlt: "die Tiefe des Schusses (`__letzteSpiegel` der Werkbank /bild --klasse) fehlt" };
 +    if (!TL || !TL.teil || !TL.W) return { fehlt: "die Teilung des Schusses (`__letzteTeilung` der Werkbank /bild --klasse) fehlt" };
-+    const w = await gesetz(r);
++    const w = await gesetz(r, S);
 +    if (w.fehlt) return { fehlt: w.fehlt };
 +    if (w.kontrastFehlt) return { fehlt: "das Gesetz unter der Bühne des Bilds: " + w.kontrastFehlt };
 +    const G = w.zeugeBild;
@@ -244,7 +280,7 @@ index cc8f5e1..714d5af 100644
  // ═══════════════════════════════════════ Perspektive spieler ═══════════════════════════════════════
  {
      // ─────────── erleben.spieler.praesenz — Präsenz: der Leib antwortet ───────────
-@@ -561,10 +784,10 @@ const LANDMARKE_AN = async (r, T, a) => {
+@@ -561,10 +805,10 @@ const LANDMARKE_AN = async (r, T, a) => {
      // PLANET_ERDE)` wie der Faden, voxel-worker.js:1159) und misst S5: die Mittags-Sonne je Saison-Wort (`_sonnenRichtung`, die Quelle von
      // Licht und Himmel) und die Pol-Höhe der Sternfeld-Achse (`state.starField.rotation`) gegen die Breite des Ankers.
      LEITERN.push(
@@ -258,7 +294,7 @@ index cc8f5e1..714d5af 100644
              welt: [{ wort: "gestirn_proben", ab: 5, was: "Gestirn-Lagen aus der Welt: die Mittags-Sonne je Saison-Wort und die Achse des Sternfelds" }],
              sprossen: {
                  1: {
-@@ -614,9 +837,34 @@ const LANDMARKE_AN = async (r, T, a) => {
+@@ -614,9 +858,34 @@ const LANDMARKE_AN = async (r, T, a) => {
                      umfang: { verlangt: 100, einheit: "Saaten der Sitzung", wortlaut: "N = 100 Saaten × 10 Ziele", feld: "richter" },
                  },
              },
@@ -294,7 +330,7 @@ index cc8f5e1..714d5af 100644
                  // DER PULS (Koordinator 27.11., der Deckel): neben jedem langen Ruf (die Saaten in EINEM Ruf, das Wachsen der Wiese in EINEM
                  // `/umstellen`) liest die Station je ≤ 5 s den Stand der Seite (die Saat der Welt, die Ankunft, die Zahl der Chunks) und schreibt
                  // ihn als Zeile — die Probe hört je Schritt ein Lebenszeichen, auch nach dem Deckel; ein Stand, der nicht kommt, steht beim Namen.
-@@ -632,6 +880,107 @@ const LANDMARKE_AN = async (r, T, a) => {
+@@ -632,6 +901,107 @@ const LANDMARKE_AN = async (r, T, a) => {
                      }
                      return ende;
                  };
@@ -328,7 +364,7 @@ index cc8f5e1..714d5af 100644
 +                                break;
 +                            }
 +                            const t0 = Date.now();
-+                            const hin = await puls("wegfindung S1 Zeuge " + saat + " hin", L.ev("return await (" + H.seite.ZEUGE_HIN + ")(r, T, " + JSON.stringify({ saat }) + ");", 30));
++                            const hin = await puls("wegfindung S1 Zeuge " + saat + " hin", L.ev("return await (" + H.seite.ZEUGE_HIN + ")(r, T, " + JSON.stringify({ saat }) + ", (r) => (" + H.seite.LANDMARKE_AN + ")(r, T, { saat: r.state.worldMeta.seed, zeugeBild: true }));", 30));
 +                            if (hin.fehlt) {
 +                                fehltZ({ saat, fehlt: hin.fehlt });
 +                                continue;
@@ -337,13 +373,13 @@ index cc8f5e1..714d5af 100644
 +                            const k = hin.kamera;
 +                            let b;
 +                            try {
-+                                b = await puls("wegfindung S1 Zeuge " + saat + " Bild", L.wb("/bild", { px: k[0], py: k[1], pz: k[2], lx: k[3], ly: k[4], lz: k[5], fov: hin.fov, w: 1920, h: 1080, wahl: 0, uhr: 0.5, wetter: "sunny", saison: "sommer", klasse: H.seite.ZEUGE_KLASSE(), nurPixel: true, datei: path.join(L.D, P.leiter + "-S1-zeuge-" + (i + 1) + ".png") }, 90));
++                                b = await puls("wegfindung S1 Zeuge " + saat + " Bild", L.wb("/bild", { px: k[0], py: k[1], pz: k[2], lx: k[3], ly: k[4], lz: k[5], fuss: false, fov: hin.fov, w: 1920, h: 1080, wahl: 0, uhr: 0.5, wetter: "sunny", saison: "sommer", klasse: H.seite.ZEUGE_KLASSE(), nurPixel: true, datei: path.join(L.D, P.leiter + "-S1-zeuge-" + (i + 1) + ".png") }, 90));
 +                            } catch (e) {
 +                                fehltZ({ saat, fehlt: "kein Bild: " + String((e && e.message) || e).split("\n")[0].slice(0, 200) });
 +                                continue;
 +                            }
 +                            const tBild = Date.now() - t0 - tHin;
-+                            const m = await puls("wegfindung S1 Zeuge " + saat + " Maske", L.ev("return await (" + H.seite.ZEUGE_MASKE + ")(r, T, {}, (r) => (" + H.seite.LANDMARKE_AN + ")(r, T, { saat: r.state.worldMeta.seed, zeugeBild: true }));", 30));
++                            const m = await puls("wegfindung S1 Zeuge " + saat + " Maske", L.ev("return await (" + H.seite.ZEUGE_MASKE + ")(r, T, {}, (r, S) => (" + H.seite.LANDMARKE_AN + ")(r, T, { saat: r.state.worldMeta.seed, zeugeBild: true, schuss: { auge: S.auge, ivp: S.ivp, tw: S.tw, th: S.th } }));", 30));
 +                            if (m.fehlt) {
 +                                fehltZ({ saat, fehlt: m.fehlt, datei: b && b.datei });
 +                                continue;
@@ -402,7 +438,7 @@ index cc8f5e1..714d5af 100644
                  // S1 ZUERST (Koordinator 27.11., der Deckel): die Saaten verlassen die Welt der Sitzung und kehren heim — danach wächst die Wiese
                  // EINMAL (`L.ort`, ihr Stand ist die Preis-Pose, an der der Rahmen nach dem Lauf nur noch ankommt). Bis hier wuchs sie zweimal:
                  // vor den Saaten und still nach ihnen im Rahmen (Radeon: „Stille seit 15 s nach 74.3 s“).
-@@ -641,11 +990,12 @@ const LANDMARKE_AN = async (r, T, a) => {
+@@ -641,11 +1011,12 @@ const LANDMARKE_AN = async (r, T, a) => {
                  // nach `_genesisAnkunft`): die sichtbaren Landmarken im Kegel in 1–3 km, ihren Kontrast gegen den Grund (`_landmarkeKontrast`,
                  // der Leser des Spiels) und den Durchlass (`_luftDurchlass`). Der Anteil der Adressen mit einer sichtbaren Marke ≥ 0,1 Kontrast
                  // ist der Wert; unter dem Soll urteilt er ROT beim Namen, mit der Ursache je Adresse. Darüber entscheidet der Zeuge am Gerät
@@ -418,7 +454,7 @@ index cc8f5e1..714d5af 100644
                      const v = P.sprossen[1].umfang.verlangt;
                      const t1 = Date.now();
                      const heim = await puls("wegfindung S1 die warme Welt", L.ev("return await (" + H.seite.LANDMARKE_AN + ")(r, T, { saat: r.state.worldMeta.seed, zeuge: true });", 20));
-@@ -689,8 +1039,47 @@ const LANDMARKE_AN = async (r, T, a) => {
+@@ -689,8 +1060,47 @@ const LANDMARKE_AN = async (r, T, a) => {
                      if (ohne.length) return L.leser(1, "Kontrast ≥ 0,1 der Landmarke gegen ihren Grund: an " + ohne.length + " von " + je.length + " Adressen ungelesen — " + ohne[0].kontrastFehlt + "; gemessen die Obergrenze (sichtbar) " + w.anteil_sichtbar + " und der Durchlass min " + w.durchlass_min + " · " + akte, s.je.length);
                      if (w.anteil_landmarke < P.sprossen[1].soll[0].wert)
                          return L.gemessen(1, { anteil_landmarke: w.anteil_landmarke }, { erzeugt: s.je.length, welt: { saaten: s.je.length }, taeter: "sichtbare Landmarke ≥ 0,1 Kontrast im ersten Blick der Ankunft in 1–3 km: Anteil " + w.anteil_landmarke + " · ohne: zu schwach " + w.kontrast_zu_klein + ", verdeckt " + w.verdeckt + ", keine im Kegel " + w.keine_im_kegel + " · die Erde trägt " + w.erde_erwartet + " · " + akte });
@@ -467,7 +503,7 @@ index cc8f5e1..714d5af 100644
                  const tOrt = Date.now();
                  await puls("wegfindung die Wiese wächst", L.ort("wiese", "ego"));
                  L.preisPose("wiese", "ego");
-@@ -785,8 +1174,54 @@ const LANDMARKE_AN = async (r, T, a) => {
+@@ -785,8 +1195,54 @@ const LANDMARKE_AN = async (r, T, a) => {
                  await L.je(7, async () => L.umfang(7, 1, "die Sitzung hält eine Saat (" + z.saat + ") und einen Planeten — kein Nachbarplanet, keine Bahn zwischen Planeten"));
  
              },

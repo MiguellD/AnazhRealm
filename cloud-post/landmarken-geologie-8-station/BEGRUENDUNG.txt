@@ -1,29 +1,28 @@
-Der Zeuge mit Bild für karte2.erleben.spieler.wegfindung#1 (OMEN, GTX 1060, Koordinator 27.11. 05:0x/08:14) — NICHT gesetzt
-Lauf am b32c67730e778ff25a27bcb14333285501b11327, pm 6b89909a + Kandidat (Blob 714d5af1 = cc8f5e1a + zeuge.diff), frische Sitzung
-URTEIL (wörtlich): @@VR b ROT  karte2.erleben.spieler.wegfindung#1 · S1 · ROT Leser fehlt: der Zeuge am Gerät |Kontrast Gesetz − Kontrast Pixel| ≤ 0,03 an ≥ 3 Saaten mit Bild und Maske: 3 ohne Lesung — erleben.spieler.wegfindung-s1-1: die Kamera des Bilds steht 0.17 m neben dem Auge des Gesetzes · erleben.spieler.wegfindung-s1-2: die Kamera des Bilds steht 0.17 m neben dem Auge des Gesetzes · erleben.spieler.wegfindung-s1-3: kein Bild: /bild: ABNAHME ROT [Ziel Blickziel verdeckt von an Punkt 1 Gelände in 8.79 m] · beweis · Sicht 0.0 % · Ziel Blickziel im Bild VERDECKT 20 m · Luma 107.7 σ 26.9 schwarz 0.0 % weiß 0.0 % · Stand 18.546. — gemessen nach dem Gesetz 1 (Kontrast Median 0.461) · Ankunft 51 Adressen (50 betreten + die warme Welt) in 41474 ms · Gesetz stamm/gelaende-chunks.js `_ankunft` · Leser stamm/gelaende-boden.js `_genesisAnkunft` · Zeuge der Karte 50/50 gleich · Glieder {"blick":16,"heimat":34,"ort":1} · je Saat 3890 · 813 · 641 · 640 · 604 · 575 · 780 · 638 · 627 · 470 · 447 · 464 · 470 · 429 · 534 · 531 · 541 · 500 · 612 · 466 · 512 · 467 · 508 · 454 · 494 · 599 · 488 · 490 · 521 · 432 · 599 · 544 · 667 · 748 · 713 · 669 · 506 · 576 · 555 · 537 · 494 · 483 · 516 · 470 · 530 · 504 · 423 · 439 ·
-  @@VR b KARTE2 Akte erleben.spieler.wegfindung.1.b32c6773-gtx.json: Richter ROT · Preis ROT: p95 41.59 ms · max 166.64 ms · Heap 529.6 MB gehalten (Spitze 727.3) · VRAM 144.5 MB gehalten (Spitze 153) · 538 Bilder · Referenz f 1.094 · Einlauf 42 s (Lesewert): p95 41.63 ms, max 516.69 ms · der Lauf selbst p95 33.42 ms (1036 Bilder)
-Je Saat: s1-1 die Kamera des Bilds 0,17 m neben dem Auge des Gesetzes (23,9 s) · s1-2 dasselbe, 0,17 m (27,7 s) · s1-3 kein Bild: /bild ABNAHME ROT, Blickziel (Kamera + 20 m) verdeckt von Gelände in 8,79 m (24,4 s) — 0 von 3 gelesen, fail-closed ROT, kein GRÜN
-Zeit: Teil 1 41,5 s (51 Adressen) · Teil 2 78,3 s (3 Saaten, je Teil eigener Deckel, Puls ≤ 5 s) · Fahrt 277,2 s · Preis-Lauf 117,3 s
-DIE FORM (08:14: eigener Lauf derselben Sprosse, 60-s-Regel je Teil, keine neue Leiter/Tafel-Zeile): die EINE Probe der Leiter
-  trägt `probe.teile: 3` (punkte.cjs fahreGruppe: je Teil ein Prozess in DERSELBEN Welt, weiter nur nach `@@PUNKTE@@ TEIL WEITER`)
-  1 die 50 + 1 Saaten mit Karten-Zeuge; legt ihn in Seite (window.__wegZeuge) UND Ausgabe (j.wegZeuge): Stempel, git-Kopf,
-    Sitzung, AUS, Probe, besucht/anders/verlangt, die 3 Saaten · 2 NUR die 3 Zeugen-Saaten · 3 die Wiese und S2–S7
-  Teil 2 fail-closed: Stempel Seite = Ausgabe, dieselbe Sitzung/AUS/Probe, derselbe Kopf, 50/50 gleich (anders 0) — sonst
-  „S1 warf: UNGEMESSEN — der Zeuge am Gerät urteilt nur am Karten-Zeugen dieser Fahrt: <Grund>“ (keinUrteil → UNGEMESSEN), nie GRÜN
-DER LESER (Seite `ZEUGE_*` neben `LANDMARKE_AN`): die 3 Saaten neu betreten (Kamera der Ankunft `_genesisAnkunft`, `r.state` nach
-  dem Wechsel frisch), danach die Heimat zurück, die Welten des Zeugen gelöscht
+Der Zeuge mit Bild für karte2.erleben.spieler.wegfindung#1 (OMEN, GTX 1060, Koordinator 27.11. 05:0x/08:14/08:4x, v5) — NICHT gesetzt
+Lauf zeuge4 am b32c67730e778ff25a27bcb14333285501b11327, pm 4e563169 + Kandidat (Blob c62f4a17 = cc8f5e1a + zeuge.diff), frische Sitzung je Lauf; A ohne ↔ B mit
+URTEIL B (wörtlich): karte2.erleben.spieler.wegfindung#1 · S1 · ROT Leser fehlt: der Zeuge am Gerät |Kontrast Gesetz − Kontrast Pixel| ≤ 0,03 an ≥ 3 Saaten mit Bild und Maske: 3 ohne Lesung — erleben.spieler.wegfindung-s1-1: kein Bild: /bild: ABNAHME ROT [Ziel Blickziel verdeckt von Laub baum_kiefer in 74.47 m] · beweis · Sicht 0.0 % · Ziel Blickziel im Bild VERDECKT 1126.72 m · Luma 94.5 σ 33.6 schwarz 0.0 % weiß 0.0 % · Stand 18.5 · erleben.spieler.wegfindung-s1-2: kein Bild: /bild: ABNAHME ROT [Ziel Blickziel verdeckt von kamm-krone in 389.59 m] · beweis · Sicht 0.0 % · Ziel Blickziel im Bild VERDECKT 1050.48 m · Luma 106 σ 35.1 schwarz 0.0 % weiß 0.0 % · Stand 18.546.447 · erleben.spieler.wegfindung-s1-3: kein Bild: /bild: ABNAHME ROT [Ziel Blickziel verdeckt von Natur baum_tanne in 99.96 m] · beweis · Sicht 0.0 % · Ziel Blickziel im Bild VERDECKT 1939.38 m · Luma 109.6 σ 33.9 schwarz 0.0 % weiß 0.0 % · Stand 18. — gemessen nach dem Gesetz 1 (Kontrast Median 0.461) · Ankunft 51 Adressen (50 betreten + die warme Welt) in 41608 ms · Gesetz stamm/gelaende-chunks.js `_ankunft` · Leser stamm/gelaende-boden.js `_genesisAnkunft` · Zeuge der Karte 50/50 gleich · Glieder {"blick":16,"heimat":34,"ort":1
+Je Saat (Werkbank-Abnahme /bild, Blickziel ¼° über dem Gipfel, fuss false): s1-1 felsturm 1126,7 m verdeckt von Laub baum_kiefer in 74,5 m ·
+  s1-2 felsturm 1050,5 m verdeckt von kamm-krone in 389,6 m · s1-3 felsbogen 1939,4 m verdeckt von Natur baum_tanne in 100,0 m — 0 von 3 Lesungen
+Zeit: A 245 s · B 383 s (Welt 27,9 s, Ankunft 51 Adressen 41,6 s, Zeuge der Karte 50/50 gleich)
+Preis A ohne ↔ B mit (wegfindung#1 am selben Kopf): A GRÜN p95 25,02 ms · max 33,4 · Heap 279,9 MB (Spitze 317,8) · 681 Bilder ↔
+  B ROT p95 49,94 ms · max 116,48 · Heap 532,3 MB (Spitze 734,8) · VRAM 145,4 MB · 506 Bilder — der Zeuge (3 Welten in Teil 2) trägt sich so nicht
+DER BEFUND (Gebot: sage a, tue a): das Gesetz nennt an der Ankunft Auge und Marke und gibt ihr Kontrast (Median 0,461); das Bild vom selben
+  Auge sagt an 3 von 3 Saaten „verdeckt“ (Baum 74/100 m, Kamm 390 m vor dem Gipfel). `_landmarkeKontrast` (vegetation-baum.js:2712) trägt
+  kein Glied der Verdeckung zwischen Auge und Gipfel: der Zeuge liest nichts, wo das Gesetz eine sichtbare Marke behauptet.
+DIE FORM (08:14: eigener Lauf derselben Sprosse, 60-s-Regel je Teil, keine neue Leiter/Tafel-Zeile): `probe.teile: 3` (fahreGruppe:
+  je Teil ein Prozess in DERSELBEN Welt) · 1 die 50 + 1 Saaten mit Karten-Zeuge (Seite window.__wegZeuge UND Ausgabe j.wegZeuge) ·
+  2 NUR die 3 Zeugen-Saaten · 3 die Wiese und S2–S7. Teil 2 fail-closed: Stempel, Sitzung, AUS, Probe, Kopf gleich, 50/50 — sonst
+  „S1 warf: UNGEMESSEN — der Zeuge am Gerät urteilt nur am Karten-Zeugen dieser Fahrt: <Grund>“, nie GRÜN
+DER LESER (Seite `ZEUGE_*` neben `LANDMARKE_AN`): die 3 Saaten neu betreten, EINE Kamera für Bild und Gesetz: das Gesetz an der
+  Ankunft EINMAL (`_genesisAnkunft` + `_loopCamera`) nennt Auge und Marke, das Bild blickt vom Auge auf die Marke, das Gesetz nach
+  dem Schuss rechnet unter der Kamera DES Schusses (`a.schuss` aus `__letzteSpiegel`) — kein zweites Loop-Bild (zeuge3: 0,17 m);
+  danach Heimat zurück, Zeugen-Welten gelöscht, `__letzteSpiegel`/`__letzteTeilung` auf dem Stand davor
 - EIN Bild je Saat: Werkbank /bild --klasse ^feld-pass$, 1920 × 1080, uhr 0,5 sonnig Sommer, wahl 0, nurPixel; Maske daneben
 - Maske = Klassen-Pixel (`__letzteTeilung`) ∧ Tiefe im Zylinder der Marke (`__letzteSpiegel`), nur das Innere (4 Nachbarn)
 - Grund wie das Gesetz: ½° über dem Gipfel, 9 × 5 px (Himmel: Tiefe ≥ 0,99999 ohne Klasse; Hang: jenseits d + 30 m)
-- Gesetz (`_landmarkeKontrast`, C = C₀ · e^{−σd}) unter derselben Bühne NACH dem Schuss, Kamera ≤ 0,05 m am Auge des Gesetzes
-- Pixel → linear: sRGB invers (`srgbLin`, Byte für Byte geprüft), `tonKurve` (welt-licht.js) geschlossen umgekehrt;
-  Kontrast = |Y Marke − Y Grund| / Y Grund (Rec. 709) wie das Gesetz; die Belichtung k kürzt sich
+- Pixel → linear: sRGB invers, `tonKurve` geschlossen umgekehrt; Kontrast = |Y Marke − Y Grund| / Y Grund (Rec. 709) wie das Gesetz
 - GRÜN nur bei |Gesetz − Pixel| ≤ 0,03 an ≥ 3 Saaten; sonst ROT mit Zahl je Saat
-Fail-closed beim Namen: kein Bild · Tiefe/Teilung fehlt · Marke < 25 px · Grund < 12 px · > 20 % gesättigt · Kamera neben dem
-  Auge · Tonkurve nicht `tonKurve` · Frist (Rest < längste Saat + 3 s vor dem Schuss); jede Lücke eine Zeile, Puls ≤ 9 s je Ruf
-  (zeuge2: das Bild wartet, bis die gewechselte Welt steht, A9 ≈ 700 Takte — 52 s ohne Zeile rissen die Leine)
-Selbsttest SELBST GRÜN 16 (ehrlich GRÜN; Mutante „Tonkurve ungerechnet“ ROT; +0,031 ROT; kein Bild, leere Maske, zwei Saaten,
-  gesättigt ROT) · `punkte.cjs tafel` (volle pm-Kopie): Kollision 0, Abweichung 0 · sek 60, pfad + abnahme-urteil.cjs u. a.
-DER NÄCHSTE SCHNITT (v5, eigener Lauf): das Gesetz rechnet unter dem Auge DES SCHUSSES (der Versatz ist systematisch, beide
-  Saaten 0,17 m — Ankunft/Loop-Kamera ein zweites Mal gerechnet), das Blickziel auf die Marke statt 20 m vor die Linse
-Kein Soll, kein Richter-Text geändert.
+Fail-closed beim Namen: kein Bild · Tiefe/Teilung fehlt · Marke < 25 px · Grund < 12 px · > 20 % gesättigt · Kamera neben dem Auge ·
+  Tonkurve nicht `tonKurve` · Frist (Rest < längste Saat + 3 s vor dem Schuss); jede Lücke eine Zeile, Puls ≤ 9 s je Ruf
+Selbsttest SELBST GRÜN 16 (ehrlich GRÜN; Mutanten Tonkurve ungerechnet, +0,031, kein Bild, leere Maske, zwei Saaten, gesättigt ROT)
+  · `punkte.cjs tafel` (volle pm-Kopie): Kollision 0, Abweichung 0. Kein Soll, kein Richter-Text geändert.
