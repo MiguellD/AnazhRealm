@@ -1,0 +1,85 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.447",
+  "sha": "031f4700b44ed32ea4362ff2744f8fa71fa5fc2e"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.7,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 0,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "nvidia pascal",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0,
+   "taeter": {},
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": false,
+  "vor": "Boden-Schicht",
+  "vorAbstand": 1.57,
+  "leiber": null,
+  "abstand": 386.01,
+  "gestalt": [
+   "wasser"
+  ],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   436.368,
+   -0.805,
+   10676.978
+  ],
+  "blick": [
+   0.04084,
+   -0.00569,
+   0.99915
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 112.2,
+  "sigma": 36.4,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "ok": false,
+ "zeile": "ABNAHME ROT [Ziel Blickziel verdeckt von Boden-Schicht in 1.57 m] · beweis · Sicht 0.0 % · Ziel Blickziel im Bild VERDECKT 386.01 m · Luma 112.2 σ 36.4 schwarz 0.0 % weiß 0.0 % · Stand 18.546.447 · Bühne summer sunny 0.70 Tiere gehalten · Gerät WebGPU nvidia pascal",
+ "rot": [
+  {
+   "feld": "ziel.frei",
+   "grund": "Ziel Blickziel verdeckt von Boden-Schicht in 1.57 m"
+  }
+ ],
+ "urteil": "ROT"
+}
