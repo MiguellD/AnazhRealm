@@ -1,7 +1,7 @@
 {
  "sha": "031f4700b44ed32ea4362ff2744f8fa71fa5fc2e",
  "geraet": "gtx",
- "zeit": "2026-11-27T06:32:55.119Z",
+ "zeit": "2026-11-27T06:48:25.409Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.kultur.sprache#2": {
@@ -2334,6 +2334,70 @@
    },
    "zeit": "2026-11-27T06:32:55.119Z",
    "abdruck": "a4dd3c536d8b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.fahrzeug.lenker#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 181.1 s · S1 warf: eine Spielstunde Verkehr nicht erreicht: 60.9 von 2500000000000 s in 8880 Takten, 170.9 s Wand (19.2 ms je Takt)",
+   "exit": 0,
+   "minuten": 3.04,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 181.1 s · S1 warf: eine Spielstunde Verkehr nicht erreicht: 60.9 von 2500000000000 s in 8880 Takten, 170.9 s Wand (19.2 ms je Takt)",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 181.3,
+   "fremd": {
+    "s": 182.8,
+    "takte": 84,
+    "fremdS": 52.44,
+    "kerne": 0.287,
+    "fensterKerne": 0.445,
+    "namen": [
+     [
+      "bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \"",
+      8.28
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      5.81
+     ],
+     [
+      "bash.exe sk/wacht4.sh",
+      5.45
+     ]
+    ],
+    "dienerS": 40.56,
+    "diener": [
+     [
+      "System",
+      18.55
+     ],
+     [
+      "dwm.exe",
+      9.3
+     ]
+    ],
+    "geraetS": 115.45,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      85.97
+     ],
+     [
+      "svchost.exe",
+      26.75
+     ],
+     [
+      "SearchIndexer.exe",
+      1.25
+     ]
+    ],
+    "eigenS": 297.5,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-27T06:48:25.409Z",
+   "abdruck": "b6c3c3996fb0",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
