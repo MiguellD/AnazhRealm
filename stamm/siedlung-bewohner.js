@@ -392,6 +392,14 @@ class AnazhRealm_siedlung_bewohner {
             const familie = FC.sprachName(S2, "familie", `${ps}:${b.heim}`);
             return feld === "vorname" ? vorname : feld === "familie" ? familie : `${vorname} ${familie}`;
         }
+        if (feld === "rede") {
+            // DER SATZ, DEN ER SPRICHT (sprache#2): die `tag`-te Rede des Bewohners in der Sprache des Orts — dasselbe Gesetz, das ihn
+            // nennt (fachwerk `sprachSatz`: die Wörter der Grundliste seiner Sprache in der Folge ihrer Familie). Leser: die Rede der
+            // Menge (klang.js `_bewohnerLautTakt`: ihre Silben-Kerne sind die Vokale seiner Stimme)
+            const FC = globalThis.__fachwerkCore;
+            if (!FC || typeof FC.sprachSatz !== "function") return AnazhRealm._kernPflichtBruch("fachwerk:sprachSatz");
+            return FC.sprachSatz(FC.spracheVon(plan.region, ps), `${b.seed}:${tag}`);
+        }
         if (feld === "freunde" || feld === "kreis") {
             // die Sympathie-Gruppe ohne den Haushalt: je Platz ein Mensch eines anderen Hauses des Plans, das Leute trägt. `kreis`
             // nennt eine Schicht der Dunbar-Folge (`tag` trägt ihre Größe, LEBENSLAUF.freunde.schichten): dieselben Züge, weiter

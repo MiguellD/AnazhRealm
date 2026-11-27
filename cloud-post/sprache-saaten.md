@@ -28,6 +28,13 @@ Sprosse: `karte2.mensch.kultur.sprache#1` · Zweig `sprache-saaten` · Kopf 1 au
   (probeUrteil GRÜN, 0 rote Zeilen); fern-wasser ROT byte-gleich wie an main 45bad33f („gebaut false · Quads 0“, beide Regime).
 - check:statik GANZ GRÜN · format:check GRÜN · lint 0 Fehler.
 
+## Gelandet
+
+- Kopf 5f5775847f5e88d7e9a48a7d199974be7d00681b: Batterie 21 grün · GPU-Probe GRÜN (Radeon, 1 274 s) · gelandet als
+  `w28-sprache-saaten` (main 38194f83). `sprache#1` bucht seit main 45bad33f (GTX 1060 „Namen richtig zugeordnet 0.99686 ·
+  Saaten der Namen 4“, die Saaten trägt dort z791 kultur-aus-klima-6); dieser Schnitt bleibt Tiefe und bucht keine neue Sprosse.
+  Die nächste Sprosse dieser Leiter (`sprache#2`) trägt der Zweig `sprache-saaten-2` (`cloud-post/sprache-saaten-2.md`).
+
 ## Offen
 
 - Station nicht gefahren: GPU — der Vor-Richter fährt `mensch.kultur.sprache#1` an stadt-voll.
@@ -36,4 +43,5 @@ Sprosse: `karte2.mensch.kultur.sprache#1` · Zweig `sprache-saaten` · Kopf 1 au
   gegen `spec/ci/ci-zeiten.json` gehalten (pruefbuehne-licht 43 s · weltbild-frost:echt 135 s · studio-begehen 185 s).
 - fern-wasser ROT in dieser Wolke auch an main — nicht von diesem Schnitt.
 
-Karte 2 gebucht 131 von 1 718 · Status ZWISCHENSTAND
+Kopf 5f5775847f5e88d7e9a48a7d199974be7d00681b · beanspruchte Sprosse `karte2.mensch.kultur.sprache#1` · Karte 2 gebucht 134 von 1 718 ·
+Status ZWISCHENSTAND

@@ -2062,6 +2062,14 @@ async function marktSeite(o) {
     if (o.mut === "duck") tausche(DG.gespraech, "db", -13.27);
     if (o.mut === "stumm") tausche(K, "mengeRedet", () => null);
     if (o.mut === "lombard") tausche(K.MENGE.lombard, "dbJeDb", 0);
+    // S29: die Rede verliert die Kerne ihres Satzes (die Stimme spricht Vokale ohne Sprache, das Gesetz bis sprache-saaten-2) ·
+    // S30: die Rede spricht einen fremden Satz (die Nummer daneben — nicht der Satz, den der Wirt ihr gibt)
+    if (o.mut === "satzlos") tausche(r, "_bewohnerLaut", ((alt) => function (b, laut, rede) {
+        return alt.call(this, b, laut, rede && { ...rede, kerne: undefined });
+    })(r._bewohnerLaut));
+    if (o.mut === "fremd") tausche(r, "_bewohnerLauf", ((alt) => function (S, b, feld, tag) {
+        return alt.call(this, S, b, feld, feld === "rede" ? tag + 1 : tag);
+    })(r._bewohnerLauf));
     const duckGesetz = Object.entries(DG).filter(([, v]) => v && typeof v.db === "number").map(([k, v]) => [k, v.db]);
     if (o.mut === "duckt")
         tausche(r, "_bewohnerLaut", ((alt) => function (b, laut, rede) {
@@ -2082,7 +2090,7 @@ async function marktSeite(o) {
     })(r._bewohnerLaut));
     tausche(um.kern, "rufSpielen", ((alt) => function (c, aus, ruf) {
         const e = alt.apply(this, arguments);
-        if (e) rufe.push({ t0: e.einsatz, t1: e.einsatz + e.sek, rede: !!(ruf && ruf.silben), an: (ruf && ruf.anstrengungDb) || 0 });
+        if (e) rufe.push({ t0: e.einsatz, t1: e.einsatz + e.sek, rede: !!(ruf && ruf.silben), an: (ruf && ruf.anstrengungDb) || 0, kerne: ruf && Array.isArray(ruf.kerne) ? ruf.kerne.length : 0 }); // prettier-ignore
         return e;
     })(um.kern.rufSpielen));
     tausche(r, "_musikDuck", ((alt) => function (art) {
@@ -2232,6 +2240,22 @@ async function marktSeite(o) {
         sy.spitze.ausgang.disconnect(an);
         while (zurueck.length) zurueck.pop()();
     }
+    // DER SATZ DER REDE (sprache#2): je Sprecher der Stadt, dessen Rede einen Satz trägt (`_mengeRede`: Nummer und Satz), der Satz
+    // des Wirts mit derselben Nummer (`_bewohnerLauf` „rede“, die Mutanten sind zurück) — gleich, Wort für Wort; die Vokale der Kerne
+    // aus dem Gesetz seiner Sprache (fachwerk `spracheVon(region, same).gesetz.vokale`)
+    const satz = { saetze: (sy.menge && sy.menge.saetze) || 0, sprecher: 0, gleich: 0, fremd: [], beispiel: [], vokaleFremd: [] };
+    const FC = window.__fachwerkCore;
+    const vokale = new Set(FC.spracheVon(W.S.plan.region, W.S.plan.seed >>> 0).gesetz.vokale.join(""));
+    for (const b of W.S.liste) {
+        const z = r._mengeRede && r._mengeRede.get(b);
+        if (!z || typeof z.satz !== "string") continue;
+        satz.sprecher++;
+        const soll = r._bewohnerLauf(W.S, b, "rede", z.nr);
+        if (soll === z.satz) satz.gleich++;
+        else if (satz.fremd.length < 3) satz.fremd.push(`„${z.satz}“ statt „${soll}“`);
+        if (satz.beispiel.length < 4) satz.beispiel.push(z.satz);
+        for (const k of FC.sprachKerne(z.satz)) for (const c of k) if (!vokale.has(c) && satz.vokaleFremd.length < 3) satz.vokaleFremd.push(`${c} in „${z.satz}“`); // prettier-ignore
+    }
     const G = 20 * Math.log10(sy.masterGain.gain.value * um.bus.gain.value);
     const dbA = (lTap) => +(lTap - G - aSprache + K.mengeDbA(0)).toFixed(2);
     const zugleich = proben.map((q) => q.graph + q.rede + q.laute + q.fahrt).sort((a, b) => a - b);
@@ -2263,6 +2287,9 @@ async function marktSeite(o) {
         duckGesetz,
         rufe: rufe.length,
         rede: rufe.filter((q) => q.rede).length,
+        redeOhneKerne: rufe.filter((q) => q.rede && !q.kerne).length,
+        satz,
+        region: W.S.plan.region,
         ducks: duckNach,
         duckAnteil: +(proben.filter((q) => q.duck < 0.99).length / proben.length).toFixed(3),
         duckProben,
@@ -2293,6 +2320,13 @@ function marktUrteil(m) {
     if (menge > 0) rot.push(`Mk die Menge duckt die Musik: ${menge}× \`_musikDuck("ruf")\` aus Lauten der Menge in ${m.sek} s (Bus ${Math.round(m.duckAnteil * 100)} % gesenkt)`);
     if (m.laermDbA > K.lombardAb && !(m.lombardDb > 0 && m.anMax > 0))
         rot.push(`Mk Lombard aus: Lärm ${m.laermDbA} dB(A) am Sprecher über dem Knick ${K.lombardAb}, die Stimme hebt sich um ${m.lombardDb} dB (Rede bis ${m.anMax} dB)`);
+    // DER SATZ DER REDE (sprache#2): jede Rede der Menge trägt die Kerne eines Satzes, jeder Satz ist der des Wirts in den Vokalen seiner Sprache
+    const Z = m.satz;
+    if (m.redeOhneKerne > 0 || !(Z.sprecher > 0))
+        rot.push(`Mk Rede ohne Satz: ${m.redeOhneKerne} von ${m.rede} Reden der Menge ohne die Kerne eines Satzes, ${Z.sprecher} Sprecher mit Satz (klang.js _bewohnerLautTakt ← fachwerk sprachSatz/sprachKerne)`); // prettier-ignore
+    if (Z.sprecher > 0 && Z.gleich < Z.sprecher)
+        rot.push(`Mk Satz ≠ Wirt: ${Z.sprecher - Z.gleich} von ${Z.sprecher} Sätzen der Rede sind nicht der Satz des Wirts (_bewohnerLauf „rede“): ${Z.fremd.join(" · ")}`); // prettier-ignore
+    if (Z.vokaleFremd.length) rot.push(`Mk Satz fremder Laute: Vokale außerhalb der Sprache ${m.region}: ${Z.vokaleFremd.join(" · ")}`);
     return rot;
 }
 async function markt(page, erg) {
@@ -2313,6 +2347,8 @@ async function markt(page, erg) {
             ["stumm", /^Mk Menge stumm/, "S25: die Menge stumm"],
             ["duckt", /^Mk die Menge duckt/, "S26: die Menge duckt die Musik"],
             ["lombard", /^Mk Lombard aus/, "S27: Lombard aus"],
+            ["satzlos", /^Mk Rede ohne Satz/, "S29: die Rede spricht Vokale ohne Satz"],
+            ["fremd", /^Mk Satz ≠ Wirt/, "S30: die Rede spricht einen fremden Satz"],
         ]) {
             const u = marktUrteil(await lauf(mut, 8, 1));
             const t = u.find((z) => re.test(z));
@@ -2320,7 +2356,7 @@ async function markt(page, erg) {
             else console.log(`   ${was} → ${t}`);
         }
         for (const t of fehl) console.log("   ❌ " + t);
-        if (!fehl.length) console.log("   ✅ S24–S27 nennen jeden Täter beim Namen");
+        if (!fehl.length) console.log("   ✅ S24–S27, S29, S30 nennen jeden Täter beim Namen");
     }
     console.log("");
     if (rot.length) {

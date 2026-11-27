@@ -1,0 +1,66 @@
+sprache-saaten-2 — Kandidat der Station (gegen den Kopf von Zweig `punkte-maschine` 7ea1c36d)
+
+Datei: stationen.diff (meisterkarte-quelle/punkte/stationen/k2-mensch-kultur.js, Zweig `punkte-maschine`). Der Zweig des Spiels trägt
+keine Stations-Änderung; dieser Kandidat gehört in Zweig `punkte-maschine`, wenn der Kopf des Spiels landet. Kein Soll und kein
+Richter-Satz ändert sich: die Sprosse 2 der Leiter trägt Umfang „Sprachen (U_eff)“ ≥ 10 und die Maße „Sprachen an Sätzen getrennt“
+≥ 0,85 und „Sätze“ ≥ 20 wörtlich wie bisher.
+
+karte2.mensch.kultur.sprache#2 (SPRACHE, S2) — Sprachen an 20 Sätzen getrennt
+   - Vorher: `{ n: 2, art: "leser" }` — „kein Bewohner spricht einen Satz: die Begegnung dreht den Kopf, kein Wort, keine Sprache
+     eines Sprechers“ (stamm/siedlung-bewohner.js:2109). Der Buchungs-Leser nannte die Sprosse nicht; die Leiter zählt lückenlos,
+     sprache#3 steht als Punkt und zählt erst mit sprache#2.
+   - Nachher, drei Teile, alle durch den Leser des SPIELS:
+     1. DIE SÄTZE (Seite `namenFaecher`, dieselben 32 Zellen wie sprache#1): je Zelle 20 Reden `_bewohnerLauf(Q, b, "rede", 1)` —
+        derselbe Ruf, den die Rede der Menge ruft (stamm/klang.js `_bewohnerLautTakt`), dieselben Bewohner-Samen wie die Namen
+        („Plan-Same:k“, Haus k mod Häuser). Dazu die Sprache des Orts aus dem Gesetz (`spracheVon(region, same)`: Familie|Blatt) —
+        sie GRUPPIERT nur (welche 20 Sätze zu einer Sprache gehören), der Trenner sieht sie nie. Kennt der Leser das Feld nicht,
+        steht sein Wort wörtlich in `rede`, und die Sprosse 2 urteilt es als fehlenden Leser — S1 und S3 messen weiter.
+     2. DER ZEUGE DES KONSUMS (Seite `redeZeuge`, neu): der Klang steht (wie raumSeite in k2-erleben: `initSymphony`, `ctx.resume`,
+        der Loop des Spiels über `setAnimationLoop`, danach zurück), bis 5 Bewohner der geladenen Siedlung eine Rede mit Satz
+        tragen (`_mengeRede`; höchstens 8 s) — je Sprecher `_bewohnerLauf(S, b, "rede", nr)` gleich dem Satz, den die Menge spricht,
+        und jeder Kern seiner Stimme (`sprachKerne`) aus den Vokalen des Gesetzes seiner Sprache. Fehlt einer: S2 ist ein fehlender
+        Leser beim Namen („die Rede der Menge … spricht nicht den Satz des Lesers: g von n …“). Der Fächer misst so nie einen Satz,
+        den keiner sagt.
+     3. DER TRENNER (node, im Rumpf `messe`): Cavnar & Trenkle 1994 („N-Gram-Based Text Categorization“, SDAIR-94) — Zeichen-
+        N-Gramme N = 1 … 5 der Wörter (nur Buchstaben, mit Leerzeichen gepolstert), Rang-Profil der häufigsten P = 400, Abstand
+        „out-of-place“ (fehlt ein Gramm: P). Hälfte gegen Hälfte: die Sätze 1–10 einer Sprache als EIN Dokument (≈ 260 Bytes)
+        gegen die Profile der Sätze 11–20 jeder Sprache, und umgekehrt. getrennt = Anteil der Dokumente, deren nächstes Profil ihr
+        eigenes ist; saetze = die kleinste Zahl Sätze je Sprache; Umfang U_eff = die Sprachen mit ≥ 20 Sätzen.
+   - Das Band der Quelle (Cavnar & Trenkle 1994, Table 2, gelesen an der Quelle): 3 478 Artikel in 8 Sprachen; Dokumente
+     ≤ 300 Bytes mit Profil 100: 92,9 %, mit Profil 400: 98,3 % richtig; > 300 Bytes: 99,8 %. Das Soll der Karte (≥ 85 %) liegt
+     unter dem Band; ein Dokument hier ist eine Hälfte von 10 Sätzen, ≤ 300 Bytes — die Zeile 98,3 % ist der Vergleich.
+   - Drei Proben: „die Attrappe: die Menge spricht Vokale aus EINER Tafel — jede Stadt klingt gleich“ (getrennt 0,04) → ROT an
+     Sprachen an Sätzen getrennt; „neun Sprachen, sauber getrennt (U_eff unter 10)“ → ROT; „die Sätze der Sprachen am Fächer“
+     (n 24, getrennt 0,96, saetze 20) GRÜN.
+   - pfad: dazu stamm/klang.js und klang-core.js (die Probe führt den Klang der Menge aus).
+
+Gemessen mit dem RUMPF DIESES Kandidaten (der Probe-Befehl der Station wörtlich aus k2-mensch.js, `probe.befehl`), in einer Sitzung
+wie punkte.cjs fahreSitzung sie baut: save-server {PORT}, `werkbank start --echt --port {PORT}+20000 --ort wiese` im Spiel-Baum
+(Xvfb, [linse-gpu] google/swiftshader), vor dem Deckel `/umstellen {ort: stadt-voll, sicht: ego}` wie probeOrt, {SEK} = 45:
+
+   nachher (Spiel-Baum sprache-saaten-2): Probe 14,2 s (Deckel 45 s)
+     „Rede: 7 von 7 Sprechern der Siedlung Lausi sprechen den Satz des Lesers (866 ms) · Sätze am Fächer 640 in 26 Sprachen“
+     S2 (Urteil der Station über das JSON): „S2 ROT an der Adapter [linse-gpu] google/swiftshader — Täter: fachwerk-core.js
+     sprachSatz (der Satz aus Laut, Silbe und Wortschatz der Sprache) · stamm/siedlung-bewohner.js _bewohnerLauf „rede“ · Sprachen
+     an Sätzen getrennt 0.92308 (Soll ≥ 0.85) · Sätze 20 (Soll ≥ 20) · Umfang 26 (Soll ≥ 10 Sprachen (U_eff)) · 26 Sprachen aus
+     4 Familien (alpin/mitteleuropa/mediterran/nordisch) · 48 von 52 Hälften richtig (C&T N 1–5, P 400) · die Rede der Menge:
+     7 von 7 Sprechern sprechen den Satz des Lesers (7 Sätze, 866 ms) · „Dastau moscau cau samau tom sore li da baup.“ · „Po momau
+     pe li cau pani.“ · „Mau cogramau.“ · [linse-gpu] google/swiftshader“ — jedes Glied im Soll, ROT allein am Adapter (keine Karte).
+     S1 und S3 wie vorher: zugeordnet 0.99608 · Saaten 4 · Umfang 1277; RF 0.155 · anteil 1 · familien 6 · Umfang 192.
+   vorher (Spiel-Baum main 45bad33f, derselbe Kandidat): Probe 14,1 s
+     „S2 ROT: fehlender Leser: kein Bewohner spricht einen Satz seiner Sprache — der Leser der Rede: ALTER: die Epoche ohne Jahr
+     (fail-closed) (stamm/siedlung-bewohner.js _bewohnerLauf „rede“ · stamm/klang.js _bewohnerLautTakt) · gemessen 0 ·
+     [linse-gpu] google/swiftshader“ — am main kennt `_bewohnerLauf` das Feld „rede“ nicht und fällt in den Zweig des Alters.
+     S1: zugeordnet 0.99686 · Saaten 4 · Umfang 1273; S3: RF 0.155 · anteil 1 · familien 6 · Umfang 192 (unverändert).
+
+Die vier Wände:
+   (a) `node punkte.cjs liste` am Kopf von Zweig `punkte-maschine` 7ea1c36d, Basis und Kandidat: dieselben 18 Urteils-Zeilen,
+       „1976 Stationen · 420 Kriterien · fehlt 15 · Fehler 2“ — genau zwei ROT gelaende.K2#1/#2 „ruft window.__zielen … (Wand HAKEN)“.
+       `node k2-mensch.js --selbsttest --perspektive kultur`: GRÜN, 65 Stationen, 654 Mutanten (Basis 651), 0 falsch; die Probe
+       „die Sätze der Sprachen am Fächer“ mit getrennt 0,84 eingesetzt → „ROT statt GRÜN (S2 ROT an Sprachen an Sätzen getrennt
+       0.84 verfehlt ≥ 0.85 …)“ — der Selbsttest fällt (1 falsch), zurückgesetzt GRÜN.
+   (b) die Leiter misst in ≤ 60 s: Deckel 45 s unverändert, die Probe 14,2 s an SwiftShader (vorher 14,1 s); die Sätze kosten
+       je Zelle 20 Rufe, der Zeuge ≤ 8 s (gemessen 866 ms).
+   (c) Konsum durch den Leser des Spiels: die Sätze sind `_bewohnerLauf` „rede“ (kein Zwilling des Erzeugers in der Station); der
+       Zeuge verlangt, dass die Menge der Stadt genau diese Sätze spricht (7 von 7), und die Vokale ihrer Kerne aus dem Gesetz.
+   (d) vorher ↔ nachher wörtlich: oben, derselbe Rumpf an main 45bad33f und am Kopf des Spiels.
