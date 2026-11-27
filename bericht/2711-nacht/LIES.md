@@ -18,3 +18,17 @@ Laterne, 1,6 m zur Seite. Kamera −735,61 / +1,8 m über Grund / −952,41, Bli
 
 Offen beim Namen: Soll dev ≤ 0,5 EV (Kopf B: Laterne 2000 lm, pruefbuehne-licht TON bei gehaltener Blende, dann p10/p25 der Gasse) ·
 die Bewohner bleiben schwarze Schattenrisse · der Mensch an der Laterne brennt orange aus.
+
+# Kopf B nacht-laterne-lm — ein Bildpaar vorher ↔ nachher (GTX 1050, stadt-voll third = die Pose der Sprosse nacht#2, Mitternacht der Bühne)
+
+Vorher = main 52937c92 (die Laterne 25,7 cd) · nachher = Kopf B 83eca605 (2 000 lm → 159,2 cd). Beide aus der Nacht-Linse des Spiels
+(`werkbank licht --nacht stadt-voll:third`), dieselbe Kamera.
+
+**`laterne-stadt-vor.png` ↔ `laterne-stadt-nach.png`:**
+- vorher: der Markt grau, die Fassaden dunkel bis auf die Fenster; Gassen-Leser dev 4,40 EV, 116 240 Pixel bei null, p50 0,018 cd/m².
+- nachher: Pflaster, Stände und Fassaden im warmen Licht der Laternen; dev 1,73 EV, 42 381 Pixel bei null, p50 0,108, p90 0,586 cd/m².
+  Die Blende der Nacht sinkt mit (k 39 930 → 10 190), das Mittelgrau steigt 0,073 → 0,284 cd/m².
+
+Offen beim Namen: Soll dev ≤ 0,5 EV — p10/p25 sind der Himmel (29 % des Bilds bei 0,0004–0,002 cd/m², das Band p10 0,04); der Boden
+allein liegt 0,5–1,6 EV unter dem Band · die Bewohner in der Ferne bleiben schwarze Schattenrisse (impostor#fimp:atlas, 810 Instanzen,
+4 470 Null-Pixel) · die Scheiben sind flache helle Rechtecke, ihr Licht fällt nicht auf Wand und Gasse.
