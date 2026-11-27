@@ -1,0 +1,78 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.447",
+  "sha": "031f4700b44ed32ea4362ff2744f8fa71fa5fc2e"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": false,
+  "weltTakte": 40,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0,
+   "taeter": {},
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 58.86,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   224,
+   61.548,
+   128
+  ],
+  "blick": [
+   0.16991,
+   0.98546,
+   0
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 129.6,
+  "sigma": 53,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 58.86 m · Luma 129.6 σ 53 schwarz 0.0 % weiß 0.0 % · Stand 18.546.447 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3",
+ "rot": [],
+ "urteil": "GRÜN"
+}
