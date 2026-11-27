@@ -3020,7 +3020,7 @@
   },
   "profiband.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Gehen 66 Bilder · max 91.91 ms · 59.09 % > 33 ms · Fahrt 40 Bilder · max 151.01 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 59.09 % > 33 ms | Fahrt: 6 Bild(er) > 100 ms (max 151.01), 100.00 % > 33 ms an 9a75d61c radeon · gehalten: Gehen 83 Bilder · max 75 ms · 21.69 % > 33 ms · Fahrt 37 Bilder · max 191.61 ms · 94.59 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 21.69 % > 33 ms | Fahrt: 5 Bild(er) > 100 ms (max 191.61), 94.59 % > 33 ms an 9a75d61c gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an 9a75d61c: Last: Referenz f 1,483 (Faden 1,483 · alle Kerne 1,251; vor 123,8/324,3 ms, nach 120,7/318 ms, Ruhe 83,5/259,2 ms seit 2026-11-16) · fremd: node scripts/diag-kreatur-leben.cjs 58,3 CPU-s · bash.exe sc · profiband.K4#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, koerper-core.js +28) — zuletzt an 9a75d61c: Last: Referenz f 1,228 (Faden 1,228 · alle Kerne 1,081; vor 93/238,7 ms, nach 109,2/226,9 ms, Ruhe 88,9/220,9 ms seit 2026-11-27) · fremd: Explorer.EXE 2,2 CPU-s · git fetch -q origin runde/koord 1,6 ",
+   "beleg": "Maschine: gehalten: Gehen 66 Bilder · max 91.91 ms · 59.09 % > 33 ms · Fahrt 40 Bilder · max 151.01 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 59.09 % > 33 ms | Fahrt: 6 Bild(er) > 100 ms (max 151.01), 100.00 % > 33 ms an 9a75d61c radeon · Gehen 80 Bilder · max 91.59 ms · 18.75 % > 33 ms · Fahrt 38 Bilder · max 183.31 ms · 86.84 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 18.75 % > 33 ms | Fahrt: 9 Bild(er) > 100 ms (max 183.31), 86.84 % > 33 ms an b3740dd5 gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an 9a75d61c: Last: Referenz f 1,483 (Faden 1,483 · alle Kerne 1,251; vor 123,8/324,3 ms, nach 120,7/318 ms, Ruhe 83,5/259,2 ms seit 2026-11-16) · fremd: node scripts/diag-kreatur-leben.cjs 58,3 CPU-s · bash.exe sc · profiband.K4#2 gtx: ROT: Gehen 80 Bilder · max 91.59 ms · 18.75 % > 33 ms · Fahrt 38 Bilder · max 183.31 ms · 86.84 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 18.75 % > 33 ms | Fahrt: 9 Bild(er) > 100 ms (max 183.31), 86.84 % > 33 ms an b3740dd5",
    "stationen": [
     {
      "id": "profiband.K4#1",
@@ -3036,10 +3036,9 @@
      "id": "profiband.K4#1",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "Gehen 83 Bilder · max 75 ms · 21.69 % > 33 ms · Fahrt 37 Bilder · max 191.61 ms · 94.59 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 21.69 % > 33 ms | Fahrt: 5 Bild(er) > 100 ms (max 191.61), 94.59 % > 33 ms",
-     "sha": "9a75d61c8d3eaa08bbf4b0bd18137d11e2e2287d",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, koerper-core.js +28)",
-     "gehalten": true,
+     "zahl": "Gehen 80 Bilder · max 91.59 ms · 18.75 % > 33 ms · Fahrt 38 Bilder · max 183.31 ms · 86.84 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 18.75 % > 33 ms | Fahrt: 9 Bild(er) > 100 ms (max 183.31), 86.84 % > 33 ms",
+     "sha": "b3740dd5566793ae66152d955e5a55d9c272884c",
+     "grund": null,
      "r6": "konsum"
     },
     {
@@ -3055,10 +3054,9 @@
      "id": "profiband.K4#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, koerper-core.js +28) — zuletzt an 9a75d61c: Last: Referenz f 1,228 (Faden 1,228 · alle Kerne 1,081; vor 93/238,7 ms, nach 109,2/226,9 ms, Ruhe 88,9/220,9 ms seit 2026-11-27) · fremd: Explorer.EXE 2,2 CPU-s · git fetch -q origin runde/koord 1,6 ",
-     "ungemessen": true,
+     "zahl": "Gehen 80 Bilder · max 91.59 ms · 18.75 % > 33 ms · Fahrt 38 Bilder · max 183.31 ms · 86.84 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 18.75 % > 33 ms | Fahrt: 9 Bild(er) > 100 ms (max 183.31), 86.84 % > 33 ms",
+     "sha": "b3740dd5566793ae66152d955e5a55d9c272884c",
+     "grund": "ROT: Gehen 80 Bilder · max 91.59 ms · 18.75 % > 33 ms · Fahrt 38 Bilder · max 183.31 ms · 86.84 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 18.75 % > 33 ms | Fahrt: 9 Bild(er) > 100 ms (max 183.31), 86.84 % > 33 ms",
      "r6": "konsum"
     }
    ]
@@ -5515,7 +5513,7 @@
   },
   "karte2.erleben.bild.nacht": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S1 · GRÜN ✅ schatten_kontrast 4,6456 (Soll ≥ 3) · ✅ kelvin_abw 38 (Soll ≤ 200) · ✅ Umfang verlangt 1 Leuchtquellen, die Welt erzeugte 482 an 2a2e8a54 radeon — offen: karte2.erleben.bild.nacht#1 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#2 radeon: ROT: S2 · ROT ✅ bodenfleck_anteil 1 (Soll ≥ 0,9) · ❌ gasse_dev_median 2,67 (Soll ≤ 0,5) · ✅ Umfang verlangt 100 Leuchtquellen der Welt, die Welt erzeugte 755 — Täter: das Histogramm der Gasse liegt unter dem Band (Median -1.42 EV): ΔEV p10 -6.62 · p25 -5.87 · p50 -0.99 · p75 -1.16 · p90 -1.68 · p99 3.65 — Belichtung k 10360, Mittelgrau bei 0.2797 cd/m² · gasse_dev_median 2,67 statt ≤ 0,5 an 9a75d61c · karte2.erleben.bild.nacht#2 gtx: ROT: S2 · ROT ✅ bodenfleck_anteil 1 (Soll ≥ 0,9) · ❌ gasse_dev_median 2,87 (Soll ≤ 0,5) · ✅ Umfang verlangt 100 Leuchtquellen der Welt, die Welt erzeugte 755 — Täter: das Histogramm der Gasse liegt unter dem Band (Median -1.33 EV): ΔEV p10 -6.62 · p25 -5.87 · p50 -0.95 · p75 -1.09 · p90 -1.58 · p99 4.15 — Belichtung k 10210, Mittelgrau bei 0.2837 cd/m² · gasse_dev_median 2,87 statt ≤ 0,5 an 9a75d61c · karte2.erleben.bild.nacht#3 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#3 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#4 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#4 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#5 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#5 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#6 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#6 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#7 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#7 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#8 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#8 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: S1 · GRÜN ✅ schatten_kontrast 4,6456 (Soll ≥ 3) · ✅ kelvin_abw 38 (Soll ≤ 200) · ✅ Umfang verlangt 1 Leuchtquellen, die Welt erzeugte 482 an 2a2e8a54 radeon — offen: karte2.erleben.bild.nacht#1 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#2 radeon: ROT: S2 · ROT ✅ bodenfleck_anteil 1 (Soll ≥ 0,9) · ❌ gasse_dev_median 2,67 (Soll ≤ 0,5) · ✅ Umfang verlangt 100 Leuchtquellen der Welt, die Welt erzeugte 755 — Täter: das Histogramm der Gasse liegt unter dem Band (Median -1.42 EV): ΔEV p10 -6.62 · p25 -5.87 · p50 -0.99 · p75 -1.16 · p90 -1.68 · p99 3.65 — Belichtung k 10360, Mittelgrau bei 0.2797 cd/m² · gasse_dev_median 2,67 statt ≤ 0,5 an 9a75d61c · karte2.erleben.bild.nacht#2 gtx: ROT: S2 · ROT ✅ bodenfleck_anteil 1 (Soll ≥ 0,9) · ❌ gasse_dev_median 2,67 (Soll ≤ 0,5) · ✅ Umfang verlangt 100 Leuchtquellen der Welt, die Welt erzeugte 767 — Täter: das Histogramm der Gasse liegt unter dem Band (Median -1.42 EV): ΔEV p10 -6.62 · p25 -5.87 · p50 -0.98 · p75 -1.16 · p90 -1.68 · p99 3.66 — Belichtung k 10310, Mittelgrau bei 0.2808 cd/m² · gasse_dev_median 2,67 statt ≤ 0,5 an b3740dd5 · karte2.erleben.bild.nacht#3 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#3 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#4 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#4 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#5 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#5 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#6 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#6 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#7 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#7 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#8 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#8 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.erleben.bild.nacht#1",
@@ -5550,9 +5548,9 @@
      "id": "karte2.erleben.bild.nacht#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": "S2 · ROT ✅ bodenfleck_anteil 1 (Soll ≥ 0,9) · ❌ gasse_dev_median 2,87 (Soll ≤ 0,5) · ✅ Umfang verlangt 100 Leuchtquellen der Welt, die Welt erzeugte 755 — Täter: das Histogramm der Gasse liegt unter dem Band (Median -1.33 EV): ΔEV p10 -6.62 · p25 -5.87 · p50 -0.95 · p75 -1.09 · p90 -1.58 · p99 4.15 — Belichtung k 10210, Mittelgrau bei 0.2837 cd/m² · gasse_dev_median 2,87 statt ≤ 0,5",
-     "sha": "9a75d61c8d3eaa08bbf4b0bd18137d11e2e2287d",
-     "grund": "ROT: S2 · ROT ✅ bodenfleck_anteil 1 (Soll ≥ 0,9) · ❌ gasse_dev_median 2,87 (Soll ≤ 0,5) · ✅ Umfang verlangt 100 Leuchtquellen der Welt, die Welt erzeugte 755 — Täter: das Histogramm der Gasse liegt unter dem Band (Median -1.33 EV): ΔEV p10 -6.62 · p25 -5.87 · p50 -0.95 · p75 -1.09 · p90 -1.58 · p99 4.15 — Belichtung k 10210, Mittelgrau bei 0.2837 cd/m² · gasse_dev_median 2,87 statt ≤ 0,5",
+     "zahl": "S2 · ROT ✅ bodenfleck_anteil 1 (Soll ≥ 0,9) · ❌ gasse_dev_median 2,67 (Soll ≤ 0,5) · ✅ Umfang verlangt 100 Leuchtquellen der Welt, die Welt erzeugte 767 — Täter: das Histogramm der Gasse liegt unter dem Band (Median -1.42 EV): ΔEV p10 -6.62 · p25 -5.87 · p50 -0.98 · p75 -1.16 · p90 -1.68 · p99 3.66 — Belichtung k 10310, Mittelgrau bei 0.2808 cd/m² · gasse_dev_median 2,67 statt ≤ 0,5",
+     "sha": "b3740dd5566793ae66152d955e5a55d9c272884c",
+     "grund": "ROT: S2 · ROT ✅ bodenfleck_anteil 1 (Soll ≥ 0,9) · ❌ gasse_dev_median 2,67 (Soll ≤ 0,5) · ✅ Umfang verlangt 100 Leuchtquellen der Welt, die Welt erzeugte 767 — Täter: das Histogramm der Gasse liegt unter dem Band (Median -1.42 EV): ΔEV p10 -6.62 · p25 -5.87 · p50 -0.98 · p75 -1.16 · p90 -1.68 · p99 3.66 — Belichtung k 10310, Mittelgrau bei 0.2808 cd/m² · gasse_dev_median 2,67 statt ≤ 0,5",
      "r6": "konsum"
     },
     {
@@ -37607,8 +37605,8 @@
   "ohne": 3384
  },
  "kopfVoll": "b3740dd5566793ae66152d955e5a55d9c272884c",
- "zeit": "2026-11-27T19:26:52.660Z",
- "vorher": "9a75d61c",
+ "zeit": "2026-11-27T19:44:05.585Z",
+ "vorher": "b3740dd5",
  "bilanz": {
   "gewinn": [],
   "fall": [],
