@@ -1,0 +1,572 @@
+{
+ "leiter": "erleben.bild.nacht",
+ "sprosse": 1,
+ "sha": "2a2e8a5478ae6c528b85bbe3734720d3aa3f7067",
+ "datum": "2026-11-27T02:05:39.831Z",
+ "soll": "Schatten-Kontrast ≥ 3:1 an einem Pfosten 2 m vom Feuer; Gasse in der Kelvin-Farbe ±200 K",
+ "station": "karte2.erleben.bild.nacht#1",
+ "geraete": [
+  {
+   "geraet": "GTX 1060",
+   "richter": {
+    "wert": "S1 · GRÜN ✅ schatten_kontrast 4,6915 (Soll ≥ 3) · ✅ kelvin_abw 38 (Soll ≤ 200) · ✅ Umfang verlangt 1 Leuchtquellen, die Welt erzeugte 482",
+    "urteil": "GRÜN"
+   },
+   "preis": {
+    "bild_p95_ms": 33.38,
+    "bild_max_ms": 50.01,
+    "einlauf": {
+     "s": 43.5,
+     "bilder": 1684,
+     "bild_p95_ms": 49.98,
+     "bild_max_ms": 108.32,
+     "heap_mb": 687.3,
+     "vram_mb": 259.5
+    },
+    "heap_mb": 698.9,
+    "vram_mb": 258.5,
+    "bilder": 538,
+    "fenster": {
+     "von": "2026-11-27T02:00:32.890Z",
+     "bis": "2026-11-27T02:05:39.831Z"
+    },
+    "stueck": {
+     "ab": "2026-11-27T02:05:16.379Z",
+     "bis": "2026-11-27T02:05:36.379Z",
+     "lauf": {
+      "ruhe": {
+       "ruhig": true,
+       "sek": 6.3
+      },
+      "skala": [
+       0.5,
+       0.5
+      ],
+      "p95": 41.67,
+      "max": 58.34,
+      "bilder": 789,
+      "leine": {
+       "ausgesetztPct": 0.9,
+       "imFlug": 0
+      }
+     }
+    },
+    "quelle": "Loop des Spiels an der Pose der Probe: das Stück des Preis-Laufs nach Einschwingen und Ruhe (20 s)",
+    "referenz": {
+     "f": 1.542,
+     "fEin": 1.261,
+     "fAlle": 1.542,
+     "vor": {
+      "ein": 111.6,
+      "alle": 340.1,
+      "tor": {
+       "ruhig": true,
+       "s": 0,
+       "kerne": 1.38,
+       "soll": 3,
+       "reihe": [
+        1.47,
+        1.33,
+        1.42,
+        1.87,
+        1.48,
+        0.78
+       ]
+      }
+     },
+     "nach": {
+      "ein": 86.5,
+      "alle": 255.8,
+      "tor": {
+       "ruhig": true,
+       "s": 0,
+       "kerne": 2.14,
+       "soll": 3,
+       "reihe": [
+        1.49,
+        2.06,
+        2.61,
+        2.15,
+        1.6,
+        2.65
+       ]
+      }
+     },
+     "ruhe": {
+      "ein": 88.5,
+      "alle": 220.5,
+      "n": 1190,
+      "von": "2026-11-26"
+     },
+     "umfeld": "sitzung",
+     "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz"
+    },
+    "posten": {
+     "vram_mb": 244.4,
+     "vram_puffer_mb": 100.8,
+     "vram_texturen_mb": 143.6,
+     "vram_gc_mb": 0.4,
+     "heap_mb": 582,
+     "vram": [
+      [
+       "buf:szene:bauSatz",
+       43.06,
+       17.6
+      ],
+      [
+       "tex:TRAANode.resolve rgba16float 1920x1080x1",
+       31.64,
+       12.9
+      ],
+      [
+       "buf:verwaist:instanzMatrix",
+       18.49,
+       7.6
+      ],
+      [
+       "tex:? rgba16float 1920x1080x1",
+       15.82,
+       6.5
+      ],
+      [
+       "tex:karte-albedo:atlas bc1-rgba-unorm-srgb 128x3584x38",
+       11.07,
+       4.5
+      ],
+      [
+       "buf:szene:geometrie-arena",
+       10.1,
+       4.1
+      ],
+      [
+       "buf:szene:bodenSatz",
+       9.21,
+       3.8
+      ],
+      [
+       "tex:? depth24plus 1920x1080x1",
+       7.91,
+       3.2
+      ],
+      [
+       "tex:kaskade1:tiefe depth16unorm 1904x1904x1",
+       6.92,
+       2.8
+      ],
+      [
+       "buf:szene:bewohner",
+       6.87,
+       2.8
+      ],
+      [
+       "tex:kaskade2:tiefe depth16unorm 1840x1840x1",
+       6.46,
+       2.6
+      ],
+      [
+       "tex:karte-normal:atlas bc5-rg-unorm 64x1792x38",
+       5.52,
+       2.3
+      ],
+      [
+       "tex:output rg11b10ufloat 1440x810x1",
+       4.45,
+       1.8
+      ],
+      [
+       "tex:bewegung rg16float 1440x810x1",
+       4.45,
+       1.8
+      ],
+      [
+       "tex:depth depth24plus 1440x810x1",
+       4.45,
+       1.8
+      ],
+      [
+       "tex:karte-licht:atlas rgba8unorm 32x896x38",
+       4.16,
+       1.7
+      ],
+      [
+       "tex:wege-karte rg8unorm 1024x1024x2",
+       4,
+       1.6
+      ],
+      [
+       "tex:TRAANode.flacker r8unorm 1920x1080x1",
+       3.96,
+       1.6
+      ],
+      [
+       "tex:kronen-streu rgba8unorm 512x512x3",
+       3,
+       1.2
+      ],
+      [
+       "buf:szene:bauWurf",
+       2.98,
+       1.2
+      ],
+      [
+       "tex:karte-tiefe:atlas bc4-r-unorm 64x1792x38",
+       2.76,
+       1.1
+      ],
+      [
+       "tex:bewohner-satz-gang rgba32float 384x464x1",
+       2.72,
+       1.1
+      ],
+      [
+       "tex:szene:tiefenabbild r32float 720x810x1",
+       2.23,
+       0.9
+      ],
+      [
+       "buf:szene:spieler",
+       2.19,
+       0.9
+      ],
+      [
+       "tex:fluss-karte r8unorm 1024x1024x2",
+       2,
+       0.8
+      ],
+      [
+       "buf:szene:kamm-krone",
+       1.91,
+       0.8
+      ],
+      [
+       "tex:kaskade0:tiefe depth16unorm 992x992x1",
+       1.88,
+       0.8
+      ],
+      [
+       "tex:PointShadowMap rgba8unorm 256x256x6",
+       1.5,
+       0.6
+      ],
+      [
+       "tex:laub-cluster-atlas bc3-rgba-unorm-srgb 2048x512x1",
+       1.33,
+       0.5
+      ],
+      [
+       "buf:sicht:pyramide",
+       1.32,
+       0.5
+      ],
+      [
+       "buf:szene:fern-ring",
+       1.27,
+       0.5
+      ],
+      [
+       "tex:bewohner-satz-formziel rgba16float 64x2560x1",
+       1.25,
+       0.5
+      ],
+      [
+       "tex:spiegel:feld rgba16float 384x384x1",
+       1.13,
+       0.5
+      ],
+      [
+       "tex:horizont-karte r16float 768x768x1",
+       1.13,
+       0.5
+      ],
+      [
+       "tex:glanz r8unorm 1440x810x1",
+       1.11,
+       0.5
+      ],
+      [
+       "tex:kontakt:verdeckung:neu rg16float 720x405x1",
+       1.11,
+       0.5
+      ],
+      [
+       "tex:kontakt:verdeckung rg16float 720x405x1",
+       1.11,
+       0.5
+      ],
+      [
+       "tex:spiegel:strahl rgba16float 480x270x1",
+       0.99,
+       0.4
+      ],
+      [
+       "buf:bindingBufferundefined_UniformBuffer_#_(vertex)",
+       0.97,
+       0.4
+      ],
+      [
+       "tex:feld-pass-panorama rgba16float 768x160x1",
+       0.94,
+       0.4
+      ],
+      [
+       "buf:szene:vorbau:fahrzeug_gt",
+       0.89,
+       0.4
+      ],
+      [
+       "tex:ton-tafel rgba32float 13x4096x1",
+       0.81,
+       0.3
+      ],
+      [
+       "tex:horizont-karte rgba16float 320x320x1",
+       0.78,
+       0.3
+      ],
+      [
+       "tex:PointShadowDepthTexture depth16unorm 256x256x6",
+       0.75,
+       0.3
+      ],
+      [
+       "tex:rausch-atlas rgba8unorm 768x256x1",
+       0.75,
+       0.3
+      ],
+      [
+       "buf:szene:siedlung-einfriedung",
+       0.68,
+       0.3
+      ],
+      [
+       "tex:PMREM.cubeUv rgba16float 336x128x1",
+       0.66,
+       0.3
+      ],
+      [
+       "tex:spiegel:stoff rgba8unorm 384x384x1",
+       0.56,
+       0.2
+      ],
+      [
+       "tex:welt-march-liste rgba32float 4096x8x1",
+       0.5,
+       0.2
+      ],
+      [
+       "tex:licht-karte rgba16float 144x432x1",
+       0.47,
+       0.2
+      ],
+      [
+       "tex:wolken-karte r8unorm 512x512x1",
+       0.33,
+       0.1
+      ],
+      [
+       "tex:PMREM.cubeUv:tiefe depth24plus 336x128x1",
+       0.33,
+       0.1
+      ],
+      [
+       "tex:welt-march-kapseln rgba32float 4096x4x1",
+       0.25,
+       0.1
+      ],
+      [
+       "rest:58 unter 0.25 MB",
+       1.3,
+       0.5
+      ]
+     ],
+     "heap_typed_mb": 309.9,
+     "heap_typed": [
+      [
+       "r.state.renderer",
+       107.3,
+       34.6
+      ],
+      [
+       "r.state.archInstanceGroups",
+       43.2,
+       13.9
+      ],
+      [
+       "r._foundry.cache",
+       24.71,
+       8
+      ],
+      [
+       "r.state.chunkSaetze",
+       16.83,
+       5.4
+      ],
+      [
+       "r._bewohnerSiedlungen[]",
+       16.46,
+       5.3
+      ],
+      [
+       "r._bewohnerKoepfe[]",
+       14.92,
+       4.8
+      ],
+      [
+       "r.state.voxelChunks",
+       14.07,
+       4.5
+      ],
+      [
+       "r.state.scene",
+       12.16,
+       3.9
+      ],
+      [
+       "r.state.wegeKarte",
+       11.5,
+       3.7
+      ],
+      [
+       "r.state.weltMarch",
+       8.5,
+       2.7
+      ],
+      [
+       "r.state.architectures",
+       5.66,
+       1.8
+      ],
+      [
+       "r._erdbauNorm.grenzen",
+       4.86,
+       1.6
+      ],
+      [
+       "r.state.hydroTiles",
+       3.26,
+       1.1
+      ],
+      [
+       "r.state.fernRing",
+       2.68,
+       0.9
+      ],
+      [
+       "r._karteBuehneSatz.huellen",
+       2.61,
+       0.8
+      ],
+      [
+       "r._fahrLeibKoerper[]",
+       2.58,
+       0.8
+      ],
+      [
+       "r._leibKontaktKA.q",
+       2.38,
+       0.8
+      ],
+      [
+       "r._wuchsVorrat[]",
+       2.36,
+       0.8
+      ],
+      [
+       "r.state.spiegelFeld",
+       1.73,
+       0.6
+      ],
+      [
+       "r._lichtKarteZ.g",
+       1.66,
+       0.5
+      ],
+      [
+       "r._foliageAtlasTex.mipmaps",
+       1.33,
+       0.4
+      ],
+      [
+       "r.state.horizontKarte",
+       1.13,
+       0.4
+      ],
+      [
+       "r.state.feldPass",
+       1.08,
+       0.3
+      ],
+      [
+       "r.state.waterCAScratch",
+       1.02,
+       0.3
+      ],
+      [
+       "r.state.tonTafel",
+       0.81,
+       0.3
+      ],
+      [
+       "r.state.starField",
+       0.76,
+       0.2
+      ],
+      [
+       "r._rauschAtlasCache.tex",
+       0.75,
+       0.2
+      ],
+      [
+       "r.state.nahStreu",
+       0.72,
+       0.2
+      ],
+      [
+       "r.state.kammKrone",
+       0.47,
+       0.2
+      ],
+      [
+       "r.state.atmoUniforms",
+       0.47,
+       0.2
+      ],
+      [
+       "r.state.nahWiese",
+       0.39,
+       0.1
+      ],
+      [
+       "r.state.voxelMeshCache",
+       0.38,
+       0.1
+      ],
+      [
+       "r._hausTuerKand[]",
+       0.36,
+       0.1
+      ],
+      [
+       "r._forestDartMemoHydro.daten",
+       0.27,
+       0.1
+      ],
+      [
+       "r._brennZiele[]",
+       0.27,
+       0.1
+      ],
+      [
+       "r._kosmosStand.H",
+       0.25,
+       0.1
+      ]
+     ],
+     "lesart": "nach erzwungenem GC (werkbank /puffer, der Zensus der Band-Wand); Listen [Erzeuger, MB, % der Summe] absteigend je Posten ab 0.25 MB, der Rest als eine Zeile; heap_typed: nur Typed-Arrays ab r (__heapHalter), der übrige JS-Heap hat keinen Halter-Zensus"
+    },
+    "urteil": "GRÜN",
+    "treppe": "2026-11-23b"
+   }
+  }
+ ]
+}
