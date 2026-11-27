@@ -19024,7 +19024,7 @@
   },
   "karte2.mensch.kultur.verstaendigung": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.verstaendigung#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/stamm.cjs +9) — zuletzt an b3740dd5: Frist der Probe 40 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 40 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.kultur.verstaendigung#1 gtx: ungemessen (R10) — zuletzt an 45bad33f: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 51.4 s · S1 warf: /eval ohne Antwort binnen 40 s · karte2.mensch.kultur.verstaendigung#2 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#2 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#3 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#3 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#4 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#4 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#5 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#5 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#6 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.verstaendigung#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/stamm.cjs +9) — zuletzt an b3740dd5: Frist der Probe 40 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 40 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.kultur.verstaendigung#1 gtx: ungemessen (R10) — zuletzt an b3740dd5: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 50.9 s · S1 warf: /eval ohne Antwort binnen 40 s · karte2.mensch.kultur.verstaendigung#2 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#2 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#3 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#3 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#4 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#4 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#5 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#5 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#6 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.kultur.verstaendigung#1",
@@ -19043,7 +19043,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 45bad33f: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 51.4 s · S1 warf: /eval ohne Antwort binnen 40 s",
+     "grund": "ungemessen (R10) — zuletzt an b3740dd5: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 50.9 s · S1 warf: /eval ohne Antwort binnen 40 s",
      "ungemessen": true,
      "beide": true
     },
@@ -37590,7 +37590,7 @@
   "ohne": 3376
  },
  "kopfVoll": "b3740dd5566793ae66152d955e5a55d9c272884c",
- "zeit": "2026-11-27T22:10:12.229Z",
+ "zeit": "2026-11-27T22:22:44.540Z",
  "vorher": "b3740dd5",
  "bilanz": {
   "gewinn": [],
