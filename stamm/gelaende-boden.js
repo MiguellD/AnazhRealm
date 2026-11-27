@@ -65,10 +65,33 @@ class AnazhRealm_gelaende_boden {
             k.j0 = T - az * ce.dim * T;
             [k.E, k.ax, k.az, k.st] = [E, ax, az, undefined];
         }
-        let a = this._bodenFlaeche(n, gx, gz, lod),
-            b = this._bodenFlaeche(n, gx + 1, gz, lod),
-            c = this._bodenFlaeche(n, gx, gz + 1, lod),
+        // DIE ZELLE GEHÖRT DEM NETZ, DAS SIE GANZ TRÄGT (landmarken-9): trägt eine Karte alle vier Ecken der Zelle, zeichnet ihr
+        // Netz die Zelle — die Ecken nehmen dann nur die Karten, die die ganze Zelle tragen (die oberste von ihnen: ein Höhlen-Boden
+        // darunter trägt sie auch). Eine Karte, die nur eine Kante trägt, steht dort mit ihrem Rand: an der Vier-Chunk-Ecke 216/44,1
+        // (Stufen L1,L1 über L0,L0) trug die L1-Karte des x-Nachbarn die obere Kante 0,54 m über der L0-Karte, die die Zelle zeichnet —
+        // das Maximum je Ecke hob den Leser bis 0,47 m über den gezeichneten Boden (gate:koerper-stand K6: 6 von 792 Punkten). Trägt
+        // keine Karte die ganze Zelle (die Stufen-Naht, w28-pop-treue), nimmt jede Ecke wie bisher die oberste Fläche aller Karten.
+        let a = -Infinity,
+            b = -Infinity,
+            c = -Infinity,
+            d = -Infinity;
+        for (let q = 0; q < n; q++) {
+            const qa = this._bodenFlaeche(n, gx, gz, lod, q);
+            if (!(qa > -Infinity)) continue;
+            const qb = this._bodenFlaeche(n, gx + 1, gz, lod, q);
+            if (!(qb > -Infinity)) continue;
+            const qc = this._bodenFlaeche(n, gx, gz + 1, lod, q);
+            if (!(qc > -Infinity)) continue;
+            const qd = this._bodenFlaeche(n, gx + 1, gz + 1, lod, q);
+            if (!(qd > -Infinity)) continue;
+            [a, b, c, d] = [Math.max(a, qa), Math.max(b, qb), Math.max(c, qc), Math.max(d, qd)];
+        }
+        if (!(a > -Infinity)) {
+            a = this._bodenFlaeche(n, gx, gz, lod);
+            b = this._bodenFlaeche(n, gx + 1, gz, lod);
+            c = this._bodenFlaeche(n, gx, gz + 1, lod);
             d = this._bodenFlaeche(n, gx + 1, gz + 1, lod);
+        }
         // DIE FUGE DER NETZE (w28-pop-treue): wo ein feines Netz an die Rand-Ecke eines groben stößt, klafft zwischen ihnen ein
         // Splitter (Mess-Wiese: 1–12 cm an 5 Ecken von 81 Chunks) — der Rasterpunkt in ihm trägt keine Karte. Trägt GENAU EINE Ecke
         // der Zelle nicht, liest die Zelle die Ebene ihrer drei tragenden Ecken; vorher fiel die ganze Zelle (3,2 m² in Stufe 2).
@@ -127,10 +150,11 @@ class AnazhRealm_gelaende_boden {
     // derselben oder einer feineren Stufe trägt den Punkt selbst (die Raster aller Stufen liegen ineinander: Schritt
     // 1,8 · 2^Stufe, Ursprung Chunk − Schritt, der Chunk ein Vielfaches), eine gröbere in ihrer Zelle (`_bodenKarteEcke`). Den
     // Geomorph ihrer Stufe (`_bodenStufeMisch`) fragt eine Karte beim ersten Punkt, den sie trägt.
-    _bodenFlaeche(n, G, J, c) {
+    // `nur` (optional): die Fläche EINER Karte der Lesung (ihr Index) — die Frage, ob sie die ganze Zelle trägt (`_bodenSichtAt`).
+    _bodenFlaeche(n, G, J, c, nur) {
         const K = this._bodenKarten;
         let y = -Infinity;
-        for (let q = 0; q < n; q++) {
+        for (let q = nur === undefined ? 0 : nur; q < (nur === undefined ? n : nur + 1); q++) {
             const k = K[q];
             let v;
             if (k.el <= c) {

@@ -249,7 +249,7 @@ hauptLauf(async () => {
         }
 
         // ===== (K) KI-REGLER: je Zeile von PARAMS_BY_KIND ein spawn_studio mit dem Rand-Wert im fünften Argument =====
-        const k = (res.k = { zeilen: 0, erreicht: [], unbewegt: [], zwilling: [], ohneWerk: [], ohneWort: [], sagbar: [], grund: [], je: {}, zu: {}, prompt: [] });
+        const k = (res.k = { zeilen: 0, erreicht: [], unbewegt: [], zwilling: [], ohneWerk: [], ohneWort: [], sagbar: [], grund: [], je: {}, zu: {}, prompt: [], wuerfe: {} });
         try {
             const [P, PBK, archs, pm, gM] = [Object.getPrototypeOf(r), f.paramsByKind, st.architectures, st.playerMesh.position, r._genesisMitte()];
             let spot = null; // trockener Grund abseits der Genesis-Lichtung (ein Werk mit Grundriss sucht seinen Ort selbst)
@@ -354,7 +354,15 @@ hauptLauf(async () => {
                     if (st === "erreicht") k.grund.push(art + ":" + d.id);
                     return st;
                 }
-                if (art === "kreatur") r.spawnCreatures(r.state.maxCreatures), r._bestandAdoptieren();
+                // die volle Kappe trägt einen Leib, der gehen darf (`_bestandWeicht`): ein Wurf, der nur Herden eines Gaus zieht,
+                // hält jeden Leib bis zur Antwort des Gaus (`zu`, ein Takt) — dann würfelt die Kappe neu, höchstens acht Mal, und
+                // die Würfe stehen im Befund (landmarken-9: am Ort 34/−34 zog die Zeile diet nur Gau-Herden, „ohneWerk“)
+                if (art === "kreatur")
+                    for (let i = 1; i <= 8; i++) {
+                        r.spawnCreatures(r.state.maxCreatures), r._bestandAdoptieren();
+                        if (!k.taeter) k.wuerfe[d.id] = i; // die Selbst-Tests würfeln mit
+                        if (r._bestandWeicht()) break;
+                    }
                 const rez = Object.keys(f.recipes).filter((id) => {
                     const bp = f.recipes[id].kind === art && r._studioBlueprintForWord(id);
                     return bp && r._foundryPresetForEntry({ type: bp }) === id;
@@ -685,7 +693,7 @@ hauptLauf(async () => {
     check(
         `ERREICHT: ${K.erreicht.length} von ${K.zeilen} Zeilen von PARAMS_BY_KIND (${anteil.toFixed(1)} %) erreicht`,
         !K.err && !kiUrteil(K).length && anteil >= 95,
-        `je Art ${Object.entries(K.je).map(([a, [e, n]]) => `${a} ${e}/${n}`).join(" · ")} (tot ${K.unbewegt.length}, ohne Wort ${K.ohneWort.length})` +
+        `je Art ${Object.entries(K.je).map(([a, [e, n]]) => `${a} ${e}/${n}`).join(" · ")} (tot ${K.unbewegt.length}, ohne Wort ${K.ohneWort.length}; Würfe der vollen Kappe je kreatur-Zeile ${JSON.stringify(K.wuerfe || {})})` +
             (K.grund?.length ? ` — Werk des Grunds, kein KI-Regler (kein Wort, der Leser ist das Alter am Werk des Orts): ${K.grund.join(" · ")}` : "") +
             (kiUrteil(K).length ? ` — ${kiUrteil(K).slice(0, 6).join(" · ")}` : "")
     );
