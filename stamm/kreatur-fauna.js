@@ -479,6 +479,7 @@ class AnazhRealm_kreatur_fauna {
                 lebt: new Set(),
                 liste: [],
                 lauf: null,
+                glied: new Float64Array(3 * F.leib.glieder.length), // die Glieder EINES Fischs je Takt (`fischLeib`)
             };
         const { x: px, z: pz } = pm.position;
         const Z = F.zelleM;
@@ -499,7 +500,7 @@ class AnazhRealm_kreatur_fauna {
         const lebt = fk.lebt;
         lebt.clear();
         const P = 6.283185307179586;
-        const glied = fk.glied || (fk.glied = new Float64Array(3 * F.leib.glieder.length));
+        const glied = fk.glied;
         const gm = FG.glieder;
         let n = 0;
         let neu = F.zelleJeTakt;
@@ -851,7 +852,9 @@ AnazhRealm._fischGesetz = function () {
         // die Ausdehnung je Glied: Quer und Hoch nach seinem Maß im Leib, die Länge ueberlapp × L/n (die Keile greifen ineinander)
         const [gx, gy, gz] = F.leib.groesse;
         const n = F.leib.glieder.length;
-        const glieder = Object.freeze(F.leib.glieder.map((p) => Object.freeze([gx * p, gy * p, (gz / n) * F.leib.ueberlapp])));
+        const glieder = Object.freeze(
+            F.leib.glieder.map((p) => Object.freeze([gx * p, gy * p, (gz / n) * F.leib.ueberlapp]))
+        );
         return (AnazhRealm._fischGesetzMemo = Object.freeze({
             F,
             wurf: k.vogelWurf,

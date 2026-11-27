@@ -403,6 +403,148 @@ const LEIB = (k) => {
     return { zeilen, taeter, beckenTaeter, loeserTaeter };
 };
 
+// DIE KÖRPERWELLE DES FISCHS (Karte 2 leben.tiere.bewegung#2: „St = f·A/U aus dem Ausgabe-Bild“, Tiefe Strouhal 0,2–0,4 —
+// Taylor, Nudds & Thomas 2003): am Bach nächst dem Spieler (er steht am Ufer jenseits der Flucht) läuft der ECHTE Takt der
+// Fische (`_fischTakt`: Stand, Rheotaxis, Körperwelle) FISCH_SOLL.sek Sekunden mit dt 1/60; gemessen wird nur, was der Pool
+// zeichnet (die Instanz-Matrizen von `fischPool`, je Fisch seine Glieder): die Schwanz-Spitze (Mitte des letzten Glieds −
+// seine Achse × halbe Länge) quer zur Richtung des Fischs (gleitend über ±glattS — länger als die Periode des langsamsten
+// Schlags) gegen die Mitte seiner Glieder, A = ihr Ausschlag Spitze–Spitze, f = ihre Durchgänge je s, U = das Tempo der
+// Mitte DURCH das Wasser (gegen `_waterFlowAt`); dazu die BIEGUNG (der größte Unterschied der Gier zwischen Kopf- und
+// Schwanz-Glied — ein starrer Leib hat 0). Urteil: St im Band bei ≥ anteil der STETEN Fische (die Richtung im Fenster
+// ± steteRad — wer kreist oder wendet, cruist nicht und zählt offen) mit ≥ zyklen Schlägen, die Biegung im Median
+// ≥ biegungRad. --selftest: der starre Leib (der Vor-Welle-Fisch: alle Glieder auf der Achse, die Gier wippt mit 2,5 Hz um
+// ±0,1 rad — FISCH_GESETZ schlagHz/schlagRad bis 27.11.) → ROT an der Biegung.
+const FISCH_SOLL = { st: [0.2, 0.4], sek: 12, glattS: 1.5, steteRad: 0.15, zyklen: 3, anteil: 0.9, biegungRad: 0.1, minFische: 3 };
+const FISCH = async (k) => {
+    const s = st,
+        A = AnazhRealm;
+    const pm = s.playerMesh;
+    const vor = { p: pm.position.clone(), uhr: s.spielZeit, karte: r._fischKarte };
+    const zur = k.stub
+        ? leihe(A, {
+              _fischGesetz: (() => {
+                  const echt = A._fischGesetz.bind(A);
+                  return () => {
+                      const G = echt();
+                      // der Vor-Welle-Leib: die Glieder auf der Achse, die Gier des ganzen Leibs wippt (2,5 Hz, ±0,1 rad)
+                      const starr = (f, F, out) => {
+                          const n = F.leib.glieder.length,
+                              L = F.leib.groesse[2],
+                              q = F.leib.ueberlapp / (2 * n),
+                              g = f.gier + 0.1 * Math.sin(2 * Math.PI * 2.5 * s.spielZeit + f.welle);
+                          for (let i = 0; i < n; i++) {
+                              const x = (0.5 - (n > 1 ? q + (i * (1 - 2 * q)) / (n - 1) : 0.5)) * L;
+                              [out[3 * i], out[3 * i + 1], out[3 * i + 2]] = [f.x + Math.sin(g) * x, f.z + Math.cos(g) * x, g];
+                          }
+                          return n;
+                      };
+                      return Object.assign({}, G, { leib: starr });
+                  };
+              })(),
+          })
+        : () => {};
+    try {
+        const F = A._fischGesetz().F;
+        const n = F.leib.glieder.length;
+        await __weltDa(() => !r._ensureHydroTilesAround(vor.p.x, vor.p.z, 600));
+        const P = (r._hydroFor(vor.p.x, vor.p.z).rivers || []).flatMap((rv) => rv.points.slice(4, -4)).filter((q) => !q.inLake);
+        P.sort((a, b) => Math.hypot(a.x - vor.p.x, a.z - vor.p.z) - Math.hypot(b.x - vor.p.x, b.z - vor.p.z));
+        const ort = P.find((q) => r._waterFlowAt(q.x, q.z) && r._nassAt(q.x, q.z));
+        if (!ort) return { fehler: "kein fließender Bach binnen 600 m um den Spieler" };
+        await __weltDa(() => !r._ensureHydroTilesAround(ort.x, ort.z, 120));
+        // der Spieler am Ufer, jenseits der Flucht (wegM): gemessen wird das stete Schwimmen gegen den Lauf (Taylor: „cruise“)
+        const W = F.flucht.wegM + 2;
+        let ufer = null;
+        for (let i = 0; i < 64 && !ufer; i++) {
+            const [x, z] = [ort.x + Math.cos(i * 0.4) * (W + (i >> 4) * 4), ort.z + Math.sin(i * 0.4) * (W + (i >> 4) * 4)];
+            if (r._landAt(x, z) && !r._nassAt(x, z)) ufer = { x, z };
+        }
+        if (!ufer) return { fehler: `kein trockenes Ufer ${W}–${W + 12} m um den Bach ${Math.round(ort.x)}/${Math.round(ort.z)}` };
+        pm.position.set(ufer.x, r.getTerrainHeightAt(ufer.x, ufer.z) + A.PLAYER_FOOT_OFFSET, ufer.z);
+        r._fischKarte = null;
+        const dt = 1 / 60;
+        const takt = () => {
+            s.spielZeit += dt;
+            r._fischTakt(dt);
+        };
+        // die Ankunft: der Takt baut zelleJeTakt Zellen je Takt; dann steht der Bestand still (der Spieler ruht)
+        for (let i = 0; i < 120; i++) takt();
+        const zeilen = [];
+        const proben = Math.round(k.soll.sek / dt);
+        for (let i = 0; i <= proben; i++) {
+            takt();
+            const M = s.fischPool && s.fischPool.mesh;
+            const m = M ? M.count : 0;
+            const E = M ? M.instanceMatrix.array : [];
+            const z = [];
+            for (let j = 0; j < m; j++) {
+                const b = 16 * j;
+                const lz = Math.hypot(E[b + 8], E[b + 10]);
+                z.push([E[b + 12], E[b + 14], Math.atan2(E[b + 8], E[b + 10]), lz / 2]);
+            }
+            zeilen.push(z);
+        }
+        const zahl = zeilen[0].length;
+        if (!zahl || zeilen.some((z) => z.length !== zahl))
+            return { fehler: `der Bestand stand nicht still oder ist leer (${zeilen.map((z) => z.length).filter((x, i, a) => a.indexOf(x) === i).join("/")} Glieder)` };
+        const fische = [];
+        for (let a = 0; a + n <= zahl; a += n) {
+            // die Richtung des Fischs: das Kreis-Mittel der Gier seiner Glieder, gleitend über ±k.soll.glattS (ein Schlag
+            // mittelt sich heraus, eine Wende der Flucht nicht)
+            const cs = zeilen.map((z) => {
+                let [c, sn] = [0, 0];
+                for (let j = a; j < a + n; j++) [c, sn] = [c + Math.cos(z[j][2]), sn + Math.sin(z[j][2])];
+                return [c, sn];
+            });
+            const h = Math.round(k.soll.glattS / dt);
+            const quer = [],
+                mitte = [],
+                richtung = [];
+            let biegung = 0;
+            for (const [i, z] of zeilen.entries()) {
+                let [c, sn] = [0, 0];
+                for (let q = Math.max(0, i - h); q <= Math.min(cs.length - 1, i + h); q++) [c, sn] = [c + cs[q][0], sn + cs[q][1]];
+                const g = Math.atan2(sn, c);
+                richtung.push(g);
+                let [mx, mz] = [0, 0];
+                for (let j = a; j < a + n; j++) [mx, mz] = [mx + z[j][0] / n, mz + z[j][1] / n];
+                const S = z[a + n - 1];
+                const tx = S[0] - Math.sin(S[2]) * S[3],
+                    tz = S[1] - Math.cos(S[2]) * S[3];
+                quer.push((tx - mx) * Math.cos(g) - (tz - mz) * Math.sin(g));
+                mitte.push([mx, mz]);
+                let d = S[2] - z[a][2];
+                d -= 2 * Math.PI * Math.round(d / (2 * Math.PI));
+                biegung = Math.max(biegung, Math.abs(d));
+            }
+            // STET: die Richtung weicht im Fenster höchstens steteRad von ihrem Mittel (ein Fisch, der kreist oder wendet, schwimmt
+            // nicht im Sinn des Strouhal-Gesetzes — er zählt offen als „wendend“)
+            const [rc, rs] = richtung.reduce(([c, sn], g) => [c + Math.cos(g), sn + Math.sin(g)], [0, 0]);
+            const rm = Math.atan2(rs, rc);
+            const stet = richtung.every((g) => Math.abs(g - rm - 2 * Math.PI * Math.round((g - rm) / (2 * Math.PI))) <= k.soll.steteRad);
+            const qm = quer.reduce(addiere, 0) / quer.length;
+            let schlaege = 0;
+            for (let i = 1; i < quer.length; i++) if (quer[i - 1] < qm && quer[i] >= qm) schlaege++;
+            let u = 0;
+            for (let i = 1; i < mitte.length; i++) {
+                const w = r._waterFlowAt(mitte[i][0], mitte[i][1]) || { x: 0, z: 0 };
+                u += Math.hypot((mitte[i][0] - mitte[i - 1][0]) / dt - w.x, (mitte[i][1] - mitte[i - 1][1]) / dt - w.z);
+            }
+            u /= mitte.length - 1;
+            const hz = schlaege / k.soll.sek;
+            const aus = Math.max(...quer) - Math.min(...quer);
+            fische.push({ hz: +hz.toFixed(2), A: +aus.toFixed(4), U: +u.toFixed(3), st: u > 0 ? +((hz * aus) / u).toFixed(3) : null, biegung: +biegung.toFixed(3), schlaege, stet });
+        }
+        return { ort: [Math.round(ort.x), Math.round(ort.z)], fische };
+    } finally {
+        zur();
+        pm.position.copy(vor.p);
+        s.spielZeit = vor.uhr;
+        if (s.fischPool) A._instanzZahl(s.fischPool.mesh, 0);
+        r._fischKarte = vor.karte;
+    }
+};
+
 // DIE SCHWERE DES GANGS (K07, dieselbe Linse): Schritt und Becken lesen die Schwere der Welt (state.gravity, die DSL setzt
 // sie) aus EINER Zeile, Mensch und Tier. Unter der Mond-Schwere (1,62 m/s²) gleicht der Takt des Menschen beim Laufen
 // gangSchritt mit dieser Schwere, das Becken des Menschen bekommt dieselbe Zeile (der Spion am Kern liest ihre Schwere), und
@@ -709,6 +851,7 @@ hauptLauf(async () => {
     let rot = 0;
     let schwereRot = false;
     let taktRot = false;
+    let fischRot = false;
     let bewegtFeuert = 0;
     let gangRot = false,
         tastRot = false;
@@ -836,6 +979,31 @@ hauptLauf(async () => {
             rot++;
             schwereRot = true;
         }
+        // DIE KÖRPERWELLE DES FISCHS am gezeichneten Leib (FISCH, oben)
+        {
+            const fz = await page.evaluate(FISCH, { stub: SELBST, soll: FISCH_SOLL });
+            if (fz.fehler) {
+                log("  ❌ Fisch:", fz.fehler);
+                rot++;
+            } else {
+                const [lo, hi] = FISCH_SOLL.st;
+                const gezaehlt = fz.fische.filter((f) => f.stet && f.schlaege >= FISCH_SOLL.zyklen && f.st !== null);
+                const wendend = fz.fische.filter((f) => !f.stet).length;
+                const imBand = gezaehlt.filter((f) => f.st >= lo && f.st <= hi).length;
+                const anteil = gezaehlt.length ? imBand / gezaehlt.length : 0;
+                const b = fz.fische.map((f) => f.biegung).sort(aufsteigend);
+                const biegung = b.length ? rang(b) : 0;
+                const stM = gezaehlt.map((f) => f.st).sort(aufsteigend);
+                const ok = gezaehlt.length >= FISCH_SOLL.minFische && anteil >= FISCH_SOLL.anteil && biegung >= FISCH_SOLL.biegungRad;
+                log(
+                    `  ${ok ? "✅" : "❌"} Fisch am Bach ${fz.ort.join("/")} · ${fz.fische.length} Fische (${wendend} wendend), ${gezaehlt.length} stet mit ≥ ${FISCH_SOLL.zyklen} Schlägen · St im Band ${lo}–${hi}: ${imBand} von ${gezaehlt.length} (Soll ≥ ${FISCH_SOLL.anteil * 100} %) · St Median ${stM.length ? rang(stM) : "–"} [${stM.length ? stM[0] + " … " + stM[stM.length - 1] : "–"}] · Biegung Median ${biegung} rad (Soll ≥ ${FISCH_SOLL.biegungRad})${ok ? "" : " — Täter: tetrapoda FISCH_GESETZ / fischLeib (der starre Leib ohne Körperwelle)"}`
+                );
+                if (!ok) {
+                    rot++;
+                    fischRot = true;
+                }
+            }
+        }
         // das Labor (oben: sein Browser und beide Studios laufen seit dem Anfang neben der Welt)
         const sp = await koerper;
         // LABOR = WELT IM BEWEGUNGS-TAKT (w4-koerper-park): dieselbe Spur im Körper-Studio, die erste Abweichung beim Namen
@@ -885,6 +1053,7 @@ hauptLauf(async () => {
             [gefeuert.has("satz"), "der Satz ohne das Gedächtnis des Leibs blieb grün: die Satz-Wand"],
             [gefeuert.has("wechsel"), "der Wechsel über der Natur (die Hysterese beidseits) blieb grün: die Wechsel-Wand"],
             [taktRot, "die Takt-Wand (Labor = Welt)"],
+            [fischRot, "der starre Fisch-Leib (Gier-Wippe 2,5 Hz ohne Körperwelle) blieb grün: die Wellen-Wand"],
             [bewegtFeuert === Object.keys(BEWEGUNG_BRUCH).length, "die Bewegungs-Wand (VERB_SOLL)"],
         ].find(([ok]) => !ok);
         urteilEnde(vakuoes, () => `\n❌ SELBST-TEST ROT — ${vakuoes[1]} ist vakuös.`, `\n✅ SELBST-TEST GRÜN — der Vor-Welle-Gang gleitet (${rot} Läufe über ${SCHWELLE}).`);
