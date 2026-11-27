@@ -8676,8 +8676,17 @@
     // Szene (physicallyCorrectLights).
     // DIE LICHTSTÄRKE, EINE GRÖSSE (nacht-lichter): jede Leuchte trägt GENAU EINE Zahl ihres Lichts — `cd` die Lichtstärke in
     // Candela (≙ lx in 1 m nach dem Abfall der Zeile, cd · (1 + kern²)/(d² + kern²)): das Herdfeuer 10,2 (3,5 lx in 2 m, das Band
-    // 2–5 lx des Nordstern-Solls; Hypothese mit Band, kein Messwert eines Holzfeuers), die Laterne 25,7 (2 lx am Boden unter 3,6 m,
-    // das Band 2–5 lx der Gasse; ein Gas-Brenner trägt 10–30 cd). Alles andere Licht der Leuchte FOLGT aus ihr: der leuchtende
+    // 2–5 lx des Nordstern-Solls; Hypothese mit Band, kein Messwert eines Holzfeuers). DIE LATERNE TRÄGT IHREN LICHTSTROM
+    // (nacht-gasse-licht): `lm`, die Zahl, die ihre Quelle misst — die Lichtstärke FOLGT als Kugel des Gesetzes, cd = lm ÷ 4π
+    // (`lichtStaerkeCd`). 2 000 lm: vier Gasglühkörper (Auer) zu je etwa 500 lm, die Aufsatzleuchte auf dem Mast (Band: Marx,
+    // Vortrag „Allgemeine Lichttechnik“, mx-electronic MX-IfLi — „Der Lichtstrom eines Gasglühkörpers beträgt etwa 500 lm“, die
+    // sechsflammige Leuchte 3 000 lm bei 1,83 kW Gas; Berlins Gasleuchten tragen 4, 6 oder 9 Glühkörper, Senatsverwaltung UVK,
+    // Öffentliche Beleuchtung) → 159,2 cd: unter dem Mast 12,3 lx, längs der Gasse des Dorfs (ein Mast je 25 m, `DORF_LICHT_WEG`)
+    // im Mittel Ē = 2·cd ÷ (Abstand · Höhe) = 3,5 lx, in der Mitte zwischen zwei Masten 0,52 lx — EN 13201-2:2015 Tab. 3 P5
+    // (Ē 3 lx, Emin 0,6 lx; P1–P6: 15 · 10 · 7,5 · 5 · 3 · 2 lx). Bis nacht-gasse-licht trug sie 25,7 cd (ein offener Gas-Brenner,
+    // 10–30 cd; 323 lm): 2 lx unter dem Mast, im Dorf Ē 0,57 lx — unter P6, die Gasse am Leser der Nacht (karte2.erleben.bild.nacht#2,
+    // GTX, Dorf dritte Person) 4,7–6,5 EV unter dem Band. Der Farbort bleibt der des Nordstern-Solls (1 900 K); der Glühkörper
+    // derselben Quelle misst 2 983 K — offen. Alles andere Licht der Leuchte FOLGT aus der Lichtstärke: der leuchtende
     // Leib (Fläche = cd ÷ `FEUER_LEUCHTDICHTE`, `lichtFlammeM`), das Glas des Kopfs (eine Scheibe, von innen beleuchtet: Leuchtdichte
     // = `glasStreu` · E ÷ π mit E = cd · cos θ ÷ (r² + kern²) je Ecke, `laterneGlasTon` · `laterneGlasJeLuma`), die Wandlaterne (dieselbe Leuchte am Arm).
     // Bis nacht-lichter trug jede Zeile daneben die Zahl des Labors (`staerke` 1 / 19) und der Kopf eine eigene Leuchtdichte (`cdM2`
@@ -8702,18 +8711,26 @@
     var LICHT_GESETZ = {
         feuer: { kelvin: 2000, cd: 10.2, zeit: { mittag: 1.6, morgen: 1.6, abend: 2.2, nacht: 45 }, reichweiteM: 9, abfall: 2, kernM: 0.76, hoeheM: 0.35, flacker: { amp: 0.18, hz: [6.3, 9.7] } },
         fenster: { kelvin: 2800, cdM2: 8, schaltet: true, zeit: { mittag: 0, morgen: 0, abend: 0.42, nacht: 0.85 } },
-        laterne: { kelvin: 1900, cd: 25.7, glasStreu: 0.05, schaltet: true, abfall: 2, hoeheM: 3.6, zeit: { mittag: 0, morgen: 0, abend: 1, nacht: 1 } },
+        laterne: { kelvin: 1900, lm: 2000, glasStreu: 0.05, schaltet: true, abfall: 2, hoeheM: 3.6, zeit: { mittag: 0, morgen: 0, abend: 1, nacht: 1 } },
     };
+    // DIE LICHTSTÄRKE AUS DEM LICHTSTROM (nacht-gasse-licht): die Leuchte des Gesetzes strahlt nach allen Seiten gleich (`lichtAbfall`
+    // kennt keine Richtung) — ihr Lichtstrom verteilt sich auf die Kugel, cd = lm ÷ 4π, auf ein Zehntel gerundet.
+    function lichtStaerkeCd(L) {
+        return Math.round((10 * L.lm) / (4 * Math.PI)) / 10;
+    }
+    LICHT_GESETZ.laterne.cd = lichtStaerkeCd(LICHT_GESETZ.laterne);
     // DIE FLAMME EINER LEUCHTE (nacht-lichter): ihr leuchtender Leib als Scheibe der Fläche cd ÷ `FEUER_LEUCHTDICHTE` — der Halbmesser ist
-    // der Kern ihres Abfalls (`lichtAbfall`). Die Laterne: 25,7 cd ÷ 15 000 cd/m² = 17 cm², Halbmesser 2,3 cm (bis nacht-lichter
-    // stand der Kern als eigene Zahl 0,1 m daneben). Das Herdfeuer trägt sein Glutbett als Kern (Ø 0,76 m, klang bettRefM).
+    // der Kern ihres Abfalls (`lichtAbfall`). Die Laterne: 159,2 cd ÷ 15 000 cd/m² = 106 cm², Halbmesser 5,8 cm (bis nacht-gasse-licht
+    // 25,7 cd, 2,3 cm; bis nacht-lichter stand der Kern als eigene Zahl 0,1 m daneben). Das Herdfeuer trägt sein Glutbett als Kern
+    // (Ø 0,76 m, klang bettRefM).
     function lichtFlammeM(L) {
         return Math.round(1000 * Math.sqrt(L.cd / (Math.PI * FEUER_LEUCHTDICHTE))) / 1000;
     }
     LICHT_GESETZ.laterne.kernM = lichtFlammeM(LICHT_GESETZ.laterne);
     // DIE REICHWEITE FOLGT AUS DER LICHTSTÄRKE (nacht-lichter): der Abstand, in dem die Leuchte waagrecht unter ihr noch ein Achtel
     // des Vollmonds trägt (`LICHT_SCHWELLE_LX` 0,0325 lx, der Vollmond im Zenit 0,26 lx) — darunter trägt sie kein Pixel, das der
-    // Mond nicht trägt. Die Laterne: √(25,7 · (1 + k²) ÷ 0,0325) = 28,1 m (bis nacht-lichter die eigene Zahl 12 m: der Kreis des
+    // Mond nicht trägt. Die Laterne: √(159,2 · (1 + k²) ÷ 0,0325) = 70,1 m (bis nacht-gasse-licht 28,1 m aus 25,7 cd; bis
+    // nacht-lichter die eigene Zahl 12 m: der Kreis des
     // Lichts brach 12 m vom Mast hart ab, die Gasse zwischen zwei Masten in 24 m stand schwarz). Das Herdfeuer trägt seine Reichweite
     // aus dem Labor (sein Schaltplan hebt es nachts ×45 — aus der Stärke folgten 119 m).
     var LICHT_SCHWELLE_LX = 0.0325;
@@ -10043,7 +10060,7 @@
         return r2 > 0 ? ((a / Math.sqrt(r2)) * (b * b + k2)) / (r2 + k2) : 1;
     }
     // DIE BESTRAHLUNG DER SCHEIBE in ihrer Mitte (lx), der Bezug des Tons: der Mast in der Größe 1 (die Flamme 0,13 m hinter dem
-    // Glas). Die Leuchtdichte des Glases dort ist `glasStreu` · E ÷ π (23 cd/m² bei 25,7 cd) — Leser: die Welt (`_leuchtTakt`,
+    // Glas). Die Leuchtdichte des Glases dort ist `glasStreu` · E ÷ π (125 cd/m² bei 159,2 cd; 23 bei 25,7) — Leser: die Welt (`_leuchtTakt`,
     // die Glut des Datums `laterne`), die Linse gate:post-kette (GLAS).
     function laterneGlasE(L) {
         var b = AUS_MASS.laterne(1).kb / 2;

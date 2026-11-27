@@ -110,12 +110,12 @@
     "laterne-s1-L0": {
       "objects": 2,
       "vertices": 473,
-      "sha256": "f321680086ebc739abee94518a185f8fb2591403b6185cda738c1b629f9f6ea9"
+      "sha256": "203085bef73ec19114aa282c6fc12e40520aaa9c3e2771ba07e9a39c6e3805cf"
     },
     "laterne-s1-L1": {
       "objects": 2,
       "vertices": 129,
-      "sha256": "eab24956b9ce00bf6d5c586e189cd13c433f60015acbc36b97bd65c6a8e67886"
+      "sha256": "efdf2f9839c4ecf39faab80451c34d1326fcdfcf126c066cadeb9dc158d6b55f"
     },
     "laterne-s1-L3": {
       "objects": 1,
@@ -125,12 +125,12 @@
     "wandlaterne-s1-L0": {
       "objects": 2,
       "vertices": 640,
-      "sha256": "517177c7e263e397dc86df7e11042370ad2aa4f1329703dc2b05072ea45436a1"
+      "sha256": "1ccd63457a6ff7930fb01bbd228b21364d67a19aff709d628aff2b7e8bb62319"
     },
     "wandlaterne-s1-L1": {
       "objects": 2,
       "vertices": 184,
-      "sha256": "73fe6b54eeedbb3492658ee735a42c50fed2d9165723e1cbc83dae09c42fd573"
+      "sha256": "ce52adc080a9078982d838ff2a69db4f1d4f6c78ee0c61d275bab2dc221000af"
     },
     "wandlaterne-s1-L3": {
       "objects": 1,

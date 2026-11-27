@@ -1,0 +1,27 @@
+Stations-KANDIDAT der Bahn wurf-mit-luft — k2-same.js, Leiter same.physik.flug, Teil S1 (Diff: k2-same.diff gegen
+origin/punkte-maschine meisterkarte-quelle/punkte/stationen/k2-same.js, roh gelesen am 27.11. 14:00). Kein Soll, kein Richter-Text,
+kein Umfang geändert.
+
+WARUM: Die Rechnung der Station rechnet in STILLER Luft (m dv/dt = −m g − ½ ρ c_w A |v| v), die Welt weht. Der Löser trägt die Luft
+seit druck-schlaf-uhr (stamm/koerper-frei.js `_freiLuftPacken` · `_freiZiehen`: ½ ρ c_w A / m, ρ = vehicle:FAHR.luft.rho 1,2, c_w nach
+Hoerner 1965 Platte 1,17 / Würfel 1,05, gegen v − Wind des EINEN Wind-Lesers `_windAt`). An der Wiese weht der Wind mit 1,03 m/s; die
+Feder (1,9 g, Sinkgeschwindigkeit 1,45 m/s) treibt mit ihm, wie sie soll — die Station nennt das „2 260 % / der Löser kennt keine Luft“.
+
+GEMESSEN (Rumpf `wurf` wörtlich, Werkbank swiftshader, Wiese ego):
+  main 7e73426e, Station alt:         stein_abw_pct 3.03 · feder_abw_pct 108.48  (Feder 1,056 m gegen Rechnung 0,507 m)
+  main 7e73426e, Wind am Ort auf 0:    stein_abw_pct 2.83 · feder_abw_pct 0.44    (die Rechnung stimmt in stiller Luft)
+  Kopf wurf-mit-luft, Station alt:     stein_abw_pct 3.05 · feder_abw_pct 109.94
+  Kopf wurf-mit-luft, KANDIDAT:        stein_abw_pct 2.91 · feder_abw_pct 1.08    (Feder 1,064 gegen 1,052 m, Wind 1,035 m/s)
+  KANDIDAT, Wind × 5 (5,2 m/s):        stein_abw_pct 2.92 · feder_abw_pct 0.19    (Feder 3,03 m)
+  KANDIDAT, Mutante Luft-Term aus:     stein_abw_pct 5.46 · feder_abw_pct 1033.2  → ROT (der Kandidat bleibt scharf)
+  Dauer des Rumpfs: 64–97 ms (die Rechnung fragt `_windAt` je ms ihres Wegs).
+
+DER SCHNITT IM KANDIDATEN: die Rechnung läuft längs (x), quer (q) und hoch (y) mit v_rel = v − w, w = `_windAt(x, z, state._simZeit)`
+am Ort jedes Millisekunden-Schritts (die Station rückt die Uhr nicht vor, der Löser liest dieselbe Uhr); die Weite längs der Bahn wie
+bisher. Der Täter-Text nennt den Wind am Ort und die Luft des Lösers statt „kennt keine Luft (:421)“. Das Ergebnis trägt `wind_ms`.
+
+NICHT GEÄNDERT, aber veraltet (Leser der Sprossen 2–5, ihre Sache): die Texte `ohneLuft` („nur Schwere, Kontakt und Reibung :421“) und
+S5 („der Löser liest das EINE Wind-Feld nicht“) — der Löser liest `_windAt` am Körper.
+
+WÄNDE: `node punkte.cjs liste` NICHT gefahren — der Zweig punkte-maschine ist in der Wolke nicht holbar (git fetch --depth 1 > 120 s);
+die Leiter misst in ≤ 60 s (der Rumpf 0,1 s); kein Fächer.
