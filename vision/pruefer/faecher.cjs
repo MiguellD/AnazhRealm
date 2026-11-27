@@ -354,6 +354,32 @@ const SPROSSEN = {
             "H.sort((a, b) => a.rang - b.rang || a.d - b.d);" +
             "return { saat, posen: H, lage: n + ' Wohnbauten in ' + plaene.length + ' Plänen, Zehntel ≤ ' + Math.round(lo) + ' m² / ≥ ' + Math.round(hi) + ' m², stehend mit Tür arm ' + H.filter((x) => x.klasse === 'arm').length + ' · reich ' + H.filter((x) => x.klasse === 'reich').length + ', ohne stehendes Haus mit Tür ' + ohne + ', ohne Gestalt ' + ohneGestalt + ', ohne freien Azimut ' + ohneFrei + ' · Gründe ' + JSON.stringify(gruende) };",
     },
+    // Meister oder Anfänger: die Station misst je Kunst Meister und Anfänger der Stadt am Rig (k2-mensch-sport.js:1134, `KUNST`: die
+    // Schwellen des Gesetzes, Können ≥ 1 / < 0,5 aus `b.uebung`) — der Fächer nimmt JEDEN Bewohner der vollen Stadt, den sein Plan
+    // um 10 Uhr draußen in den Akt einer Kunst stellt (`_bewohnerSoll`, koerper LEIB_SATZ.kunst), 3 m vor ihm in seiner
+    // Blickrichtung, Augenhöhe; die Klasse ist sein Können in dieser Kunst, die Klassen im Wechsel, nach Abstand
+    "mensch.sport.kunst#1": {
+        ort: "stadt-voll",
+        gesetz: "meisterkarte-quelle/punkte/stationen/k2-mensch-sport.js:1134",
+        faecher: "jeder Bewohner der vollen Stadt im Akt einer Kunst um 10 Uhr draußen (Werk, Jagd, Fischfang, Zweikampf, Brett), 3 m vor ihm in seiner Blickrichtung, Augenhöhe 1,6 m, Blick auf 1,5 m, Klassen im Wechsel, 10 Uhr",
+        ordner: "mensch.sport.kunst.1-b1",
+        uhren: [10 / 24],
+        frage: "Ist der Mensch in der Bildmitte ein Meister oder ein Anfänger seiner Kunst?",
+        je: 22,
+        mehr: {},
+        wahl: 0,
+        motiv: (a) => AN_DER_POSE(a) && GRUEN(a),
+        rumpf: () =>
+            SAAT +
+            "const KC = window.__koerperCore, KU = KC && KC.LEIB_SATZ && KC.LEIB_SATZ.kunst; if (!KU) return { saat, posen: [], lage: 'der Kern trägt keine Künste (koerper LEIB_SATZ.kunst)' };" +
+            "const pm = r.state.playerMesh.position, H = [], je = { Meister: 0, Anfänger: 0 }; let mitte = 0, drinnen = 0;" +
+            "for (const S of (r._bewohnerSiedlungen || new Map()).values()) for (const b of S.liste || []) { if (!b.uebung || !b.orte) continue; const s = r._bewohnerSoll(b, 10); if (!s || !KU[s.akt]) continue; if (s.drinnen) { drinnen++; continue; }" +
+            " const kunst = KU[s.akt] === 'haupt' ? b.uebung.haupt : KU[s.akt], k = b.uebung[kunst] && b.uebung[kunst].koennen, klasse = k >= 1 ? 'Meister' : k < 0.5 ? 'Anfänger' : null; if (!klasse) { mitte++; continue; }" +
+            " const z = s.ziel, y = Number.isFinite(z.blick) ? z.blick : Math.atan2(pm.x - z.x, pm.z - z.z), ex = z.x + Math.sin(y) * 3, ez = z.z + Math.cos(y) * 3, gy = r.getTerrainHeightAt(z.x, z.z); je[klasse]++;" +
+            " H.push({ d: Math.hypot(z.x - pm.x, z.z - pm.z), klasse, pose: { px: +ex.toFixed(2), py: +(r.getTerrainHeightAt(ex, ez) + 1.6).toFixed(2), pz: +ez.toFixed(2), lx: +z.x.toFixed(2), ly: +(gy + 1.5).toFixed(2), lz: +z.z.toFixed(2) }, wort: s.akt + ' (' + kunst + ', Können ' + k.toFixed(2) + '): ' + klasse + ', 3 m vor ihm, Augenhöhe, 10 Uhr' }); }" +
+            "H.sort((a, b) => a.d - b.d);" +
+            "return { saat, posen: H, lage: 'im Akt einer Kunst um 10 Uhr draußen: Meister ' + je.Meister + ' · Anfänger ' + je['Anfänger'] + ' · dazwischen ' + mitte + ' · drinnen ' + drinnen };",
+    },
     // die Talform an 20 Saaten: die Station rechnet je Saat (Land-Lage der Fibonacci-Kugel) × Stelle 1/4 · 1/2 · 3/4 des größten Laufs
     // den Querschnitt (k2-planet.js:2662 PROFIL_AN, V-Tal b < 1,5 ≤ Trog) und nennt die Pose „Ego 8 m über der Sohle, Blick talauf“
     // (:2706) — der Fächer REIST je Saat an ihre Lage (der Satz des Spielers „reise <Breite> <Länge>“, wie die Werkbank ihre Reise-Orte
@@ -487,7 +513,9 @@ async function start() {
         await schlaf(1000);
     }
     console.log("Werkbank bereit nach " + ((Date.now() - t0) / 1000).toFixed(0) + " s");
-    const u = await ruf(port, "/umstellen", { ort, sicht: "ego" }, 150000);
+    // Frist des Orts-Wechsels: stadt-voll steht an der GTX 1060 erst nach 168,6–194,5 s (sechs Sitzungen am 27.11.), die alte Frist von
+    // 150 s erreichte den Ort dort nie („ROT Werkbank /umstellen: keine Antwort in 150000 ms“) — 360 s = 1,85 × der längsten Messung
+    const u = await ruf(port, "/umstellen", { ort, sicht: "ego" }, 360000);
     if (!u || u.fehler) throw new Error("/umstellen " + ort + ": " + ((u && u.fehler) || "ohne Antwort"));
     const lage = await evalSeite(
         port,
@@ -654,6 +682,7 @@ function selbsttest() {
     const PF = SPROSSEN["leben.pflanzen.arten#1"].motiv;
     t("an der Pose: ein Bild, für das die Werkbank eine andere Kamera wählte (Blick-Wahl ≥ 2 Posen), trägt kein Rahmen-Motiv", AN_DER_POSE("ABNAHME GRÜN · Blick-Wahl 1 Pose") && !AN_DER_POSE("ABNAHME GRÜN · Blick-Wahl 2 Posen") && !AN_DER_POSE("Blick-Wahl 42 Posen") && !PF("ABNAHME GRÜN · Blick-Wahl 37 Posen", { ziel: { art: "eiche", d: 9 } }) && !SPROSSEN["mensch.bau.bedarf#1"].motiv("ABNAHME GRÜN · Blick-Wahl 3 Posen") && SPROSSEN["mensch.bau.bedarf#1"].wahl === 0 && !SPROSSEN["mensch.bau.bedarf#1"].motiv("ABNAHME ROT [Sicht verdeckt 49.5 % (Bau als 1 m): bauSatz 49.5 %] · Ziel Blickziel verdeckt von bauSatz in 1.2 m · Blick-Wahl 1 Pose") && SPROSSEN["mensch.bau.bedarf#1"].motiv("ABNAHME GRÜN · Blick-Wahl 1 Pose") && SPROSSEN["leben.pflanzen.arten#1"].wahl === 0);
     t("das Motiv der Pflanze: ihr eigenes Laub am Ziel trägt, fremdes oder nahes Laub nicht", PF("ABNAHME ROT [Ziel Blickziel verdeckt von Laub fscatter:eiche:L1 in 9.2 m]", { ziel: { art: "eiche", d: 12 } }) && !PF("ABNAHME ROT [Ziel Blickziel verdeckt von Laub fscatter:tanne:L1 in 9.2 m]", { ziel: { art: "eiche", d: 12 } }) && !PF("ABNAHME ROT [Ziel Blickziel verdeckt von Laub fscatter:eiche:L1 in 2.1 m]", { ziel: { art: "eiche", d: 12 } }) && PF("ABNAHME GRÜN", {}));
+    t("Meister oder Anfänger: die Klasse ist das Können des Lebenslaufs an den Schwellen des Gesetzes (≥ 1 / < 0,5), ≥ 20 je Klasse im Wechsel", /klasse = k >= 1 \? 'Meister' : k < 0\.5 \? 'Anfänger' : null/.test(SPROSSEN["mensch.sport.kunst#1"].rumpf()) && SPROSSEN["mensch.sport.kunst#1"].je >= 20 && imWechsel([{ klasse: "Meister" }, { klasse: "Meister" }, { klasse: "Anfänger" }], 22).map((x) => x.klasse).join() === "Meister,Anfänger,Meister");
     t("jede Klassen-Sprosse trägt ihre Frage", Object.values(SPROSSEN).filter((d) => d.je).every((d) => /\?$/.test(d.frage || "")));
     t("eine feste Uhr (Erntetag) fächert nur über Adressen", faechern(basis(12), [10 / 24], { uhr: 1 }).length === 12 && faechern(basis(12), [10 / 24], {})[0].mehr.uhr === 10 / 24);
     const png = Buffer.alloc(24);
