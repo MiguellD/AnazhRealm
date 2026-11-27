@@ -1,7 +1,7 @@
 {
  "sha": "b3740dd5566793ae66152d955e5a55d9c272884c",
  "geraet": "gtx",
- "zeit": "2026-11-27T23:31:08.450Z",
+ "zeit": "2026-11-27T23:36:54.434Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "profiband.K4#1": {
@@ -2058,6 +2058,70 @@
    },
    "zeit": "2026-11-27T22:56:01.957Z",
    "abdruck": "0b389cec986f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.leben.wasser.bild#1": {
+   "gruen": false,
+   "zahl": "der Deckel der Leiter riss nach 16,079 s, ehe sichtFlussM der Sprosse stand — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 16,079 s, ehe sichtFlussM der Sprosse stand · der Deckel der Leiter 16 s) · Täter: @@PUNKTE@@ PROBE 78.7 s · Exit 0",
+   "exit": 0,
+   "minuten": 1.33,
+   "grund": "der Deckel der Leiter riss nach 16,079 s, ehe sichtFlussM der Sprosse stand — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 16,079 s, ehe sichtFlussM der Sprosse stand · der Deckel der Leiter 16 s) · Täter: @@PUNKTE@@ PROBE 78.7 s · Exit 0",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 79.3,
+   "fremd": {
+    "s": 83.1,
+    "takte": 37,
+    "fremdS": 50.73,
+    "kerne": 0.611,
+    "fensterKerne": 1.27,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.13
+     ],
+     [
+      "bash.exe sk/wacht6.sh",
+      5.06
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      4.45
+     ]
+    ],
+    "dienerS": 24.92,
+    "diener": [
+     [
+      "System",
+      9.5
+     ],
+     [
+      "dwm.exe",
+      7.97
+     ]
+    ],
+    "geraetS": 59.28,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      41.41
+     ],
+     [
+      "svchost.exe",
+      15.39
+     ],
+     [
+      "svchost.exe -k UnistackSvcGroup -s WpnUserService",
+      1.02
+     ]
+    ],
+    "eigenS": 279.67,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-27T23:36:54.434Z",
+   "abdruck": "e38bd742790e",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
