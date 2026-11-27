@@ -70,6 +70,12 @@ gate:settlement Selbsttest GRÜN (beide R13-Täter → ROT beim Namen) · Lauf G
 `probe-tag` nicht fahrbar: `artifacts/profiband/werkzeug/zug.sh` liegt in keinem Zweig; den Ruf halte ich von Hand gegen
 `spec/ci/ci-zeiten.json` (fachwerk-contract 122 s · gelaende-studio 42 s · klang-zensus 437 s).
 
+## Form des Kopfs
+
+Der Vorprüf-Kopf trägt den glatten Baum auf main 7e73426e (erster Elter, `git diff 7e73426e <kopf>` = genau 12 Dateien). Der zweite
+Elter ist die Spitze meiner WIP-Kette f1652ab5, weil der Auftrag „nie force“ sagt: der Schub ist ein Fast-Forward, kein Stand wird
+überschrieben. Wer einen Elter braucht, nimmt den Baum (`git commit-tree <kopf>^{tree} -p 7e73426e`), er ist byte-gleich.
+
 ## Offen (mit Adresse)
 
 - Messort stadt-voll, Station nicht gefahren: GPU (der Vor-Richter fährt nur an der GTX 1060).
