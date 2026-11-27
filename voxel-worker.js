@@ -300,10 +300,11 @@ function nachricht(e) {
                 },
                 [daten.hoehen.buffer, daten.stoff.buffer, daten.hoechste.buffer]
             );
-        } else if (msg.type === "wald-darts" || msg.type === "wuchs") {
+        } else if (msg.type === "wald-darts" || msg.type === "wuchs" || msg.type === "ankunft") {
             // DIE SCHLANGE IM FADEN (B-Wald): der Auftrag wartet in `waldAuftraege`, der Faden rechnet je Takt den nächsten
             // (`waldTakt`) — ein später bestellter naher überholt die fernen, die vor ihm reisten; der Wuchs eines Bauplans
-            // (w4-b-pflanzen, `wuchsRechnen`) steht in derselben Schlange
+            // (w4-b-pflanzen, `wuchsRechnen`) und die Ankunft (landmarken-9, `ankunftRechnen`, Rang −1: vor jeder Zelle) stehen in
+            // derselben Schlange
             waldAuftraege.push(msg);
             waldWecken();
         } else if (msg.type === "streu-region") {
@@ -1578,6 +1579,7 @@ waldTakt.port1.onmessage = () => {
     const msg = waldAuftraege.splice(i, 1)[0];
     try {
         if (msg.type === "wuchs") wuchsRechnen(msg);
+        else if (msg.type === "ankunft") ankunftRechnen(msg);
         else waldDarts(msg);
     } catch (err) {
         self.postMessage({
@@ -1668,6 +1670,70 @@ function waldDarts(msg) {
             arten,
         },
         [anzahl.buffer, werte.buffer]
+    );
+}
+
+// DIE ANKUNFT IM FADEN (landmarken-9, erleben.spieler.wegfindung#1, Lehre 14): die Wahl des ersten Blicks (phyto-core
+// `landmarkeAnkunft`) mit der Sicht des Gesetzes auf den Gipfel (`landmarkeSicht`) über DEMSELBEN Bestand, den dieser
+// Faden für das Bild plant — nah das Gedächtnis des Walds (`waldGeboren`, Leser `waldCtx`: die Zellen der Ankunft sind die
+// ersten Zellen des Bilds), fern das Gedächtnis der Kamm-Krone (`kammGeboren`, Leser `fernWaldCtx`). Bis landmarken-9 rechnete
+// der Haupt-Faden sie (`_sichtWald`): kalt 147–8 380 ms je Ankunft an 12 Saaten, in EINEM Bild. Der Wirt reicht Stände (das
+// Auge über seinem Boden, die Spirale gefiltert), Marken und Kegel (`_ankunft`) und setzt die Antwort.
+function ankunftRechnen(msg) {
+    const pc = self.__phytoCore;
+    const t0 = self.performance ? self.performance.now() : Date.now();
+    if (msg.stand == null || waldGeboren.stand !== msg.stand)
+        waldGeboren = { stand: msg.stand == null ? null : msg.stand, karte: new Map() };
+    geborenRaum(waldGeboren.karte, fernK().geboren);
+    const kammSchluessel = state.seed + "|" + msg.seedInt + "|" + msg.stand;
+    if (kammGeboren.schluessel !== kammSchluessel || kammGeboren.karte.size > 65536)
+        kammGeboren = { schluessel: kammSchluessel, karte: new Map() };
+    const [nahCtx, fernCtx] = [waldCtx(msg), fernWaldCtx(msg)];
+    const zahl = { geplant: 0, bestand: 0 };
+    // je Gedächtnis sein Schlüssel (der Wald-Faden "cx,cz", die Kamm-Krone cx · 2^20 + cz, wie `waldFaellt`)
+    const gebVon = (karte, schluessel, ctx) => (cx, cz) => {
+        const k = schluessel(cx, cz);
+        let a = karte.get(k);
+        if (!a) {
+            karte.set(k, (a = pc.planForestCell(cx, cz, msg.seedInt, ctx)));
+            zahl.geplant++;
+        }
+        return a;
+    };
+    const geb = [
+        gebVon(waldGeboren.karte, (cx, cz) => cx + "," + cz, nahCtx),
+        gebVon(kammGeboren.karte, (cx, cz) => cx * 1048576 + cz, fernCtx),
+    ];
+    const bestand = [new Map(), new Map()];
+    const pack = nahCtx.F.pack;
+    const leser = {
+        hoehe: (x, z) => G.hoehe(state, x, z, true),
+        stehende: (cx, cz, nah) => {
+            const i = nah ? 0 : 1;
+            const k = cx + "," + cz;
+            let a = bestand[i].get(k);
+            if (!a) {
+                bestand[i].set(k, (a = pc.forestStehende(cx, cz, geb[i], pack, !nah)));
+                zahl.bestand++;
+            }
+            return a;
+        },
+        arten: msg.arten,
+        cell: msg.cell,
+        hMax: msg.hMax,
+        nahM: msg.nahM,
+    };
+    const w = pc.landmarkeAnkunft({
+        staende: msg.staende,
+        marken: msg.marken,
+        innen: msg.innen,
+        aussen: msg.aussen,
+        kegel: msg.kegel,
+        verdeckt: (auge, q) => pc.landmarkeSicht(Object.assign({ auge, q }, leser)),
+    });
+    const ms = (self.performance ? self.performance.now() : Date.now()) - t0;
+    self.postMessage(
+        Object.assign({ type: "ankunft-result", requestId: msg.requestId, ms, geplant: zahl.geplant, bestand: zahl.bestand }, w)
     );
 }
 
@@ -4809,26 +4875,7 @@ function kammKrone(msg) {
         kammGeboren = { schluessel, karte: new Map() };
     const K = kammGeboren.karte;
     const law = (x, z) => G.hoehe(state, x, z, false);
-    let [bx, bz, by] = [NaN, NaN, null];
-    const ctx = {
-        F: fernK().forest,
-        baseH: state.baseHeight || 0,
-        extras: msg.extras,
-        fbm: forestFbm,
-        stand: waldStand,
-        schnee: waldSchnee,
-        stufe: waldStufe,
-        ort: waldOrt,
-        wuchs: state.ort.wuchs,
-        surfaceYAt: (x, z) => {
-            [bx, bz, by] = [x, z, law(x, z)];
-            return by;
-        },
-        waterYAt: (x, z) => landWaterLevelAt(x, z, x === bx && z === bz ? by : law(x, z)),
-        slopeAt: (x, z) => Math.hypot((law(x + 2, z) - law(x - 2, z)) / 4, (law(x, z + 2) - law(x, z - 2)) / 4),
-        feuchteAt: (x, z, sy) => feuchteAt(x, z, sy),
-        ortFrei: (x, z, T) => ortFrei(x, z, T),
-    };
+    const ctx = fernWaldCtx(msg);
     const geboren = (cx, cz) => {
         const k = cx * 1048576 + cz;
         let a = K.get(k);
@@ -4860,6 +4907,31 @@ function kammKrone(msg) {
     return {
         antwort: { baeume: r.baeume, arten: r.arten, zellen: r.zellen, rufe: r.rufe, kandidaten: r.kandidaten, ms },
         transfer: [r.baeume.buffer],
+    };
+}
+// DIE LESER DES FERNEN WALDS (die Kamm-Krone `kammKrone`, die Sicht der Ankunft `ankunftRechnen`): der Plan (`planForestCell`)
+// mit dem FERN-LESER des Bodens — das Gesetz ohne Detail, Wasser, Steilheit ±2 m, Feuchte, Ort und Same wie der Wald-Faden.
+function fernWaldCtx(msg) {
+    const law = (x, z) => G.hoehe(state, x, z, false);
+    let [bx, bz, by] = [NaN, NaN, null];
+    return {
+        F: fernK().forest,
+        baseH: state.baseHeight || 0,
+        extras: msg.extras,
+        fbm: forestFbm,
+        stand: waldStand,
+        schnee: waldSchnee,
+        stufe: waldStufe,
+        ort: waldOrt,
+        wuchs: state.ort.wuchs,
+        surfaceYAt: (x, z) => {
+            [bx, bz, by] = [x, z, law(x, z)];
+            return by;
+        },
+        waterYAt: (x, z) => landWaterLevelAt(x, z, x === bx && z === bz ? by : law(x, z)),
+        slopeAt: (x, z) => Math.hypot((law(x + 2, z) - law(x - 2, z)) / 4, (law(x, z + 2) - law(x, z - 2)) / 4),
+        feuchteAt: (x, z, sy) => feuchteAt(x, z, sy),
+        ortFrei: (x, z, T) => ortFrei(x, z, T),
     };
 }
 

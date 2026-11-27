@@ -4446,6 +4446,98 @@
     // die Felder eines Baums der Kamm-Krone (forestKammKronen `baeume`)
     const KAMM_FELDER = 8;
 
+    // DIE SICHT AUF EINE LANDMARKE (landmarken-9, erleben.spieler.wegfindung#1 — bis hier der Stamm `_landmarkeSicht`, nun Kern:
+    // der Wald-Faden rechnet die Ankunft mit demselben Gesetz, Lehre 14): die Gerade vom Auge `auge` {x, y, z} zum Punkt `q` trifft
+    // (1) den Grund (`hoehe(x, z)`, das Gesetz mit Detail, je 25 m bis 30 m vor q — den Fuß trägt die Landmarke selbst) oder (2) eine
+    // Krone des Bestands (`stehende(cx, cz, nah)`: die stehenden Darts der Zelle — nah, binnen `nahM` um das Auge, über der
+    // Oberfläche der Welt, sonst über dem Gesetz ohne Detail, nur das Dach), je Krone ihr Umriss wie in der Ferne (`arten[sp]`
+    // {h, ansatz, nadel}: Laub die Ellipse über [Ansatz, Wipfel], Nadel der Kegel, Radius T des Plans). Gefragt werden nur die
+    // Zellen (Kante `cell`), in denen ein Baum der Höhe `hMax` die Gerade erreicht, nah zuerst; der erste Treffer endet.
+    // → null (frei) oder { von: "grund" | <Art>, d } (d: Weg vom Auge in m).
+    function landmarkeSicht(o) {
+        const auge = o.auge;
+        const q = o.q;
+        const C = o.cell;
+        const [vx, vy, vz] = [q.x - auge.x, q.y - auge.y, q.z - auge.z];
+        const d = Math.hypot(vx, vz);
+        if (!(d > 30)) return null;
+        const [ux, uz, m] = [vx / d, vz / d, vy / d];
+        let treffer = null;
+        for (let s = 25; s < d - 30; s += 25)
+            if (o.hoehe(auge.x + ux * s, auge.z + uz * s) > auge.y + m * s) {
+                treffer = { von: "grund", d: s };
+                break;
+            }
+        const ende = treffer ? treffer.d : d - 30;
+        // die Zellen am Strahl, in denen ein Baum der Höhe hMax die Gerade erreicht, je Zelle ihr kleinster Weg
+        const zellen = new Map();
+        for (let s = 0; s < ende + C; s += C / 2) {
+            const [x, z] = [auge.x + ux * s, auge.z + uz * s];
+            if (o.hoehe(x, z) + o.hMax < auge.y + m * s) continue;
+            for (const k of [-1, 0, 1]) {
+                const [cx, cz] = [Math.floor((x - uz * k * C) / C), Math.floor((z + ux * k * C) / C)];
+                const key = cx + "," + cz;
+                if (!zellen.has(key)) zellen.set(key, [s, cx, cz]);
+            }
+        }
+        let wald = null;
+        for (const [s0, cx, cz] of [...zellen.values()].sort((a, b) => a[0] - b[0])) {
+            if (wald && s0 - C > wald.d) break;
+            const nah = Math.hypot((cx + 0.5) * C - auge.x, (cz + 0.5) * C - auge.z) <= o.nahM;
+            const stehen = o.stehende(cx, cz, nah);
+            for (let i = 0; i < stehen.length; i++) {
+                const t = stehen[i];
+                const p = o.arten[t.sp];
+                if (!p || !(p.h > 0) || !(t.T > 0) || !Number.isFinite(t.surfaceY)) continue;
+                const [tx, tz] = [t.x - auge.x, t.z - auge.z];
+                const s = tx * ux + tz * uz;
+                if (!(s > 1) || s >= ende || (wald && s >= wald.d)) continue;
+                const v = Math.abs(tx * uz - tz * ux) / t.T;
+                if (v >= 1) continue;
+                const hoch = p.h * t.s;
+                const y0 = t.surfaceY + hoch * p.ansatz;
+                const kh = hoch - hoch * p.ansatz;
+                const w = Math.sqrt(1 - v * v);
+                const [unten, oben] = p.nadel
+                    ? [y0, y0 + kh * (1 - v)]
+                    : [y0 + (kh / 2) * (1 - w), y0 + (kh / 2) * (1 + w)];
+                const y = auge.y + m * s;
+                if (y >= unten && y <= oben) wald = { von: t.sp, d: s };
+            }
+        }
+        return wald || treffer;
+    }
+    // DIE WAHL DER ANKUNFT (landmarken-9; das Gesetz der Ankunft, bis hier der Stamm `_ankunft`): `staende` [{x, y (Auge), z}]
+    // — Stand 0 die Heimat, danach die Stände der Ring-Spirale über dem Wasser außerhalb jedes Grundrisses in ihrer Reihe —,
+    // `marken` [{x, y (Gipfel), z, h}], das Band der Mittelsicht [innen, aussen] (waagrecht vom Auge), `kegel` (die Indizes der
+    // Marken im Kegel der Welt-Kamera an der Heimat, Gier 0) und `verdeckt(auge, gipfel)` (die Sicht, `landmarkeSicht`). Je Stand die Reihe der Marken im Band,
+    // die tragende (größter Winkel Höhe/Weg) zuerst, frei gefragt erst, wenn die Reihe nach ihr fragt. DIE FOLGE: (1) die Heimat
+    // trägt im Kegel eine freie → „heimat“; (2) sonst die erste freie an der Heimat → „blick“; (3) sonst der erste Stand der
+    // Spirale mit einer freien → „ort“; (4) sonst „keine“. → { stand, marke, d, glied, fragen } (stand/marke: Index oder −1).
+    function landmarkeAnkunft(o) {
+        const fragen = [0];
+        const reihe = (a) =>
+            o.marken
+                .map((q, i) => ({ q, i, d: Math.hypot(q.x - a.x, q.z - a.z), frei: null }))
+                .filter((w) => w.d >= o.innen && w.d <= o.aussen)
+                .sort((a, b) => b.q.h / b.d - a.q.h / a.d);
+        const frei = (a, w) => (w.frei === null ? (fragen[0]++, (w.frei = !o.verdeckt(a, w.q))) : w.frei);
+        const kegel = new Set(o.kegel);
+        const wahl = (stand, w, glied) => ({ stand, marke: w ? w.i : -1, d: w ? w.d : null, glied, fragen: fragen[0] });
+        const h0 = o.staende[0];
+        const r0 = reihe(h0);
+        const traegt = r0.find((w) => kegel.has(w.i) && frei(h0, w));
+        if (traegt) return wahl(0, traegt, "heimat");
+        const w0 = r0.find((w) => frei(h0, w));
+        if (w0) return wahl(0, w0, "blick");
+        for (let k = 1; k < o.staende.length; k++) {
+            const a = o.staende[k];
+            const w = reihe(a).find((x) => frei(a, x));
+            if (w) return wahl(k, w, "ort");
+        }
+        return wahl(-1, null, "keine");
+    }
+
     // SCATTER_STRATUM — ecology axes only (floor / scaleBase / scaleVar / slopeMax).
     // Host SCATTER.layers READ these; cellM/cap/kind/promotable/densityScale stay Host perf.
     // Distinct from FOREST_* / planForestCell (canopy darts). Do NOT merge into planForestCell.
@@ -8471,6 +8563,8 @@
         FOREST_URTEIL_REICH: FOREST_URTEIL_REICH, // w16-wald-innen — die Zellen ±n, deren geborene Darts ein Bestand liest
         forestKammKronen: forestKammKronen, // w10-ferne — die Bäume des Bestands, deren Krone den Kamm gegen den Himmel trägt
         KAMM_FELDER: KAMM_FELDER,
+        landmarkeSicht: landmarkeSicht, // landmarken-9 — die Gerade Auge → Punkt trifft Grund oder Krone (Wirt und Wald-Faden)
+        landmarkeAnkunft: landmarkeAnkunft, // landmarken-9 — die Wahl der Ankunft: Heimat, Blick, Ort der Spirale, keine
         planForestCell: planForestCell,
         growSkeleton: growSkeleton,
         genomStrom: genomStrom, // w4-b-pflanzen — der Sub-Strom eines Genoms (xorshift32 über dem FNV-Zustand seines Namens)
