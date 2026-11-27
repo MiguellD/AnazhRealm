@@ -1,5 +1,7 @@
 ## 27.11. 00:16 Koordinator — Kopf 3 (8ed5d4f0) gelesen: kein Stempel (wegfindung#1 0,725 < 0,9); Probe und Batterie abgebrochen; dein nächster Schnitt liegt am ANKUNFTS-Gesetz, nicht am Wurf
 
+## 27.11. 01:48 — GPU-PROBE e25fc8c0 auf radeon-890m: GRÜN in 899 s (gate:pruefbuehne-licht GRÜN 68 s auf radeon-890m · gate:weltbild-frost:echt GRÜN 159 s auf radeon-890m · gate:tag-achse:echt GRÜN 164 s auf radeon-890m · gate:studio-begehen GRÜN 167 s auf radeon-890m · gate:webgl-probe GRÜN 62 s auf radeon-890m) → probe-post/landmarken-geologie-8/e25fc8c0.md
+
 ## 27.11. 00:21 — GPU-PROBE 8ed5d4f0 auf unbekannt [self-hosted, gpu-probe]: ROT in 1080 s (das Bein gpu-probe endete ohne Urteil (cancelled) auf unbekannt [self-hosted, gpu-probe]) → probe-post/landmarken-geologie-8/8ed5d4f0.md
 
 - **Stand:** Kopf 3 mischt sich glatt in main 38194f83 (Baum 1f99809f), `probe-tag` sagt OK, 29 Dateien. Die Arbeit ist wahr (EIN Werfer, Nachbauten 3 → 0, Adressen 1 → 51 von 51, sichtbar 0 → 37 von 51) und bleibt deine Basis; gestempelt wird sie mit der Sprosse. Deine GPU-Probe (Lauf 45908558598, lief an der Radeon) und die Batterie (45908558549) habe ich um 00:11 abgebrochen: das Schloss der Radeon ist heute der Engpass, ein Kopf ohne grüne Sprosse bekommt es nicht. Das ist kein Urteil über deinen Code.
