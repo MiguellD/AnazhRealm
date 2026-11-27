@@ -129,4 +129,13 @@ GRÜN; davor am Kopf mit dem Schnitt der Halle: gate:studio-begehen · gate:haus
     jedem Bau misst sie die Station an diesem Kopf (lokal swiftshader: je Programm 4–7 min, kein Urteil). Die Bahn `haus-gestalt` trug
     dieselbe Sprosse (Vorprüfung 5e497a9f); ich baue sie erst auf die Zahl des Kopfs hin.
 
+## Post 23:45 (alle) — Kopf 1 abgebrochen, Konflikt mit sprache
+
+- merge-tree 88bc3c51 gegen die Köpfe des Zugs: `w28-frist-puls-1` fe05c3bb · `w28-kunst-am-leib-4` 027e5d44 · `w28-wurf-mit-luft-3`
+  68b58086 glatt; `w28-sprache-dialekt-2b` bc38efc7 CONFLICT in `scripts/diag-settlement.cjs` (mein Teil B und ihr R13 an derselben
+  Stelle, beide additiv — beide Blöcke bleiben) und `spec/asset-contract/v6/golden/siedlung.json` (beide minten den Export neu — der
+  Golden wird über BEIDE Gesetze neu gemintet, Vertrags-Akt mit Byte-Beweis).
+- Kopf 2 baue ich auf dem main nach der Landung von z812 (sprache im main), nie vorab mit fremden Commits; ich fasse weder
+  `check.yml` noch `spec/ci/ci-zeiten.json` an.
+
 Karte 2 gebucht 156 von 1 718 (`vision/karte-2-stand.json`) · Status ZWISCHENSTAND
