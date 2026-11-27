@@ -2088,6 +2088,10 @@ class AnazhRealm_kreatur_leben {
         // kein Fluss im Umkreis der Suche (der Rand aus `_hydroDistAt`, ein Blick in die Eimer): keine Suche über das Gelände
         const h = this._hydroDistAt(creature.position.x, creature.position.z);
         if (h.dist - Math.max(1, h.halfW) <= AnazhRealm.CREATURE_DRINK_SEARCH_RADIUS) return true;
+        // an der Tränke, zu der sein Verband zieht (`_kreaturTraenke`, auch ein See, den der Rand des Flusses nicht kennt), trinkt es
+        const T = this._kreaturLeittier(creature).userData._wanderZiel;
+        const p = creature.position;
+        if (T && T.traenke && Math.hypot(T.x - p.x, T.z - p.z) <= AnazhRealm.CREATURE_DRINK_SEARCH_RADIUS) return true;
         ud._durstSucheBis = now + LG.D.suchPauseS;
         return false;
     }
@@ -3559,6 +3563,38 @@ class AnazhRealm_kreatur_leben {
             const kz = N ? this._kreaturNetzZelle(N, x, z) : -1;
             return kz >= 0 && N.zelle[kz] >= 2 ? this._kreaturNetzFeld(N, kz) : null;
         };
+        // die Zelle des Tiers im Netz und, trägt sie keinen Weg, eine Nachbarin, die ihn trägt
+        const kp = N ? this._kreaturNetzZelle(N, p.x, p.z) : -1;
+        let k0 = kp >= 0 && N.zelle[kp] >= 2 ? kp : -1;
+        for (let m = 0; kp >= 0 && m < N.W * N.W && k0 < 0; m++) {
+            const [di, dj] = [(m % N.W) - (kp % N.W), (m - (m % N.W)) / N.W - (kp - (kp % N.W)) / N.W];
+            if (Math.abs(di) <= 1 && Math.abs(dj) <= 1 && N.zelle[m] >= 2) k0 = m;
+        }
+        // DER DURST ZIEHT ZUR TRÄNKE (wander-pfad): wer durstig ist und kein Wasser in seiner Suche hat (`_kreaturDurstig`), zieht
+        // zum nächsten Wasser, das sein Weg erreicht (`_kreaturTraenke`); an ihm sucht der Durst sofort
+        const now = this.state.creatureAnimationTime;
+        const LG = AnazhRealm._lebensraumGesetz();
+        if (N && Number.isFinite(ud._getrunken) && LG.durst(now - ud._getrunken, LG.D) >= 1) {
+            const T = Z && Z.traenke ? Z : this._kreaturTraenke(N, k0);
+            if (T && Math.hypot(T.x - p.x, T.z - p.z) <= blick) {
+                ud._durstSucheBis = now;
+                return null;
+            }
+            if (T && T !== Z) {
+                ud._wanderZiel = {
+                    x: T.x,
+                    z: T.z,
+                    k: T.k,
+                    n: Z ? Z.n + 1 : 0,
+                    rest: Infinity,
+                    traenke: true,
+                    feld: this._kreaturNetzFeld(N, T.k),
+                };
+                ud._durstSucheBis = now;
+            }
+            if (T) return ud._wanderZiel;
+        }
+        if (Z && Z.traenke) Z.rest = 0;
         if (Z && (Z.rest -= weg) > 0) {
             if (N && Z.feld === undefined) Z.feld = feldZu(Z.x, Z.z);
             return Math.hypot(Z.x - p.x, Z.z - p.z) > blick ? Z : null;
@@ -3569,9 +3605,31 @@ class AnazhRealm_kreatur_leben {
             const h = Math.sin((idNum * 131 + n * 977 + j) * 78.233) * 43758.5453;
             return h - Math.floor(h);
         };
-        const kp = N ? this._kreaturNetzZelle(N, p.x, p.z) : -1;
         let ziel = null;
-        for (let j = 0; j < 6 && !ziel; j++) {
+        // IM NETZ: gleichverteilt über die Fläche, die das Tier von seiner Zelle aus erreicht (wander-pfad) — eine Zelle des
+        // Aufenthalts in der Leine, die sein Feld trägt, an ihr ein Ort, den das Revier trägt. Bis hier sechs Würfe in die Scheibe:
+        // trug der Lebensraum Teile, die von der Zelle des Tiers aus kein Weg erreicht, fiel jedes Ziel auf den Anker (headless,
+        // 7 Spieltage, der Hirsch an seiner Tränke: 13 Ziele nach dem ersten Trunk, jedes der Anker, die Hülle 0,08 km²)
+        if (kp >= 0) {
+            const F = k0 >= 0 ? this._kreaturNetzFeld(N, k0) : null;
+            const Q = [];
+            for (let m = 0; F && m < F.length; m++)
+                if (
+                    F[m] >= 0 &&
+                    N.zelle[m] === 3 &&
+                    Math.hypot((m % N.W) - N.R, (m - (m % N.W)) / N.W - N.R) * N.h <= leash
+                )
+                    Q.push(m);
+            if (Q.length) {
+                const m = Q[Math.min(Q.length - 1, Math.floor(wurf(0) * Q.length))];
+                const cx = N.x + ((m % N.W) - N.R) * N.h;
+                const cz = N.z + ((m - (m % N.W)) / N.W - N.R) * N.h;
+                let [x, z] = [cx + (wurf(1) - 0.5) * N.h, cz + (wurf(2) - 0.5) * N.h];
+                if (!this._kreaturRevierTraegt(creature, x, z)) [x, z] = [cx, cz];
+                ziel = { x, z, feld: feldZu(x, z) || feldZu(cx, cz) };
+            }
+        }
+        for (let j = 0; j < 6 && !ziel && kp < 0; j++) {
             const r = leash * Math.sqrt(wurf(2 * j));
             const w = wurf(2 * j + 1) * Math.PI * 2;
             const x = a.x + Math.cos(w) * r;
@@ -3627,7 +3685,8 @@ class AnazhRealm_kreatur_leben {
 
     // DAS NETZ DES REVIERS (_kreaturWanderZiel, _kreaturWanderKurs): die Leinen-Scheibe um den Anker als Gitter zu Leine/10 bis
     // 1,2 Leinen (die Zellen der Probe tagesbudget), je Zelle, was der Lebensraum der Gattung an ihrer Mitte trägt — 1 nichts,
-    // 2 den Weg (Wasser, wo der Lebensraum es trägt: der Bär lebt am Fluss und durchquert ihn), 3 auch den Aufenthalt
+    // 2 den Weg (Wasser, wo der Lebensraum es trägt: der Bär lebt am Fluss und durchquert ihn; trockenes
+    // Land außerhalb, außer dem Hang), 3 auch den Aufenthalt
     // (trockener Grund; 0 liegt außerhalb). Es wächst im Takt — je Bild höchstens 8 Zellen für alle Tiere, ein Wurf wird nie
     // zur Spitze — und gilt für jedes Tier mit diesem Anker, dieser Leine und dieser Gattung (der Verband teilt es). Liefert das
     // fertige Netz oder null (ein freier Anker hat keines).
@@ -3661,9 +3720,41 @@ class AnazhRealm_kreatur_leben {
             this._kreaturNetzRest--;
             const x = N.x + i * N.h;
             const z = N.z + j * N.h;
-            N.zelle[k] = LG.lebensraum(g, this._bodenKlasseAt(x, z), LG.L) > 0 ? (this._nassAt(x, z) ? 2 : 3) : 1;
+            // DER WEG DURCH DAS FREMDE (wander-pfad): trockenes Land außerhalb des Lebensraums trägt den Weg, nie den Aufenthalt —
+            // das Rotwild äst auf Wiese und Saum und zieht durch Wald und das Band am Fluss. Bis hier sperrte jede Zelle ohne
+            // Lebensraum den Weg: der Wald trennte die Wiesen, das erreichbare Revier des Hirschs waren fünf Zellen (headless,
+            // 7 Spieltage: die Hülle 0,08 km² gegen π·Leine² = 2,77 km², Lindstedt et al. 1986). Der Hang, der nicht sein
+            // Lebensraum ist, trägt keinen Weg: dort hält den Leib die Fels-Wand (`_wandHalt`, `_creatureGroundY`) — mit dem Hang
+            // als Weg stand der Hirsch am Fels, den Kurs in die Wand (headless, 7 Spieltage: 65 % gezeigt ziehen, die Hülle 0,36 km²)
+            const nass = this._nassAt(x, z);
+            const klasse = this._bodenKlasseAt(x, z);
+            N.zelle[k] = LG.lebensraum(g, klasse, LG.L) > 0 ? (nass ? 2 : 3) : nass || klasse === "hang" ? 1 : 2;
+            // DAS UFER DER ZELLE (wander-pfad): ihr Wasser oder der Rand eines Flusses in ihrem Umkreis (die halbe Diagonale) —
+            // die Mitte allein ließ jeden Bach unter der Zelle (Hirsch: Leine/10 = 94 m) durchfallen
+            const fr = this._hydroDistAt(x, z);
+            if (N.zelle[k] >= 2 && (nass || fr.dist - Math.max(1, fr.halfW) <= N.h * Math.SQRT1_2))
+                (N.ufer || (N.ufer = [])).push(k);
         }
         return N.k >= n ? N : null;
+    }
+
+    // DIE TRÄNKE (wander-pfad, das Gedächtnis des Wassers): von der Zelle `k0` des Tiers aus die Ufer-Zelle des Netzes `N`
+    // (`ufer`: ihr Wasser oder der Rand eines Flusses), die der Weg am kürzesten erreicht (`_kreaturNetzFeld`), und an ihr der
+    // Uferpunkt (`_findNearestWaterPoint` aus ihrer Mitte) — das Ziel des Durstes (`_kreaturWanderZiel`): der Durst führt zum
+    // nächsten Wasser. Bis hier suchte der Durst nur 40 m um das Tier (`aufgaben.trinkSuchM`): ein Hirsch, dessen Streifgebiet
+    // (0,94 km) kein Bach in 40 m kreuzte, trank nie (headless, 7 Spieltage: 0 Trünke). Eine Tränke je Revier (das Ufer nächst dem
+    // Anker) hielt jeden Weg an ihr: dreimal je Spieltag zurück, die Spur ein Stern um sie (die Hülle 0,36–0,54 km²). Liefert
+    // { x, z, k } oder null (kein Wasser auf dem Weg).
+    _kreaturTraenke(N, k0) {
+        if (!N.ufer || k0 < 0) return null;
+        const F = this._kreaturNetzFeld(N, k0);
+        let k = -1;
+        for (const m of N.ufer) if (F[m] >= 0 && (k < 0 || F[m] < F[k])) k = m;
+        if (k < 0) return null;
+        const x = N.x + ((k % N.W) - N.R) * N.h;
+        const z = N.z + ((k - (k % N.W)) / N.W - N.R) * N.h;
+        const w = this._findNearestWaterPoint(x, z, N.h);
+        return w ? { x: w.x, z: w.z, k } : null;
     }
 
     // die Zelle des Netzes `N` am Ort (x, z), -1 außerhalb

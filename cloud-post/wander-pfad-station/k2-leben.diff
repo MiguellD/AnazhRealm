@@ -1,0 +1,85 @@
+--- a/meisterkarte-quelle/punkte/stationen/k2-leben.js
++++ b/meisterkarte-quelle/punkte/stationen/k2-leben.js
+@@ -3341,7 +3341,7 @@
+             },
+             // ═══ WANDERUNG: ein Individuum über einen Spieltag im Takt, der Anker des Bestands unter Jahreszeit und Regen ═══
+             [WA]: {
+-                sek: 40,
++                sek: 60,
+                 mutiert: true,
+                 pfad: PFAD,
+                 ungefahren: "die Spur im Bild (der Wildwechsel als Pfad im Boden, S3) — headless misst die Probe Bahn, Hülle und Tritt-Zellen",
+@@ -3441,7 +3441,9 @@
+                     // ihre konvexe Hülle (das Streifgebiet), die größte Entfernung vom Geburtsort, der Weg und die Zellen, die er trat; dazu die
+                     // Lebensdauer gegen den Spieltag. Dann eine FRISCHE Region (Kachel ohne Bestand, Hydro steht), aufgeholt im Sommer und im
+                     // Winter (`setSeason`), in Sonne und Regen (`__wetterSetzen`), das Leben des Felds zwischen den Läufen zurückgestellt: die
+-                    // Höhen-Mediane der Anker und die Verlegung ihres Schwerpunkts
++                    // Höhen-Mediane der Anker und die Verlegung ihres Schwerpunkts. DIE WOCHE (#3): derselbe Hirsch-Lauf über 7 Spieltage (dt 0,5:
++                    // ein Schritt im Zug-Tempo bleibt unter 2 m, die Fels-Wand des Leibs hält ihn) ohne die Region — die Hülle seiner Spur
++                    // (MCP 100 %, das Feldmaß der Telemetrie) gegen das Band der Art
+                     const probe = async function (r, T, a, G) {
+                         const { s, A, pm, wm, r3, takt, land, tier, stelle, stillFeld, ruhigSpieler } = G;
+                         stillFeld();
+@@ -3460,11 +3462,12 @@
+                         for (; k < n && performance.now() - t0 < a.msDeckel && s.creatures.includes(c); k++) {
+                             ruhigSpieler();
+                             takt(1, a.dt);
+-                            if (k % 20 === 0) bahn.push([c.position.x, c.position.z]);
++                            if (k % Math.max(1, Math.round(1 / a.dt)) === 0) bahn.push([c.position.x, c.position.z]);
+                             if (k % a.uhrJe === a.uhrJe - 1) r._uhrSetzen((tod0 + ((k + 1) * a.dt) / dayS) % 1, "regler");
+                         }
+                         r._uhrSetzen(tod0, "regler");
+                         const lebt = s.creatures.includes(c);
++                        const lebensdauerS = A._lebenKern().lebensdauerS(r._leibMasse(c));
+                         if (lebt) r.removeCreature(c);
+                         const P = bahn.map((p) => p.slice()).sort((p, q) => p[0] - q[0] || p[1] - q[1]);
+                         const kreuz = (o, p, q) => (p[0] - o[0]) * (q[1] - o[1]) - (p[1] - o[1]) * (q[0] - o[0]);
+@@ -3488,7 +3491,8 @@
+                         for (let i = 1; i < bahn.length; i++) weg += Math.hypot(bahn[i][0] - bahn[i - 1][0], bahn[i][1] - bahn[i - 1][1]);
+                         const weit = Math.max(...bahn.map((p) => Math.hypot(p[0] - ort.x, p[1] - ort.z)));
+                         const neu = Object.keys((wm && wm.tritt) || {}).filter((q) => !vorT.has(q));
+-                        const aus = { tag: { takte: k, tage: r3((k * a.dt) / dayS), lebt, flaecheM2: r3(Math.abs(flaeche) / 2), weitM: r3(weit), wegM: r3(weg), proben: bahn.length, trittZellen: neu.length, pfadZellen: neu.filter((q) => A._trittStufe(wm.tritt[q][0]) > 0).length }, dayS, lebensdauerS: A.FAUNA_MAX_AGE_MS / 1000, leineM: A._verhaltenGesetz ? null : null };
++                        const aus = { tag: { takte: k, tage: r3((k * a.dt) / dayS), lebt, flaecheM2: r3(Math.abs(flaeche) / 2), weitM: r3(weit), wegM: r3(weg), proben: bahn.length, trittZellen: neu.length, pfadZellen: neu.filter((q) => A._trittStufe(wm.tritt[q][0]) > 0).length }, dayS, lebensdauerS, leineM: A._verhaltenGesetz ? null : null };
++                        if (a.region === false) return aus;
+                         // die frische Region unter Jahreszeit und Regen
+                         const F = r._bestandRegionen().regionen;
+                         const nah = r._bestandNah();
+@@ -3538,9 +3542,10 @@
+                         aus.region = { key, seiteM: r3(S), reliefM: r3(Math.max(...hs) - Math.min(...hs)), sommer: { n: sommer.length, median: r3(median(sommer)) }, winter: { n: winter.length, median: r3(median(winter)) }, hoehenDeltaM: sommer.length && winter.length ? r3(Math.abs(median(winter) - median(sommer))) : null, sonne: sonne.length, regen: regen.length, routeShiftM: ms && mr ? r3(Math.hypot(ms[0] - mr[0], ms[1] - mr[1])) : null };
+                         return aus;
+                     };
+-                    const z = await lauf(probe, { tage: 1, dt: 0.05, uhrJe: 1200, msDeckel: 20000 });
++                    const z = await lauf(probe, { tage: 1, dt: 0.25, uhrJe: 240, msDeckel: 20000 });
++                    const w = await lauf(probe, { tage: 7, dt: 0.5, uhrJe: 120, msDeckel: 45000, region: false });
+                     const zeuge = { antworten: z.tag.proben, streuung: z.tag.weitM || 0, vor: 0, nach: z.tag.wegM || 0 };
+-                    const km2 = z.tag.flaecheM2 / 1e6;
++                    const km2 = w.tag.flaecheM2 / 1e6;
+                     const faktor = km2 > 0 ? Math.round(1000 * (km2 < 1 ? 1 / km2 : km2 > 10 ? km2 / 10 : 1)) / 1000 : null;
+                     const tageLeben = Math.round((100 * z.lebensdauerS) / z.dayS) / 100;
+                     const aus = M.teil || {};
+@@ -3549,12 +3554,12 @@
+                         aus[nr] = { werte, zeuge, ...(nicht ? { nicht } : {}) };
+                     };
+                     nimm(2, { ausdehnungM: z.tag.weitM, spieltage: z.tag.tage, wegM: z.tag.wegM }, z.tag.lebt ? null : "das Tier starb vor dem Ende des Spieltags (" + z.tag.tage + " Spieltage)");
+-                    nimm(3, { faktor, streifKm2: Math.round(km2 * 1e6) / 1e6, spieltage: z.tag.tage, pfadZellen: z.tag.pfadZellen }, "7 Spieltage: das Tier lebt " + tageLeben + " Spieltage, an der Leine seines Ankers");
++                    nimm(3, { faktor, streifKm2: Math.round(km2 * 1e6) / 1e6, spieltage: w.tag.tage, pfadZellen: w.tag.pfadZellen }, !w.tag.lebt ? "das Tier starb vor dem Ende der 7 Spieltage (" + w.tag.tage + " Spieltage)" : tageLeben < 7 ? "7 Spieltage: das Tier lebt " + tageLeben + " Spieltage (lebensdauerS seines Leibs) — die Spur über 7 Spieltage läuft nur im stillgestellten Feld" : null);
+                     nimm(4, { hoehenDeltaM: z.region.hoehenDeltaM, reliefM: z.region.reliefM }, "10⁴ m Sommer- ↔ Wintereinstand: der Anker des Bestands liegt in seiner Region (Seite " + z.region.seiteM + " m) und wandert nie");
+                     nimm(5, { routeShiftM: z.region.routeShiftM }, "kein Zug und kein Lachs: der Fisch-Trupp kennt keinen Geburtsbach");
+                     nimm(6, { lebensdauerTage: tageLeben }, "kein Individuum lebt ein Spieljahr (" + tageLeben + " Spieltage), kein Vogelzug über Kontinente");
+                     nimm(7, { streckeM: z.tag.weitM }, "keine planetare Wanderung: das weiteste Tier des Tags " + z.tag.weitM + " m vom Geburtsort");
+-                    return { sprossen: aus, wanderung: z };
++                    return { sprossen: aus, wanderung: z, woche: w };
+                 },
+                 sprossen: {
+                     2: {
+@@ -3570,9 +3575,7 @@
+                         u: {},
+                         soll: [K.soll(WA, 3, "Streifgebiet im Band der Telemetrie ±Faktor 2", { rel: "≤", zahl: 2, key: "faktor" }), K.soll(WA, 3, "Spur über 7 Spieltage", { rel: "≥", zahl: 7, key: "spieltage", einheit: "Spieltage" })],
+                         zeuge: zeugeWelt(50, true),
+-                        taeter: "tetrapoda-core.js wandern.leashBaseM 18 m (die Leine um den Geburtsort)",
+-                        nicht: "10³ m Streifgebiet nach Feldmaß über 7 Spieltage",
+-                        leser: "tetrapoda-core.js:225 `leashBaseM` — die Leine um den Anker hält das Tier bei 18 m × Größe; stamm/daten.js:176 `FAUNA_MAX_AGE_MS` — das Tier lebt keine 7 Spieltage",
++                        taeter: "leben-core.js streifRadiusM (die Leine um den Anker) / stamm/kreatur-leben.js _kreaturWanderZiel · _kreaturTraenke (Weide und Tränke im Revier) / leben-core.js lebensdauerS (das Tier lebt keine 7 Spieltage)",
+                         gruen: gut({ faktor: 1, streifKm2: 3, spieltage: 7, pfadZellen: 40 }, 300),
+                         attrappen: atr({ faktor: 1, streifKm2: 3, spieltage: 7, pfadZellen: 40 }, 300, true),
+                     },

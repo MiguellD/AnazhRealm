@@ -1,0 +1,47 @@
+STATIONS-KANDIDAT wander-pfad — karte2.leben.tiere.wanderung#3 (Diff k2-leben.diff gegen meisterkarte-quelle/punkte/stationen/k2-leben.js
+im Zweig `punkte-maschine`, Stand origin/punkte-maschine 8be8b964 vom 27.11.; die Datei dort ist byte-gleich der Basis des Diffs).
+Kein Soll und kein Richter-Text ändert sich: beide Soll-Zeilen von S3 stehen wörtlich wie in der Karte („Streifgebiet im Band der
+Telemetrie ±Faktor 2“ faktor ≤ 2 · „Spur über 7 Spieltage“ spieltage ≥ 7). Der Diff trägt die Zeilen des #2-Kandidaten mit
+(cloud-post/wander-spieltag-station/k2-leben.diff: dt 0,25, die Bahn je Spiel-Sekunde, lebensdauerS am Leib) — er setzt auf dieselbe Basis.
+
+1. DIE WOCHE (das Feldmaß): S3 las bisher die Hülle des EINEN Spieltags (z, dt 0,05) und urteilte gar nicht (statisches `nicht`).
+   Jetzt fährt die Probe denselben Hirsch-Lauf ein zweites Mal über 7 Spieltage (`w`, tage 7, dt 0,5, uhrJe 120 = ein Uhr-Schritt je
+   60 s Spielzeit wie bei #2, msDeckel 45 s, `region: false` — die Region gehört #4/#5 und läuft nur im Tages-Lauf). Gemessen wird die
+   konvexe Hülle der wirklich gelaufenen Bahn (eine Probe je Spiel-Sekunde, 25 200 Proben): MCP 100 % — das Feldmaß der Telemetrie,
+   aus dem das Band der Leine stammt (Lindstedt, Miller & Buskirk 1986, Home range, time and body size in mammals, Ecology 67: Tab. 1,
+   Streifgebiete als Minimum-Konvex-Polygon; leben-core.js `streifRadiusM` zitiert dieselbe Tafel). Der Faktor ist km² < 1 → 1/km²,
+   > 10 → km²/10, im Band 1–10 km² (Rothirsch, die Karte) → 1.
+   dt 0,5: ein Schritt im Zug-Tempo (≈ 3 m/s) bleibt unter 2 m, also hält die Fels-Wand des Leibs (stamm/wasser-hydro.js `_wandHalt`:
+   ein Sprung über 2 m umgeht die Wand-Prüfung). dt 0,25 / 0,5 / 1 headless gemessen: 0,73–0,80 / 0,53–0,84 / 0,73–0,78 km².
+
+2. DIE SPERRE BLEIBT BENANNT: das Tier lebt 0,63 Spieltage (lebensdauerS 2 264,9 s des Hirschs 93,4 kg, leben-core.js `lebensdauerS`,
+   gelesen stamm/kreatur-leben.js `_bestandTakt`); die 7 Spieltage einer Spur gibt es nur im stillgestellten Feld der Probe
+   (`stillFeld`). Die alte Station nannte genau das als Täter von S3 (`FAUNA_MAX_AGE_MS`, „das Tier lebt keine 7 Spieltage“) — der
+   Kandidat streicht die Sperre nicht still: `nimm(3, …)` setzt `nicht`, solange tageLeben < 7, und `taeter` nennt
+   „leben-core.js lebensdauerS (das Tier lebt keine 7 Spieltage)“ neben dem Gesetz der Weide und der Tränke. S3 bleibt damit ungebucht,
+   bis ein Individuum 7 Spieltage lebt; die Zahl des Bands steht trotzdem in `werte`.
+
+3. DIE WÄNDE
+   - `node meisterkarte-quelle/punkte/punkte.cjs liste --kopf 38194f83` (main) und `--kopf c6038905` (Kopf 2, die Basis dieses Zweigs),
+     mit dem Kandidaten: genau zwei ROT „gelaende.K2#1/#2 ruft window.__zielen — niemand setzt ihn (Wand HAKEN)“, 1976 Stationen ·
+     fehlt 15 · Fehler 2 — gleich der Basis ohne Kandidat.
+   - Leiter ≤ 60 s: `sek` 40 → 60. Die Woche trägt 50 400 Takte; die GTX 1060 fuhr 0,65 ms/Takt in der vollen Welt (Runde 39, #2) →
+     ≈ 33 s, der Tages-Lauf ≈ 9,4 s, zusammen ≈ 43 s; headless 0,8–1,0 s für die Woche. msDeckel 45 s hält die Woche, die Sitzung der
+     Gruppe bleibt ≤ 245 s.
+   - Fächer: wanderung#3 ist keine Fächer-Station (kein `gesetz`/`adressen`).
+
+4. GEMESSEN (Hirsch, Messort wiese, 7 Spieltage, headless, Werkbank-Welt am Kopf des Zweigs `wander-pfad`):
+   - vorher (Kopf 2 c6038905, dt 0,5, Sonne): Hülle 0,488 / 0,499 km² (faktor 2,05 / 2,00 — am Rand des Bands) · 0 Trünke in 7 Tagen ·
+     7 Wander-Ziele · der Hirsch pendelt zwischen Geburtsort und einem Stern um den Anker.
+   - nachher (Schnitt `_kreaturTraenke` + gleichverteilte Weide im Netz): die Probe des Kandidaten wörtlich (wander-probe, dt 0,5):
+     0,838 / 0,576 km² · spieltage 7 · lebt true · 50 400 Takte · 0,96 / 0,77 s Wanduhr. Breiter (scratchpad-Messweg derselben Hülle):
+     dt 0,25 acht Läufe 0,727–0,802 km² · 13–15 Trünke je Woche · Tagesbudget ziehen/nahrung/ruhen 9/51/40 % (Soll 10/50/40);
+     Sonne 0,658–0,90 · Regen 0,566 / 0,779 km². Ein Ausreißer 0,404 km² (47 % ziehen) fiel einmal direkt nach dem Methoden-Tausch
+     und kam in 14 späteren Wochen-Läufen nicht wieder — er steht offen.
+   - pfadZellen (Wildwechsel) vorher 1, nachher 0: der Huf tritt je 0,5-m-Zelle höchstens 2-mal in 7 Tagen (das Tritt-Gesetz braucht
+     ≈ 27,7), und Tritte schreibt die Welt nur im Umkreis ≈ 173 m des Spielers (`_trittReichweite`); der eine Pfad von vorher war der
+     Stand am Geburtsort. Die Karte richtet über die Hülle und die 7 Tage; der Kandidat setzt kein Pfad-Soll.
+
+5. DIE EINE ZEILE, die der Richter nach dem Setzen wörtlich zeigen soll (die Zahl headless am Kopf; an der GPU liest sie ihre eigene):
+   „S3 faktor 1,194 gegen Soll ≤ 2 ✓ · spieltage 7 Spieltage gegen Soll ≥ 7 Spieltage ✓ — nicht: 7 Spieltage: das Tier lebt 0,63 Spieltage
+   (lebensdauerS seines Leibs) — die Spur über 7 Spieltage läuft nur im stillgestellten Feld“
