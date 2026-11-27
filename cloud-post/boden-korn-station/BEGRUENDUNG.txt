@@ -1,0 +1,39 @@
+KANDIDAT der Station karte2.planet.relief.boden#2 (Bahn boden-korn) — gegen origin/punkte-maschine f0d408e
+Datei: meisterkarte-quelle/punkte/stationen/k2-planet.js · Diff: k2-planet.diff (patch -p1 im Baum von punkte-maschine)
+Soll und Richter-Text bleiben unberührt: „Rang ≥ 0,7“ · „20 Läufen“ · zeuge zMin({ laeufe: 20, kornStufen: 2 }).
+
+WARUM
+Die Station misst das Korn heute nicht: aus[2] trägt das feste `nicht` „keine Korngröße in der Welt“, und die
+Sprosse trägt `nicht: "keine Korngröße"` — sie liest an 20 Läufen nur den Stoff der Sohle (`_terrainMaterialAt`
+ohne `aus`). Seit boden-korn trägt der Kern das Feld `korn` (Korngröße nach Herkunft: Bett, Aue, Hang, Wind), und
+derselbe Leser des Spiels nennt es: `_terrainMaterialAt(x, z, y, aus)` → aus.kornMm, aus.kornKlasse, aus.herkunft.
+Ohne den Kandidaten bleibt die Sprosse ROT, gleich was die Welt trägt.
+
+WAS DER KANDIDAT ÄNDERT
+1. Seite: an denselben Punkten (je Lauf 8 Stützen entlang der Bahn, y − 0,2 unter `_voxelSurfaceY`) ruft der Leser
+   des Spiels mit `aus`; je Punkt [Weg stromab m, kornMm, Wentworth-Klasse, Herkunft].
+2. Node: je Lauf Spearman Weg ↔ −kornMm, der Rang der Station = Median der Läufe; kornStufen = verschiedene Klassen.
+   Ohne Leser (kein kornMm) bleibt es M.nicht „keine Korngröße in der Welt …“ — ROT beim Namen, nie still.
+3. Sprosse 2: das feste `nicht` fällt; taeter/leser nennen gelaende-core `korn` und `_terrainMaterialAt(…, aus)`.
+
+DIE DREI WÄNDE
+1. `node punkte.cjs liste`: Basis (origin/main 7e73426e, Station unverändert) genau zwei ROT gelaende.K2#1/#2
+   „Wand HAKEN“; mit dem Kandidaten am Kopf boden-korn 52ec55fe dieselben zwei ROT, sonst nichts
+   (1976 Stationen · 420 Kriterien · fehlt 15 · Fehler 2).
+2. ≤ 60 s je Leiter: die ganze Seite der Leiter Boden (S1–S6, mit dem Korn) 94 ms in der Werkbank (swiftshader),
+   der Korn-Teil allein 10 ms; der Deckel der Station (sek 40, 20-s-Deckel der Seite) bleibt weit unberührt.
+3. Durch den Leser des Spiels: `r._terrainMaterialAt` — derselbe, den die Station schon ruft; dasselbe Feld liest die
+   Boden-Farbe am Fluss (stamm/gelaende-boden.js `_bodenFarbeAt` = voxel-worker.js `bodenFarbe`, bit-gleich).
+
+GEMESSEN (Körper des Kandidaten in der Werkbank, Heimat, swiftshader)
+rang 1,0 (min 0,9) · laeufe 20 · kornStufen 3 (steine, kies, schluff) · Quelle → Mündung 85,9 → 3,5 / 4,2 / 3,6 mm.
+Am Kopf 57d2916 (das Bett des Laufs, `laufBahn`: jede Kanal-Sohle liest ihr Bett): rang 1,0 (min 1,0) · laeufe 20 ·
+kornStufen 2 (steine, kies) · Lauf 0 entlang der Bahn 85,9 · 76,9 · 66,9 · 55,3 · 40,7 · 28,9 · 27,9 · 23,4 · 3,5 mm.
+Am Kopf 2 auf main 948f68ee (der Kandidat gesetzt, punkte-maschine 7d5a6463): byte-gleich — rang 1,0 (min 1,0) ·
+laeufe 20 · kornStufen 2 (steine, kies) · 179 Stützen, alle „bett“ · 114 ms.
+Die Station wie sie steht (ihr Körper, dieselbe Seite): nicht „keine Korngröße in der Welt: der Boden kennt Stoffe
+(stein, glut, erde, quarz), kein Korn nach Herkunft (stamm/vegetation-wiese.js:2362 _terrainMaterialAt)“ → ROT.
+Die Station ist radeon+gtx (Bild): headless fährt hier nur ihr Körper; das Urteil am Gerät fällt der Zug.
+
+DIE ZEILE, DIE DER RICHTER NACH DEM SETZEN ZEIGEN SOLL
+karte2.planet.relief.boden#2 · GRÜN · rang 1 (Soll ≥ 0,7) · laeufe 20 · kornStufen 2

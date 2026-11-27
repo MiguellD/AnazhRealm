@@ -1,0 +1,40 @@
+Stations-KANDIDAT der Bahn wurf-mit-luft — k2-same.js, Leiter same.physik.flug, Teil S2 (Diff: k2-same.diff gegen origin/punkte-maschine
+e63eb61c meisterkarte-quelle/punkte/stationen/k2-same.js, roh gelesen am 27.11.; der Kandidat S1 steht dort seit 6c8627c9). Kein Soll, kein
+Richter-Text, kein Umfang geändert; Soll S2 wörtlich: ablenkung_abw_pct ≤ 25, abprall_abw_pct ≤ 10.
+
+WARUM: S2 war eine feste Leser-Zeile („Drall: keine Magnus-Kraft am Körper“). Der Löser trägt jetzt die Kugel, die Magnus-Kraft im
+Luft-Paket und die Stoßzahl je Kontakt aus den Stoff-Zeilen (stamm/koerper-frei.js `_freiKoerperSetzen` · `_freiZiehen` ·
+`_freiPrallZahl`) — die Station braucht einen Rumpf, der das misst. Fehlt die Kugel (der Ball als Kiste), nennt der Rumpf den Leser.
+
+DER RUMPF `drall` (Wiese ego, wie S1): ein Fußball Gr. 5 als freier Körper (Kugel ⌀ 0,22 m, Leder, Wand 3,5 mm → 0,443 kg, FIFA 410–450 g;
+`druck` 0,8 bar, FIFA 0,6–1,1 bar).
+  Ablenkung: Freistoß 25 m/s längs der Bahn, 6 m/s hoch, aus 1,5 m, Seiten-Drall 8 U/s (S ≈ 0,22) — die Querlage nach 0,8 s MIT minus OHNE
+  Drall (der Wind fällt heraus) gegen die Rechnung mit den Messwerten des Fußballs im Flug (Goff & Carré, Am. J. Phys. 77, 1020, 2009:
+  C_D 0,25 und C_L 0,25 bei S 0,2–0,3), u = v − Wind am Ort (`_windAt`, wie S1), ρ 1,2, RK-frei 1 ms. Die Rechnung ist unabhängig vom
+  Löser: er rechnet C_L nach Sawicki, Hubbard & Stronge 2003 (0,09 + 0,6 S) und c_w über die Krise nach Re (Asai 2007).
+  Abprall: der Ball fällt aus 2 m (Unterkante) auf einen Gras-Fleck (`_kontaktStoffAt` „gras“, binnen 30 m) und auf eine Stein-Platte (Bau
+  2 × 0,3 × 2 m); seine Stoßzahl √(h / 2 m) gegen die Mitte des FIFA-Bands: Rasen 0,60–0,85 m (FIFA Quality Programme for Football Turf,
+  Quality Pro), harte Fläche 1,35–1,55 m (FIFA Quality Programme for Footballs, Quality Pro, Stahlplatte). Urteil: die größere Abweichung.
+  Welt-Zeuge weg_m: der Weg des Balls längs der Bahn.
+
+GEMESSEN (Rumpf `drall` wörtlich, Werkbank swiftshader, Wiese ego):
+  Kopf fd65eb6 (main 7e73426e + Kopf 1), Rumpf-Entwurf: Ball = Kiste (0,37 kg), quer 0,367 m mit Drall = 0,367 ohne · Abprall Gras 0,059 m,
+                                       Stein 0,354 m — die Station selbst: „ROT Leser fehlt“.
+  Kopf wurf-mit-luft (Schnitt), KANDIDAT: ablenkung_abw_pct 6.86 · abprall_abw_pct 5.59 → GRÜN
+                                       (Ablenkung 1,807 gegen 1,940 m; Rasen e 0,573 gegen 0,602, h 0,658 m; Stein e 0,804 gegen 0,851, h 1,292 m)
+                                       — mit dem Zerfall des Dralls; ohne ihn 5.22 (1,839 m)
+  Mutante Magnus aus (`_freiLuftPacken` 39 leer):   ablenkung_abw_pct 100 → ROT
+  Mutante EINE Stoßzahl 0,2 (wie main):              abprall_abw_pct 77.87 → ROT (Rasen 0,065 m, Stein 0,071 m)
+  Dauer des Rumpfs: 30–100 ms.
+
+NICHT GEÄNDERT, aber veraltet (Leser der Sprossen 3–5, ihre Sache): die Texte `ohneLuft` („nur Schwere, Kontakt und Reibung :421“) und S5
+(„der Löser liest das EINE Wind-Feld nicht“).
+
+DER DRALL ZERFÄLLT im Löser (FREI.luft.drallZerfall, Form nach James & Haake 2008: dω/dt ∝ ω·|u|): 0,46 % je Meter Weg — die Zahl aus
+dem Band der Messungen am Fußball (4–8 % Drall-Verlust bis zum Scheitel, Hochgeschwindigkeits-Kamera; ≈ 10 % über den Freistoß, Goff &
+Carré), gelesen aus den Auszügen; die Volltexte (Loughborough-Auslauftest, James & Haake) waren aus der Wolke nicht lesbar (403). Die
+Rechnung des Rumpfs braucht ihn nicht: C_L 0,25 der Messung ist über S 0,2–0,3 flach, der Verlust (≈ 7 % bis 0,8 s) bewegt S von 0,22
+auf 0,205.
+
+WÄNDE: `node punkte.cjs liste` NICHT gefahren — der Zweig punkte-maschine ist in der Wolke nicht holbar (git fetch > 120 s); die Leiter
+misst in ≤ 60 s (S1 + S2 Rumpf < 0,3 s); kein Fächer.

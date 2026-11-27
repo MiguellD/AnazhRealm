@@ -1,0 +1,64 @@
+STATIONS-KANDIDAT fahrzeug-medium-4 — meisterkarte-quelle/punkte/stationen/k2-mensch-fahrzeug.js (Zweig `punkte-maschine`),
+Leiter mensch.fahrzeug.medium S2 (und form S2, die Kippgrenze, aus demselben Kandidaten)
+Basis: origin/punkte-maschine a9a4b3d (Zweig `punkte-maschine`; die Datei ist dort byte-gleich mit 0ba33033, der Basis der
+Kandidaten von fahrzeug-medium und fahrzeug-medium-2). Der Diff k2-mensch-fahrzeug.diff gilt gegen a9a4b3d.
+
+EIN KANDIDAT AUS ZWEIEN: cloud-post/fahrzeug-medium-station (BREMS_AN am Boden der Saat, Prüfstand nach 49 CFR 571.135 S6.2.2,
+Normierung Weg × (μ + f_r)) und cloud-post/fahrzeug-medium-2-station (die Welt urteilt: flattert, imKreis, imWelt, sicht/SPUR_SICHT;
+form S2 KIPP) — beide aus dem Zweig `claude/practical-edison-4tvc2m` (Kopf 95258865); der zweite trug den ersten schon ganz. Neu
+gegen ihn nur die Zeilen-Anker von S2 am heutigen Kopf: exportDrive :4030 → :4077, fahrGesetz :4226 → :4273, fahrKraefte :4516 →
+:4627, radImBoden :4306 → :4360, fahrStand :4431 → :4532, `_wagenSchritt` :1581 → :1599, `_fahrGrund` :1837 → :1855. Die Anker der
+anderen Sprossen (S7 :3080, gestalt :3412, Maschinen koerper-leib :3106) bleiben byte-alt — nicht meine Sprossen.
+
+WARUM (die rote Zeile der Station, Runde 39, Kopf 99649186, GTX 1060)
+„S2 ROT: Umfang nicht erzeugbar: Bremsweg 100→0 0–45.39 m (im Band 75 %), 50→0 im Band 63 %, ≥ 130 km/h 120/160 · die Saat ändert
+die Physik nicht (1 Fahrt je Rezept über 20 Saaten: vehicle-core.js:3474 exportDrive liest keine Saat) · keine Spurrinne“.
+Die Station von heute bremst jede Saat auf `() => 0` mit μ 1 — sie fragt die Welt nicht, und S2 ist ein festes `K.nicht`: ROT an
+jedem Kopf, was immer das Spiel trägt. Die Saat erreicht die Physik über den GRUND IHRES ORTS (Vogel-Spirale um den Messort,
+Winkel saat · 137,508°, Abstand 24 m · √saat): Stoff, μ, Feuchte, Satz im Boden — gelesen durch die Leser des SPIELS
+(r._fahrGrund → r._kontaktStoffAt, r._fahrHaft, r._werkBoden, r._trittDurchfahrten), nie durch einen Saat-Parameter in exportDrive
+(kein zweiter Physik-Pfad). Die übrigen Gründe stehen ganz in cloud-post/fahrzeug-medium-2-station/BEGRUENDUNG.txt und
+cloud-post/fahrzeug-medium-station/BEGRUENDUNG.txt (Zweig `claude/practical-edison-4tvc2m`).
+
+DAS BAND (IPERKA): Bremsweg 100 → 0 trocken, Pkw mit ABS — ADAC 2016 (autohaus.de 10.10.2016: über 500 Bremstests der vier
+Jahre davor, Mittel 36,4 m, kürzester Porsche 911 Cabrio 31,3 m, längster Citroën Jumper Combi 47,8 m); ADAC 2021 (396 Fahrzeuge,
+Porsche 911 30,9 m). Das Soll der Karte 30–50 m trägt die Spanne; der Prüfstand des Kandidaten misst 38,14–45,26 m. Das Soll bleibt
+unverändert.
+
+GEMESSEN (headless, Null-Welt, die Leiter mit dem Code dieses Kandidaten, Messort genesis · dorf · wiese statt stadt-voll —
+headless hängt das /umstellen der Werkbank; stadt-voll fährt der Vor-Richter)
+                                  main 4a188bf2 + Station a9a4b3d        Kopf fahrzeug-medium-4 + Kandidat
+  Fahrten je Rezept über 20 Saaten 1                                      20 · 20 · 20
+  Prüfstand 100 → 0 im Band       75 % (0–45,39 m)                        100 % (38,14–45,26 m) an allen drei Orten
+  50 → 0 im Band                  63 %                                    100 %
+  Kurvengrenze a_quer ÷ μ·g        ungemessen                              0,992–0,999 (μ 0,4–0,8), 100 %
+  flattert (ohne Kuppe)           —                                       0 · 0 · 0
+  Spurrinne nach 10 Durchfahrten  ungemessen                              0,006 · 0,143 · 0,006 m
+  Spur gemalt nach 10             —                                       100 % (24 Zellen, nach 1: 0 %, 90 Tritte, rest 0)
+  Urteil S2 (mit Karte)           ROT „Umfang nicht erzeugbar“             GRÜN an genesis · dorf · wiese
+  Urteil S2 (Null-Welt)           ROT (dieselbe Zeile)                     ROT allein am Adapter (swiftshader)
+
+DIE DREI WÄNDE
+- `node punkte.cjs liste --kopf <Kopf>`: 1976 Stationen · 420 Kriterien · fehlt 15 · Fehler 2 — genau `gelaende.K2#1/#2` „Wand
+  HAKEN“, dieselben zwei wie an der Basis (origin/main 4a188bf2).
+- Die Leiter misst in ≤ 60 s: der Fächer 120/120 Adressen in 2,2–2,4 s, die ganze Leiter samt Spur 10,7–11,6 s je Ort.
+- Selbsttest `node stationen/k2-mensch.js --selbsttest`: 544 Stationen, 5 408 Mutanten, 0 falsch.
+- Kein Fächer im Kern (node, worker_threads): die Station fährt in der Seite durch die Leser des Spiels — die Stichprobe ist die
+  Fahrt selbst.
+
+DIE ZEILE, DIE DER ADAPTER AN DER GPU ERWARTET (der Vor-Richter vergleicht wörtlich; stadt-voll an der Radeon). Das Urteil
+trägt allein die sechs Maße und den Umfang, in dieser Reihe und mit diesen Zahlen — an jedem Ort gleich, außer der Rinne (der
+weichste Boden der Saaten am Ort, gemessen dorf 0.143, genesis und wiese 0.006; Soll > 0):
+„S2 GRÜN · Anteil der Saaten mit Bremsweg 100 → 0 × (μ + f_r) auf dem Boden der Saat in 30–50 m 1 (Soll ≥ 1) · Anteil der Saaten
+mit Bremsweg 50 → 0 × (μ + f_r) auf dem Boden der Saat in 7,5–12,5 m 1 (Soll ≥ 1) · Anteil der Saaten mit Kurvengrenze a_quer ÷ μ·g
+im Kreis in 0,95–1,01 1 (Soll ≥ 1) · Welt-Fahrten 100 → 0, die ohne Kuppe abheben (der Boden fiel nie weiter als den Federweg unter
+den Wagen) 0 (Soll ≤ 0) · Spurrinne nach 10 Durchfahrten in m <Rinne des Orts> (Soll > 0) · Anteil der Zellen der Spur, die die
+Wege-Karte nach 10 Durchfahrten als Pfad malt 1 (Soll ≥ 1) · Umfang 20 (Soll ≥ 20 Saaten bis 130 km/h mit eigener Physik) · 20 Fahrten
+je Rezept über 20 Saaten · Prüfstand auf dem Boden der Saat (eben, 49 CFR 571.135 S6.2.2): Weg × (μ + f_r) im Band 100→0 100 %
+(<Spanne> m), 50→0 100 % · die Kurvengrenze im Kreis <Spanne> μ·g (μ <Spanne>), im Band 0,95–1,01 100 % · die Welt: Bremsweg 100→0
+<Spanne> m am Ort (…)“
+Danach folgt der Beleg; was in ihm steht, sind gelesene Werte, kein Urteil. Headless gemessen: Prüfstand 38.14–45.26 m, Kurvengrenze
+0.992–0.999 μ·g. DER WELT-BREMSWEG 100 → 0 AM ORT (headless 58.49–191.82 m über genesis · dorf · wiese: Gefälle, Höhe und Boden des
+Orts, kein Prüfstand) und `imWelt` sind GELESENE Werte des Belegs, nie Teil des Urteils — kein Maß der Sprosse liest sie (die Maße
+sind imBand, imBand50, imKreis, flattert, rinne, sicht). ROT am Adapter heißt: eines der sechs Maße oder der Umfang weicht ab; die
+Zahl steht in der Zeile.

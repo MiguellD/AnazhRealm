@@ -686,6 +686,47 @@
         kn.A = a;
         return a;
     }
+    // Die Kennung eines Knotens (Ebene k, Zelle i, j) — eine Zahl, die das Kanal-Segment seines Glieds trägt (`KANAL_FELDER`).
+    function knotenId(kn) {
+        return (kn.i * 67108864 + kn.j) * 3 + kn.k;
+    }
+    // DER BRAND IM EINZUGSGEBIET (same.kopplung.stoerung#3): die verbrannten Flächen `flaechen` ([x, z, m²] — die Taten „brand“ des
+    // Wirts, gewogen mit ihrer Asche) fließen über das Netz stromab: jede in den Knoten der Ebene 2, in dessen Zelle sie liegt,
+    // dann den Unterliegern nach (`knotenFluss`), an der Mündung ins Glied der Ebene darüber (`aus.von`), bis zur Senke. Jeder
+    // Knoten der Ebenen 0 und 1 (sie tragen die Flüsse, `flussLaeufe`) sammelt die Fläche über ihm; b = Fläche / Einzugsgebiet
+    // (`knotenA`), höchstens 1. Der Beiwert des Regens steigt mit b vom Beiwert der Wiese auf den der Brandfläche —
+    // → Map(knotenId → m = 1 + b · (beiwert / wiese − 1)), null ohne Brand im Netz. Gerechnet je Änderung der Taten, nie je Bild.
+    // BAND: SCS-Kurvenzahl der Brandfläche hoher Schwere 95 gegen die unverbrannte 60–64 (USDA BAER, Washington Dam Safety
+    // 2015): ein Regen von 25 mm fließt zu 0,56 ab (CN 95), die Wiese des Pegels führt 0,3 (`PEGEL.regen`) — die Spitze des
+    // verbrannten Einzugsgebiets 1,87-fach. Die Erholung (die Asche der Sukzession, die Uhr des Wirts) liegt nach Moody & Martin
+    // 2001 (Buffalo Creek, Colorado) bei etwa 3 Jahren, nach Morris & Moses 1987 bei 3–5 Jahren.
+    const BRAND_ABFLUSS = Object.freeze({ beiwert: 0.56, wiese: 0.3 });
+    function pegelBrand(L, flaechen) {
+        const T = L.erbgut && L.erbgut.terme;
+        if (!T || !T.length || T[0].art !== "wildnis" || !flaechen || !flaechen.length) return null;
+        const N = netzFuer(L);
+        const S2 = N.S[2];
+        const je = new Map();
+        for (const [x, z, a] of flaechen) {
+            if (!(a > 0 && Number.isFinite(x + z))) continue;
+            const kn = knoten(N, 2, Math.floor(x / S2), Math.floor(z / S2));
+            je.set(kn, (je.get(kn) || 0) + a);
+        }
+        const A = new Map();
+        for (const [kn0, a] of je) {
+            let c = kn0;
+            for (let g = 0; g < 4096 && c; g++) {
+                if (c.k <= 1) A.set(c, (A.get(c) || 0) + a);
+                const f = knotenFluss(N, c);
+                if (f) c = f;
+                else c = c.k > 0 && c.aus && c.aus.von ? c.aus.von : null;
+            }
+        }
+        const K = BRAND_ABFLUSS.beiwert / BRAND_ABFLUSS.wiese - 1;
+        const aus = new Map();
+        for (const [kn, a] of A) aus.set(knotenId(kn), 1 + K * Math.min(1, a / (knotenA(N, kn) * N.S[kn.k] * N.S[kn.k])));
+        return aus.size ? aus : null;
+    }
     // Die Sohle eines Knotens: dem Gelände folgen (Ebene k ≥ 1 mit Mindest-Einschnitt), aber nie steiler als das Stream-
     // Power-Gesetz erlaubt und nie flacher als 0,04 % über dem Unterlieger — monoton fallend bis zur Senke.
     function knotenSohle(N, kn) {
@@ -748,6 +789,201 @@
     const FLUSS_BREITE = Object.freeze({ min: 2, k: 4.7, exp: 0.37 });
     function flussBreite(A) {
         return FLUSS_BREITE.min + FLUSS_BREITE.k * Math.pow(Math.max(0, A) / 1e6, FLUSS_BREITE.exp);
+    }
+
+    // DAS KORN DES BODENS (karte2.planet.relief.boden#2) — EIN Feld, die Korngröße D (mm, Median) an (x, z) aus ihrer HERKUNFT,
+    // eine reine Funktion der Lage über dem, was das Netz schon rechnet (die Fläche `flaeche` nennt ihr Profil, sein Knoten das
+    // Einzugsgebiet A, die Lauf-Länge nach Hack): kein gebackener Sack, je Frage EINE Fläche.
+    //   BETT (die Bahn ± halbe Bankvoll-Breite): Sternberg 1875 D = D₀·e^(−α·L), L = die Lauf-Länge nach Hack 1957 (`hackLaenge`
+    //     des Einzugsgebiets an der Stelle, längs des Glieds gemischt — stromab wächst A, also L, also fällt D); α 0,15 km⁻¹ im
+    //     Band zwischen dem Abrieb allein (Alpenrhein 0,005–0,018 km⁻¹ Gewicht, Mikoš 1994: ≈ 0,003 km⁻¹ im Durchmesser) und der
+    //     selektiven Sortierung kleiner Kies-Bäche (Allt Dubhaig, Ferguson et al. 1996: D50 −80 % auf 3,2 km ≈ 0,5 km⁻¹).
+    //     Der Kies-Sand-Übergang ist abrupt (Sambrook Smith & Ferguson 1995: D50 fällt von ≈ 10–20 mm auf < 1 mm): unter
+    //     `kiesSand` mm springt das Bett in den Sand `sandMm`.
+    //   AUE (die Bank, eine Bett-Breite, dann der Auenlehm): das Hochwasser legt die Schwebfracht ab, Schluff `auelehmMm`.
+    //   HANG: der Hangschutt nach der Steile (der Ruhewinkel des Schutts 34–37°, das Kolluvium flach), der Schutthang des
+    //     Schicht-Gesetzes (`aus.schutt`) als Blockschutt `schuttMm`.
+    //   WIND: auf der flachen Fläche fern der Rinne der Löss `loessMm` (Pye 1995: Median 20–40 µm).
+    // Die Klassen nach Wentworth 1922 (`KORN_KLASSEN`, obere Grenzen in mm): Ton · Schluff · Sand · Kies · Steine · Blöcke.
+    // `aus` (optional) trägt die Herkunft { herkunft, lauf (m), einzug (m²), hang (tan), nah } — der Leser der Horizonte
+    // (Sprosse #3: Bodenproduktion − Abtrag) liest Hang und Herkunft daraus. Die Lage ohne Wildnis (Insel, Rampe, Bucht) trägt kein
+    // Netz: dort spricht nur Hang und Wind (kein Bett, keine Aue).
+    // Leser: der Stoff des Bodens am Ort (`_terrainMaterialAt` mit `aus`: Korn und Herkunft) und die Farbe der Sohle und Bank
+    // (`sedimentFarbe` in `_bodenFarbeAt` und voxel-worker `bodenFarbe`: Kies grau, Sand hell, Schluff dunkel).
+    const KORN = Object.freeze({
+        quelleMm: 120,
+        alphaJeKm: 0.15,
+        kiesSand: [16, 6],
+        sandMm: 0.4,
+        bankBreiten: 1,
+        auelehmMm: 0.02,
+        lehmMm: 0.06,
+        hangGrobMm: 45,
+        hangTan: [Math.tan((12 * Math.PI) / 180), Math.tan((35 * Math.PI) / 180)],
+        schuttMm: 160,
+        loessMm: 0.03,
+        windTan: [0.02, 0.06],
+        windNah: [0.5, 1],
+        windAnteil: 0.8,
+    });
+    const KORN_KLASSEN = Object.freeze([
+        Object.freeze(["ton", 1 / 256]),
+        Object.freeze(["schluff", 1 / 16]),
+        Object.freeze(["sand", 2]),
+        Object.freeze(["kies", 64]),
+        Object.freeze(["steine", 256]),
+        Object.freeze(["bloecke", Infinity]),
+    ]);
+    function kornKlasse(mm) {
+        for (let i = 0; i < KORN_KLASSEN.length; i++) if (mm < KORN_KLASSEN[i][1]) return i;
+        return KORN_KLASSEN.length - 1;
+    }
+    const lnMisch = (a, b, t) => (t <= 0 ? a : t >= 1 ? b : Math.exp(Math.log(a) + (Math.log(b) - Math.log(a)) * t));
+    // das Korn der Sohle eines Laufs mit dem Einzugsgebiet A (m²): Sternberg über der Lauf-Länge nach Hack, der Kies-Sand-Übergang
+    function kornBett(A) {
+        const L = hackLaenge(A);
+        const D = KORN.quelleMm * Math.exp((-KORN.alphaJeKm * L) / 1000);
+        return lnMisch(D, KORN.sandMm, glatt(KORN.kiesSand[0], KORN.kiesSand[1], D));
+    }
+    // das Bett eines Segments sg an der Stelle sT längs der Sehne, quer m von seiner Bahn → { A, t }: das Einzugsgebiet (längs
+    // zwischen den Knoten) und die Lage im Bett [0 Sohle … 1 jenseits der Bank, `bankBreiten` Bett-Breiten]
+    function bettIm(N, sg, sT, sQ) {
+        const kn = sg.von;
+        const S2 = N.S[kn.k] * N.S[kn.k];
+        const Aob = knotenA(N, kn) * S2;
+        const Aun = kn.fluss ? knotenA(N, kn.fluss) * S2 : Aob;
+        const A = Aob + (Aun - Aob) * sT;
+        const b = flussBreite(A) / 2;
+        return { A, t: glatt(b, b * (1 + 2 * KORN.bankBreiten), sQ) };
+    }
+    // DER NÄCHSTE LAUF an (x, z) → { A, t } oder null: über den Segmenten der Ebenen 0 und 1 (die Läufe, `flussLaeufe` — die
+    // Bahn, auf die die Hydrosphäre den Kanal legt) das Bett, in dem der Ort am tiefsten liegt; quer der Abstand zur BAHN des
+    // Mäanders (der Versatz quer zur Sehne, `bahnVersatz`), an den Knoten zur Sehne.
+    function laufBahn(N, x, z) {
+        let best = null;
+        for (let k = 0; k <= 1; k++) {
+            const S = N.S[k];
+            const segs = zelle(N, k, Math.floor(x / S), Math.floor(z / S)).nah;
+            for (let q = 0; q < segs.length; q++) {
+                const s = segs[q];
+                const dx = x - s.ax;
+                const dz = z - s.az;
+                let t = (dx * s.ex + dz * s.ez) / s.len2;
+                t = t < 0 ? 0 : t > 1 ? 1 : t;
+                const quer =
+                    s.mo && t > 0 && t < 1
+                        ? Math.abs((dz * s.ex - dx * s.ez) / Math.sqrt(s.len2) - bahnVersatz(s, t))
+                        : Math.hypot(dx - s.ex * t, dz - s.ez * t);
+                const w = bettIm(N, s, t, quer);
+                if (!best || w.t < best.t) best = w;
+                if (best.t === 0) return best;
+            }
+        }
+        return best;
+    }
+    function korn(L, x, z, aus) {
+        const T = L.erbgut && L.erbgut.terme;
+        if (!T || !T.length) throw new Error("gelaende-core korn: der Lage fehlt ihr Erbgut");
+        let hang, schutt, nah;
+        let seg = null,
+            segT = 0,
+            quer = 0,
+            N = null;
+        if (T[0].art === "wildnis") {
+            N = netzFuer(L);
+            const m = {};
+            flaeche(N, N.ebenen - 1, x, z, grossform(N, x, z), m);
+            hang = m.hang;
+            schutt = m.schutt;
+            nah = m.nah;
+            // die Aue des gröbsten Netzes (die Hang-Rinne der Ebene 2 zählt ihr Einzugsgebiet erst hier, je Knoten einmal)
+            seg = m.aueSeg;
+            segT = m.aueT;
+            quer = m.aueQuer;
+        } else {
+            const m = {};
+            hoehe(L, x, z, false, m);
+            hang = m.hang;
+            schutt = m.schutt;
+            nah = 1;
+        }
+        let D;
+        let herkunft;
+        let A = 0;
+        // die Aue trägt ihr Netz, auch wo eine feinere Rinne sie nachher schneidet (die Rinne in der Aue liegt im Schotter der Aue);
+        // ein LAUF (`laufBahn`: die Bahn, auf die die Hydrosphäre den Kanal legt) trägt sein eigenes Bett: wo der Ort näher an
+        // seiner Sohle liegt (in Bett-Breiten) als an der der Aue, ist das Korn das des Laufs. Bis hier las die Sohle eines
+        // Zuflusses quer durch die Aue seines Hauptlaufs dessen Auelehm (an (2517, −5120): 5 km², 10,5 m breit, „aue“ 0,3 mm), und
+        // wo die Bahn eines kleinen Laufs über seine schmale Aue schwingt, las sie den Hang (an (−547, −567): 0,16 km², „hang“).
+        const hangKorn = () => {
+            let d = lnMisch(KORN.lehmMm, KORN.hangGrobMm, glatt(KORN.hangTan[0], KORN.hangTan[1], hang));
+            let her = "hang";
+            if (schutt > 0) {
+                d = lnMisch(d, KORN.schuttMm, schutt);
+                if (schutt >= 0.5) her = "schutt";
+            }
+            const w = KORN.windAnteil * (1 - glatt(KORN.windTan[0], KORN.windTan[1], hang)) * glatt(KORN.windNah[0], KORN.windNah[1], nah);
+            if (w > 0) {
+                d = lnMisch(d, KORN.loessMm, w);
+                if (w >= 0.5) her = "wind";
+            }
+            return [d, her];
+        };
+        let w = seg ? bettIm(N, seg, segT, quer) : null;
+        const lb = N ? laufBahn(N, x, z) : null;
+        if (lb && (!w || lb.t < w.t)) w = lb;
+        if (w && (seg || w.t < 1)) {
+            A = w.A;
+            const rand = seg ? [KORN.auelehmMm, "aue"] : hangKorn();
+            D = lnMisch(kornBett(A), rand[0], w.t);
+            herkunft = w.t < 0.5 ? "bett" : rand[1];
+        } else [D, herkunft] = hangKorn();
+        if (aus) {
+            aus.herkunft = herkunft;
+            aus.einzug = A;
+            aus.lauf = A > 0 ? hackLaenge(A) : 0;
+            aus.hang = hang;
+            aus.nah = nah;
+        }
+        return D;
+    }
+    // DIE FARBE DES SEDIMENTS nach seinem Korn (Leser: Sohle und Bank in `_bodenFarbeAt` und voxel-worker `bodenFarbe`): aus der
+    // Boden-Palette, kein eigener Ton — Schluff der Schlick (`sediment`), Sand der Strand (`sand`), Kies zwischen Sand und Fels
+    // (`rock`), Steine und Blöcke der Fels; zwischen den Klassen log-stetig im Korn.
+    const SEDIMENT_STUETZ = Object.freeze([
+        [Math.log(0.02), "sediment", 0],
+        [Math.log(0.25), "sand", 0],
+        [Math.log(4), "sand", 0.55],
+        [Math.log(64), "sand", 1],
+    ]);
+    function sedimentFarbe(P, mm, out) {
+        const l = Math.log(mm);
+        const S = SEDIMENT_STUETZ;
+        const farbe = (s, k) => {
+            const a = P[s[1]][k];
+            return a + (P.rock[k] - a) * s[2];
+        };
+        let i = 0;
+        while (i < S.length - 2 && l > S[i + 1][0]) i++;
+        let t = (l - S[i][0]) / (S[i + 1][0] - S[i][0]);
+        t = t < 0 ? 0 : t > 1 ? 1 : t;
+        for (let k = 0; k < 3; k++) {
+            const a = farbe(S[i], k);
+            out[k] = a + (farbe(S[i + 1], k) - a) * t;
+        }
+        return out;
+    }
+    // DIE SOHLE DES FLIESSENDEN WASSERS (karte2.planet.relief.boden#2) → [0, 1]: der Anteil des Sediments am Grund in der Höhe
+    // `ueber` (m, negativ unter dem Fluss-Spiegel) — voll ab `vollM` unter dem Spiegel. Das strömende Wasser hält die Sohle offen:
+    // unter der Mittelwasser-Linie wurzelt keine Landpflanze (Ellenberg & Leuschner 2010, die Zonierung des Ufers: die Linie des
+    // mittleren Wasserstands ist die untere Grenze der Landvegetation), die Sohle ist ihr Korn. Bis hier trug der Fluss die
+    // Rampe des stehenden Wassers (voll ab 4 m): unter dem Bach des Messorts `ufer` (0,6 m tief) lag zu 99,8 % Wiese. Leser:
+    // Schlick und Korn der Sohle in `_bodenFarbeAt` und voxel-worker `bodenFarbe` (je Fluss-Bezug, die Ferne je Segment).
+    const SOHLE = Object.freeze({ vollM: 0.3 });
+    function flussSohle(ueber) {
+        let t = ueber / -SOHLE.vollM;
+        t = t < 0 ? 0 : t > 1 ? 1 : t;
+        return t * t * (3 - 2 * t);
     }
 
     // DIE ART EINES GEWÄSSERS (w13-bach-klar) — die EINE Quelle: stehendes Wasser (See, Teich, Meer, die Flut des Automaten)
@@ -1232,6 +1468,11 @@
         let hang = 0;
         let schutt = 0;
         let aue = false;
+        // DIE HERKUNFT DER FLÄCHE (Leser: das Korn `korn`): das Profil der Aue (das gröbste Netz, dessen Aue die Fläche wählte),
+        // die Lage längs seiner Sehne und quer zur Bahn
+        let seg = null;
+        let segT = 0;
+        let segQuer = 0;
         for (let k = 0; k <= kmax; k++) {
             const S = N.S[k];
             const segs = zelle(N, k, Math.floor(x / S), Math.floor(z / S)).nah;
@@ -1241,6 +1482,9 @@
             let kAue = false;
             let kHang = 0;
             let kSchutt = 0;
+            let kSeg = null;
+            let kT = 0;
+            let kQuer = 0;
             for (let q = 0; q < segs.length; q++) {
                 const s = segs[q];
                 const dx = x - s.ax;
@@ -1261,6 +1505,7 @@
                 // die Neigung des Profils quer zur Rinne (mit der Treppe gemischt) — der Hang der gewählten Fläche
                 let gh = 0;
                 let sch = 0;
+                let quer = d;
                 // Die Aue fällt quer 0,6 % zur Rinne (das Wasser sammelt sich im Bett, nie in der Fläche) — zur BAHN des
                 // Mäanders: der Abstand quer zur Sehne, so gestaucht, dass die Bahn 0 und die Auen-Kante F bleibt (stetig an
                 // der Kante und an den Knoten, wo die Bahn auf der Sehne liegt).
@@ -1272,6 +1517,7 @@
                         dq = lat >= y ? ((lat - y) * s.F) / (s.F - y) : ((y - lat) * s.F) / (s.F + y);
                     }
                     v = bed + AUE_QUER * dq;
+                    quer = dq;
                 } else {
                     const sohle = bed + AUE_QUER * s.F;
                     w = u / s.W;
@@ -1297,6 +1543,9 @@
                     kAue = u <= 0;
                     kHang = gh;
                     kSchutt = sch;
+                    kSeg = s;
+                    kT = t;
+                    kQuer = quer;
                 }
             }
             if (Hk < H) {
@@ -1305,6 +1554,12 @@
                 aue = kAue;
                 hang = kHang;
                 schutt = kSchutt;
+                // die Aue gehört dem gröbsten Netz, das sie trägt (eine Mündung der Ebene k+1 in ihr bleibt ihr Fluss)
+                if (kAue && !seg) {
+                    seg = kSeg;
+                    segT = kT;
+                    segQuer = kQuer;
+                }
             }
             H = Hk;
         }
@@ -1314,6 +1569,9 @@
             aus.hang = hang;
             aus.schutt = schutt;
             aus.aue = aue;
+            aus.aueSeg = seg;
+            aus.aueT = segT;
+            aus.aueQuer = segQuer;
         }
         return H;
     }
@@ -1790,11 +2048,15 @@
         const P = PEGEL;
         const [tf, krone] = pegelBett(L);
         const q = new Float64Array(LAUF.n);
-        for (let j = 0; j < LAUF.n; j++) {
-            const k1 = Math.round(pegelHubVon(P.spende * (f.grund - 1) + P.regen * Math.max(0, f.schnell[j]), tf, krone) / P.stufe);
-            q[j] = k1 ? pegelAbfluss(L, k1 * P.stufe) : 0;
-        }
+        for (let j = 0; j < LAUF.n; j++) q[j] = laufQ(L, tf, krone, f.grund, f.schnell[j], 1);
         return { q, grund: f.grund, schnell: f.schnell };
+    }
+    // Der Abfluss q über dem Mittel, der den gerundeten Hub trägt: der Grund und der schnelle Abfluss F, dessen Regen der
+    // Beiwert der Fläche `m`-fach abführt (1: die Wiese; die Brandfläche des Einzugsgebiets hebt ihn, `pegelBrand`).
+    function laufQ(L, tf, krone, grund, F, m) {
+        const P = PEGEL;
+        const k1 = Math.round(pegelHubVon(P.spende * (grund - 1) + P.regen * m * Math.max(0, F), tf, krone) / P.stufe);
+        return k1 ? pegelAbfluss(L, k1 * P.stufe) : 0;
     }
     // DER ZUSTAND DES LAUFS zur Welt-Uhr `jetzt` (speicher.K3): Stempel und Zustand gefaltet in { t, grund, s } — 2 + 2 · LAUF.n
     // Zahlen, nie mehr, wie lange es auch regnete (Gebot 7: der Stand trägt die Speicher, nie die Uhr des Regens). Der Grund auf
@@ -1899,18 +2161,28 @@
         }
         return { y0, a };
     }
-    function pegelTafel(L, schmelze, lauf) {
+    function pegelTafel(L, schmelze, lauf, brand) {
         const [tf, krone] = pegelBett(L);
         const q = lauf && lauf.q && lauf.q.some((v) => v !== 0) ? Float64Array.from(lauf.q) : new Float64Array(LAUF.n);
         // die Spende des Orts (Reise, `ortGesetz`): der Abfluss am Ort ist Verhältnis × (Spende + q) − Spende, gerechnet als
         // (a + q)·v + Spende·(v − 1) — in der Heimat (v = 1) genau a + q; die Wüste (v = 0) trägt −Spende: das Bett leer
         const T = { y0: schmelze.y0, dy: PEGEL.dy, a: schmelze.a, q, tf, krone, verh: ortDer(L).spendeVerh };
-        return q.some((v) => v !== 0) || pegelReihe(T, 0).some((h) => h !== 0) ? T : null;
+        // DER BRAND IM EINZUGSGEBIET (`pegelBrand`: je Knoten des Netzes der Faktor m des Beiwerts): je verbranntem Knoten die
+        // Reihe seines Abflusses je Klasse, wo sie vom Lauf der Wiese abweicht — der Regen, der nach dem Lauf fiel, fließt
+        // m-fach ab (der Grund bleibt). Ohne Brand trägt die Tafel kein Feld `brand` (byte-gleich).
+        if (brand && brand.size && lauf)
+            for (const [kn, m] of brand) {
+                const r = new Float64Array(LAUF.n);
+                for (let j = 0; j < LAUF.n; j++) r[j] = laufQ(L, tf, krone, lauf.grund, lauf.schnell[j], m);
+                if (r.some((v, j) => v !== q[j])) (T.brand || (T.brand = new Map())).set(kn, r);
+            }
+        return T.brand || q.some((v) => v !== 0) || pegelReihe(T, 0).some((h) => h !== 0) ? T : null;
     }
     // Die Reihe der Klasse j einer Tafel (je Schmelze und Abfluss q einmal je Faden gebaut — gleiche Klassen teilen sie).
     const PEGEL_REIHEN = new WeakMap();
-    function pegelReihe(T, j) {
-        const q = T.q[j];
+    function pegelReihe(T, j, kn) {
+        const b = T.brand && T.brand.get(kn);
+        const q = b ? b[j] : T.q[j];
         if (q === undefined) throw new Error("gelaende-core pegelHub: die Lag-Klasse des Laufs fehlt (" + j + ")");
         let je = PEGEL_REIHEN.get(T.a);
         if (!je) PEGEL_REIHEN.set(T.a, (je = new Map()));
@@ -1922,10 +2194,11 @@
         je.set(q, hub);
         return hub;
     }
-    function pegelHub(L, y, j) {
+    // `kn` (optional): der Knoten des Netzes, dessen Glied das Segment trägt (`KANAL_FELDER` Feld 11) — sein Brand (`T.brand`)
+    function pegelHub(L, y, j, kn) {
         const P = L.pegel;
         if (!P || !Number.isFinite(y)) return 0;
-        const hub = pegelReihe(P, j);
+        const hub = pegelReihe(P, j, kn);
         const n = hub.length;
         const u = (y - P.y0) / P.dy;
         if (u <= 0) return hub[0];
@@ -2138,6 +2411,7 @@
                 bb: f ? knotenSohle(N, f) : t.bed,
                 A: knotenA(N, kn) * N.S[kn.k] * N.S[kn.k],
                 bahn: bahnPunkte(segment(N, kn), schritt),
+                kn: knotenId(kn),
             };
         };
         const laeufe = [];
@@ -7034,6 +7308,7 @@
                         flowZ: B[m].fz,
                         inLake: false,
                         j: laufKlasse(gl.A, weg + B[m].s),
+                        kn: gl.kn === undefined ? NaN : gl.kn,
                     });
                 }
                 lauf += B[B.length - 1].s;
@@ -7319,10 +7594,11 @@
     // Carve-Index für `_hydrosphereCarveAt` + `_hydrosphereLakeAt`: (1) DER KANAL `kanal` — jedes Segment in alle Buckets
     // seiner um die Kanal-Reichweite erweiterten BBox (eine Abfrage liest einen Bucket), gepackt: `seg` je Segment
     // KANAL_FELDER Zahlen (ax az bx bz · hwA hwB · dA dB · sA sB · j: die Lag-Klasse seines Laufs, `pegelHub` — der längste
-    // Lauf eines geteilten Unterlaufs), die Nummern des Buckets k in `idx[ab[k] .. ab[k + 1]]`
+    // Lauf eines geteilten Unterlaufs · kn: der Knoten des Netzes, dessen Glied es trägt, `knotenId` — der Brand seines
+    // Einzugsgebiets, `pegelBrand`; NaN ohne Netz), die Nummern des Buckets k in `idx[ab[k] .. ab[k + 1]]`
     // in der Reihe des Einsortierens — er reist per Transfer, kein Leser klont ihn (Lehre 24); (2) See-Raster
     // `lakeBedCell`, `lakeW`, `lakeNear` (Early-Out). Pure Daten — kein `_terrainDensityAt`, kein Zirkel.
-    const KANAL_FELDER = 11;
+    const KANAL_FELDER = 12;
     function hydroBuildCarveIndex(ctx, H, rivers, lakes) {
         const { dim, originX, originZ, size, waterLevel } = ctx;
         // --- Fluss-Bucket-Grid ---
@@ -7344,7 +7620,7 @@
             if (bj1 >= bucketsDim) bj1 = bucketsDim - 1;
             if (bi1 < bi0 || bj1 < bj0) return; // kein Bucket trägt es (das Segment liegt jenseits der Region)
             const si = zahlen.length / KANAL_FELDER;
-            zahlen.push(seg.ax, seg.az, seg.bx, seg.bz, seg.hwA, seg.hwB, seg.dA, seg.dB, seg.sA, seg.sB, seg.j);
+            zahlen.push(seg.ax, seg.az, seg.bx, seg.bz, seg.hwA, seg.hwB, seg.dA, seg.dB, seg.sA, seg.sB, seg.j, seg.kn);
             for (let bj = bj0; bj <= bj1; bj++) {
                 for (let bi = bi0; bi <= bi1; bi++) {
                     const k = bj * bucketsDim + bi;
@@ -7384,6 +7660,7 @@
                     sA: a.S,
                     sB: b.S,
                     j: klasse.get(segKey),
+                    kn: a.kn === undefined ? NaN : a.kn,
                 });
             }
         }
@@ -7537,8 +7814,10 @@
     // DIE LAG-KLASSEN AM RECHTECK [x0, x1] × [z0, z1] (`pegelHub`): die Klassen jedes Segments in den Buckets, die es berührt, und
     // ihren Nachbarn (die Feuchte des Ufers reicht über die 3×3-Buckets, `flussRand`), und jedes Sees binnen zwei Zellen
     // (`wasserSpiegel` dilatiert 3×3) — aufsteigend, leer wo kein Wasser einen Pegel trägt. Leser: die Marke des Chunks im Wirt.
+    // `knoten`: je Segment das Paar [Klasse, Knoten] (der Brand des Einzugsgebiets trägt seine eigene Reihe, `pegelBrand`).
     function pegelKlassen(L, x0, z0, x1, z1) {
         const je = new Set();
+        const paare = new Map();
         const gesehen = new Set();
         for (const [x, z] of [
             [x0, z0],
@@ -7559,7 +7838,11 @@
                 const j1 = Math.min(bd - 1, Math.floor((z1 - h.originZ) / bs) + 1);
                 for (let bj = j0; bj <= j1; bj++)
                     for (let bi = i0; bi <= i1; bi++)
-                        for (let q = ab[bj * bd + bi]; q < ab[bj * bd + bi + 1]; q++) je.add(seg[idx[q] * KANAL_FELDER + 10]);
+                        for (let q = ab[bj * bd + bi]; q < ab[bj * bd + bi + 1]; q++) {
+                            const o = idx[q] * KANAL_FELDER;
+                            je.add(seg[o + 10]);
+                            if (seg[o + 11] === seg[o + 11]) paare.set(seg[o + 10] + "|" + seg[o + 11], [seg[o + 10], seg[o + 11]]);
+                        }
             }
             const W = h.water;
             if (W && W.waterKind) {
@@ -7572,7 +7855,7 @@
                     for (let i = i0; i <= i1; i++) if (W.waterKind[i + j * h.dim] === 2) je.add(W.waterLauf[i + j * h.dim]);
             }
         }
-        return [...je].sort((a, b) => a - b);
+        return Object.assign([...je].sort((a, b) => a - b), { knoten: [...paare.values()] });
     }
 
     // DER FLUSS-KANAL an (x, z) → { P, L, k } oder null: P die Höhe des KANALS (Flachboden auf Spiegel − (1 − Freibord) · Tiefe
@@ -7620,6 +7903,49 @@
             if (l > Ld) Ld = l;
         }
         return P < Infinity ? { P, L: Ld, k: fuss } : null;
+    }
+
+    // DIE BANK DES KANALS an (x, z) → { w, spiegel } oder null (karte2.planet.relief.boden#2): w ∈ [0, 1] das Gewicht der Bank,
+    // die der Kanal schneidet (`flussKanal`) — 1 bis zur Krone, smoothstep auf 0 über dammBreite + bankWeite hinter ihr, das
+    // Maximum der Segmente; spiegel der Spiegel des nächsten Segments samt Pegel (wie `spiegelQuer`). Der Fluss-Spiegel
+    // (`flussAm`) endet an der Krone, die Bank, die der Kanal bis bankWeite hinter ihr schneidet, liegt trocken über ihm — dort trug
+    // der Boden bis hier keinen Bezug zum Fluss und so kein Korn: die Wiese deckte das Ufer bis an die Krone. Leser: das Ufer-Band
+    // der Boden-Farbe (`_bodenFarbeAt`, voxel-worker `bodenFarbe`): der Strand des Flusses hängt an der Höhe über DIESEM Spiegel.
+    function flussBank(L, x, z) {
+        const h = hydroRegion(L, x, z);
+        const kb = flussBucket(h, x, z);
+        if (kb < 0) return null;
+        const { seg, idx, ab } = h.kanal;
+        const H = L.hydroGesetz;
+        const weite = H.dammBreite + H.bankWeite;
+        let w = 0;
+        let bestD = Infinity;
+        let spiegel = 0;
+        let j = 0;
+        let kn = NaN;
+        for (let q = ab[kb]; q < ab[kb + 1]; q++) {
+            const o = idx[q] * KANAL_FELDER;
+            const ax = seg[o];
+            const az = seg[o + 1];
+            const ex = seg[o + 2] - ax;
+            const ez = seg[o + 3] - az;
+            const len2 = ex * ex + ez * ez || 1;
+            let t = ((x - ax) * ex + (z - az) * ez) / len2;
+            if (t < 0) t = 0;
+            else if (t > 1) t = 1;
+            const dist = Math.hypot(x - (ax + ex * t), z - (az + ez * t));
+            const dK = seg[o + 4] + (seg[o + 5] - seg[o + 4]) * t + (seg[o + 6] + (seg[o + 7] - seg[o + 6]) * t) / H.bankNeigung;
+            if (dist >= dK + weite) continue;
+            const u = dist <= dK ? 0 : (dist - dK) / weite;
+            const ws = 1 - u * u * (3 - 2 * u);
+            if (ws > w) w = ws;
+            if (dist < bestD) {
+                bestD = dist;
+                spiegel = seg[o + 8] + (seg[o + 9] - seg[o + 8]) * t;
+                [j, kn] = [seg[o + 10], seg[o + 11]];
+            }
+        }
+        return w > 0 ? { w, spiegel: spiegel + pegelHub(L, spiegel, j, kn) } : null;
     }
 
     // DAS SEE-BECKEN an (x, z) → { bedY, w } oder null: bedY die flache, dichte Bett-Höhe, w ∈ [0, 1] die Zugehörigkeit (rampt
@@ -7860,6 +8186,7 @@
         // der Abfluss des Laufs der Segmente (die Klassen der Tafel `L.pegel`): eine Reihe für alle, wo er gleich ist
         const Pq = L.pegel ? L.pegel.q : null;
         let jEins = -1;
+        let knEins = NaN;
         let gleich = true;
         for (let q = ab[kb]; q < ab[kb + 1]; q++) {
             const o = idx[q] * KANAL_FELDER;
@@ -7879,8 +8206,8 @@
             const g = (1 - dist / krone) * (1 - dist / krone) + 1e-6;
             gSumme += g;
             sSumme += g * (seg[o + 8] + (seg[o + 9] - seg[o + 8]) * t);
-            if (jEins < 0) jEins = seg[o + 10];
-            else if (Pq && Pq[seg[o + 10]] !== Pq[jEins]) gleich = false;
+            if (jEins < 0) [jEins, knEins] = [seg[o + 10], seg[o + 11]];
+            else if (Pq && (Pq[seg[o + 10]] !== Pq[jEins] || (L.pegel.brand && !Object.is(seg[o + 11], knEins)))) gleich = false;
             const u = dist <= halfW ? 0 : (dist - halfW) / (krone - halfW);
             const uS = 1 - u * u * (3 - 2 * u);
             if (uS > ufer) ufer = uS;
@@ -7896,7 +8223,7 @@
         if (bestD === Infinity) return null;
         const spiegel = sSumme / gSumme;
         let hub = 0;
-        if (gleich) hub = pegelHub(L, spiegel, jEins);
+        if (gleich) hub = pegelHub(L, spiegel, jEins, knEins);
         else
             for (let q = ab[kb]; q < ab[kb + 1]; q++) {
                 const o = idx[q] * KANAL_FELDER;
@@ -7906,7 +8233,7 @@
                 t = t < 0 ? 0 : t > 1 ? 1 : t;
                 const dist = Math.hypot(x - (seg[o] + ex * t), z - (seg[o + 1] + ez * t));
                 const krone = seg[o + 4] + (seg[o + 5] - seg[o + 4]) * t + (seg[o + 6] + (seg[o + 7] - seg[o + 6]) * t) / sN;
-                if (dist <= krone) hub += ((1 - dist / krone) * (1 - dist / krone) + 1e-6) * pegelHub(L, spiegel, seg[o + 10]);
+                if (dist <= krone) hub += ((1 - dist / krone) * (1 - dist / krone) + 1e-6) * pegelHub(L, spiegel, seg[o + 10], seg[o + 11]);
             }
         if (!gleich) hub /= gSumme;
         return {
@@ -7930,6 +8257,7 @@
         let bestD = Infinity;
         let spiegel = -Infinity;
         let j = 0;
+        let kn = NaN;
         for (let q = ab[kb]; q < ab[kb + 1]; q++) {
             const o = idx[q] * KANAL_FELDER;
             const ax = seg[o];
@@ -7944,10 +8272,10 @@
             if (dist < bestD) {
                 bestD = dist;
                 spiegel = seg[o + 8] + (seg[o + 9] - seg[o + 8]) * t;
-                j = seg[o + 10];
+                [j, kn] = [seg[o + 10], seg[o + 11]];
             }
         }
-        return spiegel + pegelHub(L, spiegel, j);
+        return spiegel + pegelHub(L, spiegel, j, kn);
     }
     // DER NÄCHSTE RAND eines Flusses an (x, z) über die 3×3-Buckets (die Feuchte reicht ~26 m, weiter als die Bank) → { dist,
     // halfW, spiegel }: der nächste RAND (Abstand minus die Halbbreite), nie die nächste Mittellinie — zwischen zwei Segmenten
@@ -7965,6 +8293,7 @@
         let bestRand = Infinity;
         let bestSp = NaN;
         let bestJ = 0;
+        let bestKn = NaN;
         for (let dj = -1; dj <= 1; dj++) {
             for (let di = -1; di <= 1; di++) {
                 const bi = bi0 + di;
@@ -7989,12 +8318,12 @@
                         best = dist;
                         bestHw = hw;
                         bestSp = seg[o + 8] + (seg[o + 9] - seg[o + 8]) * t;
-                        bestJ = seg[o + 10];
+                        [bestJ, bestKn] = [seg[o + 10], seg[o + 11]];
                     }
                 }
             }
         }
-        return { dist: best, halfW: bestHw, spiegel: bestSp + pegelHub(L, bestSp, bestJ) };
+        return { dist: best, halfW: bestHw, spiegel: bestSp + pegelHub(L, bestSp, bestJ, bestKn) };
     }
     // DER SPIEGEL AM SCHNITT (F3): der Fluss-Spiegel quer (`spiegelQuer`) über einer Spalte, die ein Schnitt der Edit-Karte k
     // berührt (sein Radius + eine halbe Zell-Diagonale der Kante `step`), sonst −Infinity. Leser: das Wasser-Sheet am Graben.
@@ -8660,12 +8989,22 @@
         LAUF: LAUF,
         laufKlasse: laufKlasse,
         hackLaenge: hackLaenge,
+        korn: korn,
+        kornBett: kornBett,
+        kornKlasse: kornKlasse,
+        KORN: KORN,
+        KORN_KLASSEN: KORN_KLASSEN,
+        sedimentFarbe: sedimentFarbe,
+        SOHLE: SOHLE,
+        flussSohle: flussSohle,
         pegelLauf: pegelLauf,
         pegelZustand: pegelZustand,
         pegelSchmelze: pegelSchmelze,
         pegelTafel: pegelTafel,
         pegelHub: pegelHub,
         pegelKlassen: pegelKlassen,
+        pegelBrand: pegelBrand,
+        BRAND_ABFLUSS: BRAND_ABFLUSS,
         koerperY: koerperY,
         LAVA: LAVA,
         waermeGang: waermeGang,
@@ -8686,6 +9025,7 @@
         hydroBand: hydroBand,
         hydroRegion: hydroRegion,
         flussKanal: flussKanal,
+        flussBank: flussBank,
         seeBecken: seeBecken,
         gewaesserForm: gewaesserForm,
         dichteSpalte: dichteSpalte,
