@@ -830,7 +830,42 @@ async function lebenBuehnen() {
         restore.push(() => gebaut.forEach((e) => e && r.removeArchitecture(e)));
         if (H.length < 4 || H.some((h) => !h.box))
             return { fehler: "ein Hindernis ohne Hülle (" + H.length + " gebaut)" };
-        // steht der Spieler 1 s, lenkt er 1 s 60° zur Seite
+        // der alte Defekt: eine Sackgasse auf dem ersten Bein (1,0 m Lücke, 1,5 m tief — die Wald-Tasche des Biom-Kopfs 2: Kiefer,
+        // Tanne und Totholz, 0,91 m Lücke), der geführte Spieler läuft hinein und steht
+        if (taeter === "tasche") {
+            const [name, hT, g] = ["_t_folgen_tasche", 3, r.getTerrainHeightAt(P.x + sx * 20, P.z)];
+            const box = (x, z, sx2, sz2) => ({ shape: "box", material: "stein", position: { x, y: hT / 2, z }, size: { x: sx2, y: hT, z: sz2 } }); // prettier-ignore
+            s.blueprints[name] = { name, parts: [box(sx * 0.75, 0, 0.4, 2.2), box(0, -0.7, 1.9, 0.4), box(0, 0.7, 1.9, 0.4)] };
+            restore.push(() => delete s.blueprints[name]);
+            const e = r.spawnArchitecture(name, { x: P.x + sx * 20, y: g - 0.3, z: P.z }, { silent: true });
+            if (!e || !(e.blockerAABBs || []).length) return { fehler: "die Tasche des Täters steht ohne Hülle" };
+            restore.push(() => r.removeArchitecture(e));
+        }
+        // DER WEG DES PARCOURS (biome-hoehenstufen 3): die Bühne misst das Folgen über Hang, Wasser und ihre vier Hindernisse — der
+        // Wald ist nicht ihr Gegenstand. Am Biom-Kopf 2 stand auf ihrem zweiten Bein eine Tasche aus drei Stämmen (Kiefer, Tanne,
+        // Totholz, 0,91 m Lücke, nach Norden zu): der geführte Spieler lief hinein und stand ≥ 520 s, das Tier wartete 3,5 m hinter ihm,
+        // und das Urteil hieß „die Hindernisse halten nicht“. Darum räumt die Bühne ihren Weg wie die Siedlung den ihren
+        // (`_naturRaeumen`, still): jede Natur, deren Box unter Kopfhöhe (2,5 m) der Spur näher kommt als WEG_M, fällt — je Sekunde
+        // das laufende und das nächste Stück (auch, was der Wald unterwegs nachpflanzt). Das Maß (USFS FSH 2309.18 §23.12 Ex. 01,
+        // Pack und Sattel, Klasse 3: Lichtraum 96″ = 2,44 m, Schulter 12–18″): die halbe Breite 1,22 m + Schulter 0,46 m + der
+        // Ausweich-Schritt des Spielers (1 s × 60° ≈ 1,36 m) = 3,0 m.
+        const WEG_M = 3.0;
+        const geraeumt = new Set();
+        const raeumen = (a, b) => {
+            const n = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / 0.5));
+            for (let j = 0; j <= n; j++) {
+                const [x, zz] = [a[0] + ((b[0] - a[0]) * j) / n, a[1] + ((b[1] - a[1]) * j) / n];
+                const kopf = r.getTerrainHeightAt(x, zz) + 2.5;
+                for (const e of r._blockerUmPlatz(x, zz, WEG_M, [])) {
+                    if (geraeumt.has(e) || !r._istNatur(e)) continue;
+                    const nah = (e.blockerAABBs || []).some((q) => q.botY < kopf && A.prototype._boxAbstand2.call(r, q, x, zz) < WEG_M * WEG_M); // prettier-ignore
+                    if (nah && r.removeArchitecture(e, { still: true })) geraeumt.add(e);
+                }
+            }
+        };
+        // steht der Spieler 1 s, lenkt er 1 s 60° zur Seite; DER WÄCHTER: die längste Folge von Sekunden, in denen er keine 0,3 v
+        // vorankommt, und ihr Ort — ein Spieler, der länger als STEHT_MAX_S steht, trägt den Parcours nicht (ein Mensch am Stock
+        // dreht nach wenigen Sekunden um; die Wand des Parcours umgeht er über ihre Ziele)
         const gehen = (sek, je) => {
             pm.set(P.x, boden(P.x, P.z), P.z);
             if (s.playerVel) s.playerVel.setValue(0, 0, 0);
@@ -838,12 +873,21 @@ async function lebenBuehnen() {
             s.verbTafel.gehalten = { vor: true };
             const t0 = (s._simZeit || 0) + 1;
             let [zi, seite, aus, mark] = [0, 1, 0, [pm.x, pm.z]];
+            const steht = { s: 0, ort: null, folge: 0 };
             try {
                 for (let k = 0; k < sek * 60; k++) {
                     const [zx, zz] = ziele[Math.min(zi, ziele.length - 1)];
                     if (Math.hypot(zx - pm.x, zz - pm.z) < 1.5) zi++;
+                    if (k % 60 === 0) {
+                        const i = Math.min(zi, ziele.length - 1);
+                        raeumen(zi ? ziele[i - 1] : [P.x, P.z], ziele[i]);
+                        if (i + 1 < ziele.length) raeumen(ziele[i], ziele[i + 1]);
+                    }
                     if (k % 60 === 59) {
-                        if (!aus && Math.hypot(pm.x - mark[0], pm.z - mark[1]) < 0.3 * v) [aus, seite] = [60, -seite];
+                        const still = Math.hypot(pm.x - mark[0], pm.z - mark[1]) < 0.3 * v;
+                        if (!aus && still) [aus, seite] = [60, -seite];
+                        steht.folge = still ? steht.folge + 1 : 0;
+                        if (steht.folge > steht.s) [steht.s, steht.ort] = [steht.folge, [rund(pm.x, 2), rund(pm.z, 2)]];
                         mark = [pm.x, pm.z];
                     }
                     s.yaw = Math.atan2(zx - pm.x, zz - pm.z) + (aus > 0 ? (seite * Math.PI) / 3 : 0);
@@ -856,6 +900,7 @@ async function lebenBuehnen() {
             } finally {
                 s.verbTafel.gehalten = tasten;
             }
+            return { s: steht.s, ort: steht.ort };
         };
         const hirsch = (gebunden) => {
             const [hx, hz] = [P.x - sx * 2.8, P.z - sz * 2.8];
@@ -870,7 +915,7 @@ async function lebenBuehnen() {
         const z = { proben: 0, aufgabe: 0, nassS: 0, steilS: 0 };
         const [abstand, leibVon, abstand2] = [[], A.prototype._kreaturLeib, A.prototype._boxAbstand2];
         n.strahlen = 0;
-        gehen(600, (k) => {
+        const steht = gehen(600, (k) => {
             const p = c.position;
             const lb = leibVon.call(r, c);
             const [vx, vz] = [p.x + lb.fx * lb.halb, p.z + lb.fz * lb.halb];
@@ -923,6 +968,8 @@ async function lebenBuehnen() {
             leibRufe: n.leib,
             strahlenJeTakt: rund(n.strahlen / 36000, 3),
             spielerWand: n.spielerWand,
+            steht,
+            geraeumt: geraeumt.size,
         });
         r.removeCreature(c);
         const u = hirsch(false);
@@ -3089,6 +3136,13 @@ function lebenUrteil(name, z, soll) {
             z.proben >= 600 && z.aufgabe === z.proben && z.abstand.p95 <= 10,
             `das gebundene Tier folgt nicht: ${z.aufgabe} von ${z.proben} s in der Aufgabe, Abstand p95 ${z.abstand.p95} m, max ${z.abstand.max} m (Soll p95 ≤ 10 m über 600 s)`
         );
+        // DER WEG TRÄGT DEN PARCOURS (biome-hoehenstufen 3): steht der geführte Spieler, misst kein Hindernis dahinter etwas — das
+        // Urteil nennt ihn, nie „die Hindernisse halten nicht“ allein (Biom-Kopf 2: ≥ 520 s in einer Wald-Tasche, Haus 114,7 m fern)
+        const steht = z.steht || { s: Infinity, ort: null };
+        soll(
+            steht.s <= 10,
+            `der geführte Spieler steht ${steht.s} s bei (${steht.ort}) — sein Weg trägt den Parcours nicht (Soll ≤ 10 s; ${z.geraeumt} Natur-Stücke vom Weg geräumt)`
+        );
         const W = z.hindernisse.filter((h) => h.art !== "sockel");
         const bruch = W.filter((h) => !(h.kontakt > 0 && h.drin === 0 && h.quer === 0 && h.vornMinM > 0));
         soll(
@@ -3300,6 +3354,7 @@ module.exports = {
             ["sockel", /steht im Sockel/],
             ["gedreht-kontakt", /Parkour-Wand des Spielers/],
             ["gedreht-rahmen", /gedrehten Wand/],
+            ["tasche", /der geführte Spieler steht/],
         ],
         lebensraum: [
             [
