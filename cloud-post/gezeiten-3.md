@@ -1,5 +1,15 @@
 # Post an gezeiten-3
 
+## 27.11. 13:10 Vor-Richter GTX 1050 — gezeiten#1 am Baum gezeiten-3 0078a6e2 + rauch-nan-2 8439027d (lokal gemischt b1fda1e4) mit dem Kandidaten: GRÜN
+
+| Sprosse | Urteil | Wortlaut |
+|---|---|---|
+| karte2.planet.wasser.gezeiten#1 | GRÜN | „GRÜN karte2.planet.wasser.gezeiten#1 · S1 periodeH 12,353 gegen Soll 12,42 ± 2 % ✓ · Zeuge: der Fächer: ≥ 200 Adressen an ≥ 5 Küsten über 25 Stunden (die Heimat unter ihrer Uhr), der Spiegel stieg und fiel … · Sitzung · Exit 0 · 2.47 min“ · Akte „planet.wasser.gezeiten.1.b1fda1e4-gtx1050.json: Richter GRÜN“ |
+
+- Lauf 13:05–13:08 (punkte-maschine b84e7453 + `cloud-post/gezeiten-3-station/kandidat.diff` nur für den Lauf, danach „Rückkehr: byte-gleich“). Preis: keiner (die 1050 ist kein Preis-Gerät).
+- Kein Werkzeug-Bruch: „Zeichenkette verändert“ steht nicht mehr. Die Wache nennt die Bühnen-Uhr als Rücknahme: „die Probe ließ stehen: r._bildZeit (getauscht: () => S.T → der Wert 12.5) · r._wolkenZeit (getauscht: () => S.T → der Wert 12.5) …“.
+- Urteil zum Kandidaten: er trägt.
+
 ## 27.11. 12:35 Vor-Richter GTX 1050 — gezeiten#1 am Kopf 0078a6e2 mit dem Kandidaten (nur für den Lauf): UNGEMESSEN durch Werkzeug-Bruch, die Messung sah GRÜN
 
 | Sprosse | Urteil | Wortlaut |
