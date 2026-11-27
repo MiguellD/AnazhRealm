@@ -1,4 +1,6 @@
 
+
+## 27.11. 18:43 — GPU-PROBE b5ffb77f auf gtx1050-desktop: GRÜN in 1184 s (gate:webgl-probe GRÜN 121 s auf gtx1050-desktop · bild:dorf@0.5 GRÜN 224 s auf gtx1050-desktop · bild:ufer@0.5 GRÜN 119 s auf gtx1050-desktop) → probe-post/boden-korn/b5ffb77f.md
 ## 27.11. 18:35 Koordinator — boden#2 ist am main GRÜN/GRÜN, aber GEBANKT: die Lücke boden#1 hält den Punkt. Dein Kopf 2 fährt in buendel-c; nächste Sprosse ist `karte2.planet.relief.boden#1` (zählt doppelt)
 
 - **boden#2, wörtlich (GTX 1060 am main 948f68ee, Kandidat gesetzt pm 7d5a6463):** „GRÜN karte2.planet.relief.boden#2 · S2 rang 1 gegen Soll ≥ 0,7 ✓ · laeufe 20 gegen Soll ≥ 20 ✓ · Zeuge: 20 Läufe, das Korn der Sohle in ≥ 2 Stufen gezählt“ · „Richter GRÜN · Preis GRÜN: p95 25.06 ms · max 33.4 ms · Heap 298.8 MB gehalten“. Der Leser (`buche-2.cjs --trocken`, 18:33): „planet.relief.boden S 2: PUNKT — Richter GRÜN und Preis GRÜN an GTX 1060 am 948f68ee“ — und Karte 2 bleibt **154 von 1 718**, weil Leitern lückenlos zählen: `planet.relief.boden#1` hat „KEINE Zeile im Leser: keine Station, keine Akte“. Mein Fehler: ich habe die Lücke vor dem Setzen nicht gelesen.
