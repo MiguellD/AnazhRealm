@@ -591,6 +591,31 @@ function stadtFunktion(FC, o = {}) {
         if (mit && ohne) for (let h = 0; h < mit.n; h++) Array.from(mit.ton.subarray(h * 6, h * 6 + 6)).some((v, j) => Math.abs(v - ohne.ton[h * 6 + j]) > 1e-5) ? anders++ : gleich++;
         if (!gleich || !anders) fehl.push(`FORM TON: die Massen der Kachel 1,0 lesen das Feld nicht an ihrem Ort (ohne tonHub ${anders} Häuser anders, ${gleich} gleich — Soll: beides)`);
     }
+    // (e) DER WOHLSTAND FOLGT DEM BODENWERT DER LAGE (mensch.stadt.form#2, `stadtBodenwert`) an der Stadt von 33 vollen Kacheln:
+    // das Feld fällt vom Kern (Spearman ρ(Abstand, Bodenwert) ≤ −0,7 über die Kacheln), jedes Wohnhaus trägt den Bodenwert seines
+    // Loses, und sein Wohlstand folgt ihm (ρ(Bodenwert, wohl) ≥ 0,6) — nicht dem Rang in seiner Kachel (bis zum Schnitt −0,047)
+    {
+        const dorf = o.dorf || FC.DORF, R = FC.stadtRinge(gross), kach = [], W = [];
+        for (let i = -R; i <= R; i++)
+            for (let k = -R; k <= R; k++) {
+                const v = wort(7, gross, i, k);
+                if (!v) continue;
+                const r = Math.hypot(i, k), b = v.erbe && Array.isArray(v.erbe.boden) ? v.erbe.boden[0] : null;
+                kach.push([r, b]);
+                for (const h of dorf({ seed: v.seed, nH: v.nH, epoche: v.epoche, erbe: v.erbe }).houses) if (h.rolle === "wohnhaus") W.push([r, h.boden, h.wohl]);
+            }
+        const rang = (a) => { const s = a.map((x, j) => [x, j]).sort((p, q) => p[0] - q[0]), r = new Array(a.length); for (let j = 0; j < s.length; ) { let e = j; while (e + 1 < s.length && s[e + 1][0] === s[j][0]) e++; for (let q = j; q <= e; q++) r[s[q][1]] = (j + e) / 2; j = e + 1; } return r; }; // prettier-ignore
+        const rho = (x, y) => { const [a, b] = [rang(x), rang(y)], n = a.length, m = (n - 1) / 2; let sab = 0, saa = 0, sbb = 0; for (let j = 0; j < n; j++) { sab += (a[j] - m) * (b[j] - m); saa += (a[j] - m) ** 2; sbb += (b[j] - m) ** 2; } return saa && sbb ? sab / Math.sqrt(saa * sbb) : 0; }; // prettier-ignore
+        const f2 = (x) => x.toFixed(3);
+        if (kach.some((q) => !(q[1] > 0)) || W.some((h) => !(h[1] > 0)))
+            fehl.push(`BODEN: ${kach.filter((q) => !(q[1] > 0)).length} von ${kach.length} Kacheln und ${W.filter((h) => !(h[1] > 0)).length} von ${W.length} Wohnhäusern tragen keinen Bodenwert — ρ(Abstand, wohl) ${f2(rho(W.map((h) => h[0]), W.map((h) => h[2])))}: der Wohlstand ist der Rang in der Kachel`);
+        else {
+            const [rb, bw] = [rho(kach.map((q) => q[0]), kach.map((q) => q[1])), rho(W.map((h) => h[1]), W.map((h) => h[2]))];
+            if (rb > -0.7) fehl.push(`BODEN FELD: ρ(Abstand, Bodenwert) ${f2(rb)} über ${kach.length} Kacheln (Soll ≤ −0,7) — der Boden fällt nicht vom Kern`);
+            if (bw < 0.6) fehl.push(`BODEN WOHL: ρ(Bodenwert, wohl) ${f2(bw)} über ${W.length} Wohnhäuser (Soll ≥ 0,6) — der Wohlstand folgt der Lage nicht`);
+            je.push(`BODEN ρ(r, B) ${f2(rb)} · ρ(B, wohl) ${f2(bw)} (${W.length} Wohnhäuser)`);
+        }
+    }
     // (c) der Export am kleinen Stand
     const klein = o.klein || 40, gleich = (a, b) => JSON.stringify(a) === JSON.stringify(b);
     [SF.voll, SN.jeKachel] = [klein, 30];

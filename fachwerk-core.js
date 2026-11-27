@@ -5387,6 +5387,42 @@
         var w = (h(x0, z0) * (1 - fx) + h(x0 + 1, z0) * fx) * (1 - fz) + (h(x0, z0 + 1) * (1 - fx) + h(x0 + 1, z0 + 1) * fx) * fz;
         return Math.max(-1, Math.min(1, w * 1.5)) * Math.max(0, Math.min(1, (Math.hypot(u, v) - 0.75) / 1.5));
     }
+    // DER BODENWERT ALS FELD ÜBER DER STADT (mensch.stadt.form#2): an der Lage (u, v) in Kacheln der Wert des Bodens, relativ zur
+    // Mitte (1) — das Gefälle der Gebots-Rente vom Kern mit dem λ der Dichte (Clark 1951; Mills 1972 / Muth 1969: Rente und Dichte
+    // fallen mit demselben Exponenten — an „dorf 7 9310“ λ 785 m: −72 %/km in der Stadt der Fußgänger, die heutige Großstadt
+    // −13 %/km Wohnmiete, Ahlfeldt, Heblich, Seidel & Yin 2026), dazu der Keil der hohen Mieten längs EINER Richtung (Hoyt 1939, das
+    // Sektor-Modell: die teuren Viertel liegen als Keil vom Kern nach außen, nicht als Ring — die Form ist belegt, die Stärke nicht:
+    // Annahme Faktor e^(2·sektor) = 3,3 zwischen bester und schlechtester Seite im selben Ring) und das Feld der Viertel (`stadtTonFeld`,
+    // Kanal 79: Platz, Wasser, Aussicht, Lärm als EIN Wert über `tonWeite` Kacheln, ±`feld` im Exponenten); Keil und Feld steigen wie
+    // der Ton erst hinter der Mitte auf. An „dorf 7 9310“ stehen so 27 % der Häuser in armer, 9 % in reicher Lage (`stadtLage`; die
+    // Oberschicht der vorindustriellen Stadt um den Kern, die Armen am Rand: Sjoberg 1960). Leser: `stadtBodenAm` (das Erbe der
+    // Kachel), DORF (`wohl`), `stadtLage` (die Wahrheit des Prüfers). Bis hier trug der Plan je Kachel nur die Zahl ihrer Häuser — der
+    // Wohlstand war der Rang in der Kachel (ρ Abstand ↔ wohl −0,047 über 5 444 Wohnhäuser).
+    var STADT_BODEN = { sektor: 0.6, feld: 0.4, randKachel: 0.5, wohl: 1.22, eps: 0.3 };
+    function stadtBodenwert(samen, nH, u, v) {
+        var B = STADT_BODEN, r = Math.hypot(u, v), auf = Math.max(0, Math.min(1, (r - 0.75) / 1.5));
+        var keil = (netzHash(samen, 73) / 4294967296) * 2 * Math.PI;
+        return Math.exp(-r / stadtLambda(nH) + auf * B.sektor * Math.cos(Math.atan2(v, u) - keil) + B.feld * stadtTonFeld(samen, 79, u, v));
+    }
+    // der Bodenwert einer Kachel (i, k): [an ihrer Mitte, `randKachel` Kacheln weiter hinaus] (4 Stellen; die Mitte der Stadt: Keil
+    // und Feld ruhen dort, ihr Rand ist der Ring allein) — DORF legt den Wohlstand ihrer Lose zwischen beide (die Liste füllt die
+    // Kachel von der Kreuzung nach außen)
+    function stadtBodenAm(samen, nH, i, k) {
+        var r = Math.hypot(i, k), f = r > 0 ? 1 + STADT_BODEN.randKachel / r : 0, e4 = function (x) { return Math.round(x * 10000) / 10000; };
+        return [e4(stadtBodenwert(samen, nH, i, k)), e4(r > 0 ? stadtBodenwert(samen, nH, i * f, k * f) : stadtBodenwert(samen, nH, STADT_BODEN.randKachel, 0))];
+    }
+    // DIE LAGE EINES ORTS IN DER STADT (die Wahrheit, die das Spiel trägt — Leser: der Blind-Prüfer von mensch.stadt.form#2): an
+    // (u, v) in Kacheln → { rho, rhoMax, lage, boden, wohl, stand } — `lage` Kern bis max(1,5; 0,2 ρmax), Rand ab 0,8 ρmax (ρmax die
+    // fernste Kachel mit Häusern; die Grenzen der Station breite.siedlung#1), sonst Mitte; `wohl` der Wohlstand der Lage (1,22 · B^0,30,
+    // ohne die Streuung des Hauses), `stand` arm unter 0,72 (DORF `arm`: der Holzstapel, keine Möbel), reich ab 1,1 (die Zeile des
+    // Patrizierhauses in STADT_GRAMMATIK), sonst mittel. null unter der Wand (ein Ort ohne Stadt).
+    function stadtLage(samen, nH, u, v) {
+        if (!(Math.floor(Number(nH)) > STADT_FUNKTION.voll)) return null;
+        var p = stadtPlan(samen, nH), R = p.R, rhoMax = 0, rho = Math.hypot(u, v);
+        for (var k = -R; k <= R; k++) for (var i = -R; i <= R; i++) if (p.g[(k + R) * (2 * R + 1) + i + R] >= STADT_FUNKTION.rest) rhoMax = Math.max(rhoMax, Math.hypot(i, k));
+        var B = stadtBodenwert(samen, nH, u, v), w = STADT_BODEN.wohl * Math.pow(B, STADT_BODEN.eps), r3 = function (x) { return Math.round(x * 1000) / 1000; };
+        return { rho: r3(rho), rhoMax: r3(rhoMax), lage: rho <= Math.max(1.5, 0.2 * rhoMax) ? "Kern" : rho >= 0.8 * rhoMax ? "Rand" : "Mitte", boden: r3(B), wohl: r3(w), stand: w < 0.72 ? "arm" : w >= 1.1 ? "reich" : "mittel" };
+    }
     // DER TON AM ORT: für die Kachel (i, k) der Stadt `samen` (Kante `m`) die Frage (col, x, z) → die Palette `col` im Ton der
     // Lage (x, z) (lokal um die Mitte der Kachel, m): das Feld beider Kanäle (Wand 61, Dach 67), gerundet auf `tonStufen` Stufen
     // — gleiche Stufen derselben Palette sind EIN Objekt (gemerkt je Frage); ohne Ton die Palette selbst.
@@ -5424,21 +5460,23 @@
     // DAS WORT EINER KACHEL: Kachel (i, k) der Stadt „<samen> <nH> [<epoche>]" → {seed, nH, epoche, erbe, ring} oder null (dort
     // steht keine). Bis zur Wand ist (0, 0) das Wort selbst und sonst nichts; darüber ist (0, 0) die Mitte (der Same des Worts,
     // `jeKachel` Häuser; ihr Erbe trägt nur die Form — ihre Zeit ist die der Stadt), jede andere trägt die Zahl ihres Platzes
-    // im Plan der Stadt (`stadtPlan`) und im Erbe Region, Jahr und Spanne der Mitte samt ihrer Form (`stadtFormAm`: die Höhe).
+    // im Plan der Stadt (`stadtPlan`) und im Erbe Region, Jahr und Spanne der Mitte samt ihrer Form (`stadtFormAm`: die Höhe) und
+    // dem Bodenwert ihrer Lage (`stadtBodenAm`: an Mitte und Rand der Kachel — DORF liest ihn als Wohlstand ihrer Lose); die Mitte
+    // der Stadt trägt Form und Boden.
     function viertelWort(samen, nH, i, k, epoche, klima) {
         samen = isFinite(samen) ? Number(samen) : 1;
         nH = Math.floor(Number(nH)) || 0;
         if (!(nH > STADT_FUNKTION.voll)) return !i && !k ? { seed: samen, nH: nH, epoche: epoche, ring: 0 } : null;
         var n = stadtKachelZahl(samen, nH, i, k);
         if (n < STADT_FUNKTION.rest) return null;
-        if (!i && !k) return { seed: samen, nH: n, epoche: epoche, erbe: stadtFormAm(samen, nH, 0, 0), ring: 0 };
+        if (!i && !k) return { seed: samen, nH: n, epoche: epoche, erbe: Object.assign(stadtFormAm(samen, nH, 0, 0), { boden: stadtBodenAm(samen, nH, 0, 0) }), ring: 0 };
         var kern = DORF({ seed: samen, nH: 4, epoche: epoche, klima: klima }); // die Mitte im Klima des Orts (REGION_KLIMA)
         return {
             seed: 1 + (netzHash(samen, 31, i, k) % 1000000),
             nH: n,
             epoche: epoche,
             // der Same der Stadt reist im Erbe: jedes Viertel trägt den Technik-Stand ihrer Mitte (TECHNIK, DORF)
-            erbe: Object.assign({ region: kern.region, jahr: kern.jahr, spanne: kern.spanne, samen: samen }, stadtFormAm(samen, nH, i, k)),
+            erbe: Object.assign({ region: kern.region, jahr: kern.jahr, spanne: kern.spanne, samen: samen }, stadtFormAm(samen, nH, i, k), { boden: stadtBodenAm(samen, nH, i, k) }),
             ring: Math.max(Math.abs(i), Math.abs(k)),
         };
     }
@@ -5910,6 +5948,9 @@
   const geb=[];
   const anker=ringe? chronikAnker(vor, d, gr0, jahr+spanne, n, leg?leg.groesse:groesse) : null;   /*die Ring-Stadt waechst laengs der Zeitachse (chronikJahr) — Kern=Gruendung, Rand=Gegenwart*/
   const gr=[], fr=[];                                                                         /*je Los: das Gruendungsjahr und die frueheren Bauten [{ab, v}] (der Schnitt der Chronik liest sie)*/
+  /*DER WOHLSTAND FOLGT DEM BODENWERT DER LAGE (STADT_BODEN, `stadtBodenwert`): die Kachel einer Stadt traegt im Erbe den Wert ihres Bodens an ihrer Mitte und ihrem Rand, der Aufwand des Baus folgt ihm mit der Elastizitaet 0,30 (Ahlfeldt & McMillen 2018, Chicago 1870–2010: die Hoehe des Wohnbaus gegen den Bodenpreis) — wohl = 1,22 · B^0,30 von der Mitte zum Rand der Kachel, der Rang ist nur noch diese kleine Streuung; ein Ort ohne Stadt ist seine eigene Lage: Mitte 1,22, Rand 0,72 (B = 0,173). Bis hier war der Wohlstand jedes Hauses sein Rang in der Liste SEINER Kachel (jede Kachel trug ihre eigenen Reichen)*/
+  const BW=DP.erbe&&Array.isArray(DP.erbe.boden)?DP.erbe.boden:null, SB=STADT_BODEN;
+  const wK=BW?SB.wohl*Math.pow(BW[0],SB.eps):1.22, wS=BW?wK-SB.wohl*Math.pow(BW[1],SB.eps):0.5;
   for(let i=0;i<n;i++){
     const t9r=i/Math.max(1,n-1);
     let by; if(ringe){ by=chronikJahr(anker,i);
@@ -5920,7 +5961,7 @@
     const pool=poolAt(by, ringe), kn=pool[(rnd()*pool.length)|0], hs=1+((rnd()*1e6)|0);
     const p=bauRezept({bauweise:kn},null,hs); p.seed=hs; p.kultur=kn; p.terrain=0; p.baujahr=by; p.rolle='wohnhaus';
     if(ringe) p.W=Math.max(4.5, Math.min(15, Math.round(p.W*(0.80+0.38*t9r)*2)/2));         /*PARZELLEN-GEDAECHTNIS: schmale Buergerhaeuser im Kern, breite Lose am Saum*/
-    const w=(1.22-0.5*(i/Math.max(1,n-1)))*(0.78+0.44*rnd()); p.wohl=Math.round(w*100)/100;
+    const w=(wK-wS*(i/Math.max(1,n-1)))*(0.78+0.44*rnd()); p.wohl=Math.round(w*100)/100; if(BW) p.boden=Math.round((BW[0]+(BW[1]-BW[0])*(i/Math.max(1,n-1)))*10000)/10000;
     p.W=Math.max(5,Math.min(15,Math.round(p.W*(0.84+0.30*w)*2)/2));
     if(staedtisch&&jahr>1880){ const t9=i/Math.max(1,n-1);                                     /*STADTKOERPER: in RING-Staedten macht die ZEIT den Gradient selbst (alt=niedrig innen); der Turm-Boost wandert an die MODERNE-KANTE — die europaeische Wahrheit (Altkern flach, Tuerme aussen)*/
       if(!ringe){ p.storeys=Math.max(1, Math.min(12, Math.round(p.storeys*(1.85-1.45*t9))));
@@ -16274,6 +16315,10 @@
         STADT_FORM: STADT_FORM,
         stadtLambda: stadtLambda,
         stadtTonAn: stadtTonAn, // der Ton der Lage in der Stadt (Leser: die Linse gate:settlement Z4, die Ton-Kante)
+        STADT_BODEN: STADT_BODEN,
+        stadtBodenwert: stadtBodenwert, // der Bodenwert an der Lage (u, v) in Kacheln, relativ zur Mitte (Leser: DORF `wohl` über das Erbe, die Wahrheit des Prüfers, gate:settlement Teil S BODEN)
+        stadtBodenAm: stadtBodenAm,
+        stadtLage: stadtLage, // die Lage (Kern · Mitte · Rand) und der Stand (arm · mittel · reich) eines Orts der Stadt aus dem Bodenwert
         stadtKachelZahl: stadtKachelZahl,
         viertelWort: viertelWort,
         // w28-stadt-netz — die Kachel: ihre Tore je Kante, ihre Stufe 1 (Netz), der Rand der Stadt an ihr
