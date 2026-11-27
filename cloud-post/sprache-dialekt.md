@@ -1,0 +1,112 @@
+# Stand-Blatt sprache-dialekt (Sprosse `karte2.mensch.kultur.sprache#4`) — dritte Sitzung, Start 27.11. 11:52 UTC
+
+Basis: main 52937c92 (V18.546.451), Kopf 1 auf 7e73426e, Kopf 2 auf main 9a75d61c (V18.546.457). Status: ZWISCHENSTAND. Karte 2 gebucht 149 von 1 718.
+
+## Die rote Zeile gilt am heutigen main
+
+Akte (Zweig `punkte-maschine`) `vision/richter/mensch.kultur.sprache.4.52937c92-radeon.json`, Radeon 890M, 27.11. 11:43 — wörtlich:
+„S4 ROT: Umfang nicht erzeugbar: Sprachen mit Dialekt-Kontinuum: die Silben-Tafel einer Region kennt keinen Dialekt (gemessen 2 < 1000)“.
+
+## Täter (Datei:Zeile)
+
+- **Spiel:** `fachwerk-core.js:4917` `spracheVon(region, seed)` — das Blatt (die Sprache) eines Orts ist
+  `floor(_sprachU("sprache|R|seed","blatt") · 32)`: ein Hash des Orts-Samens, KEIN Ort im Raum. Zwei Nachbar-Orte und zwei Orte am
+  anderen Ende der Welt tragen mit derselben Wahrscheinlichkeit dieselbe Sprache (gemessen 0,0255 über 2 000 Paare; 1/32 = 0,031).
+  Die Sprache ist eine Funktion von Region × Same, nie von Region × Ort: es gibt kein Kontinuum, also auch keine Isoglosse, die auf
+  einer Barriere liegen könnte (jede Kante zwischen zwei Orten ist mit p ≈ 0,97 eine Sprachgrenze, Barriere oder nicht).
+- **Station:** Zweig `punkte-maschine`, `meisterkarte-quelle/punkte/stationen/k2-mensch-kultur.js` Leiter `mensch.kultur.sprache`,
+  Glied `{ n: 4, art: "nicht", wert: sprachen }` — `sprachen = z.regionen` (die Regionen der geladenen Stadt, gemessen 2). Die Sprosse
+  hat keinen Leser für KL und Isoglossen; auch ein Gesetz in der Welt bliebe dort ROT. Ein Kandidat folgt unter
+  `cloud-post/sprache-dialekt-station/` in DIESEM Zweig.
+
+## Täter-Zahl (node, `fachwerk-core.js` am main 52937c92, Buchstaben-Verteilung der Swadesh-Liste je Blatt, KL mit Glättung 0,5)
+
+| Familie | KL Schwestern (Nachbarn im Baum) | KL beliebiger Blätter | KL max |
+|---|---|---|---|
+| mitteleuropa | 0,054 | 0,127 | 0,484 |
+| alpin | 0,041 | 0,088 | 0,338 |
+| mediterran | 0,074 | 0,186 | 0,948 |
+| nordisch | 0,052 | 0,095 | 0,491 |
+| fernost | 0,065 | 0,123 | 0,597 |
+| antik | 0,045 | 0,087 | 0,327 |
+
+Der Baum TRÄGT die Nähe (Schwestern KL 0,04–0,07), aber der Raum liest sie nicht: Nachbar-Orte ziehen beliebige Blätter (KL bis 0,95).
+
+## Der Schnitt (EINE Quelle)
+
+- **Gesetz:** die Mundart eines Orts ist eine Funktion von Welt-Saat und SENKE seines Einzugsgebiets: `mundartVon(saat, x, z)`
+  (fachwerk-core) auf gelaende-core `talWeg` (Kette `unter`). Je Baum-Ebene t = 1..5 setzt der nächste Herd im Maßstab σ·2^(5−t)
+  das Bit (σ = 5 km, Burridge 2017 PRX 7 031008: 5–15 km). Der Fächer: jedes Wort liest seinen Punkt um 0,3·Maßstab versetzt
+  (Wang 1969, der Rheinische Fächer). `spracheVon(region, mundart)` hat keinen Samen-Weg mehr. Ohne Ort spricht ein Plan die Ursprache
+  seiner Familie, und eine Mundart ohne Form wirft.
+- **Leser:** der Wirt `_mundartAm` → die Zelle `_zellEingang` → DORF `mundart` → der Export → `_bewohnerLauf` (Name, Rede) und
+  ORTSNAME. Die Welt-Probe ergibt 12/12 Zellen GLEICH (anazh-realm-seed, Schritt 24).
+- **Linse:** gate:settlement R13 „die Mundart folgt dem Tal“ (KL ≤ 0,2 · Isoglossen ≥ 0,7 · U_eff ≥ 1000). Täter: „die Sprache liest
+  den Raum nicht“ (σ 5, Fächer 0 = EIN Blatt je Ort wie main) → ROT KL 0,319 U_eff 192; „die Mundart kennt keinen Fächer“ → ROT
+  KL 0,216 U_eff 180. main 52937c92 → ROT „mundartVon fehlt“.
+
+## Gemessen vorher → nachher (node, 48×48 Orte auf 1,6 km)
+
+| Saat | KL-p95 | Isoglossen auf Barrieren | Basis | U_eff |
+|---|---|---|---|---|
+| main 52937c92 | bis 0,95 | — (jede Kante ≈ 0,97 Grenze) | — | 2 (Akte) |
+| welt-1 | 0,094 | 1,000 | 0,395 | 1 097 |
+| welt-2 | 0,107 | 1,000 | 0,402 | 1 233 |
+| anazh | 0,094 | 1,000 | 0,412 | 1 190 |
+| 7 | 0,097 | 1,000 | 0,416 | 1 167 |
+
+Station-Kandidat: `cloud-post/sprache-dialekt-station/` (gegen punkte-maschine d14d0aa2). `liste` am Kopf f757fb6a meldet genau 2 ROT,
+gelaende.K2#1/#2 (Wand HAKEN).
+
+## Vertrags-Akt
+
+Golden `spec/asset-contract/v6/golden/siedlung.json` neu geprägt: ein Plan ohne Ort spricht die Ursprache. Der byte-Diff des Exports
+gegen main betrifft nur `name` und `mundart` (null): Lausi → Lusi, Dindwirt → Kolenwert; die Slots sind gleich. gate:settlement
+Teil O reicht die Mundart der Zelle aus den Kernen (`talWeg` → `mundartVon`, wie `ortKlima`); „Plan-Hash Studio = Welt“ steht.
+
+## Gates lokal (probeUrteil je Log)
+
+gate:settlement Selbsttest GRÜN (beide R13-Täter → ROT beim Namen) · Lauf GRÜN · check:statik Exit 0 · format:check · lint Exit 0.
+`probe-tag` nicht fahrbar: `artifacts/profiband/werkzeug/zug.sh` liegt in keinem Zweig; den Ruf halte ich von Hand gegen
+`spec/ci/ci-zeiten.json` (fachwerk-contract 122 s · gelaende-studio 42 s · klang-zensus 437 s).
+
+## Form des Kopfs
+
+Kopf 1 trug den glatten Baum auf main 7e73426e, Kopf 2 trägt ihn auf main 9a75d61c (erster Elter, `git diff 9a75d61c <kopf>` = genau 12
+Dateien; gegen Kopf 1 kommt allein der Rang über `rang` und dieses Blatt hinzu). Der zweite Elter ist die Spitze meiner WIP-Kette, weil der Auftrag „nie force“ sagt: der Schub ist ein Fast-Forward, kein Stand wird
+überschrieben. Wer einen Elter braucht, nimmt den Baum (`git commit-tree <kopf>^{tree} -p 9a75d61c`), er ist byte-gleich.
+
+## Antwort auf 19:50 (Stand 2. Merge d. h. main 948f68ee herein, 730f25b4)
+
+Die Stall-Akte steht an meinem Stand GRÜN („✅ eigene Ränge neben rang: Träger keiner statt FREMD keiner · gepflanzt 2/2 gefasst“,
+`npm run gate:welt-boot` 82 s). `--teil=2/3` an meinem Kopf allein (auf main 948f68ee) trägt keine Probe mengebild, denn die lebt nur
+im Zweig `werk-am-ort-2`, auch main 9a75d61c trägt sie nicht. Dort gefahren steht „Menschen im Bild“ ohne meinen Diff auf **127** und mit
+meinem Diff auf **127**, Gehende 90 = 90. Teil 2/3 an meinem Stand: Täter 56/56, Grund 15/15 GRÜN (mahl jetzt grün). Teil 1/3: 54/54, Grund 9/9.
+Teil 3/3: 48/48, Grund 12/12. gate:settlement: Selbsttest und Lauf GRÜN. Kopf 2 folgt auf main 9a75d61c, sobald check:statik steht.
+
+## Post 27.11. 16:54 (buendel-abend 29015b4e, Lauf 46017245179) — abgearbeitet für Kopf 2
+
+- **Stall-Akte** („eigene Ränge neben rang: Träger diag-settlement.cjs“): R13 las das p95 der KL von Hand
+  (`kls[Math.floor(kls.length * 0.95)]`). Jetzt liest es das geteilte `rang` aus `scripts/lib/welt-boot.cjs` (`rang(kls, 0.95)`,
+  `kls.sort(aufsteigend)`); die eigene Kopie fällt. Die Zahl ändert sich nicht, denn für q < 1 ist die Definition dieselbe. Lokal
+  `npm run gate:welt-boot` GRÜN (79 s), die Zeile lautet „✅ eigene Ränge neben rang: Träger keiner statt FREMD keiner · gepflanzt 2/2 gefasst“.
+  Über alle `scripts/**/*.cjs` gefahren, trägt außer welt-boot keine Datei das Muster.
+- **mengebild ist nicht meins.** Die Probe gibt es nur im Zweig `werk-am-ort-2` (e0f43e13). Ich habe sie dort zweimal gefahren
+  (`--proben mengebild`), unter gleichen Bedingungen:
+  - werk-am-ort-2 allein: **Menschen im Bild 127**, Gehende 90, Bewohner 1 356 · GRÜN;
+  - werk-am-ort-2 mit meinem Diff (7e73426e..a5d9417): **Menschen im Bild 127**, Gehende 90, Bewohner 1 356 · GRÜN, byte-gleich.
+
+  Mein Stamm-Schnitt ändert nur den Namen und die Rede (`spracheVon(region, plan.mundart)`, gecacht), nie den Ort oder den Takt eines
+  Menschen. Die 24 im Bild des Bündels kommen aus seiner Mischung, nicht aus sprache-dialekt.
+- **Kreatur-Linse am Kopf (auf main bed6256c), GANZ:**
+  - `--teil=1/3` GRÜN (54/54 Täter, Grund 9/9).
+  - `--teil=3/3` GRÜN (48/48, Grund 12/12).
+  - `--teil=2/3`: Täter 56/56, Grund 14/15. Das eine Rot ist die Grund-Probe **mahl**: „das Rudel frisst nicht: 19.1 kg in seine Mägen
+    (50.8 kg) … (Soll ≥ 40 %)“, knapp unter 20,3 kg. Allein gefahren (`--proben mahl`) steht mahl GRÜN, am main bed6256c wie an meinem
+    Kopf. Mein Diff berührt keine Kreatur; mahl ist die Bahn mahl-uhr (buendel-a). Genannt, nicht geheilt.
+
+## Offen (mit Adresse)
+
+- Messort stadt-voll, Station nicht gefahren: GPU (der Vor-Richter fährt nur an der GTX 1060).
+- Die Kacheln der Stadt des Worts und die Wort-Pläne sprechen die Ursprache, weil ihr Ort erst nach dem Plan feststeht
+  (fachwerk `spracheVon(region, null)`). Die Seite MUNDART misst das Gitter der Welt.

@@ -3146,6 +3146,54 @@ async function probeLeben(expected) {
             };
             S.frei.ballOhneZerfall = ball();
             delete r._freiLuftPacken;
+            // (4d) DAS TAUCHEN (same.physik.flug#3): Würfel 0,3 m aus Holz (ρ 720), Eis (917) und Stein (2650) fallen aufrecht aus
+            // 0,2 m in stilles Wasser mit ≥ 1,5 m Säule am See der Welt (`__wasserOrte`, gesucht um seine Mitte), 10 s Sim-Schritt:
+            // ihre Tauchtiefe (Spiegel der EINEN Wasser-Wahrheit − Unterkante, gemittelt über die letzten 4 s) gegen ρ / ρ_Wasser ·
+            // Kante (die Stoff-Tafel); der Stein liegt auf dem Grund. Die Mutante: der Löser ohne Wasser (`_freiWasserPacken`: 44
+            // leer) — der Holz-Würfel sinkt wie main b3740dd5 auf den Grund.
+            const tauch = async () => {
+                const see = (await window.__wasserOrte({ mess: mo })).see;
+                let ort = null;
+                for (let ring = 0; see && ring <= 60 && !ort; ring++)
+                    for (let k = 0; k < Math.max(1, ring * 6) && !ort; k++) {
+                        const w = (k / Math.max(1, ring * 6)) * Math.PI * 2;
+                        const [x, zz] = [see.x + Math.cos(w) * ring * 3, see.z + Math.sin(w) * ring * 3];
+                        const tief = (d) => r._koerperWasser(x + d, zz + d, hh(x + d, zz + d)) - hh(x + d, zz + d);
+                        if ([-1, 0, 1].every((d) => tief(d) >= 1.5 && !r._waterFlowAt(x + d, zz + d))) ort = { x, z: zz, g: hh(x, zz), sp: r._koerperWasser(x, zz, hh(x, zz)) };
+                    }
+                if (!ort) return { fehlt: see ? `kein stilles Wasser mit ≥ 1,5 m Säule um den See ${Math.round(see.x)}/${Math.round(see.z)}` : "kein See in der Welt (`__wasserOrte`)" };
+                const [kante, dt, rhoW] = [0.3, A.FIXED_DT, r._stoff("wasser").rho];
+                const R3 = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
+                const wurf = (stoff) => {
+                    const name = "k3_tauch_" + stoff;
+                    st.blueprints[name] = { name, label: name, frei: true, builtIn: false, parts: [{ shape: "box", material: stoff, size: { x: kante, y: kante, z: kante }, position: { x: 0, y: kante / 2, z: 0 } }] }; // prettier-ignore
+                    const e = r.spawnArchitecture(name, { x: ort.x, y: ort.sp + 0.2, z: ort.z }, { precise: true, silent: true });
+                    try {
+                        const K = e._frei;
+                        [K.p[0], K.p[1], K.p[2]] = [ort.x, ort.sp + 0.2 + kante / 2, ort.z];
+                        K.v.fill(0);
+                        K.w.fill(0);
+                        r._freiWecken(K);
+                        K.grund = null;
+                        r._freiLage(K);
+                        let [summe, n] = [0, 0];
+                        for (let i = 0; i < Math.round(10 / dt); i++) {
+                            r._freiSchritt(dt);
+                            if (i >= Math.round(6 / dt)) [summe, n] = [summe + r._koerperWasser(K.p[0], K.p[2], ort.g) - (K.p[1] - kante / 2), n + 1];
+                        }
+                        const [tiefe, soll] = [summe / n, (r._stoff(stoff).rho / rhoW) * kante];
+                        return { tiefe: R3(tiefe), soll: R3(soll), abwPct: R3((100 * Math.abs(tiefe - soll)) / soll), ueberGrund: R3(K.p[1] - kante / 2 - ort.g) };
+                    } finally {
+                        r.removeArchitecture(e, { still: true });
+                        delete st.blueprints[name];
+                    }
+                };
+                return { saeule: R3(ort.sp - ort.g), holz: wurf("holz"), eis: wurf("eis"), stein: wurf("stein") };
+            };
+            S.frei.tauch = await tauch();
+            r._freiWasserPacken = (K, X, x) => (X[x + 44] = -Infinity);
+            S.frei.tauchOhneWasser = await tauch();
+            delete r._freiWasserPacken;
             // (5) DER FLACHE KÖRPER (same.physik.reaktion#2: der Trümmer, die Scherbe — dünner als der Spalt des Lösers, Ober- und
             // Unterseite sind zugleich Kontakt): ein Brett 25 × 5 × 25 cm fällt 20 cm und liegt, zwei Scheiben 25 × 0,4 × 25 cm
             // fallen halb übereinander. Bis alle drei schlafen (null: nach 4 s wach, `wach` ihre Zahl) und wie das Brett liegt

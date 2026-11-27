@@ -1030,7 +1030,8 @@ je Lage über `landformRegler` —, die Landmarke des Orts `LANDMARKE`/`landmark
 Felsturm je km² aus der Großform × der Trockenheit des Orts, die Bänder der Profis; Leser der Wurf je Chunk `_landmarkeChunk`
 und die Phyto-Linse), das Flussnetz mit den Kanten `NETZ_KANTE`, seinen Läufen `flussLaeufe` und seinen Senken als
 den benannten Seen `benannteSeen`, die Arbeit des Netzes `netzZaehler` (Knoten und gebaute Talprofile je Ebene, das
-Einzugsgebiet ohne Leser — der Leser ist die Gelände-Linse „netz“), die Breite des Flusses `FLUSS_BREITE`/`flussBreite`, die Art des Gewässers
+Einzugsgebiet ohne Leser — der Leser ist die Gelände-Linse „netz“), der Tal-Weg eines Orts `talWeg` (das eingefrorene Glied des
+Netzes, über `unter` bis zur Senke seines Einzugsgebiets; Leser der Wirt `_mundartAm` — die Mundart folgt dem Tal, sprache#4), die Breite des Flusses `FLUSS_BREITE`/`flussBreite`, die Art des Gewässers
 `GEWAESSER_ART`/`gewaesserArt` (w13-bach-klar: see · bach · fluss nach der LAWA-Größenklasse, Bach < 100 km² Einzugsgebiet,
 über die Breite), das Gewässer am Ort `gewaesserAm` (unter-wasser: der Typ aus der Hydrosphäre — Lauf nach der Breite, sonst
 Meer oder See der Zelle — und der Abfluss Q/Q̄ aus dem Pegel), die Optik der Gewässer `GEWAESSER_OPTIK`/`gewaesserOptik`
