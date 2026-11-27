@@ -1,0 +1,27 @@
+--- a/meisterkarte-quelle/punkte/stationen/k2-planet.js
++++ b/meisterkarte-quelle/punkte/stationen/k2-planet.js
+@@ -3732,8 +3732,8 @@
+             const aus = M.teil || {};
+             // S1 DIE GEZEIT AM FÄCHER (M4): je Adresse (Saat × Stunde der Welt-Uhr) der Spiegel des Meers 200 m vor der Küste und das
+             // Watt quer über sie (11 Punkte von 200 m Land bis 200 m See) — die Heimat liest der Leser des Spiels unter der gestellten
+-            // Uhr (`spielZeit` + `_pegelTakt` → `_koerperWasser`, `_nassAt`), jede andere Saat das Gesetz an ihrer Lage (planet-ort →
+-            // gelaende-core lageAus → wasserSpiegel, die Lage ohne Uhr: der Export nimmt keine Zeit). Die Periode aus den steigenden
++            // Uhr (`spielZeit` um je eine Stunde des Tags der Welt, `tagS` / 24, + `_pegelTakt` → `_koerperWasser`, `_nassAt`), jede andere
++            // Saat das Gesetz an ihrer Lage zur Stunde (planet-ort → gelaende-core lageAus → lageZurStunde → wasserSpiegel). Die Periode aus den steigenden
+             // Durchgängen durchs Mittel je Saat, ihr Median über die Küsten mit Hub
+             const u1 = U[1];
+             if (u1) {
+@@ -3774,10 +3774,10 @@
+                     if (!M0.quer) return { saat: k, kueste: false };
+                     const [sx, sz] = M0.quer[10];
+                     if (a.saat !== "heim") {
+-                        const spiegel = G.wasserSpiegel(M0.L, sx, sz);
+-                        return { saat: k, zeit: a.zeit, spiegel: Math.round(spiegel * 1000) / 1000, nass: M0.quer.filter(([x, z, h]) => G.wasserSpiegel(M0.L, x, z) > h).length, uhr: 0, wl: M0.wl };
++                        const Lz = G.lageZurStunde(M0.L, a.zeit), spiegel = G.wasserSpiegel(Lz, sx, sz);
++                        return { saat: k, zeit: a.zeit, spiegel: Math.round(spiegel * 1000) / 1000, nass: M0.quer.filter(([x, z, h]) => G.wasserSpiegel(Lz, x, z) > h).length, uhr: 0, wl: M0.wl };
+                     }
+-                    const alt = st.spielZeit, stundeS = r._kalender().normS / 24;
++                    const alt = st.spielZeit, stundeS = r._kalender().tagS / 24;
+                     try {
+                         st.spielZeit = alt + a.zeit * stundeS;
+                         r._pegelTakt();

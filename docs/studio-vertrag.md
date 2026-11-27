@@ -1110,6 +1110,8 @@ seinen Teilen `spiegelTeile` (`SPIEGEL_TEILE` je Punkt) und ihre EINE Zusammense
 sie, der Fern-Ring setzt mit ihr je Stufe neu — über `spiegelMitGezeit`, `spiegelMeer`, `spiegelNiedrigst` und
 `gezeitHubStufe`; das Watt `hydroWatt` (je Zelle die Flut-Schwelle) mit seinem Schlick `wattSchlick`; das höchste Hochwasser
 `GEZEIT_HOCH` mit der Lage `lageHochwasser` und dem Spiegel des Lands `landSpiegel` (was gesetzt wird, steht nie auf dem Watt).
+Der Export `wasserSpiegel` trägt die Gezeit der Lage (`gezeitHub`); eine Lage ohne Uhr bekommt die Stunde mit `lageZurStunde`, die
+Ufer-Bänder lesen ihn in Ruhe (`uferSpiegel` an `lageRuhe`, der Träger der Stufe 0).
 `gate:worker-dichte --gezeit` misst Hub, Periode, Stamm ↔ Faden und den Ring.
 DAS WELT-FELD (Leben C2a2): die vier Stimmen der Saat `weltFeld` an den Strömen `weltFeldRausch` mit den Zahlen `WELT_FELD`
 (Wellenlängen, Domain-Warp) — die Stimme „lebendig“ ist das Substrat der Äsung; Stamm (`worldFieldAt`), jeder Faden und das

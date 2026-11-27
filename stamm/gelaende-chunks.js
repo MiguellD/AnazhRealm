@@ -118,6 +118,7 @@ class AnazhRealm_gelaende_chunks {
                                 aWave: new Float32Array(msg.aWave),
                                 aDepth: new Float32Array(msg.aDepth),
                                 aSlope: new Float32Array(msg.aSlope),
+                                aMeer: new Float32Array(msg.aMeer),
                             });
                         }
                     }
