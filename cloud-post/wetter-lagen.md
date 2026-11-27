@@ -1,5 +1,11 @@
 # Stand-Blatt wetter-lagen (Sprosse `karte2.planet.wetter.lagen#2`) — oberster Abschnitt = jüngster Stand
 
+## 27.11. — GPU-Probe am Kopf 1 (71c7f166, GTX 1060): GRÜN
+
+- gate:wetter-wache GRÜN 116 s · gate:tag-achse:echt GRÜN 142 s (genesis und wiese) · gate:webgl-probe GRÜN 55 s · bild:wiese@0.5 ABNAHME GRÜN, Inhalt nahWiese 48,2 %.
+- Das Bild angesehen: Wiese am Mittag, Himmel und Wolken ohne Bruch. Die Bühne hält dort „summer sunny 0.50" — es beweist, dass nichts bricht, nicht den Durchzug selbst. Der Durchzug ist eine Folge über Takte am Kern (Mess-Leib FRONT_AN, stimmt 94 %), kein Standbild.
+- Offen: das Urteil des Vor-Richters (Station) steht aus.
+
 ## 27.11. — Schub 3: der Schnitt im Kern, die Heimat trägt ihre Quote, die Linse (D) steht
 
 - Der Schnitt in `phyto-core.js`: `WETTER_LAGE` (die Folge der Abschnitte Hoch → Aufzug → Landregen → Warmsektor → Kaltfront → zwei Nebentröge → Rückseite, je Abschnitt Stärke und Textur) · `lageProfil` · `lageDruck` (Tief an der Kaltfront, Senke je Trog) · `windRichtung` dreht mit derselben Phase (ψ = 80° · sin, rechts durch Front und Trog) · `windWeg` bleibt geschlossen (Bessel-Glieder k < 9, d/dt-Fehler 4,4e-7) · `frontVerteilung` liest dieselbe Lage.
