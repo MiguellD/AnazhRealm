@@ -205,10 +205,10 @@
    "summe": {
     "kriterien": 26,
     "sprossen": 180,
-    "heute": 10,
+    "heute": 11,
     "kern": 0,
     "kernDazu": 0,
-    "anteilHeute": 4.8,
+    "anteilHeute": 5.2,
     "anteilKern": 0
    },
    "perspektiven": [
@@ -1639,7 +1639,7 @@
        "richter": "1 000 Saaten: Druck, Wind, Niederschlag im KS-Test ununterscheidbar von ERA5 in ≥ 90 %"
       }
      ],
-     "heute": 1,
+     "heute": 2,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "Mechanik von Sprosse 1 steht: wetterAt als drei Sinus-Wellen längs der Hauptrichtung (phyto-core.js:4067-4091), wetter.K1 2/2. Bild-Preis in der Szene des Richters an beiden Geräten nicht gemessen.",
@@ -20099,7 +20099,7 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 154,
+  "heute": 155,
   "davonKopplungen": 33,
   "kern": 0,
   "kernDazu": 0,
@@ -20114,7 +20114,7 @@
   },
   "gliederLeitern": 9,
   "beide": 75,
-  "nachwache": 79
+  "nachwache": 80
  },
  "zusammengelegt": [
   {
