@@ -65,3 +65,12 @@ Täter: das Spektrum der Laterne — fachwerk-core.js:8711 `LICHT_GESETZ.laterne
 in stamm/dirigent-kern.js:2215 `_lichtLinear` (Planck-Ort, Luma 1). Die Tonkurve ändert den Ton nicht (−1 EV: rot-orange gleich,
 geklippt 1,6 % → 0). Kein Glied des Ausgabe-Pfads passt die Farbe an das Licht an (nur die Belichtung). Offen beim Namen: ferne
 Bewohner schwarze Scheiben, der Laternenkopf eine flache helle Fläche (in A und B gleich).
+
+## planet.wasser.gezeiten#2 / Himmelsmechanik — das Mondlicht trägt die Phase nicht (Fund, nicht geschnitten)
+
+Tafel `fuell.js` an main b3740dd5, Mitternacht der Bühne (uhr 0), GTX 1050: die Messnacht ist NEUMOND — Elongation 17° (Dorf) und
+7° (stadt-voll), beleuchtet 2,3 %, der Mond −13° / −17° unter dem Horizont. Der Ort des Monds kommt aus der Zeit (kosmosZeit), seine
+Stärke nicht: stamm/bild-himmel.js:2265 `dl.intensity = M.intensity · tint.lightMul · tint.direkt · _mondDurchlass(md.y)` — kein
+Faktor der Phase. Über dem Horizont strahlt ein Mond mit 2,3 % beleuchteter Scheibe als Richtlicht wie der Vollmond (MOND_LX
+0,26 lx, Kyba 2017). Soll: E ∝ der Phasen-Funktion des Monds (Allen/Krisciunas & Schaefer 1991: m(φ) = −12,73 + 0,026|φ| +
+4·10⁻⁹ φ⁴). Schnitt offen, an der Leiter planet.wasser.gezeiten#2.
