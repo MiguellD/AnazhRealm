@@ -6644,10 +6644,18 @@
             if(kn[j].ri!==ri&&(d2<V.naheM*V.naheM||(ende[i]&&ende[j]&&d2<V.stossM*V.stossM))&&nb[i].indexOf(j)<0){ nb[i].push(j); nb[j].push(i); } }
           (netz.get(ix*2097152+iz)||(netz.set(ix*2097152+iz,[]),netz.get(ix*2097152+iz))).push(i); } });
       const n=kn.length;
-      const teil=new Int32Array(n).fill(-1); let best=-1, bestL=0;
+      const teil=new Int32Array(n).fill(-1), teilL=new Map(); let best=-1, bestL=0;
       for(let r=0;r<n;r++){ if(teil[r]>=0||!nb[r].length) continue; const st=[r]; let L=0; teil[r]=r;
         while(st.length){ const i=st.pop(); for(const j of nb[i]){ if(j>i) L+=Math.hypot(kn[j].x-kn[i].x,kn[j].z-kn[i].z); if(teil[j]<0){ teil[j]=r; st.push(j); } } }
-        if(L>bestL){ bestL=L; best=r; } }
+        teilL.set(r,L); }
+      // DAS NETZ IST DAS STÜCK, IN DEM DIE WAGEN WOHNEN (mensch.macht.megastadt): von den Stücken der Trassen trägt der Verkehr das, an
+      // dem die meisten Häuser seiner Wagen (`verkehrVon`) ihre nächste Trasse haben; gleich viele (ein Plan ohne Lose, ein Dorf) — das
+      // längste. Bis hier trug er das längste: an Bilgren (Metropole 1913) die Ringstraße auf der gefallenen Mauer (3 340 m, ihre Enden
+      // 500 m südlich der Mitte, kein Wagen-Haus an ihr) statt der Straßen der Stadt — keine Wende trug Land, 0 von 15 Wagen fuhren
+      const halter=plan.staedtisch&&plan.slots?verkehrVon(plan).slots.map(i=>plan.slots[i]).filter(s=>s&&isFinite(s.x)&&isFinite(s.z)):[], wohnt=new Map();
+      for(const s of halter){ let bi=-1, bd=Infinity; for(let i=0;i<n;i++){ if(teil[i]<0) continue; const d=(kn[i].x-ox-s.x)**2+(kn[i].z-oz-s.z)**2; if(d<bd){ bd=d; bi=i; } }
+        if(bi>=0) wohnt.set(teil[bi],(wohnt.get(teil[bi])||0)+1); }
+      let bestW=-1; for(const [r,L] of teilL){ const w=wohnt.get(r)||0; if(w>bestW||(w===bestW&&L>bestL)){ bestW=w; bestL=L; best=r; } }
       if(best<0) return {kreuzungen:[], strecken:[], laenge:0};
       // DIE STUMMEL: ein Ende, dessen Kette bis zur nächsten Gabel kürzer als kreuzM ist, ist ein Rest der Kreuzung (ein Stück der
       // Straße ragt über den Stoß hinaus) — er fällt, bis keiner mehr bleibt
@@ -14704,6 +14712,18 @@
                             hi = Math.min(hi, pin[iq] + gf * (sw[iq] - sw[b]));
                             break;
                         }
+                    // DIE KREUZUNGEN LIEGEN IM GEFÄLLE ZUEINANDER (mensch.macht.megastadt, das Bett der Fahrstraße): die Höhe der Scheibe
+                    // ist gekappt gegen jede Scheibe, die schon eine trägt — so weit, wie der Weg zwischen ihren Rändern steigen kann. Bis
+                    // hier gab jeder Weg seiner Scheibe die Höhe allein: an Bilgren (Metropole 1913 am Hang) lagen zwei Kreuzungen südlich
+                    // des Markts 3 m auseinander auf 110,81 und 106,49 m — die Hauptstraße zwischen ihnen trug die Stufe IM Bett (1,44 je
+                    // Meter), vier von elf Strecken des Netzes keinen Wagen, die Wache keine Streife
+                    var qg = kreuzungen[sch.g];
+                    for (var gh in kreuzungY) {
+                        var qh = kreuzungen[gh];
+                        var spiel = gf * Math.max(0, Math.hypot(qg.x - qh.x, qg.z - qh.z) - qg.R - qh.R);
+                        lo = Math.max(lo, kreuzungY[gh] - spiel);
+                        hi = Math.min(hi, kreuzungY[gh] + spiel);
+                    }
                     kreuzungY[sch.g] = r6(lo <= hi ? Math.min(hi, Math.max(lo, sch.y)) : (lo + hi) / 2);
                     sch.k.forEach(function (kk) {
                         pin[kk] = ys[kk] = kreuzungY[sch.g];
