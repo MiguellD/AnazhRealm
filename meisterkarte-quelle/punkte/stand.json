@@ -36597,7 +36597,7 @@
   },
   "karte2.same.preis.ankunft": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 4 Kalt-Boots, 4 mit Kontrolle von außen: 9.16 s · 8.30 s · 7.16 s · 7.08 s (max 9.16 s, Soll ≤ 60 s) · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: 4 Kalt-Boots, 4 mit Kontrolle von außen: 9.33 s · 7.37 s · 7.87 s · 7.56 s (max 9.33 s, Soll ≤ 60 s) · [linse-gpu] nvidia/pascal an b7ed8419 gtx — offen: karte2.same.preis.ankunft#2 radeon: ungemessen (R10) — zuletzt an 99649186: Last: Referenz f 1,818 (Faden 1,818 · alle Kerne 1,432; vor 116,9/298,3 ms, nach 151,8/373,4 ms, Ruhe 83,5/260,8 ms seit 2026-11-17) · fremd: git.exe diff --stat origin/punkte-maschine...FETCH_HEAD 65 · karte2.same.preis.ankunft#2 gtx: ungemessen (R10) — zuletzt an 54b89949: Last: Referenz f 1,311 (Faden 1,131 · alle Kerne 1,311; vor 100,4/289,8 ms, nach 87,3/245,7 ms, Ruhe 88,8/221 ms seit 2026-11-17) · fremd: LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightSt · karte2.same.preis.ankunft#3 radeon: ungemessen (R10) · karte2.same.preis.ankunft#3 gtx: Station seit der Messung geändert · karte2.same.preis.ankunft#4 radeon: ungemessen (R10) · karte2.same.preis.ankunft#4 gtx: Station seit der Messung geändert · karte2.same.preis.ankunft#5 radeon: ungemessen (R10) · karte2.same.preis.ankunft#5 gtx: Station seit der Messung geändert · karte2.same.preis.ankunft#6 radeon: ungemessen (R10) · karte2.same.preis.ankunft#6 gtx: Station seit der Messung geändert · karte2.same.preis.ankunft#7 radeon: ungemessen (R10) · karte2.same.preis.ankunft#7 gtx: Station seit der Messung geändert · karte2.same.preis.ankunft#8 radeon: ungemessen (R10) · karte2.same.preis.ankunft#8 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: 4 Kalt-Boots, 4 mit Kontrolle von außen: 9.16 s · 8.30 s · 7.16 s · 7.08 s (max 9.16 s, Soll ≤ 60 s) · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: 4 Kalt-Boots, 4 mit Kontrolle von außen: 9.33 s · 7.37 s · 7.87 s · 7.56 s (max 9.33 s, Soll ≤ 60 s) · [linse-gpu] nvidia/pascal an b7ed8419 gtx — offen: karte2.same.preis.ankunft#2 radeon: ungemessen (R10) — zuletzt an 99649186: Last: Referenz f 1,818 (Faden 1,818 · alle Kerne 1,432; vor 116,9/298,3 ms, nach 151,8/373,4 ms, Ruhe 83,5/260,8 ms seit 2026-11-17) · fremd: git.exe diff --stat origin/punkte-maschine...FETCH_HEAD 65 · karte2.same.preis.ankunft#2 gtx: ROT: 4 Kalt-Boots, 0 ganz (≤ 2 % Lücke gegen die Ruhe, nichts offen) in ≤ 20 s: Boot 1: t(Kontrolle) kalt 11.12 s von außen (Eigenmeldung 10.83 s), Bild 3.21 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht | Boot 2: t(Kontrolle) kalt 12.57 s von außen (Eigenmeldung 12.25 s), Bild 3.27 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht | Boot 3: t(Kontrolle) kalt 11.54 s von außen (Eigenmeldung 11.20 s), Bild 3.24 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht | Boot 4: t(Kontrolle) kalt 10.79 s von außen (Eigenmeldung 10.46 s), Bild 3.24 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] nvidia/pascal an 45bad33f · karte2.same.preis.ankunft#3 radeon: ungemessen (R10) · karte2.same.preis.ankunft#3 gtx: Station seit der Messung geändert · karte2.same.preis.ankunft#4 radeon: ungemessen (R10) · karte2.same.preis.ankunft#4 gtx: Station seit der Messung geändert · karte2.same.preis.ankunft#5 radeon: ungemessen (R10) · karte2.same.preis.ankunft#5 gtx: Station seit der Messung geändert · karte2.same.preis.ankunft#6 radeon: ungemessen (R10) · karte2.same.preis.ankunft#6 gtx: Station seit der Messung geändert · karte2.same.preis.ankunft#7 radeon: ungemessen (R10) · karte2.same.preis.ankunft#7 gtx: Station seit der Messung geändert · karte2.same.preis.ankunft#8 radeon: ungemessen (R10) · karte2.same.preis.ankunft#8 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.preis.ankunft#1",
@@ -36634,10 +36634,10 @@
      "id": "karte2.same.preis.ankunft#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 54b89949: Last: Referenz f 1,311 (Faden 1,131 · alle Kerne 1,311; vor 100,4/289,8 ms, nach 87,3/245,7 ms, Ruhe 88,8/221 ms seit 2026-11-17) · fremd: LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightSt",
-     "ungemessen": true
+     "zahl": "4 Kalt-Boots, 0 ganz (≤ 2 % Lücke gegen die Ruhe, nichts offen) in ≤ 20 s: Boot 1: t(Kontrolle) kalt 11.12 s von außen (Eigenmeldung 10.83 s), Bild 3.21 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht | Boot 2: t(Kontrolle) kalt 12.57 s von außen (Eigenmeldung 12.25 s), Bild 3.27 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht | Boot 3: t(Kontrolle) kalt 11.54 s von außen (Eigenmeldung 11.20 s), Bild 3.24 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht | Boot 4: t(Kontrolle) kalt 10.79 s von außen (Eigenmeldung 10.46 s), Bild 3.24 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] nvidia/pascal",
+     "sha": "45bad33ff93297aed1d46e24df214ff014d1d0d8",
+     "grund": "ROT: 4 Kalt-Boots, 0 ganz (≤ 2 % Lücke gegen die Ruhe, nichts offen) in ≤ 20 s: Boot 1: t(Kontrolle) kalt 11.12 s von außen (Eigenmeldung 10.83 s), Bild 3.21 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht | Boot 2: t(Kontrolle) kalt 12.57 s von außen (Eigenmeldung 12.25 s), Bild 3.27 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht | Boot 3: t(Kontrolle) kalt 11.54 s von außen (Eigenmeldung 11.20 s), Bild 3.24 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht | Boot 4: t(Kontrolle) kalt 10.79 s von außen (Eigenmeldung 10.46 s), Bild 3.24 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] nvidia/pascal",
+     "r6": "konsum"
     },
     {
      "id": "karte2.same.preis.ankunft#3",
@@ -37589,7 +37589,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 346,
+  "konsum": 347,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37757,10 +37757,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3276
+  "ohne": 3275
  },
  "kopfVoll": "38194f8373828ba681647f1fb6c41255c41f7fd1",
- "zeit": "2026-11-27T00:43:34.322Z",
+ "zeit": "2026-11-27T00:50:01.400Z",
  "vorher": "38194f83",
  "bilanz": {
   "gewinn": [],
