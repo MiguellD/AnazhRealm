@@ -56,4 +56,13 @@ Seite der Fahrbahn → `wer`).
   Bild · 20 von 20.
 - Die drei Wände des Stations-Kandidaten (die Liste der Punkte-Maschine am Zweig punkte-maschine) sind in der Wolke nicht gefahren.
 
+## Vorprüf-Kopf 56db0ae1 (auf main 7e73426e) — die GPU-Probe
+
+- Radeon 890M, 27.11. 15:06, GRÜN in allen fünf Toren: pruefbuehne-licht 80 s · weltbild-frost:echt 154 s · studio-begehen 177 s ·
+  bild:stadt-voll@0.33 210 s · webgl-probe 82 s. Die zwei Tore, die lokal unter swiftshader kein Urteil trugen, lesen am Gerät grün.
+- Das Bild stadt-voll 8 Uhr (selbst angesehen): der Markt voll, rund dreißig Menschen zwischen den Ständen, Gehende mitten im Schritt,
+  kein Leib im Boden; die Abnahme nennt bewohner 7,3 % (Soll ≥ 1,0 %).
+- Der Kopf fährt im Bündel 2 `buendel-abend` (Koordinator 15:39); kein neuer Vorprüf-Kopf vor der Landung. Offen: bild#2 und
+  bevoelkerung#2 am Rumpf der Station (Gerät), der Stations-Kandidat seuche#2 (Vor-Richter GTX 1050/1060).
+
 Karte 2 gebucht 149 von 1 718. Status ZWISCHENSTAND.
