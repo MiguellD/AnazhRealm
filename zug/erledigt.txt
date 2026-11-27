@@ -2855,3 +2855,4 @@ omen-gtx-gtx-eef726c7-1-eef726c7 ROT 0 GRÜN / 2 ROT / 0 UNGEMESSEN · ROT karte
 2026-11-27 09:25 RUNDE 42 ALARM gtx: ohne Fortschritt seit 16 min (halt, 2/232, Station karte2.mensch.sport.kunst#1, Kopf eef726c7) — gesehen von radeon (radeon-dienst)
 2026-11-27 09:39 RUNDE 42 ALARM radeon: ohne Fortschritt seit 18 min (weicht, 4/35, Station -, Kopf eef726c7) — gesehen von radeon (radeon-dienst)
 2026-11-27 10:26 RUNDE 42 ALARM gtx: ohne Fortschritt seit 77 min (halt, 2/232, Station karte2.mensch.sport.kunst#1, Kopf eef726c7) — gesehen von gtx (landung-dienst)
+2026-11-27 10:26 RUNDE 42 ALARM gtx: OMEN: 9 Messungen ungepusht seit 04:58 — halt 2/232, Station karte2.mensch.sport.kunst#1, Kopf eef726c7; die Runde setzt an derselben Station fort — gesehen von gtx (landung-dienst)
