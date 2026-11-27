@@ -170,7 +170,7 @@ Linse gate:klang-zensus (Sp):
 - Selbsttest S29 „die Rede ohne An- und Abglied“, also der Stand am main, ist **ROT** mit 7 Befunden: 6 Familien mit %V 1, dazu „kein Frikativ“.
 
 Ehrlich offen:
-- mediterran und fernost liegen über dem Band (0,654 / 0,675 gegen ≤ 0,54). Klatts Dauern sind Englisch, ein Sprecher. Das Japanische trägt kurze Kurzvokale, das Italienische lange Konsonanten. Messname `Sp %V außer Band`.
+- Vier Familien liegen über dem Band ≤ 0,54: mediterran 0,654, fernost 0,675, alpin 0,544 und nordisch 0,541 (die letzten zwei knapp). Die Wand prüft ≤ 0,70. Klatts Dauern sind Englisch, ein Sprecher. Das Japanische trägt kurze Kurzvokale, das Italienische lange Konsonanten. Messname `Sp %V außer Band`.
 - QUELLE UNGEPRUEFT im Wert:
   - x (velar);
   - die Breite der Rausch-Gipfel;
