@@ -2711,6 +2711,120 @@ class AnazhRealm_vegetation_baum {
         return w > 0 ? { r: r / w, g: g / w, b: b / w } : null;
     }
 
+    // DIE SICHT DES AUGES AUF DEN GIPFEL EINER LANDMARKE (landmarken-geologie-8 Kopf 6, erleben.spieler.wegfindung#1): die Gerade vom
+    // Auge zum Gipfel `q` {x, y, z} trifft (1) den Grund der Saat (gelaende-core `hoehe`, je 25 m bis 30 m vor den Fuß, den die
+    // Landmarke selbst trägt) oder (2) eine Krone des Walds — derselbe Plan, mit dem die Welt zeichnet: binnen der Nah-Streu
+    // (`SCATTER.outerM`) der Bestand (`_forestGeborene` über der Oberfläche der Voxel-Welt, `forestStehende`), jenseits die
+    // Kamm-Krone (der Plan über dem Gesetz ohne Detail, nur das Dach, wie der Faden sie rechnet); je Krone ihr Umriss wie in der
+    // Ferne (`_kammKroneArten`: Laub die Ellipse über [Ansatz, Wipfel], Nadel der Kegel, Radius T des Plans). Gefragt werden nur die
+    // Zellen, in denen ein Baum der Höhe `KAMM_KRONE.hMax` die Gerade erreicht, nah zuerst; der erste Treffer endet. Leser: der
+    // Kontrast der Landmarke (verdeckt heißt Kontrast 0) und die Ankunft (`_ankunft`: frei heißt null). Bis hier trug die Ankunft
+    // das Glied des Grunds allein, und der Zeuge am Gerät (GTX 27.11.) sah an 3 von 3 Saaten den Gipfel, dem das Gesetz Kontrast
+    // gab, hinter Bäumen (Kiefer 74 m, Tanne 100 m, die Kamm-Krone 390 m). → null (frei) oder { von: "grund" | <Art>, d } (d: Weg
+    // vom Auge in m).
+    _landmarkeSicht(auge, q) {
+        const K = globalThis.__gelaendeCore;
+        const A = AnazhRealm;
+        const L = this._gelaende();
+        const [vx, vy, vz] = [q.x - auge.x, q.y - auge.y, q.z - auge.z];
+        const d = Math.hypot(vx, vz);
+        if (!(d > 30)) return null;
+        const [ux, uz, m] = [vx / d, vz / d, vy / d];
+        let treffer = null;
+        for (let s = 25; s < d - 30; s += 25)
+            if (K.hoehe(L, auge.x + ux * s, auge.z + uz * s, true) > auge.y + m * s) {
+                treffer = { von: "grund", d: s };
+                break;
+            }
+        const ende = treffer ? treffer.d : d - 30;
+        const W = this._sichtWald();
+        const C = A.FOREST.cell;
+        const hMax = A.KAMM_KRONE.hMax;
+        // die Zellen am Strahl, in denen ein Baum der Höhe hMax die Gerade erreicht, je Zelle ihr kleinster Weg
+        const zellen = new Map();
+        for (let s = 0; s < ende + C; s += C / 2) {
+            const [x, z] = [auge.x + ux * s, auge.z + uz * s];
+            if (K.hoehe(L, x, z, true) + hMax < auge.y + m * s) continue;
+            for (const k of [-1, 0, 1]) {
+                const [cx, cz] = [Math.floor((x - uz * k * C) / C), Math.floor((z + ux * k * C) / C)];
+                const key = cx + "," + cz;
+                if (!zellen.has(key)) zellen.set(key, [s, cx, cz]);
+            }
+        }
+        let wald = null;
+        for (const [s0, cx, cz] of [...zellen.values()].sort((a, b) => a[0] - b[0])) {
+            if (wald && s0 - C > wald.d) break;
+            const nah = Math.hypot((cx + 0.5) * C - auge.x, (cz + 0.5) * C - auge.z) <= A.SCATTER.outerM;
+            const stehen = W.stehende(cx, cz, nah);
+            for (let i = 0; i < stehen.length; i++) {
+                const t = stehen[i];
+                const p = W.arten[t.sp];
+                if (!p || !(p.h > 0) || !(t.T > 0) || !Number.isFinite(t.surfaceY)) continue;
+                const [tx, tz] = [t.x - auge.x, t.z - auge.z];
+                const s = tx * ux + tz * uz;
+                if (!(s > 1) || s >= ende || (wald && s >= wald.d)) continue;
+                const v = Math.abs(tx * uz - tz * ux) / t.T;
+                if (v >= 1) continue;
+                const hoch = p.h * t.s;
+                const y0 = t.surfaceY + hoch * p.ansatz;
+                const kh = hoch - hoch * p.ansatz;
+                const w = Math.sqrt(1 - v * v);
+                const [unten, oben] = p.nadel
+                    ? [y0, y0 + kh * (1 - v)]
+                    : [y0 + (kh / 2) * (1 - w), y0 + (kh / 2) * (1 + w)];
+                const y = auge.y + m * s;
+                if (y >= unten && y <= oben) wald = { von: t.sp, d: s };
+            }
+        }
+        for (; W.gemeldet < W.geplant; W.gemeldet++)
+            this._fadenUmgangen("der Wald-Plan einer Zelle für die Sicht der Landmarke");
+        return wald || treffer;
+    }
+
+    // DAS GEDÄCHTNIS DER SICHT (`_landmarkeSicht`): die geborenen Darts und der Bestand je Zelle, nah (die Oberfläche der Voxel-Welt,
+    // der ganze Bestand) und fern (das Gesetz ohne Detail, das Dach), dazu die Krone jeder Art — je Same und Stand des Walds
+    // (`_waldStandSchluessel`, die Hydrosphäre), über 65 536 geborenen Zellen neu (wie das Gedächtnis der Kamm-Krone im Faden).
+    _sichtWald() {
+        const A = AnazhRealm;
+        const pc = globalThis.__phytoCore;
+        const schluessel = this._waldStandSchluessel() + "|" + (this.state.hydrosphere ? 1 : 0);
+        let W = this._sichtWaldStand;
+        if (W && W.schluessel === schluessel && W.geboren[0].size + W.geboren[1].size <= 65536) return W;
+        const K = globalThis.__gelaendeCore;
+        const L = this._gelaende();
+        const seedInt = this._forestSeedInt();
+        const fern = (x, z) => K.hoehe(L, x, z, false);
+        const geboren = [new Map(), new Map()];
+        const bestand = [new Map(), new Map()];
+        const gebVon = (i) => (gx, gz) => {
+            const k = gx + "," + gz;
+            let a = geboren[i].get(k);
+            if (!a) {
+                geboren[i].set(k, (a = this._forestGeborene(gx, gz, seedInt, true, i ? fern : undefined)));
+                W.geplant++;
+            }
+            return a;
+        };
+        const geb = [gebVon(0), gebVon(1)];
+        // `geplant`: die Zellen, die die Sicht im Haupt-Faden plant — Zellen, die der Wald-Faden (nah) und der Kamm-Faden (fern)
+        // ohnehin planen: je Zelle EIN „FADEN-UMGANGEN“ (Lehre 14, `_fadenUmgangen`, gemeldet von `_landmarkeSicht`)
+        W = this._sichtWaldStand = {
+            schluessel,
+            geboren,
+            geplant: 0,
+            gemeldet: 0,
+            arten: this._kammKroneArten(),
+            stehende: (cx, cz, nah) => {
+                const i = nah ? 0 : 1;
+                const k = cx + "," + cz;
+                let a = bestand[i].get(k);
+                if (!a) bestand[i].set(k, (a = pc.forestStehende(cx, cz, geb[i], A.FOREST.pack, !nah)));
+                return a;
+            },
+        };
+        return W;
+    }
+
     // DER KONTRAST EINER LANDMARKE GEGEN IHREN GRUND, wie das Auge ihn sieht (landmarken-geologie-8 Kopf 5, erleben.spieler.
     // wegfindung#1; Koschmieder 1924: C = C₀ · e^{−σd} vor dem Horizont-Himmel). Die Leuchtdichte jeder Seite aus dem EINEN Licht
     // der Welt (`_weltLichtAn`, das Gesetz `flaechenLicht` des Knotens): die Marke in ihrer Albedo (`_landmarkeFarbe`) an ihrer
@@ -2720,8 +2834,11 @@ class AnazhRealm_vegetation_baum {
     // mit 1 − T die Himmels-Sicht in Blickrichtung hinein (unter dem Horizont der Horizont-Himmel), wie der Knoten der Luft.
     // `l` = {art, seed, x, y (Fuß), z, h}; `hinter` = {hinter: "himmel"} | {hinter: "hang", punkt}. → {kontrast, c0, y, …} (Y nach
     // Rec. 709) oder {fehlt} mit dem Namen des Lesers, der noch nicht liest. Die Wolke wirft hier keinen Schatten (ihr Wurf trägt
-    // keinen Leser auf der CPU — die Marke gilt als unbewölkt besonnt, wo das Gesetz sie besonnt).
+    // keinen Leser auf der CPU — die Marke gilt als unbewölkt besonnt, wo das Gesetz sie besonnt). DIE SICHT ZUERST (Kopf 6): ist der
+    // Gipfel vom Auge verdeckt (`_landmarkeSicht`: Grund oder Krone), ist der Kontrast 0 → {kontrast: 0, verdeckt: {von, d}}.
     _landmarkeKontrast(auge, l, hinter) {
+        const verdeckt = this._landmarkeSicht(auge, { x: l.x, y: l.y + l.h, z: l.z });
+        if (verdeckt) return { kontrast: 0, verdeckt };
         const st = this.state;
         const WL = st.weltLicht;
         if (!WL) return { fehlt: "das Licht der Welt (`_weltLicht`) steht nicht" };
