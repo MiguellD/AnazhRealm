@@ -1,7 +1,7 @@
 {
  "sha": "52937c92786457ffbc7e62e6c4e99949df3c135e",
  "geraet": "gtx",
- "zeit": "2026-11-27T12:03:09.733Z",
+ "zeit": "2026-11-27T12:18:29.436Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.fahrzeug.medium#2": {
@@ -861,187 +861,236 @@
   },
   "karte2.same.preis.ausdauer#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\"}) — offen, UNGEMESSEN",
+   "zahl": "kein Anfang in dieser Sitzung (profiband.K4#1 fuhr in einer früheren Sitzung dieses Laufs) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\"}) — offen, UNGEMESSEN",
+   "grund": "kein Anfang in dieser Sitzung (profiband.K4#1 fuhr in einer früheren Sitzung dieses Laufs) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-27T11:49:18.248Z",
+   "zeit": "2026-11-27T12:15:29.991Z",
    "abdruck": "f7f6385a7cbf",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session",
-   "offen": 1,
-   "fahrt": "6256@mwywv3k8"
+   "offen": 2,
+   "fahrt": "10732@mwyxkanx"
   },
   "karte2.mensch.macht.recht#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\"}) — offen, UNGEMESSEN",
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER Error: /eval ohne Antwort binnen 40 s |     at ClientRequest.<anonymous> ([eval]:58:62) |     at Object.onceWrapper (node:events:622:28) |     at ClientRequest.emit (node:events:508:28) |     at Socket.emitRequestTimeout (node:_http_client:927:9)",
+   "exit": 2,
+   "minuten": 0.84,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER Error: /eval ohne Antwort binnen 40 s |     at ClientRequest.<anonymous> ([eval]:58:62) |     at Object.onceWrapper (node:events:622:28) |     at ClientRequest.emit (node:events:508:28) |     at Socket.emitRequestTimeout (node:_http_client:927:9)",
+   "gpu": "nvidia/pascal",
    "ungemessen": true,
-   "zeit": "2026-11-27T11:49:18.281Z",
+   "s": 50,
+   "fremd": {
+    "s": 52.1,
+    "takte": 24,
+    "fremdS": 17.53,
+    "kerne": 0.336,
+    "fensterKerne": 0.506,
+    "namen": [
+     [
+      "bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \"",
+      2.25
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      2.17
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.52
+     ]
+    ],
+    "dienerS": 10.53,
+    "diener": [
+     [
+      "System",
+      3.81
+     ],
+     [
+      "dwm.exe",
+      3.28
+     ]
+    ],
+    "geraetS": 33.3,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      21.22
+     ],
+     [
+      "svchost.exe",
+      11.55
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      0.2
+     ]
+    ],
+    "eigenS": 97.09,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-27T12:18:29.436Z",
    "abdruck": "2c9130abcfb3",
    "port": 7804,
    "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1,
-   "fahrt": "6256@mwywv3k8"
+   "modus": "session"
   },
   "karte2.mensch.nahrung.tier#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-27T11:49:18.321Z",
+   "zeit": "2026-11-27T12:15:15.899Z",
    "abdruck": "dd0fb912caa9",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session",
-   "offen": 1,
-   "fahrt": "6256@mwywv3k8"
+   "offen": 2,
+   "fahrt": "10732@mwyxkanx"
   },
   "karte2.planet.wasser.gezeiten#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-27T11:49:18.361Z",
+   "zeit": "2026-11-27T12:15:15.972Z",
    "abdruck": "4a1c8afd90fc",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session",
-   "offen": 1,
-   "fahrt": "6256@mwywv3k8"
+   "offen": 2,
+   "fahrt": "10732@mwyxkanx"
   },
   "karte2.erleben.klang.stimme#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-27T11:49:18.414Z",
+   "zeit": "2026-11-27T12:15:16.050Z",
    "abdruck": "2a841240456c",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session",
-   "offen": 1,
-   "fahrt": "6256@mwywv3k8"
+   "offen": 2,
+   "fahrt": "10732@mwyxkanx"
   },
   "karte2.leben.oeko.netz#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-27T11:49:18.456Z",
+   "zeit": "2026-11-27T12:15:16.086Z",
    "abdruck": "0c828a4a0f6c",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session",
-   "offen": 1,
-   "fahrt": "6256@mwywv3k8"
+   "offen": 2,
+   "fahrt": "10732@mwyxkanx"
   },
   "karte2.leben.evolution.fremde-physik#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-27T11:49:18.496Z",
+   "zeit": "2026-11-27T12:15:16.121Z",
    "abdruck": "a79890cfe53f",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session",
-   "offen": 1,
-   "fahrt": "6256@mwywv3k8"
+   "offen": 2,
+   "fahrt": "10732@mwyxkanx"
   },
   "karte2.same.kopplung.aufwaerts#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-27T11:49:18.544Z",
+   "zeit": "2026-11-27T12:15:16.184Z",
    "abdruck": "4b6c2662476c",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session",
-   "offen": 1,
-   "fahrt": "6256@mwywv3k8"
+   "offen": 2,
+   "fahrt": "10732@mwyxkanx"
   },
   "karte2.same.kopplung.ereignis#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-27T11:49:18.544Z",
+   "zeit": "2026-11-27T12:15:16.184Z",
    "abdruck": "90ba0955651f",
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.same.kopplung.aufwaerts#1",
    "modus": "session",
-   "offen": 1,
-   "fahrt": "6256@mwywv3k8"
+   "offen": 2,
+   "fahrt": "10732@mwyxkanx"
   },
   "karte2.same.kopplung.gewalt#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-27T11:49:18.544Z",
+   "zeit": "2026-11-27T12:15:16.184Z",
    "abdruck": "2b9db5348a37",
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.same.kopplung.aufwaerts#1",
    "modus": "session",
-   "offen": 1,
-   "fahrt": "6256@mwywv3k8"
+   "offen": 2,
+   "fahrt": "10732@mwyxkanx"
   },
   "karte2.same.kopplung.kohaerenz#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-27T11:49:18.544Z",
+   "zeit": "2026-11-27T12:15:16.184Z",
    "abdruck": "5344fc44e9fd",
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.same.kopplung.aufwaerts#1",
    "modus": "session",
-   "offen": 1,
-   "fahrt": "6256@mwywv3k8"
+   "offen": 2,
+   "fahrt": "10732@mwyxkanx"
   },
   "karte2.same.kopplung.terraform#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-27T11:49:18.544Z",
+   "zeit": "2026-11-27T12:15:16.184Z",
    "abdruck": "60d98052c42d",
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.same.kopplung.aufwaerts#1",
    "modus": "session",
-   "offen": 1,
-   "fahrt": "6256@mwywv3k8"
+   "offen": 2,
+   "fahrt": "10732@mwyxkanx"
   },
   "profiband.K4#2": {
    "gruen": false,
@@ -1192,16 +1241,33 @@
    "bahn": "sitzung",
    "zwilling": "profiband.K4#1",
    "modus": "session"
+  },
+  "karte2.leben.tiere.masse#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-27T12:15:15.937Z",
+   "abdruck": "5f316e994d1d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "10732@mwyxkanx"
   }
  },
  "sitzung": {
-  "start": "2026-11-27T11:41:38.544Z",
-  "ordner": "sitzung-20261127-124138",
+  "start": "2026-11-27T12:01:14.382Z",
+  "ordner": "sitzung-20261127-130114",
   "port": 7804,
-  "warten": 0.02,
-  "bootS": 6.8,
-  "grundstellungS": [],
-  "proben": 3,
+  "warten": 0.03,
+  "bootS": 7.4,
+  "grundstellungS": [
+   0.3
+  ],
+  "proben": 2,
   "freigaben": [],
   "geraet": {
    "name": "GTX 1060",
@@ -1209,11 +1275,10 @@
    "preis": true
   },
   "offen": [
-   "karte2.erleben.spieler.wegfindung#1",
-   "karte2.planet.kosmos.himmelsmechanik#1",
    "karte2.same.preis.ausdauer#1",
    "karte2.mensch.macht.recht#1",
    "karte2.mensch.nahrung.tier#2",
+   "karte2.leben.tiere.masse#1",
    "karte2.planet.wasser.gezeiten#1",
    "karte2.erleben.klang.stimme#1",
    "karte2.leben.oeko.netz#2",
@@ -1226,12 +1291,12 @@
   ],
   "orte": [
    {
-    "ort": "stadt-voll",
-    "vor": "karte2.erleben.bild.nacht#2",
-    "s": 158.5,
-    "takte": 1540,
+    "ort": "genesis",
+    "vor": "karte2.planet.kosmos.himmelsmechanik#1",
+    "s": 25.8,
+    "takte": 534,
     "chunks": 81,
-    "nach": null
+    "nach": "der Grundstellung"
    }
   ],
   "wegeTueren": [],
@@ -1239,6 +1304,7 @@
    {
     "probe": "profiband.K4#1",
     "weg": [
+     "0",
      "__ortZeit",
      "__weltaktSpionBuch",
      "__wetterSpionBuch",
@@ -1250,9 +1316,13 @@
     ]
    },
    {
-    "probe": "karte2.erleben.bild.nacht#2",
+    "probe": "karte2.planet.kosmos.himmelsmechanik#1",
     "weg": [
-     "__imSchuss"
+     "__linse___aufnahmeRuhig",
+     "__imSchuss",
+     "__ruheBilder",
+     "__wegProbe",
+     "__abbruchEpoche"
     ]
    }
   ],
@@ -1282,59 +1352,37 @@
     "haelt": [],
     "heap": [
      null,
-     281.3
+     288
     ],
     "ungemessen": null
    },
    {
-    "probe": "karte2.erleben.bild.nacht#2",
+    "probe": "karte2.planet.kosmos.himmelsmechanik#1",
     "anders": [
-     "r._weltaktGehalten",
-     "r._setWeather",
-     "r._bildZeit",
-     "r._wolkenZeit",
-     "r._feuchteLeser",
-     "r.state.weather",
-     "window.__ortSchritt"
+     "window.__tagKurve",
+     "window.__wieseMessen",
+     "window.__wieseUrteil",
+     "window.__ortSchritt",
+     "window.__aufnahmeRuhig",
+     "window.__linse___tagKurve"
     ],
     "wie": {
-     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
-     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
-     "r._bildZeit": "neu: () => S.T",
-     "r._wolkenZeit": "neu: () => S.T",
-     "r._feuchteLeser": "neu: (px, pz, py) => this._feuchteAt(px, pz, py)",
-     "r.state.weather": "neu: () => wert",
-     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+     "window.__tagKurve": "getauscht: function tagKurve(o) { return (async () => { const T = window.THREE; const rend ",
+     "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
+     "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
+     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit",
+     "window.__aufnahmeRuhig": "neu: function ausgabeAufnahme(W, H, warm, opt) { return (async () => { const T = wind",
+     "window.__linse___tagKurve": "neu: function tagKurve(o) { return (async () => { const T = window.THREE; const rend "
     },
-    "haelt": [],
+    "haelt": [
+     "window.__linse___aufnahmeRuhig = window.__aufnahmeRuhig; window.__aufnahmeRuhig = function ausgabeAufnahme(W, H, warm, o",
+     "return await __tagKurve({\"uhren\":[0.082,0.084,0.086,0.088,0.092,0.094,0.096,0.098,0.102,0.104,0.106,0.108,0.112,0.114,0."
+    ],
     "heap": [
-     539.3,
-     535
+     250.6,
+     1236.9
     ],
-    "ungemessen": null
-   },
-   {
-    "probe": "karte2.erleben.spieler.wegfindung#1",
-    "anders": [
-     "r._weltaktGehalten",
-     "r._bildZeit",
-     "r._wolkenZeit",
-     "r._feuchteLeser",
-     "window.__ortSchritt"
-    ],
-    "wie": {
-     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
-     "r._bildZeit": "neu: () => S.T",
-     "r._wolkenZeit": "neu: () => S.T",
-     "r._feuchteLeser": "neu: (px, pz, py) => this._feuchteAt(px, pz, py)",
-     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
-    },
-    "haelt": [],
-    "heap": [
-     538.1,
-     582.9
-    ],
-    "ungemessen": null
+    "ungemessen": "den Kontext der Probe hält noch: window.__linse___aufnahmeRuhig = window.__aufnahmeRuhig; window.__aufnahmeRuhig = function ausgabeAufnahme(W, H, warm, o | return await __tagKurve({\"uhren\":[0.082,0.084,0.086,0.088,0.092,0.094,0.096,0.098,0.102,0.104,0.106,0.108,0.112,0.114,0. — Heap nach der Rücknahme 250.6 → 1236.9 MB (+986.3 > 64)"
    }
   ],
   "messHalt": [
@@ -1344,57 +1392,47 @@
     "zurueck": 0
    },
    {
-    "probe": "karte2.erleben.bild.nacht#2",
+    "probe": "karte2.planet.kosmos.himmelsmechanik#1",
     "gehalten": [
      "skala",
-     "spiegel",
-     "tiere"
+     "spiegel"
     ],
     "offen": []
    }
   ],
-  "haenger": [
-   {
-    "probe": "profiband.K4#1",
-    "zurueck": 9
-   }
-  ],
   "wanderung": [
    {
-    "probe": "karte2.erleben.spieler.wegfindung#1",
-    "ort": "stadt-voll",
-    "m": 1871.65,
-    "dreh": 3.716
+    "probe": "karte2.planet.kosmos.himmelsmechanik#1",
+    "ort": "genesis",
+    "m": 1082.54,
+    "dreh": 0.401
    }
   ],
-  "messortOffen": [
-   "karte2.erleben.spieler.wegfindung#1"
-  ],
-  "grund": "die Welt trägt nicht mehr vor karte2.planet.kosmos.himmelsmechanik#1: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\"} — offen: karte2.erleben.spieler.wegfindung#1, karte2.planet.kosmos.himmelsmechanik#1, karte2.same.preis.ausdauer#1, karte2.mensch.macht.recht#1, karte2.mensch.nahrung.tier#2, karte2.planet.wasser.gezeiten#1, karte2.erleben.klang.stimme#1, karte2.leben.oeko.netz#2, karte2.leben.evolution.fremde-physik#1, karte2.same.kopplung.aufwaerts#1, karte2.same.kopplung.ereignis#2, karte2.same.kopplung.gewalt#1, karte2.same.kopplung.kohaerenz#1, karte2.same.kopplung.terraform#1",
-  "ciBlicke": 5,
+  "grund": "die Welt trägt nicht mehr vor karte2.same.preis.ausdauer#1: /fenster ohne Antwort binnen 30 s — offen: karte2.same.preis.ausdauer#1, karte2.mensch.macht.recht#1, karte2.mensch.nahrung.tier#2, karte2.leben.tiere.masse#1, karte2.planet.wasser.gezeiten#1, karte2.erleben.klang.stimme#1, karte2.leben.oeko.netz#2, karte2.leben.evolution.fremde-physik#1, karte2.same.kopplung.aufwaerts#1, karte2.same.kopplung.ereignis#2, karte2.same.kopplung.gewalt#1, karte2.same.kopplung.kohaerenz#1, karte2.same.kopplung.terraform#1",
+  "ciBlicke": 4,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 229,
-   "frameP95": 83.34,
-   "taktP95": 72.55,
-   "vramMax": 239,
-   "seiten": 2,
+   "bilder": 205,
+   "frameP95": 50.08,
+   "taktP95": 43.34,
+   "vramMax": 147.7,
+   "seiten": 3,
    "marken": 1,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "karte2.erleben.spieler.wegfindung#1",
-     "m": 1872,
+     "probe": "karte2.planet.kosmos.himmelsmechanik#1",
+     "m": 1083,
      "ringVor": 4,
      "ringMin": -1
     }
    ],
-   "zapfen": 353,
-   "luecken": 5,
-   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+   "zapfen": 780,
+   "luecken": 1,
+   "letzteLuecke": "kein Renderer"
   },
-  "fahrtS": 454.3,
-  "minuten": 7.71
+  "fahrtS": 835.7,
+  "minuten": 14.08
  }
 }
