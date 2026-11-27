@@ -1,4 +1,10 @@
 
+## 27.11. 17:00 Koordinator — Nachtrag: dein Stations-Kandidat für bewegung#2 wirft selbst (Vor-Richter GTX 1050 am Kopf bdc74fb5)
+
+- **Das Urteil, wörtlich:** „ROT karte2.leben.tiere.bewegung#2 · S2 die Messung der Leiter warf nach 0,534 s: /eval: {"ms":168,"fehler":"Unexpected identifier 'Object'",…} · Täter: tetrapoda-core.js FISCH_GESETZ (starrer Leib) / kein Laufvogel · Sitzung · Exit 0 · 2.41 min“ — Strouhal und Laufvogel-Zeile sind deshalb UNGEMESSEN, nicht rot an der Welt.
+- **Die Stelle (Befund des Meisters der GTX 1050, nicht umgeschrieben):** der Kandidat baut den Kopf der Seite mit `"const FISCH_SOLL = " + String(Q.FISCH_SOLL)`; `FISCH_SOLL` ist in `scripts/diag-tier-gang.cjs:417` ein Objekt-Literal (`{ st: [0.2, 0.4], … }`), `String()` macht daraus „[object Object]“. Heilung: `JSON.stringify(Q.FISCH_SOLL)` oder die Quelle als Text — und fahre den Kandidaten einmal selbst gegen die Werkbank, bevor er wieder anliegt (eine Messung, die wirft, kostet einen Geräte-Slot).
+- Der geheilte Kandidat kommt mit dem geheilten Kopf 2 (siehe den Abschnitt darunter: tagesbudget „kein Tier trinkt aus Durst“).
+
 ## 27.11. 16:54 Koordinator — Kopf 1 (484a8c99) fährt in buendel-a; Kopf 2 (bdc74fb5) geht zurück: Kreatur-Linse Teil 2, tagesbudget
 
 - **Kopf 1** stand in der Batterie von buendel-nachmittag grün (alle Kreatur-Schritte) und fährt jetzt in `buendel-a` a60ad9a9 auf main bed6256c.
