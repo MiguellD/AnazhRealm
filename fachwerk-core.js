@@ -4912,11 +4912,89 @@
           frei.sort(function (a, b) { return zahl[a] - zahl[b] || _sprachU("knoten|" + R + "|" + t + "|" + q, a) - _sprachU("knoten|" + R + "|" + t + "|" + q, b); });
           for (var c = 0; c < 2; c++) { zahl[frei[c]]++; K[t][2 * q + c] = ahnen.concat([frei[c]]); } } }
       return K[T]; }
-    // die Sprache des Orts: das Blatt des Stammbaums seiner Familie, das sein Same wählt (ohne Region: die Familie Mitteleuropas,
-    // wie der Wurf ohne Klima); `zweig` ist der Weg von der Wurzel (Bits), `wandel` die Lautgesetze der Knoten auf dem Weg („typ:laut“)
-    function spracheVon(region, seed) {
-      var R = SPRACHE_GESETZ[region] ? region : "mitteleuropa", T = SPRACH_BAUM.tiefe;
-      var blatt = Math.floor(_sprachU("sprache|" + R + "|" + (seed >>> 0), "blatt") * (1 << T)), key = R + "|" + blatt, m = _SPRACHEN.get(key);
+    // DIE MUNDART DES ORTS (Karte 2 mensch.kultur.sprache#4): das Blatt des Stammbaums ist eine FUNKTION von Welt-Saat und Ort, nie
+    // ein Wurf des Samens. Bis sprache-dialekt wählte der Same das Blatt — zwei Nachbar-Orte und zwei Orte am anderen Ende der Welt
+    // trugen mit derselben Wahrscheinlichkeit dieselbe Sprache (0,0255 über 2 000 Paare), kein Kontinuum, keine Isoglosse.
+    // Das Gesetz (das Band: Burridge 2017, Phys. Rev. X 7, 031008 — die Sprecher gleichen sich im Pendel-Radius σ an, 5 km < σ < 15 km;
+    // die Isoglossen sammeln sich an den Einschnitten der Küste, an Flüssen und Mündungen; Séguy 1971, Nerbonne 2010: der Abstand der
+    // Mundarten wächst mit dem Logarithmus des Wegs): der Ort spricht, was sein TAL spricht — die Senke seines Einzugsgebiets
+    // (gelaende-core `talWeg`, der Weg des Wassers bis zum See oder Meer; der Wirt liest sie, `_mundartAm`). Ein Tal ist eine
+    // Sprachgemeinschaft, die Wasserscheide die Grenze (die Mundart-Räume der Alpen und des Schwarzwalds folgen den Tälern).
+    // Je Ebene t des Stammbaums (1 … tiefe) entscheidet ein Feld von Neuerungs-Herden das Bit des Zweigs — der nächste Herd im
+    // Maßstab σ·2^(tiefe − t): die alten Spaltungen sind groß (Familie → Hauptzweige über 80 km), die jungen klein (die Mundart, σ).
+    // DER FÄCHER (die lexikalische Diffusion, Wang 1969; der Rheinische Fächer: ik/ich, maken/machen, dat/das enden an verschiedenen
+    // Linien): jedes Wort liest das Feld seiner Ebene an einem eigenen Punkt, `faecher`·Maßstab um die Senke versetzt — die
+    // Isoglossen der Wörter bündeln sich, wo die Herde wechseln, und fächern im Grenzsaum. `kern`: das Blatt an der Senke selbst (der
+    // Zweig, die Lautgesetze, die Namen), `worte`: je Bedeutung das Blatt, dessen Wort der Ort spricht.
+    // Leser: `spracheVon` (die Sprache des Plans), der Wirt (`_mundartAm` → `_zellEingang` → `DP.mundart`), die Station (sprache#4).
+    var SPRACH_RAUM = { sigma: 5000, faecher: 0.3 };
+    var _FAECHER = new Map();
+    // prettier-ignore
+    function mundartVon(saat, x, z) {
+      if (!(Number.isFinite(x) && Number.isFinite(z))) throw new Error("fachwerk mundartVon: die Senke (" + x + ", " + z + ") ist kein Ort");
+      var T = SPRACH_BAUM.tiefe, NB = SPRACH_BAUM.bedeutungen.length, S = String(saat), herde = new Map();
+      var F = _FAECHER.get(S);
+      if (!F) { F = [];
+        for (var t = 1; t <= T; t++) for (var i = 0; i < NB; i++) { var k = S + "|f|" + t + "|" + i, a = 2 * Math.PI * _sprachU(k, "a"), r = SPRACH_RAUM.faecher * _sprachU(k, "r");
+          F.push(r * Math.cos(a), r * Math.sin(a)); }
+        if (_FAECHER.size >= 16) _FAECHER.delete(_FAECHER.keys().next().value);
+        _FAECHER.set(S, F); }
+      // das Bit der Ebene t am Punkt (px, pz): das Bit des nächsten Herds (je Zelle des Maßstabs EIN Herd, gehasht aus Saat, Ebene, Zelle)
+      var bit = function (t, px, pz) { var s = SPRACH_RAUM.sigma * Math.pow(2, T - t), cx = Math.floor(px / s), cz = Math.floor(pz / s), d0 = Infinity, b = 0;
+        for (var di = -1; di <= 1; di++) for (var dj = -1; dj <= 1; dj++) { var hk = t + "|" + (cx + di) + "," + (cz + dj), h = herde.get(hk);
+          if (!h) { var q = S + "|" + hk; h = [(cx + di + _sprachU(q, "x")) * s, (cz + dj + _sprachU(q, "z")) * s, _sprachU(q, "b") < 0.5 ? 0 : 1]; herde.set(hk, h); }
+          var d = (h[0] - px) * (h[0] - px) + (h[1] - pz) * (h[1] - pz); if (d < d0) { d0 = d; b = h[2]; } }
+        return b; };
+      var kern = 0, worte = new Array(NB);
+      for (var t2 = 1; t2 <= T; t2++) kern = kern * 2 + bit(t2, x, z);
+      for (var j = 0; j < NB; j++) { var w = 0;
+        for (var t3 = 1; t3 <= T; t3++) { var m = SPRACH_RAUM.sigma * Math.pow(2, T - t3), o = 2 * ((t3 - 1) * NB + j); w = w * 2 + bit(t3, x + F[o] * m, z + F[o + 1] * m); }
+        worte[j] = w; }
+      return Object.freeze({ kern: kern, worte: Object.freeze(worte) });
+    }
+    // die Mundart, die ganz ein Blatt spricht (jedes Wort aus dem Blatt `b`): der Leser des Stammbaums (die Station sprache#3, gate:settlement R11)
+    function mundartBlatt(b) {
+      var T = SPRACH_BAUM.tiefe;
+      if (!(b === (b | 0) && b >= 0 && b < 1 << T)) throw new Error("fachwerk mundartBlatt: das Blatt " + b + " steht nicht im Baum der Tiefe " + T);
+      return Object.freeze({ kern: b, worte: Object.freeze(SPRACH_BAUM.bedeutungen.map(function () { return b; })) });
+    }
+    // DIE SPRACHE DES PLANS: die Familie ist die Region (ohne Region die Familie Mitteleuropas, wie der Wurf ohne Klima), die Mundart
+    // der Ort (`mundartVon`) — der Zweig, die Lautgesetze und die Namen aus dem Kern-Blatt, jedes Wort der Grundliste aus SEINEM Blatt.
+    // Ohne Ort keine Drift: ein Plan ohne Mundart (das Labor, das Wort, die Kachel einer Stadt des Worts) spricht die Ursprache seiner
+    // Familie — wie der Plan ohne Klima ohne Ort baut. Ein Same an der Stelle der Mundart ist der Täter von sprache#4 und bricht laut.
+    var _MUNDARTEN = new Map();
+    // prettier-ignore
+    function spracheVon(region, mundart) {
+      var R = SPRACHE_GESETZ[region] ? region : "mitteleuropa", NB = SPRACH_BAUM.bedeutungen.length;
+      if (mundart == null) return _urSprache(R);
+      if (!(mundart.worte && mundart.worte.length === NB && mundart.kern === (mundart.kern | 0)))
+        throw new Error("fachwerk spracheVon: der Ort trägt keine Mundart ({kern, worte}, fachwerk mundartVon), sondern " + JSON.stringify(mundart));
+      var K = _blattSprache(R, mundart.kern), gleich = true;
+      for (var i = 0; i < NB && gleich; i++) gleich = mundart.worte[i] === mundart.kern;
+      if (gleich) return K;
+      var key = R + "|" + mundart.kern + "|" + Array.prototype.join.call(mundart.worte, ","), m = _MUNDARTEN.get(key);
+      if (m) return m;
+      var L = Object.assign({}, K, { worte: Object.freeze(Array.prototype.slice.call(mundart.worte)) });
+      L.lex = L.worte.map(function (b, j) { return _blattSprache(R, b).lex[j]; });
+      if (_MUNDARTEN.size >= 4096) _MUNDARTEN.delete(_MUNDARTEN.keys().next().value);
+      _MUNDARTEN.set(key, Object.freeze(L));
+      return L;
+    }
+    // die Ursprache als Sprache (kein Zweig, kein Lautgesetz, kein Ersatz): der Plan ohne Ort
+    // prettier-ignore
+    function _urSprache(R) {
+      var key = R + "|ur", m = _SPRACHEN.get(key);
+      if (m) return m;
+      var U = _ursprache(R), L = { region: R, blatt: null, zweig: "", wandel: [], gesetz: U.gesetz, ursprache: U, anteil: U.anteil };
+      L.lex = U.lex.map(function (w) { return _ocp(L, w); });
+      L.grund = U.grund.slice();
+      L.haus = U.haus;
+      _SPRACHEN.set(key, Object.freeze(L));
+      return L;
+    }
+    // die Sprache eines Blatts des Stammbaums: `zweig` ist der Weg von der Wurzel (Bits), `wandel` die Lautgesetze der Knoten auf dem Weg („typ:laut“)
+    function _blattSprache(R, blatt) {
+      var T = SPRACH_BAUM.tiefe, key = R + "|" + blatt, m = _SPRACHEN.get(key);
       if (m) return m;
       var U = _ursprache(R), G = U.gesetz, saat = "sprache|" + key;
       var dreh = function (p, k) { return p * (0.75 + 0.5 * _sprachU(saat, k)); };
@@ -4988,7 +5066,7 @@
       throw new Error("fachwerk sprachName: unbekannte Art " + art);
     }
     // prettier-ignore
-    function ORTSNAME(region, seed){ return sprachName(spracheVon(region, seed), "ort", seed >>> 0); }
+    function ORTSNAME(region, seed, mundart){ return sprachName(spracheVon(region, mundart), "ort", seed >>> 0); }
     // DER SATZ in der Sprache L (Karte 2 mensch.kultur.sprache#2): ein Bewohner spricht aus den Wörtern SEINER Sprache (`sprachWort`,
     // die Grundliste nach Swadesh: Laute und Silben aus dem Gesetz der Familie, gewandelt nach den Lautgesetzen des Zweigs) in der
     // Folge seiner Familie. Die Folge ist ein Erbe der Ursprache (ein Wurf je Familie, nach dem Rang der Typologie gewogen — Dryer 2013,
@@ -6016,7 +6094,7 @@
     alle.forEach((b,ai)=>{ deck(b); for(const f of za[ai].fr) deck(f.v); }); }
   // DER GEHALTENE HIMMEL HEBT DAS DACH (`himmelNeigung`): nach dem Ort der Himmel, den der Spieler hält — jeder Bau und jede Fassung
   if(DP.himmel!=null){ const hebe=b=>{ b.pitchDeg=himmelNeigung(b, b.pitchDeg, DP.himmel); }; alle.forEach((b,ai)=>{ hebe(b); for(const f of za[ai].fr) hebe(f.v); }); }
-  return {seed:DP.seed||1, name:ORTSNAME(region, DP.seed||1), region, groesse, kernel, jahr, spanne, staedtisch, houses, lose, nGestalt:alle.length-nBurg-(herr&&!muenze?1:0), grammatik, zugHandwerk, chronik:C,
+  return {seed:DP.seed||1, name:ORTSNAME(region, DP.seed||1, DP.mundart), mundart:DP.mundart||null, region, groesse, kernel, jahr, spanne, staedtisch, houses, lose, nGestalt:alle.length-nBurg-(herr&&!muenze?1:0), grammatik, zugHandwerk, chronik:C,
           schnitt:{jahr:j0, spanne:chronik?T-j0:spanne, groesse:gS, staedtisch:staedtischVon(gS)},
           kleidung:{top:tracht.top, bottom:tracht.bottom, shoes:tracht.shoes, farben:tracht.farben.slice()},
           technik:{stand:stand.slice(), fehlt:Object.keys(TS.fehlt), vorkommen:Object.assign({},TS.vorkommen), epoche:traegt(stand,EPOCHEN[eT].technik)?eT:null},   /*der Stand der Saat (TECHNIK; Leser: der Export, die Station, gate:settlement T)*/
@@ -13152,6 +13230,7 @@
             erbe: kw ? kw.erbe : dp.erbe && typeof dp.erbe === "object" ? dp.erbe : undefined, // die Kachel einer Stadt: Region, Jahr und Spanne ihrer Mitte (`viertelWort`)
             klima: dp.klima, // das Klima des Orts (REGION_KLIMA): der Wirt nennt es, ein Plan ohne Ort (das Labor) nicht
             himmel: dp.himmel, // der Regen des gehaltenen Himmels (`himmelNeigung`): der Wirt nennt ihn, solange ein Wort gilt
+            mundart: kw ? undefined : dp.mundart, // die Mundart des Orts (`mundartVon`): der Wirt nennt sie, die Kachel einer Stadt des Worts und das Labor nicht
         });
         // DIE MAUER STEHT IM JAHR DER WELT (mensch.macht.wehrbau#3, das EINE Urteil jeder Mauer des Exports: die Kachel, das Layout,
         // der Schnitt): die Entfestigung ist ein Gesetz der Welt-Zeit, nicht des Schnitts — steht das Jahr der Welt (`dp.jahr`,
@@ -13319,6 +13398,7 @@
             seed: plan.seed,
             name: plan.name,
             region: plan.region,
+            mundart: plan.mundart, // die Mundart des Orts (sprache#4, `mundartVon`; Leser: der Wirt, `_bewohnerLauf` Name und Rede)
             groesse: plan.schnitt.groesse,
             kernel: plan.kernel,
             jahr: plan.schnitt.jahr,
@@ -16333,6 +16413,9 @@
         SPRACH_BAUM: SPRACH_BAUM, // der Stammbaum je Familie (Tiefe, Grundwörter der Ursprache)
         LAUTWANDEL: LAUTWANDEL, // die Lautgesetze der Zweige (Campbell 2013; Leser: wandle)
         spracheVon: spracheVon,
+        mundartVon: mundartVon, // die Mundart eines Orts aus der Senke seines Tals (sprache#4; Leser: der Wirt _mundartAm, die Station)
+        mundartBlatt: mundartBlatt, // die Mundart eines Blatts des Stammbaums (Leser: gate:settlement R11, die Station sprache#3)
+        SPRACH_RAUM: SPRACH_RAUM, // σ und der Fächer der Mundarten (Burridge 2017)
         sprachName: sprachName,
         sprachWort: sprachWort, // das Wort einer Bedeutung (SPRACH_BAUM.bedeutungen) in der Sprache des Orts
         SATZ_GESETZ: SATZ_GESETZ, // die Folge der Glieder je Familie (WALS 81A/87A/143A) und die Rahmen der Verben der Grundliste

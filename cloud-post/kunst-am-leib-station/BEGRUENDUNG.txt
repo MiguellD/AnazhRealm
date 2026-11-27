@@ -13,7 +13,8 @@ k2-mensch-sport.diff
   auge-Texts (der nächste nahe Leib im Akt einer Kunst, 3 m vor ihm, Augenhöhe) und ruft K.auge; sonst K.leser mit der Messzeile.
 - sprossen[1]: `erwartet: "nicht"` und `fehlt` fallen; auge.pose und auge.vorbild (der Richter-Text) bleiben Wort für Wort.
 - headless geprüft: KUNST im Wirt (grundWirt, ein Rig aus dem Guss): handwerk Züge 23 ↔ 11 · CV 0,051 ↔ 0,149 · Teile 1 ↔ 2 · Hüfte
-  7,07 ↔ 14,35 mrad; kampf 18 ↔ 12 · 0,050 ↔ 0,153 · 1 ↔ 2 · 7,07 ↔ 14,35; brett wie handwerk. An main eef726c4 (vor dem Schnitt) misst
+  7,07 ↔ 14,35 mrad; kampf 18 ↔ 12 · 0,050 ↔ 0,153 · 1 ↔ 2 · 7,07 ↔ 14,35; brett (seit Kopf 3 ein eigener Leib, MOTION.brett) 12 ↔ 5 ·
+  0,049 ↔ 0,144 · 1 ↔ 2 — bis Kopf 2 trug es den Leib des Handwerks (pwalk 23 ↔ 11). An main eef726c4 (vor dem Schnitt) misst
   dieselbe Messung ROT: kampf 0 Züge, handwerk CV 0,261 ↔ 0,276, Teile 1 ↔ 1, Hüfte gleich.
 
 faecher.diff — Fach „Ist der Mensch in der Bildmitte ein Meister oder ein Anfänger seiner Kunst?“
@@ -22,6 +23,6 @@ faecher.diff — Fach „Ist der Mensch in der Bildmitte ein Meister oder ein An
   < 0,5 Anfänger; „haupt“ liest b.uebung.haupt), je 22 je Klasse im Wechsel (imWechsel) → 44 Posen ≥ MIN 40, nach Abstand.
 - Selbsttest: 15 GRÜN · 0 ROT (vorher 14 · 0); die neue Zeile prüft Klassen-Schwelle, je ≥ 20 und den Wechsel.
 
-Ehrlich offen: ein Standbild trägt Haltung (Steife: Kopf +0,16 rad, Ellbogen) und einen Augenblick des Zugs, nicht Takt und Nachsetzen —
+Ehrlich offen: ein Standbild trägt Haltung (seit Kopf 3 nach Takayasu 2019: der Lehrling Rumpf +10°, Arme 7° vom Leib, Ellbogen 10° gestreckter, Kopf +0,16 rad ANGENOMMEN; L7 im Standbild 20 von 20 Phasen je Kunst) und einen Augenblick des Zugs, nicht Takt und Nachsetzen —
 die Bewegung urteilt S1 an Zahlen; ob der Blindtest am Bild ≥ 80 % trägt, sagt erst das Blatt (GPU, nicht gefahren). Tanz hat keinen
 Akt in der Welt (kunst#3) — die Klasse Tanz fehlt im Fach, nicht still: LEIB_SATZ.kunst nennt keinen Tanz-Akt.
