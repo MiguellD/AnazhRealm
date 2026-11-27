@@ -156,7 +156,10 @@ function referenzFuerAkte(r) {
     const tor = (t) => (!t ? null : t.blind ? { blind: String(t.blind).slice(0, 120) } : { ruhig: t.ruhig, s: t.s, kerne: t.kerne, soll: t.soll, reihe: t.reihe });
     const zwei = (x) => (x ? { ein: x.ein, alle: x.alle, ...(x.tor ? { tor: tor(x.tor) } : {}) } : null);
     return { f: r.f, fEin: r.fEin, fAlle: r.fAlle, vor: zwei(r.vor), nach: zwei(r.nach), ruhe: r.ruhe ? { ein: r.ruhe.ein, alle: r.ruhe.alle, n: r.ruhe.n, von: r.ruhe.von } : null,
-        ...(r.anlauf ? { anlauf: { wo: r.anlauf.wo, ...tor(r.anlauf) } } : {}), umfeld: r.umfeld, rechner: r.rechner };
+        ...(r.anlauf ? { anlauf: { wo: r.anlauf.wo, ...tor(r.anlauf) } } : {}),
+        // DER LESEWERT „f nach Gründung“ (punkte.cjs referenzVorRuhig, 27.11.): die erste Fahrt vor dem Fenster, wie lange und wie oft „vor“ auf Ruhe wartete
+        ...(r.nachGruendung ? { nachGruendung: { f: r.nachGruendung.f, ein: r.nachGruendung.ein, alle: r.nachGruendung.alle, fahrten: r.nachGruendung.fahrten, s: r.nachGruendung.s, ruhig: r.nachGruendung.ruhig } } : {}),
+        umfeld: r.umfeld, rechner: r.rechner };
 }
 
 function akten(o) {
