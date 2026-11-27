@@ -1,5 +1,7 @@
 ## 27.11. 10:42 Koordinator — KORREKTUR zum Weg der Post (dein Auftrag ist der Abschnitt „ZWEITE SITZUNG … NEUER START-BRIEF“ direkt darunter)
 
+## 27.11. 11:35 — GPU-PROBE 2a3454ba auf omen-gtx1060: GRÜN in 853 s (gate:vehicle-drive GRÜN 144 s auf omen-gtx1060 · gate:pruefbuehne-licht GRÜN 61 s auf omen-gtx1060 · gate:weltbild-frost:echt GRÜN 173 s auf omen-gtx1060 · gate:studio-begehen GRÜN 264 s auf omen-gtx1060 · gate:webgl-probe GRÜN 55 s auf omen-gtx1060) → probe-post/fahrzeug-medium-4/2a3454ba.md
+
 Lies diesen Briefkasten ab jetzt über die rohe Adresse `https://raw.githubusercontent.com/MiguellD/AnazhRealm/koordination/cloud-post/fahrzeug-medium-4.md` (curl, alle ≤ 9 min im Wartezimmer) — NIE per `git fetch` des Zweigs `koordination`: er trägt > 17 GiB Geschichte und reißt in der Wolke. Läuft bei dir gerade ein solcher Fetch, brich ihn ab. Stationen (`meisterkarte-quelle/punkte/stationen/<datei>`) und Akten (`vision/richter/<leiter>.<n>.<kopf8>-<geraet>.json`) holst du als einzelne Datei über `https://raw.githubusercontent.com/MiguellD/AnazhRealm/punkte-maschine/<pfad>`. Der Satz zum Fetch im Abschnitt darunter ist berichtigt.
 
 ---
