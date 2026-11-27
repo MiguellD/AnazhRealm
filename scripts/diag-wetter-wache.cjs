@@ -8,7 +8,9 @@
 //   (H) HALT: unter der Bühne dreht kein Weg das Wetter (Emotion, Nexus, Gesetz, Mensch, Mitspieler, Zug), jeder steht beim
 //       Namen; (S) SCHARF: ein roher Schreiber am `_setWeather` vorbei fällt ROT;
 //   (Z) SAAT: frei zieht der Zug in 20 min Spiel-Zeit (Ereignis-Takte) je Saat und Ort dieselbe Folge, welche Wanduhr gilt;
-//   (F) FRONT im Zug: Regen an A bei trockenem B (3 km windab) ≥ 20 % der Zeit, Lag = Abstand ÷ Zug ±20 %, alle fünf Zeilen von
+//   (F) FRONT im Zug: Regen an A bei trockenem B (3 km windab) in mindestens einem Takt — die Kante zieht —, Lag = Abstand ÷ Zug
+//       ±20 % (die alten ≥ 20 % waren das Aliasing der drei Sinus-Wellen; Regen dekorreliert über 50–110 km (e-Länge an
+//       AWS-Netzen), Korrelation bei 0 km 0,92 (Peleg et al. 2013; Ciach & Krajewski 2006, 3 × 3 km): auf 3 km regnet es fast immer an beiden Orten oder an keinem), alle fünf Zeilen von
 //       WX_GESETZ erreichbar, der Sturm des Kerns (phyto-core wetterAt) zieht den Zug der Welt und das Wetterspiel des Labors;
 //   (G) GESETZ: eine frische Welt läuft `HIMMEL_MIN` Minuten getaktet — Nexus, Emotion und ein Wesen im Schöpfer-Modus gegen das
 //       Wort des Spielers, jeder Täter beim Namen (`himmelUrteil`); (B) BAND: frei schreibt nur der Zug, nie schneller als sein
@@ -697,6 +699,97 @@ function ortSelbsttest() {
     return { v, O, taeter: taeter.concat(kammTaeter) };
 }
 
+// ── (D) DURCHZUG (planet.wetter.lagen#2, rein, im Selbsttest am echten Kern): das Wetter am Ort ist ein Durchzug der Lage
+// (phyto-core `WETTER_LAGE`), nie drei Sinus-Wellen. Der Mess-Leib der Station (k2-planet FRONT_AN): je Saat `wetter-s<k>` (50)
+// die Zeilen am Ort (0, 0) in 400 Takten des Zugs, der erste Regenbeginn nach Takt 6 ist die Passage — sie STIMMT, wenn die
+// Decke steigt (der Takt davor bewoelkt, in den vier davor eine dünnere Decke), nach dem Regen ein Schauer folgt (≤ 5 Takte), der
+// Druck der Zeile (`wetterAt` … druck) über die 3 Takte vor dem Regen fällt und der Wind (`windRichtung`) über ±3 Takte ≥ 15°
+// rechts dreht (Bjerknes & Solberg 1922). Soll: 50 Passagen, an jeder ein Druck, ≥ 80 % stimmen, Drehung und Beginn streuen.
+// Am Kern von main 52937c92 (drei Sinus-Wellen, `windRichtung` blind für die Front): 0 % stimmen, Druck an 0 von 50, Drehung
+// ≥ 15° an 0 — ROT; an der Lage 94 %, Drehung 100 %, Druckfall 50 von 50. Der Selbsttest pflanzt die drei Täter je in EINE Zeile des Kerns. Leser: `durchzugRot`.
+const DURCHZUG = { saaten: 50, takte: 400, stimmt: 80, dreh: 15 };
+function durchzugMessung(P) {
+    const Z = 120;
+    const nass = (z) => z === "regen" || z === "sturm";
+    const grau = (z) => P.WX_GESETZ[z].grey;
+    const peil = (d) => {
+        const b = (Math.atan2(d.x, -d.z) * 180) / Math.PI;
+        return b < 0 ? b + 360 : b;
+    };
+    const D = { passagen: 0, stimmt: 0, abfolge: 0, drehung: 0, druck: 0, fall: 0, dreh: [], beginn: [] };
+    for (let k = 0; k < DURCHZUG.saaten; k++) {
+        const saat = "wetter-s" + k;
+        const W = Array.from({ length: DURCHZUG.takte }, (_, i) => P.wetterAt(saat, 0, 0, i * Z).zeile);
+        let on = -1;
+        for (let i = 6; i < DURCHZUG.takte - 10 && on < 0; i++) if (nass(W[i]) && !nass(W[i - 1])) on = i;
+        if (on < 0) continue;
+        D.passagen++;
+        const vor = W.slice(on - 5, on);
+        let e = on;
+        while (e < W.length && nass(W[e])) e++;
+        const schauer = W.slice(e, e + 5).some(nass);
+        const anstieg = grau(vor[4]) >= grau("bewoelkt") - 1e-9 && vor.slice(0, 4).some((z) => grau(z) < grau(vor[4]));
+        let d = peil(P.windRichtung(saat, (on + 3) * Z)) - peil(P.windRichtung(saat, (on - 3) * Z));
+        d -= 360 * Math.round(d / 360);
+        const [p0, p1] = [(on - 3) * Z, on * Z].map((t) => P.wetterAt(saat, 0, 0, t).druck);
+        const druck = Number.isFinite(p0) && Number.isFinite(p1);
+        D.dreh.push(d);
+        D.beginn.push(on);
+        if (anstieg && schauer) D.abfolge++;
+        if (d >= DURCHZUG.dreh) D.drehung++;
+        if (druck) D.druck++;
+        if (druck && p0 > p1) D.fall++;
+        if (anstieg && schauer && d >= DURCHZUG.dreh && druck && p0 > p1) D.stimmt++;
+    }
+    const streu = (x) => {
+        const m = x.reduce((s, v) => s + v, 0) / (x.length || 1);
+        return Math.sqrt(x.reduce((s, v) => s + (v - m) ** 2, 0) / (x.length || 1));
+    };
+    const pz = (n) => (D.passagen ? Math.round((1000 * n) / D.passagen) / 10 : 0);
+    return {
+        passagen: D.passagen,
+        stimmtProzent: pz(D.stimmt),
+        abfolgeProzent: pz(D.abfolge),
+        drehungProzent: pz(D.drehung),
+        druckFallProzent: pz(D.fall),
+        druck: D.druck,
+        streuDreh: Math.round(10 * streu(D.dreh)) / 10,
+        streuBeginn: Math.round(10 * streu(D.beginn)) / 10,
+    };
+}
+function durchzugRot(D) {
+    const rot = [];
+    if (!(D.passagen >= DURCHZUG.saaten))
+        rot.push(`(D) PASSAGEN: ${D.passagen} Frontpassagen aus ${DURCHZUG.saaten} Saaten — die Lage regnet nicht an jedem Ort`);
+    if (!(D.druck >= D.passagen && D.passagen > 0))
+        rot.push(`(D) DRUCK: ein Druck an ${D.druck} von ${D.passagen} Passagen — phyto-core wetterAt trägt kein Druckfeld der Lage`); // prettier-ignore
+    if (!(D.stimmtProzent >= DURCHZUG.stimmt))
+        rot.push(`(D) STIMMT: ${D.stimmtProzent} % der Passagen mit Aufzug, Schauer, Druckfall und Rechtsdrehung ≥ ${DURCHZUG.dreh}° gegen Soll ≥ ${DURCHZUG.stimmt} % (Abfolge ${D.abfolgeProzent} % · Drehung ${D.drehungProzent} % · Druckfall ${D.druckFallProzent} %) — das Wetter am Ort ist kein Durchzug (phyto-core wetterAt · windRichtung, WETTER_LAGE)`); // prettier-ignore
+    if (!(D.streuDreh > 0 && D.streuBeginn > 0))
+        rot.push(`(D) STREUUNG: Drehung ±${D.streuDreh}°, Beginn ±${D.streuBeginn} Takte — dieselbe Passage an jeder Saat`);
+    return rot;
+}
+const DURCHZUG_TAETER = [
+    ["STIMMT", "die drei Sinus-Wellen ohne Lage (main 52937c92)", /var f = pr\.g \+ \(pr\.a \* b\) \/ sw;/, "var f = 0.5 + (0.5 * b) / sw;"], // prettier-ignore
+    ["DRUCK", "die Zeile ohne Druck", /druck: lageDruck\(ze\), /, ""],
+    ["STIMMT", "die Richtung blind für die Lage", /w\.dreh \* Math\.sin\(w\.drehW \* tt \+ w\.drehPh\);/, "0;"],
+];
+function durchzugSelbsttest() {
+    const D = durchzugMessung(kernGepflanzt("phyto-core.js", "__phytoCore", null));
+    const v = durchzugRot(D).map((r) => `durchzug am Kern: ${r}`);
+    const A = (o) => durchzugRot(Object.assign({}, D, o)).length;
+    if ([{ passagen: 49 }, { druck: 0 }, { stimmtProzent: 79.9 }, { streuDreh: 0 }].some((o) => A(o) !== 1))
+        v.push("durchzug: ein eingeschmuggelter Täter (Passagen, Druck, Stimmt, Streuung) fällt nicht genau einmal rot");
+    const taeter = DURCHZUG_TAETER.map(([klinge, name, re, ersatz]) => {
+        const T = durchzugMessung(kernGepflanzt("phyto-core.js", "__phytoCore", [klinge, name, re, ersatz]));
+        const rot = durchzugRot(T);
+        const an = rot.some((r) => r.startsWith(`(D) ${klinge}:`));
+        if (!an) v.push(`durchzug: der Täter „${name}" fällt nicht an (D) ${klinge} rot: ${rot.join(" · ") || "grün"}`);
+        return `${name} → ${an ? `ROT an (D) ${klinge} (stimmt ${T.stimmtProzent} %, Druck an ${T.druck})` : "GRÜN"}`;
+    });
+    return { v, D, taeter };
+}
+
 // (L) LAND-MEER-LUFT (klima-kontinent, Karte 2 planet.kopplung.land-meer-luft): das Wetter am Ort liest das Klima des Planeten — der
 // Leser des Spiels (planet-core `planetOrt` → Δ wetter → phyto-core `wetterAt`, die Zeilen gezählt wie die Station) auf sechs Saaten
 // LML_SAATEN, Breitenkreise im 3°-Takt. KAMM: Kämme ≥ 1 500 m mit ≥ 800 m Abfall nach beiden Seiten — Median nass West ÷ Ost
@@ -1033,6 +1126,13 @@ if (SELBSTTEST) {
         `  (O) Ort am Kern · Weg ${O.weg.toExponential(1)} · Sprung ${O.sprung} · Paar ${O.paar.toExponential(1)} · Bereich ${O.bereich.min} … ${O.bereich.max} · Bilanz ${O.bilanz.min}/${O.bilanz.median}/${O.bilanz.max} (${(100 * O.imBand).toFixed(0)} % in ±10 %) · alle Paare ×${O.saeule} (der Dampf der Säule) · Paar an ${O.traegt} tragenden · Eingriff ±${O.hier} (${O.trocken} mit trockenem Lee) · Regen Luv ${O.relief.luv} · Ebene ${O.relief.flach} · Lee ${O.relief.lee} · im Eingriff ${O.reliefHier.luv} · ${O.reliefHier.flach} · ${O.reliefHier.lee}`
     );
     for (const t of ort.taeter) console.log(`      gepflanzt: ${t}`);
+    const dz = durchzugSelbsttest();
+    v.push(...dz.v);
+    const Dz = dz.D;
+    console.log(
+        `  (D) Durchzug am Kern · ${Dz.passagen} Passagen · stimmt ${Dz.stimmtProzent} % (Abfolge ${Dz.abfolgeProzent} · Drehung ${Dz.drehungProzent} · Druckfall ${Dz.druckFallProzent} %) · Druck an ${Dz.druck} · Drehung ±${Dz.streuDreh}° · Beginn ±${Dz.streuBeginn} Takte`
+    );
+    for (const t of dz.taeter) console.log(`      gepflanzt: ${t}`);
     const lml = lmlSelbsttest();
     v.push(...lml.v);
     const L = lml.L;
@@ -1090,7 +1190,7 @@ if (SELBSTTEST) {
         );
     if (
         F({}).length ||
-        [{ nassTrocken: 0.1 }, { lag: 600 }, { worte: [1, 2, 3] }, { welt: "sunny" }, { labor: "klar" }].some(
+        [{ nassTrocken: 0 }, { lag: 600 }, { worte: [1, 2, 3] }, { welt: "sunny" }, { labor: "klar" }].some(
             (o) => F(o).length !== 1
         )
     )
@@ -1288,7 +1388,7 @@ function saatRot(Z) {
 // (F) das Urteil der Front (rein)
 function frontRot(F) {
     return [
-        [F.nassTrocken >= 0.2, "FRONT: Regen an A bei trockenem B unter 20 % der Zeit"],
+        [F.nassTrocken > 0, "FRONT: in keinem Takt Regen an A bei trockenem B — die Kante zieht nicht windab"],
         [Math.abs(F.lag - F.soll) <= 0.2 * F.soll, "LAG: B wiederholt A nicht nach Abstand ÷ Zug ±20 %"],
         [F.worte.length === 5, "WORTE: nicht alle 5 Zeilen erreichbar"],
         [F.welt === "stormy" && F.labor === "sturm", "MUTATION: der Sturm des Kerns zieht Welt und Labor nicht beide"],

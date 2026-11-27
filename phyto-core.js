@@ -4920,9 +4920,9 @@
     // der Grundrichtung θ0, die Front-Linie quer gebogen), die mit dem Höhenwind `zugMS` windab ziehen: was an A regnet,
     // regnet am Ort d windab nach d / zugMS. Die Front-Stärke (0…1) wählt die Zeile der Tafel WX_GESETZ — sturm · regen ·
     // bewoelkt über den `stufen`, darunter nebel, wo die Feuchte (eine Welle von `feuchteM`) über `stufen.nebel` steht, sonst
-    // klar. Gerechnet über 300 Saaten × 400 Orte: klar 27 % · nebel 15 % · bewoelkt 21 % · regen 25 % · sturm 13 %; über
-    // 20 min an zwei Orten 3 km windab regnet es an A bei trockenem B in 23–40 % der Zeit (403 Saaten, kein Fenster unter
-    // 20 %). zugMS: der Zug der Fronten im Höhenwind (850 hPa, 30–50 km/h). `sturmMS` ist der Wind am Ort in m/s bei U = 1
+    // klar. Die Front-Stärke ist der Durchzug der Lage (`WETTER_LAGE`), die drei Wellen ihre Textur. Gerechnet über 300 Saaten
+    // × 40 Orte: klar 27 % · nebel 16 % · bewoelkt 19 % · regen 33 % · sturm 5 % (nass 37,8 % = die Quote der Heimat); an zwei
+    // Orten 3 km windab regnet es an A bei trockenem B in 8,6 % der Zeit (die Kante zieht 273 s; Regen dekorreliert über 50–110 km). zugMS: der Zug der Fronten im Höhenwind (850 hPa, 30–50 km/h). `sturmMS` ist der Wind am Ort in m/s bei U = 1
     // (der Wind-Kanal der Sturm-Zeile, Böe 1): Beaufort 9–10 (20,8–28,4 m/s). Leser: die Welt (`_windAt`, `_wetterAmOrt`,
     // der Wetter-Zug) und das Labor (worlds/terrain, das Wetterspiel).
     var WIND_FELD = Object.freeze({
@@ -4936,6 +4936,100 @@
             stufen: Object.freeze({ sturm: 0.79, regen: 0.6, bewoelkt: 0.43, nebel: 0.72 }),
         }),
     });
+    // DIE LAGE (planet.wetter.lagen#2): das Wetter am Ort ist ein DURCHZUG — die Zyklonen-Familie der Polarfront (Bjerknes &
+    // Solberg 1922) zieht mit `zugMS` längs der Grundrichtung, ein Zyklus dauert `zyklusS` (40 Takte des Zugs à 120 s = 1⅓ Spieltage;
+    // die Großwetterlage hält ≥ 3 Tage, am häufigsten 3: Hess & Brezowsky 1952, Gerstengarbe & Werner 2010, PIK-Report 119 — in der
+    // Raffung der Welt ein Durchzug je Lage). EINE Phase ζ ∈ [0, 1) des Durchzugs am Ort (in der Zeit-Folge am Ort) trägt alles:
+    //   die Front-Stärke g(ζ) ist die `folge` der Abschnitte [Beginn ζ, Stärke, Textur]: Hoch (Schönwetter-Cumulus) · Aufzug —
+    //     die Decke steigt aus dem Cirrus (klar) zum Altostratus (bewoelkt), Regen < 6 h nach dem Altostratus (PSU Meteo 3) · der
+    //     Landregen des Nimbostratus an der Warmfront (10 Takte) · Warmsektor (die Decke ohne Regen) · Kaltfront (sturm, dann
+    //     regen) · zwei Nebentröge (der Schauer der Rückseite) · die Rückseite klart auf → Hoch; die Kanten `kante` glatt.
+    //     Nass sind 15 von 40 Takten = 37,5 % — die Quote der Heimat (gelaende-core `NIEDERSCHLAG`: 547,5 / (547,5 + 900) =
+    //     37,8 %; `regenQuote` ist der Anteil der nassen Zeit, das Δ des Planeten verschiebt das Quantil dieser Verteilung);
+    //   der Druck p(ζ) = `druck.p0` − `druck.hub` · cos 2π(ζ − `druck.tief`) − `druck.trog` je Nebentrog (hPa): er fällt durch
+    //     Aufzug, Landregen und Warmsektor, das Tief liegt an der Kaltfront, dahinter steigt er, jeder Trog ist eine Senke (ein
+    //     Durchzug 15–30 hPa; vor jeder Front und jedem Trog fällt er — Bjerknes & Solberg);
+    //   die Drehung ψ(ζ) = `drehGrad` · sin 2π(ζ − `drehMitte`) um die Grundrichtung: der Wind krimpt (dreht links) im Hoch vor
+    //     der Warmfront und dreht RECHTS durch Warmfront, Kaltfront und Trog (Nordhalbkugel, Süd → Nordwest ≈ 135–160°; eine
+    //     Kaltfront dreht z. B. 225° → 290°) — die Richtung der Welt (`windRichtung`) liest ψ an ihrem Anker (0, 0): die Welt
+    //     trägt EINE Wind-Richtung (der Wind-Satz der Shader), die Lage ist größer als ihr Nahfeld (λ = zugMS · zyklusS = 52,8 km).
+    // Die drei Wellen der Front (`wellen`) sind die Textur IN der Lage (Regen-Bänder, Schauer-Zellen; Houze et al. 1976), mit dem
+    // Gewicht `textur` je Abschnitt (0 im Hoch: die Cumulus-Felder, 1 in der Front: stratiform glatt). Leser: `wetterAt`,
+    // `windRichtung`, `windWeg`, `frontVerteilung`; die Linse: gate:wetter-wache (D) DURCHZUG.
+    var WETTER_LAGE = Object.freeze({
+        zyklusS: 4800,
+        folge: Object.freeze([
+            Object.freeze([0, 0.3, 0]), // Hoch
+            Object.freeze([0.225, 0.52, 1]), // Aufzug: Altostratus
+            Object.freeze([0.3, 0.7, 1]), // Warmfront: Landregen
+            Object.freeze([0.55, 0.52, 1]), // Warmsektor
+            Object.freeze([0.575, 0.9, 1]), // Kaltfront: Sturm
+            Object.freeze([0.625, 0.7, 1]), // Kaltfront: Regen
+            Object.freeze([0.65, 0.52, 1]), // Rückseite
+            Object.freeze([0.675, 0.7, 1]), // Nebentrog
+            Object.freeze([0.7, 0.52, 1]), // Rückseite
+            Object.freeze([0.725, 0.7, 1]), // Nebentrog
+            Object.freeze([0.75, 0.4, 0]), // Rückseite: Cumulus, es klart auf
+            Object.freeze([0.8, 0.3, 0]), // Hoch
+        ]),
+        kante: 0.004,
+        textur: Object.freeze([0.18, 0.04]),
+        druck: Object.freeze({ p0: 1013, hub: 12, tief: 0.62, trog: 3, trogBreite: 0.03, trogVersatz: 0.0125 }),
+        drehGrad: 80,
+        drehMitte: 0.4875,
+        drehGlieder: 9,
+    });
+    function lageGlatt(a, b, v) {
+        if (v <= a) return 0;
+        if (v >= b) return 1;
+        var u = (v - a) / (b - a);
+        return u * u * (3 - 2 * u);
+    }
+    function lageBuckel(m, b, v) {
+        var d = Math.abs(v - m) / b;
+        return d >= 1 ? 0 : (1 - d * d) * (1 - d * d);
+    }
+    // die Front-Stärke der Lage g(ζ) und das Gewicht der Textur A(ζ) in `o`: der Abschnitt, in dem ζ liegt, an seinem Beginn
+    // glatt (±`kante`) aus dem vorigen (Leser: `wetterAt`, `frontVerteilung`)
+    function lageProfil(ze, o) {
+        var L = WETTER_LAGE,
+            F = L.folge,
+            n = F.length,
+            i = n - 1;
+        for (var j = 1; j < n; j++)
+            if (ze < F[j][0]) {
+                i = j - 1;
+                break;
+            }
+        var nach = i + 1 < n ? F[i + 1] : null,
+            vor = F[(i + n - 1) % n],
+            g = F[i][1],
+            a = L.textur[F[i][2]],
+            u;
+        if (ze < F[i][0] + L.kante && i > 0) {
+            u = lageGlatt(F[i][0] - L.kante, F[i][0] + L.kante, ze);
+            g = vor[1] + (g - vor[1]) * u;
+            a = L.textur[vor[2]] + (a - L.textur[vor[2]]) * u;
+        } else if (nach && ze > nach[0] - L.kante) {
+            u = lageGlatt(nach[0] - L.kante, nach[0] + L.kante, ze);
+            g += (nach[1] - g) * u;
+            a += (L.textur[nach[2]] - a) * u;
+        }
+        o.g = g;
+        o.a = a;
+        return o;
+    }
+    // der Druck der Lage an ihrer Phase (hPa): jeder Anstieg der `folge` hinter dem Tief ist ein Nebentrog, seine Senke liegt
+    // `trogVersatz` hinter seinem Beginn (Leser: `wetterAt`)
+    function lageDruck(ze) {
+        var D = WETTER_LAGE.druck,
+            F = WETTER_LAGE.folge,
+            p = D.p0 - D.hub * Math.cos(2 * Math.PI * (ze - D.tief));
+        for (var i = 0; i < F.length; i++)
+            if (i >= 1 && F[i][1] > F[i - 1][1] && F[i][0] > D.tief)
+                p -= D.trog * lageBuckel(F[i][0] + D.trogVersatz, D.trogBreite, ze);
+        return p;
+    }
     function saatFnv(s) {
         var h = 2166136261 >>> 0;
         for (var i = 0; i < s.length; i++) h = ((h ^ s.charCodeAt(i)) * 16777619) >>> 0;
@@ -4957,7 +5051,16 @@
             wellen: WIND_FELD.front.wellen.map(lcg),
             biege: lcg(),
             feuchte: lcg(),
+            lage: lcg(),
         };
+        // die Drehung der Lage an der Uhr: ψ(t) = drehGrad · sin(ω·t + phase), ζ am Anker (0, 0) wächst mit t ÷ zyklusS
+        // rechts dreht der Wind, wenn θ fällt (Spiel: x Ost, z Süd — von Süd nach Ost ist links herum): ψ trägt das Minus
+        w.dreh = (-WETTER_LAGE.drehGrad * Math.PI) / 180;
+        w.drehW = (2 * Math.PI) / WETTER_LAGE.zyklusS;
+        w.drehPh =
+            w.lage -
+            2 * Math.PI * WETTER_LAGE.drehMitte -
+            (2 * Math.PI * WIND_FELD.front.biegeM * Math.sin(w.biege)) / (WIND_FELD.front.zugMS * WETTER_LAGE.zyklusS);
         _windSaatMerk.saat = saat;
         _windSaatMerk.w = w;
         return w;
@@ -4965,7 +5068,11 @@
     function windRichtung(saat, t) {
         var w = windSaat(saat);
         var tt = Number.isFinite(t) ? t : 0;
-        var theta = w.t0 + 0.5 * Math.sin(tt * 0.009 + w.p1) + 0.22 * Math.sin(tt * 0.0257 + w.p2);
+        var theta =
+            w.t0 +
+            0.5 * Math.sin(tt * 0.009 + w.p1) +
+            0.22 * Math.sin(tt * 0.0257 + w.p2) +
+            w.dreh * Math.sin(w.drehW * tt + w.drehPh); // die Drehung der Lage (WETTER_LAGE) an ihrem Anker
         return { x: Math.sin(theta), z: Math.cos(theta) };
     }
     // Die Grundrichtung θ0 als Vektor: wohin die Fronten ziehen (das Zeit-Mittel des Mäanders)
@@ -4976,26 +5083,35 @@
     // DIE VERTEILUNG DES WETTERS AM ORT (Reise, rein additiv — ohne `ort` bewegt sich kein Wert): `ort` ist das Δ des Planeten
     // zum Anker (gelaende-core `ortGesetz(teil).wetter`: `regenQuote` der Anteil der nassen Zeit, `sturmQuote` der des Sturms).
     // Die Stufe am Ort ist die Stufe der Heimat plus der Weg des Quantils der Front: Q(1 − Anteil − Δ) − Q(1 − Anteil), der Anteil
-    // aus derselben Verteilung gelesen (die drei Wellen mit unabhängiger Phase, 48³ Punkte, einmal je Faden) — am Anker ist der
+    // aus derselben Verteilung gelesen (die Lage über 96 Phasen × die drei Wellen ihrer Textur, je 16 Phasen, einmal je Faden) — am Anker ist der
     // Weg Q(x) − Q(x) = 0. Gemerkt je Δ-Objekt. Leser: `wetterAt`.
     var _frontV = null;
     function frontVerteilung() {
         if (_frontV) return _frontV;
+        // die Verteilung der Front-Stärke der Lage: Phase ζ (NZ Schritte) × die drei Wellen der Textur (je N Phasen) — dieselbe
+        // Rechnung wie `wetterAt` (lageProfil + Textur)
         var W = WIND_FELD.front.wellen,
-            N = 48,
+            N = 16,
+            NZ = 96,
             sw = 0;
         for (var i = 0; i < W.length; i++) sw += W[i][1];
-        var v = new Float64Array(N * N * N),
+        var tex = new Float64Array(N * N * N),
             k = 0;
         for (var a = 0; a < N; a++)
             for (var b = 0; b < N; b++)
-                for (var c = 0; c < N; c++) {
-                    var f =
-                        W[0][1] * Math.sin((2 * Math.PI * (a + 0.5)) / N) +
-                        W[1][1] * Math.sin((2 * Math.PI * (b + 0.5)) / N) +
-                        W[2][1] * Math.sin((2 * Math.PI * (c + 0.5)) / N);
-                    v[k++] = 0.5 + (0.5 * f) / sw;
-                }
+                for (var c = 0; c < N; c++)
+                    tex[k++] =
+                        (W[0][1] * Math.sin((2 * Math.PI * (a + 0.5)) / N) +
+                            W[1][1] * Math.sin((2 * Math.PI * (b + 0.5)) / N) +
+                            W[2][1] * Math.sin((2 * Math.PI * (c + 0.5)) / N)) /
+                        sw;
+        var v = new Float64Array(NZ * tex.length),
+            pr = { g: 0, a: 0 };
+        k = 0;
+        for (var z = 0; z < NZ; z++) {
+            lageProfil((z + 0.5) / NZ, pr);
+            for (var j = 0; j < tex.length; j++) v[k++] = pr.g + pr.a * tex[j];
+        }
         v.sort();
         return (_frontV = v);
     }
@@ -5059,13 +5175,17 @@
             dz = Math.cos(w.t0);
         var q = x * dz - z * dx;
         var s = x * dx + z * dz - F.zugMS * t + F.biegeM * Math.sin((2 * Math.PI * q) / F.querM + w.biege);
-        var f = 0,
+        var b = 0,
             sw = 0;
         for (var i = 0; i < F.wellen.length; i++) {
-            f += F.wellen[i][1] * Math.sin((2 * Math.PI * s) / F.wellen[i][0] + w.wellen[i]);
+            b += F.wellen[i][1] * Math.sin((2 * Math.PI * s) / F.wellen[i][0] + w.wellen[i]);
             sw += F.wellen[i][1];
         }
-        f = 0.5 + (0.5 * f) / sw;
+        // die Lage am Ort (WETTER_LAGE): ihre Phase ζ längs des Zugs, die Front-Stärke g(ζ) und die Textur der drei Wellen darin
+        var ze = w.lage / (2 * Math.PI) - s / (F.zugMS * WETTER_LAGE.zyklusS);
+        ze -= Math.floor(ze);
+        var pr = lageProfil(ze, _lageAus);
+        var f = pr.g + (pr.a * b) / sw;
         var feuchte = 0.5 + 0.5 * Math.sin((2 * Math.PI * s) / F.feuchteM + w.feuchte);
         var st = F.stufen;
         var stSturm = st.sturm,
@@ -5082,8 +5202,9 @@
         else if (f >= stRegen) zeile = "regen";
         else if (f >= st.bewoelkt) zeile = "bewoelkt";
         else if (feuchte >= stNebel) zeile = "nebel";
-        return { zeile: zeile, front: f, feuchte: feuchte };
+        return { zeile: zeile, front: f, feuchte: feuchte, druck: lageDruck(ze), lage: ze };
     }
+    var _lageAus = { g: 0, a: 0 };
 
     // DAS WETTER-FELD AM ORT (wetter-am-ort, rein additiv — `wetterAt`, WIND_FELD und jede Zahl davor stehen byte-gleich). Das
     // Wetter ist kein Wort der Welt, es ist ein FELD: je Ort (x, z) zur Zeit t die fünf Kanäle {fog, sun, grey, wind, rain} der
@@ -5282,21 +5403,29 @@
         if (!(Number.isFinite(t0) && Number.isFinite(t1)))
             throw new Error("windWeg: die Uhr ist endlich (" + t0 + ", " + t1 + ")");
         var w = windSaat(saat),
-            Mq = WETTER_ORT.maeander;
+            Mq = WETTER_ORT.maeander,
+            K = WETTER_LAGE.drehGlieder;
         var re = 0,
-            im = 0;
+            im = 0,
+            jk = [];
+        for (var q = 1 - K; q < K; q++) jk.push(wxBessel(q, w.dreh));
+        // je Glied n · m · k: der Mäander (a, b) und die Drehung der Lage (w.dreh, w.drehW, w.drehPh), k < drehGlieder
+        // (J_9(80°) < 2e-7: der Rest liegt unter der Wache 1e-5)
         for (var n = 1 - Mq.n; n < Mq.n; n++) {
             var jn = wxBessel(n, Mq.a);
             for (var m = 1 - Mq.m; m < Mq.m; m++) {
-                var j = jn * wxBessel(m, Mq.b),
-                    om = n * Mq.w1 + m * Mq.w2,
-                    ph = n * w.p1 + m * w.p2;
-                if (om === 0) {
-                    re += j * Math.cos(ph) * (t1 - t0);
-                    im += j * Math.sin(ph) * (t1 - t0);
-                } else {
-                    re += (j * (Math.sin(om * t1 + ph) - Math.sin(om * t0 + ph))) / om;
-                    im -= (j * (Math.cos(om * t1 + ph) - Math.cos(om * t0 + ph))) / om;
+                var jm = jn * wxBessel(m, Mq.b);
+                for (var k = 1 - K; k < K; k++) {
+                    var j = jm * jk[k + K - 1],
+                        om = n * Mq.w1 + m * Mq.w2 + k * w.drehW,
+                        ph = n * w.p1 + m * w.p2 + k * w.drehPh;
+                    if (Math.abs(om) < 1e-12) {
+                        re += j * Math.cos(ph) * (t1 - t0);
+                        im += j * Math.sin(ph) * (t1 - t0);
+                    } else {
+                        re += (j * (Math.sin(om * t1 + ph) - Math.sin(om * t0 + ph))) / om;
+                        im -= (j * (Math.cos(om * t1 + ph) - Math.cos(om * t0 + ph))) / om;
+                    }
                 }
             }
         }
@@ -8244,6 +8373,7 @@
         windRichtung: windRichtung, // wetter.K5 — DIE EINE Wind-Richtung (Saat, Zeit)
         windGrund: windGrund, // wetter.K1 — die Grundrichtung, mit der die Fronten ziehen
         wetterAt: wetterAt, // wetter.K1 — DAS Wetter am Ort (Saat, Ort, Zeit) → Zeile von WX_GESETZ
+        WETTER_LAGE: WETTER_LAGE, // planet.wetter.lagen#2 — der Durchzug: Phase, Front-Stärke, Druck, Drehung
         WETTER_ORT: WETTER_ORT, // wetter-am-ort — das Maß des Felds am Ort (Kante, Eingriff, Lee, Relief, Profil, Mäander)
         wetterFeldAm: wetterFeldAm, // wetter-am-ort — DAS Feld am Ort {fog, sun, grey, wind, rain} mit Relief und Eingriff
         windWeg: windWeg, // wetter-am-ort — ∫ windRichtung dτ geschlossen (der Zug der Wolken-Schicht)
