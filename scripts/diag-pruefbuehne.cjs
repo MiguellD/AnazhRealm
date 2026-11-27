@@ -837,15 +837,22 @@ const S0_NAH_M = 4;
 // NACHT (der Boden lesbar ohne Feuer) liest weiter den nachbelichteten Schuss: zwei Fragen, zwei Schüsse. Hielt die Blende nicht,
 // ist die Probe blind (Befund).
 const S0_LUMA_2M = 0.15;
+// DIE EINE BLENDE JEDER DIFFERENZ (nacht-gasse-licht B): jede Größe netto — der Schuss mit minus der Schuss ohne — liest zwei
+// Schüsse bei DERSELBEN Blende, sonst zieht sie die Belichtung ab statt des Lichts. Der Ton las bis hier die nachbelichtete Nacht
+// (k ≈ 150 000 gegen das Feuer): eine hellere Laterne im Bild schloss die Blende des Feuers, und sein Ton fiel aus dem Band, ohne
+// dass das Feuer seine Farbe änderte. Jeder Leser netto ruft diese Wand; ein Partner anderer Blende ist ROT beim Namen.
+function s0Blende(mit, ohne, was) {
+    if (!ohne || ohne.fehler) return `S0 Bild: ${was} netto ist ungemessen — der Schuss ohne Pool bei gehaltener Blende fehlt`;
+    if (!(Math.abs(ohne.belichtung - mit.belichtung) <= 1e-3 * mit.belichtung))
+        return `S0 Bild: die Blende hielt nicht — ${was} netto liest den Schuss ohne Pool bei k ${ohne.belichtung}, den mit bei ${mit.belichtung} (\`_blendeBestellen\`)`;
+    return null;
+}
 function s0KreisNetto(mit, ohne) {
     if (!mit || mit.fehler) return { netto: null, befund: null };
-    if (!ohne || ohne.fehler || !(ohne.kreis >= 0))
+    const blende = s0Blende(mit, ohne, "der Kreis");
+    if (blende) return { netto: null, befund: blende };
+    if (!(ohne.kreis >= 0))
         return { netto: null, befund: "S0 Bild: der Kreis netto ist ungemessen — der Schuss ohne Pool bei gehaltener Blende fehlt" };
-    if (!(Math.abs(ohne.belichtung - mit.belichtung) <= 1e-3 * mit.belichtung))
-        return {
-            netto: null,
-            befund: `S0 Bild: die Blende hielt nicht — der Schuss ohne Pool steht bei k ${ohne.belichtung}, das Feuer bei ${mit.belichtung} (\`_blendeBestellen\`)`,
-        };
     const netto = +(mit.kreis - ohne.kreis).toFixed(4);
     return {
         netto,
@@ -863,12 +870,18 @@ function s0KreisNetto(mit, ohne) {
 // Auge des Tages zurück — der Boden MUSS an der Sättigung reißen, im Farbton nicht. Der Selbsttest (`farbe`) gibt dem Platz
 // des Feuers das Datum bis K11b: die
 // Glut-Palette des Stoffs (0xff7a35) mit der Nacht-Stärke 12 — der Ring MUSS den Farbton reißen. Die untere Kante ist das Licht
-// selbst: 1 800 K liegt in sRGB bei 29,6°, die Glut-Palette bei 20,5°; jeder Boden zieht den Ton zu seinem eigenen (Gras
-// hinauf).
+// selbst: die Flamme der Quelle (Wikipedia „Color temperature“, Tabelle: Streichholz 1 700 K, Kerze 1 850 K) liegt über
+// `lichtFarbe` in sRGB bei 27,9° und 30,3°, das Welt-Feuer (2 000 K) bei 30,0°, die Glut-Palette bei 20,5°.
+// DER TON DES LICHTS (nacht-gasse-licht B): jeder Boden zieht den Ton zu seinem eigenen — bis hier las der Leser Licht × Boden,
+// am braunen Grund der Bühne 27,3° bei 30,0° des Lichts. Er teilt jetzt das Licht des Feuers auf dem Boden je Kanal durch die
+// Albedo desselben Rings (die Lampe der Linse im Schuss `nacht`, `albedoRgb`): das Band liest, was seine Kante nennt — das Licht.
+// Das Auge der Nacht mischt jedes Pixel zum Grau (`NACHT_AUGE`, nicht je Kanal): durch es gelesen drehte das geteilte Licht auf
+// 326,6°, und der Boden selbst fiel vom Ton des Tages 35,6° auf 27,3° (HSV der sRGB-Werte bleibt beim Mischen zum Grau nicht
+// stehen). Der Farbton liest darum den Schuss ohne das Auge (`tag`, `nightFactor` 0), die Sättigung das Auge der Nacht.
 // DER TON NETTO (D3-2): seit die Nacht ihr eigenes Licht trägt (Sternen-Licht, der Boden ohne Feuer Luma 36), mischt der Ring
 // die Nacht mit — die Glut-Palette des Selbsttests stand gemischt bei 35° im Band (BLIND). Gemessen wird das Licht des Feuers:
-// derselbe Ring im Schuss mit Feuer minus im Schuss ohne (`nacht`, dieselbe Kamera, dieselben Pixel), je Kanal in der Ausgabe
-// (sRGB, ≥ 0).
+// derselbe Ring im Schuss mit Feuer minus im Schuss ohne Pool bei gehaltener Blende (`gehalten`, dieselbe Kamera, dieselben Pixel,
+// dieselbe Blende — `s0Blende`), je Kanal in der Ausgabe (sRGB, ≥ 0); die Mutanten `farbe` und `tag` stehen bei derselben Blende.
 const S0_TON = { hue: [28, 45], satMax: 0.75, palette: { hex: 0xff7a35 }, paletteUnter: 2 };
 // ZWEI GRÖSSEN, ZWEI LESER (D3-2 mit K66): der FARBTON ist das Licht des Feuers (netto, die Nacht abgezogen — die Farbtemperatur
 // des Gesetzes), die SÄTTIGUNG ist, was das Auge sieht (brutto, das Bild mit der Nacht — die Wand des Auges der Nacht). Netto
@@ -877,19 +890,36 @@ const S0_TON = { hue: [28, 45], satMax: 0.75, palette: { hex: 0xff7a35 }, palett
 // der Rest wieder in sRGB — unter der Tonkurve Khronos PBR Neutral (linear bis zur Schulter, der Schwarzpunkt fällt in der
 // Differenz) ist das das Licht des Feuers auf dem Boden (die Differenz der sRGB-Werte zöge die Nacht nichtlinear ab).
 const { srgbLin: s0Lin, linSrgb: s0Srgb, luma709 } = require("./lib/abnahme-urteil.cjs");
-function s0TonNetto(e, ohne) {
-    if (!e || !e.ton || !ohne || !ohne.ton) return null;
-    const [R, G, B] = e.ton.rgb.map((c, i) => s0Srgb(Math.max(0, s0Lin(c) - s0Lin(ohne.ton.rgb[i]))));
+function s0HueSat([R, G, B]) {
     const mx = Math.max(R, G, B);
     const dl = mx - Math.min(R, G, B);
     let hue = 0;
     if (dl > 0) hue = mx === R ? 60 * (((G - B) / dl + 6) % 6) : mx === G ? 60 * ((B - R) / dl + 2) : 60 * ((R - G) / dl + 4);
-    return { hue: +hue.toFixed(1), sat: +(mx > 0 ? dl / mx : 0).toFixed(3), rgb: [R, G, B].map((c) => Math.round(c * 255)) };
+    return { hue: +hue.toFixed(1), sat: +(mx > 0 ? dl / mx : 0).toFixed(3) };
 }
-// der Ton des Schusses `e` gegen den Schuss ohne Feuer `ohne`: Farbton netto, Sättigung brutto
-function s0Ton(e, ohne) {
-    const n = s0TonNetto(e, ohne);
-    return n && { hue: n.hue, sat: e.ton.sat, netto: n };
+// das Licht des Feuers auf dem Ring (linear, je Kanal ≥ 0), mit der Albedo des Rings `albedo` auch das Licht selbst: je Kanal
+// durch sie geteilt, auf den hellsten Kanal normiert und in sRGB — wie `lichtFarbe` des Gesetzes (oben: 2 000 K bei 30,0°)
+function s0TonNetto(e, ohne, albedo) {
+    if (!e || !e.ton || !ohne || !ohne.ton) return null;
+    const lin = e.ton.rgb.map((c, i) => Math.max(0, s0Lin(c) - s0Lin(ohne.ton.rgb[i])));
+    const boden = lin.map(s0Srgb);
+    const aus = { ...s0HueSat(boden), rgb: boden.map((c) => Math.round(c * 255)) };
+    if (!albedo) return aus;
+    const l = lin.map((v, c) => (albedo[c] > 0 ? v / albedo[c] : 0));
+    const m = Math.max(...l);
+    if (!(m > 0)) return Object.assign(aus, { licht: null });
+    return Object.assign(aus, { licht: s0HueSat(l.map((v) => s0Srgb(v / m))) });
+}
+// der Ton des Schusses `e` gegen den Schuss ohne Feuer `ohne` bei derselben Blende: der Farbton des LICHTS (netto, durch die
+// Albedo des Rings `albedo`), die Sättigung brutto; ohne Albedo ist er ungemessen
+function s0Ton(e, ohne, albedo) {
+    if (!e || e.fehler) return null;
+    const blende = s0Blende(e, ohne, "der Farbton");
+    if (blende) return { hue: null, sat: e.ton ? e.ton.sat : null, befund: blende };
+    if (!(albedo && albedo.every((a) => a > 0)))
+        return { hue: null, sat: e.ton ? e.ton.sat : null, befund: "S0 Bild: der Farbton des Lichts ist ungemessen — die Albedo des Rings fehlt (die Lampe der Linse im Schuss `nacht`)" };
+    const n = s0TonNetto(e, ohne, albedo);
+    return n && { hue: n.licht ? n.licht.hue : null, sat: e.ton.sat, boden: n.hue, netto: n };
 }
 const s0TonImBand = (t) => t?.hue >= S0_TON.hue[0] && t.hue <= S0_TON.hue[1];
 const s0TonPasst = (t) => s0TonImBand(t) && t.sat <= S0_TON.satMax;
@@ -1615,9 +1645,10 @@ async function lichtLauf() {
                 })
             );
         // die Schüsse: das Feuer um Mitternacht (sauber), die Nacht ohne das Feuer (`S0_NACHT`, unten), der Pool leer bei der
-        // GEHALTENEN Blende des sauberen Schusses (`gehalten`, der Kreis netto: oben `S0_LUMA_2M`) — und im Selbsttest das Feuer bis
-        // K11b, die Nacht unter der Kamera 2 Stufen tiefer und das Auge des Tages
-        const schuesse = ergebnis.sauber ? [] : [false, "nacht", "gehalten", ...(SELBSTTEST ? ["farbe", "kamera", "tag", "messer"] : [])];
+        // GEHALTENEN Blende des sauberen Schusses (`gehalten`, der Kreis netto: oben `S0_LUMA_2M`), das Feuer ohne das Auge der
+        // Nacht (`tag`, der Farbton des Lichts: oben `S0_TON`) — und im Selbsttest das Feuer bis K11b (ebenso ohne das Auge) und die
+        // Nacht unter der Kamera 2 Stufen tiefer
+        const schuesse = ergebnis.sauber ? [] : [false, "nacht", "gehalten", "tag", ...(SELBSTTEST ? ["farbe", "kamera", "messer"] : [])];
         for (const schein of schuesse) {
             ergebnis[schein || "sauber"] = await phase(schein ? "Schuss " + schein : "Schuss", () =>
                 page.evaluate(async (schein, nahM, palette, NACHT, kHalt) => {
@@ -1644,8 +1675,10 @@ async function lichtLauf() {
                     // Blende bei der Welt bestellt (`_blendeBestellen`, nie am Renderer) auf das k des sauberen Schusses — die Albedo-
                     // und L1-Lampen der Nacht fährt er nicht
                     const ohnePool = ohneFeuer || schein === "gehalten";
-                    if (schein === "gehalten") {
-                        if (!(kHalt > 0)) throw new Error("S0 Schuss gehalten: der saubere Schuss trägt keine Belichtung");
+                    // die Mutanten des Tons (`farbe`, `tag`) stehen bei derselben Blende wie ihr Partner `gehalten` (oben `s0Blende`)
+                    const halten = schein === "gehalten" || schein === "farbe" || schein === "tag";
+                    if (halten) {
+                        if (!(kHalt > 0)) throw new Error(`S0 Schuss ${schein}: der saubere Schuss trägt keine Belichtung`);
                         r._blendeBestellen({ k: kHalt });
                     }
                     if (ohnePool)
@@ -1673,7 +1706,7 @@ async function lichtLauf() {
                     // der Tag-Schein: das Auge des Tages — die Post-Kette ohne das Auge der Nacht (`nightFactor` 0, volle
                     // Sättigung wie bis K66), über jede Anwendung der Uhr hinweg
                     const tagUhr = r._applyDayNightToScene;
-                    if (schein === "tag")
+                    if (schein === "tag" || schein === "farbe")
                         r._applyDayNightToScene = function () {
                             tagUhr.call(this);
                             if (this.state.postProcessingUniforms) this.state.postProcessingUniforms.nightFactor.value = 0;
@@ -1867,9 +1900,9 @@ async function lichtLauf() {
                             delete r._leuchtQuellen;
                             if (r._leuchtPool) r._leuchtPool.t = -Infinity;
                         }
-                        if (schein === "gehalten") r._blendeBestellen(null);
+                        if (halten) r._blendeBestellen(null);
                         if (schein === "messer") delete r._poolAmBild;
-                        if (schein === "tag") {
+                        if (schein === "tag" || schein === "farbe") {
                             delete r._applyDayNightToScene;
                             r._applyDayNightToScene();
                         }
@@ -1959,6 +1992,16 @@ async function lichtLauf() {
                             return n ? sa / n : 0;
                         };
                         const [aRing, aStoff] = [alb(NACHT.ring), alb(NACHT.stoffM)];
+                        // DIE ALBEDO DES RINGS JE KANAL (nacht-gasse-licht B, der Ton des LICHTS): dieselben Pixel wie der Ton
+                        // (`NACHT.ring`, 1–3 m), linear — der Ton teilt das Licht des Feuers auf dem Boden durch sie (`s0TonNetto`)
+                        const aRgb = [0, 0, 0];
+                        let aN = 0;
+                        ringe(NACHT.ring, (i) => {
+                            if (!(hell[i + 3] > 0)) return;
+                            aN++;
+                            for (let c = 0; c < 3; c++) aRgb[c] += hell[i + c] - dunkel[i + c];
+                        });
+                        const albedoRgb = aN ? aRgb.map((v) => +(v / aN).toFixed(5)) : null;
                         const k = aRing > 0 ? aStoff / aRing : 0;
                         const je = [];
                         // DIE ABGESOFFENEN BEIM GRUND (25.11., Sonnenbahn: der Mond in 22° statt 74°): je Pixel unter Luma 4 sein Licht je
@@ -2073,7 +2116,7 @@ async function lichtLauf() {
                                   tag: albedoBild.l1.tag ? Object.assign(l1Von(albedoBild.l1.tag), { uhr: albedoBild.l1.tag.uhr, hoehe: albedoBild.l1.tag.hoehe, himmel: albedoBild.l1.tag.himmel, richt: albedoBild.l1.tag.richt }) : null,
                               }
                             : null;
-                        gesetz = { luma: q(0.5), q02: q(0.02), q05: q(0.05), q10: q(0.1), q90: q(0.9), aRing: +aRing.toFixed(4), aStoff: +aStoff.toFixed(4), k: +k.toFixed(3), punkte: je.length / 9, schwarz, schatten, imLicht, l1: L1 };
+                        gesetz = { luma: q(0.5), q02: q(0.02), q05: q(0.05), q10: q(0.1), q90: q(0.9), aRing: +aRing.toFixed(4), aStoff: +aStoff.toFixed(4), albedoRgb, k: +k.toFixed(3), punkte: je.length / 9, schwarz, schatten, imLicht, l1: L1 };
                     }
                     return {
                         gesetz,
@@ -2229,14 +2272,24 @@ async function lichtLauf() {
         console.log(
             `  S0 KREIS (der Feuerkreis aus 2 m netto: mit minus ohne Pool bei gehaltener Blende): brutto ${sauber.kreis} · ohne Pool ` +
                 `${gehalten && gehalten.kreis} bei k ${gehalten && gehalten.belichtung} (das Feuer ${sauber.belichtung}) · netto ${kreis.netto} ` +
-                `(Soll ≥ ${S0_LUMA_2M}) · AUSKUNFT der Farbton netto bei gehaltener Blende ${JSON.stringify(s0TonNetto(sauber, gehalten))}`
+                `(Soll ≥ ${S0_LUMA_2M})`
         );
     if (sauber && !sauber.fehler && kreis.befund) befunde.push(kreis.befund);
-    const ton = s0Ton(sauber, ergebnis.nacht);
-    if (sauber && !sauber.fehler) console.log(`  S0 TON (Farbton netto: mit minus ohne Feuer · Sättigung brutto): ${JSON.stringify(ton)}`);
-    if (sauber && !sauber.fehler && !s0TonPasst(ton))
+    const albedoRing = ergebnis.nacht?.gesetz?.albedoRgb;
+    // der FARBTON liest das Licht ohne das Auge der Nacht (der Schuss `tag`), die SÄTTIGUNG das Auge der Nacht (sauber, brutto)
+    const tonLicht = s0Ton(ergebnis.tag, gehalten, albedoRing) ?? {
+        hue: null,
+        befund: "S0 Bild: der Farbton des Lichts ist ungemessen — der Schuss ohne das Auge der Nacht (`tag`) fehlt",
+    };
+    const ton = { ...tonLicht, sat: sauber?.ton ? sauber.ton.sat : null };
+    if (sauber && !sauber.fehler)
+        console.log(
+            `  S0 TON (Farbton des Lichts: mit minus ohne Pool bei gehaltener Blende, ohne das Auge der Nacht, durch die Albedo des Rings ${JSON.stringify(albedoRing)} · Sättigung brutto im Auge der Nacht): ${JSON.stringify(ton)}`
+        );
+    if (sauber && !sauber.fehler && ton?.befund) befunde.push(ton.befund);
+    else if (sauber && !sauber.fehler && !s0TonPasst(ton))
         befunde.push(
-            `S0 Bild: das Licht des Feuers trägt den Boden 1–3 m im Farbton ${ton && ton.hue}° (netto, ohne die Nacht), das Auge sieht ihn ` +
+            `S0 Bild: das Licht des Feuers auf dem Boden 1–3 m trägt den Farbton ${ton && ton.hue}° (netto, ohne die Nacht, durch die Albedo des Rings; der Boden selbst ${ton && ton.boden}°), das Auge sieht ihn ` +
                 `bei Sättigung ${ton && ton.sat} (Soll ${S0_TON.hue[0]}–${S0_TON.hue[1]}°, Sättigung ≤ ${S0_TON.satMax}) — die Lichtfarbe des Feuers (linear ${JSON.stringify(sauber.lichtFarbe)}) ` +
                 (sauber.kelvin == null
                     ? "ist die Glut-Palette des Datums (fachwerk LICHT_GESETZ.feuer `farbe`), keine Farbtemperatur (`kelvin` fehlt)"
@@ -2295,22 +2348,29 @@ async function lichtLauf() {
         );
         const fb = ergebnis.farbe;
         // das Feuer bis K11b reißt am Farbton (netto), das Auge des Tages an der Sättigung (brutto) bei Farbton im Band
-        const fbTon = fb && !fb.fehler ? s0Ton(fb, ergebnis.nacht) : null;
+        const fbTon = fb && !fb.fehler ? s0Ton(fb, gehalten, albedoRing) : null;
         // DIE DIFFERENZ IM SELBEN LAUF (w28-glut-nacht): die Mutante gilt als gefangen, wenn ihr Farbton netto mindestens
         // `S0_TON.paletteUnter` Grad UNTER dem des Kopfs im selben Lauf liegt (Gerät und Lauf kürzen sich heraus). Bis hierher
         // musste sie aus dem Band 28–45° fallen — das fing sie nur, weil das Rosa des alten Auges der Nacht sie unter 28° zog:
         // die Linse lehnte am Fehler. Ohne das Rosa liest sie 29,1° (im Band), der Kopf 32,2°. Das Band bleibt dem Kopf.
-        const kopfTon = sauber && !sauber.fehler ? s0Ton(sauber, ergebnis.nacht) : null;
+        const kopfTon = sauber && !sauber.fehler ? s0Ton(ergebnis.tag, gehalten, albedoRing) : null;
         const fbUnter = fbTon && kopfTon ? +(kopfTon.hue - fbTon.hue).toFixed(1) : null;
         const farbGetroffen = fbUnter != null && fbUnter >= S0_TON.paletteUnter;
         console.log(
             `  SELBSTTEST S0 BILD (das Feuer bis K11b, Glut-Palette bei der Stärke des Welt-Feuers): ${farbGetroffen ? `getroffen — das Licht des Feuers fällt netto auf Farbton ${fbTon.hue}°, ${fbUnter}° unter dem Kopf (${kopfTon.hue}°, Soll ≥ ${S0_TON.paletteUnter}°): die Farbtemperatur trägt ihn` : `BLIND — ${fbUnter}° unter dem Kopf (Soll ≥ ${S0_TON.paletteUnter}°) ` + JSON.stringify({ kopf: kopfTon, mutante: fbTon })}`
         );
         const tg = ergebnis.tag;
-        const tgTon = tg && !tg.fehler ? s0Ton(tg, ergebnis.nacht) : null;
+        const tgTon = tg && !tg.fehler ? s0Ton(tg, gehalten, albedoRing) : null;
         const tagGetroffen = s0TonImBand(tgTon) && !(tgTon.sat <= S0_TON.satMax);
         console.log(
             `  SELBSTTEST S0 BILD (das Auge des Tages, wie bis K66): ${tagGetroffen ? `getroffen — der Boden 1–3 m reißt an der Sättigung ${tgTon.sat} (Soll ≤ ${S0_TON.satMax}) bei Farbton ${tgTon.hue}° netto im Band: das Auge der Nacht trägt ihn` : "BLIND " + JSON.stringify(tgTon)}`
+        );
+        // (nacht-gasse-licht B) der Partner bis hier: der Ton gegen die nachbelichtete Nacht — ein Schuss anderer Blende MUSS ROT
+        // beim Namen der Blende sein (`s0Blende`), nie ein Farbton
+        const alterTon = sauber && !sauber.fehler ? s0Ton(sauber, ergebnis.nacht, albedoRing) : null;
+        const blendeGetroffen = !!alterTon?.befund && /die Blende hielt nicht — der Farbton/.test(alterTon.befund);
+        console.log(
+            `  SELBSTTEST S0 TON (der Partner bei anderer Blende, die nachbelichtete Nacht): ${blendeGetroffen ? "getroffen — " + alterTon.befund.split(" (`")[0] : "BLIND " + JSON.stringify(alterTon)}`
         );
         // (c) eine Hilfs-Funktion liest eine Bindung des gezeichneten Programms
         const prog = (sauber && !sauber.fehler && sauber.boden?.[0]) || "";
@@ -2406,7 +2466,7 @@ async function lichtLauf() {
             `  SELBSTTEST S0 NACHT (die Kamera der Nacht 2 Stufen tiefer): ${kameraTreffer ? "getroffen — " + kameraTreffer.slice(0, 230) : "BLIND " + JSON.stringify(st && (st.grund || st.fehler))}`
         );
         pass =
-            pass && getroffen && farbGetroffen && tagGetroffen && bindGetroffen && k17Getroffen && zeitGetroffen && groesseGetroffen && nahGetroffen && liesGetroffen && wacheGetroffen;
+            pass && getroffen && farbGetroffen && tagGetroffen && blendeGetroffen && bindGetroffen && k17Getroffen && zeitGetroffen && groesseGetroffen && nahGetroffen && liesGetroffen && wacheGetroffen;
         const stoffTreffer = /`_mikroStoff`/.test(
             s0NachtUrteil({ grund: { luma: 24.6, schwarz: 0.1 }, gesetz: { luma: 24.6, aRing: 0.11, aStoff: 0.11, k: 1 } }, S0_NACHT.nacht)
         );

@@ -479,6 +479,7 @@ class AnazhRealm_kreatur_fauna {
                 lebt: new Set(),
                 liste: [],
                 lauf: null,
+                glied: new Float64Array(3 * F.leib.glieder.length), // die Glieder EINES Fischs je Takt (`fischLeib`)
             };
         const { x: px, z: pz } = pm.position;
         const Z = F.zelleM;
@@ -499,6 +500,8 @@ class AnazhRealm_kreatur_fauna {
         const lebt = fk.lebt;
         lebt.clear();
         const P = 6.283185307179586;
+        const glied = fk.glied;
+        const gm = FG.glieder;
         let n = 0;
         let neu = F.zelleJeTakt;
         const ix0 = Math.floor(px / Z);
@@ -547,13 +550,18 @@ class AnazhRealm_kreatur_fauna {
                     if (f.ziel && t > f.bis && Math.hypot(platz.x - px, platz.z - pz) >= F.flucht.wegM) f.ziel = null;
                     const ziel = f.ziel || platz;
                     const eilt = !!f.ziel && Math.hypot(ziel.x - f.x, ziel.z - f.z) > 0.5;
-                    const gier = FG.schritt(f, ziel, this._waterFlowAt(f.x, f.z), eilt, ph, t, h, F);
-                    const v = liste[n] || (liste[n] = {});
-                    v.x = f.x;
-                    v.y = f.y;
-                    v.z = f.z;
-                    v.gier = gier;
-                    n++;
+                    FG.schritt(f, ziel, this._waterFlowAt(f.x, f.z), eilt, ph, t, h, F);
+                    // DIE KÖRPERWELLE: der Leib als seine Glieder längs der Welle (`fischLeib`), je Glied eine Instanz
+                    const m = FG.leib(f, F, glied);
+                    for (let j = 0; j < m; j++) {
+                        const v = liste[n] || (liste[n] = {});
+                        v.x = glied[3 * j];
+                        v.y = f.y;
+                        v.z = glied[3 * j + 1];
+                        v.gier = glied[3 * j + 2];
+                        v.g = gm[j];
+                        n++;
+                    }
                 }
             }
         for (const k of fk.fische.keys()) if (!lebt.has(k)) fk.fische.delete(k);
@@ -651,6 +659,7 @@ class AnazhRealm_kreatur_fauna {
                         v.y = e.p[3 * i + 1] + o.dy;
                         v.z = e.p[3 * i + 2] + o.dz;
                         v.gier = o.gier;
+                        v.g = B.leib.groesse;
                         n++;
                     }
                 }
@@ -728,8 +737,9 @@ class AnazhRealm_kreatur_fauna {
         }
         return aus;
     }
-    // DER LEIB DER KLEINEN TIERE (Fisch, Bestäuber): je Tier EINE Instanz im Pool `feld` des Stands (`_kistenPool`: der Stoff der
-    // Bau-Pools, EIN Programm, EIN Befehl), ein Doppel-Keil der Ausdehnung L.groesse um seine Lage, gedreht um die Gier (Blick +z);
+    // DER LEIB DER KLEINEN TIERE (Fisch, Bestäuber): je Eintrag EINE Instanz im Pool `feld` des Stands (`_kistenPool`: der Stoff der
+    // Bau-Pools, EIN Programm, EIN Befehl), ein Doppel-Keil der Ausdehnung v.g um seine Lage, gedreht um die Gier (Blick +z) — der
+    // Bestäuber ein Eintrag (sein Leib), der Fisch je Glied seiner Körperwelle einer (`fischLeib`);
     // trägt das Bild mehr Tiere als der Pool Plätze, wächst er auf das Doppelte (der alte fällt über `_instanzAbschied`).
     _kleintierZeichnen(liste, L, feld, name) {
         const st = this.state;
@@ -749,9 +759,9 @@ class AnazhRealm_kreatur_fauna {
             P = st[feld] = { mesh, cap };
         }
         const A = P.mesh.instanceMatrix.array;
-        const [gx, gy, gz] = L.groesse;
         for (let i = 0; i < liste.length; i++) {
             const v = liste[i];
+            const [gx, gy, gz] = v.g;
             const c = Math.cos(v.gier);
             const s = Math.sin(v.gier);
             const k = 16 * i;
@@ -833,15 +843,29 @@ AnazhRealm._fischGesetz = function () {
         F &&
         F.flucht &&
         F.leib &&
-        ["vogelWurf", "fischStand", "fischSchritt", "fischFlucht"].every((f) => typeof k[f] === "function")
-    )
+        F.welle &&
+        Array.isArray(F.leib.glieder) &&
+        ["vogelWurf", "fischStand", "fischSchritt", "fischFlucht", "fischWelle", "fischLeib"].every(
+            (f) => typeof k[f] === "function"
+        )
+    ) {
+        // die Ausdehnung je Glied: Quer und Hoch nach seinem Maß im Leib, die Länge ueberlapp × L/n (die Keile greifen ineinander)
+        const [gx, gy, gz] = F.leib.groesse;
+        const n = F.leib.glieder.length;
+        const glieder = Object.freeze(
+            F.leib.glieder.map((p) => Object.freeze([gx * p, gy * p, (gz / n) * F.leib.ueberlapp]))
+        );
         return (AnazhRealm._fischGesetzMemo = Object.freeze({
             F,
             wurf: k.vogelWurf,
             stand: k.fischStand,
             schritt: k.fischSchritt,
             flucht: k.fischFlucht,
+            welle: k.fischWelle,
+            leib: k.fischLeib,
+            glieder,
         }));
+    }
     return AnazhRealm._kernPflichtBruch("tetrapoda:FISCH_GESETZ");
 };
 AnazhRealm._bestaeuberGesetz = function () {
