@@ -49,6 +49,32 @@ Seite der Fahrbahn → `wer`).
   xvfb, 900 s ohne Zeile, Exit 124) — die Radeon richtet. `zug.sh probe-tag` liegt in keinem Zweig: der Ruf ist von Hand gegen
   `spec/ci/ci-zeiten.json` gehalten (pruefbuehne-licht 43 s · weltbild-frost:echt 135 s · studio-begehen 185 s · bild:stadt-voll 447 s).
 
+## Die Kreatur-Linse in drei Teilen (Koordinator 16:54 und 17:44, headless, Selbsttest)
+
+- Täter 1 — die Reihe: die Dorf-Proben (bewohner, begegnung) liefen vor den Proben der Städte, ihr Start-Dorf blieb in der Welt
+  („seuche lief im Start-Dorf …"). Jetzt `werkort, mengebild, schreck, seuche, zielplan, bewohner, begegnung`.
+- Täter 2 — die Stadt des Messorts: stadt (`dorf 7 120`) und stadt-voll (`dorf 7 300`) tragen Same 7, 174 m auseinander; der
+  Kreis von 200 m in `stadtAm` nahm die Stadt des anderen (mengebild maß die kleine: 144 Bewohner, 24 im Bild). Jetzt die Stadt
+  näher am eigenen Anker als an jedem fremden; derselbe Anker (ort-zeichen = stadt-voll) ist dieselbe Stadt.
+- Täter 3 — zwei Städte in einer Welt: die kleine stünde im Grundriss der vollen (ihr Wege-Netz zerfiel in 30 Teile, die Seite
+  hing 900 s nativ). Jetzt fährt der Lauf in einer frischen Welt, wenn der Messort wechselt (`STADT_ORT`), und `stadtAm` ist ROT
+  beim Namen vor einer zweiten Stadt.
+- Täter 4 — seuche-ungelesen: ohne den Leser bleiben 3 von 221 im Satz krank (der gewöhnliche kranke Tag,
+  `LEBENSLAUF.krank.anteil`); der Täter heißt jetzt „krank im Satz unter den Kranken", nie „0".
+- Täter 5 — tagesbudget (Teil 2): am main 948f68ee allein ROT (je Art 12,25,2,0 — kein Wolf trinkt), grün nur hinter herde oder
+  lebensraum. Der Durst liest den Fluss-Rand in der Hydro-Kachel am Tier; fehlt sie, antwortet der Kern „kein Fluss", und der Tag
+  der Probe rechnet ohne Pause (keine Kachel kommt in ihm an). Die Wölfe ziehen 1,3–5,6 km vom Ufer. Jetzt steht jede Kachel über
+  dem Streifgebiet vor dem ersten Takt: allein wie hinter tiersatz Trünke 4,8,2,3,9,10,4,2,0,2,9,3, GRÜN, Selbsttest 4 von 4.
+- OFFEN in der Welt (nicht im Schnitt): `_kreaturDurstig` merkt die Pause der vergeblichen Suche auch dort, wo nur die Kachel fehlt
+  (jenseits der Reichweite der Kachel-Leser um den Spieler) — dieselbe Klasse wie `_bestandBereit`, Bahn der Tiere.
+- Teil 1/3 · 2/3 · 3/3 am Baum main 948f68ee + werk-am-ort-2: Lauf 4 fährt (Teil 3 war am Baum davor GRÜN, 46 Täter, 13 Proben).
+
+## Heap an der GTX 1060 (Koordinator 18:04)
+
+- 538,7 MB gehalten (Spitze 643,8) an seuche#2, 505,9 MB an kollektiv#2: die Station steht in der vollen Stadt (stadt-voll,
+  300 Häuser, 1 356 Bewohner mit Leib, Pose am Markt); der Ausbruch selbst rechnet 155 ms und hält nur seine Tafeln je Bewohner
+  (Tag, Symptom, Kurve: ≈ 1 356 × 3 Zahlen). In der Wolke nicht gemessen (kein Gerät) — die Zahl der Stadt ohne Ausbruch ist offen.
+
 ## OFFEN (mit Zahl)
 
 - bild#2 und bevoelkerung#2: Station nicht gefahren: GPU. Vorurteil am Gerät: bild ≈ 100 (Radeon vorher 87; bei Niesel 0,2 sagt der
@@ -64,6 +90,7 @@ Seite der Fahrbahn → `wer`).
   kein Leib im Boden; die Abnahme nennt bewohner 7,3 % (Soll ≥ 1,0 %).
 - Der Kopf fährt im Bündel 2 `buendel-abend` (Koordinator 15:39); kein neuer Vorprüf-Kopf vor der Landung. Offen: bild#2 und
   bevoelkerung#2 am Rumpf der Station (Gerät), der Stations-Kandidat seuche#2 (Vor-Richter GTX 1050/1060).
-- Wartezimmer: zuletzt gelesen 15:30 UTC — keine neue Post des Koordinators seit 15:39 (Bündel), main bed6256c.
+- Wartezimmer: Post bis 19:12 gelesen; Kopf 2 setzt der Koordinator (`werk-am-ort-2-kopf2`, main 948f68ee + 2f3f96c8), kein
+  eigener Vorprüf-Kopf vor dem Urteil seiner Batterie. Der Zweig trägt main 948f68ee vereint.
 
 Karte 2 gebucht 149 von 1 718. Status ZWISCHENSTAND.
