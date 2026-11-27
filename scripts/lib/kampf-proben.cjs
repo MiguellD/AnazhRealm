@@ -2337,7 +2337,26 @@ async function WELLE_L(ort) {
                 if (wolf) {
                     wolf.rotation.set(0, Math.PI, 0);
                     mitBiss.spieler = wolf;
-                    for (let k = 0; k < 1500 && bisse.jagd.length < 3; k++) tickT23();
+                    const spur = new Map();
+                    for (let k = 0; k < 1500 && bisse.jagd.length < 3; k++) {
+                        tickT23();
+                        const u = wolf.userData,
+                            sch = `${u._motionZustand || "–"}|${u._verhaltenAktion?.bissAkt ? "biss" : u._verhaltenAktion ? "akt" : "–"}|${u.state || u.mode || "–"}`;
+                        const e = spur.get(sch) || { n: 0, d: [] };
+                        e.n++;
+                        if (e.n % 100 === 1)
+                            e.d.push(
+                                +Math.hypot(wolf.position.x - pm.position.x, wolf.position.z - pm.position.z).toFixed(1)
+                            );
+                        spur.set(sch, e);
+                    }
+                    bisse.jagdSpur = Object.fromEntries(spur);
+                    bisse.jagdSpur.ort = [+P.x.toFixed(1), +P.z.toFixed(1)];
+                    {
+                        const wd = {};
+                        r._rauchWindAt(P.x, P.z, s._simZeit, A.SCENT.hoeheM, null, wd);
+                        bisse.jagdSpur.wind = [+wd.x.toFixed(2), +wd.z.toFixed(2), +wd.ms.toFixed(2)];
+                    }
                     mitBiss.spieler = null;
                     r.removeCreature(wolf);
                 }
