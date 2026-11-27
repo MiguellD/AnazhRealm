@@ -58,8 +58,32 @@ Zeuge 3 ohne Lesung · Richter ROT an drei Saaten („Blickziel verdeckt“ von 
 | frei im Bild von 51 Saaten | ROT 3 von 3 (GTX f07abc1a) | ungemessen — braucht die GTX (der Zeuge mit dem Kandidaten) |
 | Bilder-p95 GTX 1060 | 41,72 ms (ohne den Kopf 25,02) | ungemessen in der Wolke |
 
+## Kopf 2 (auf main b3740dd5) — die sechs roten Schritte von Kopf 1, je vorher → nachher (lokal, swiftshader, je mit Selbsttest)
+
+Die gemeinsame Wurzel: Kopf 2 stellt den Spieler an den Stand der Landmarke (34/−34 statt der Plan-Mitte 0/0). Jede Linse, deren Probe
+vom Start aus zählt, stand auf dem Glück des alten Orts — die Klasse fällt je Linse an ihrer Wahl, nie an einer gesenkten Schwelle.
+
+| Schritt (Kopf 1 rot) | vorher | nachher | Schnitt |
+|---|---|---|---|
+| Kreatur-Linse 1/3 `begegnung` | beruehrt [0,0,0,11] | [0,0,0,0], Teil 1 GRÜN | EIN Auge (der Leib, wo das Gesetz sah) |
+| koerper-stand K6 Rand-Streifen + Stufen-Naht | 6 von 792 · 29 von 40 458 | 0 · 0 | `_bodenSichtAt` (stamm/gelaende-boden.js): die Zelle gehört der Karte, die alle vier Ecken trägt |
+| Werfer-Wand W6 | 1 unbekannter Werfer (streuNah:geroell) | 0 | WIP 3 |
+| Werfer-Wand S10 (blind an 34/142) | Zellen falsch 0 bei Kapsel-Schnitt 19 | 1 (W9 an Sonne [0,5, π/2], 15 Zellen) | scripts/diag-schatten-werfer.cjs: ungestempelte Höhlen-Zellen zählen nicht, die Pose sucht den Schnitt |
+| kampf Q13 Staffel 1 | tod (Anker 1 076 m) | GRÜN 2 von 2 | WIP 2: der Anker der Wiederkehr |
+| kampf LF Posten 5 jagd | rot 2 von 3 Läufen | s. unten | der Wolf windab (offen bis zum Lauf) |
+| haus-welt 2/2 Selbsttest `promotion` | 4 Zellen unter den Häusern (Soll ≥ 5) | s. unten | scripts/diag-haus-welt.cjs: das ferne Dorf am dichtesten Kreis der Baum-Zellen |
+| Prägung kreatur:diet | 154 von 155 | 155 von 155 | scripts/diag-praegung-welt.cjs: je kreatur-Zeile die volle Kappe gewürfelt (Würfe diet 2, sonst 1) |
+
+Die Frist der 50 Saaten (GTX 1050: 43 von 50 in 544 s): die Erde-Decke fragt nur das OB (`nurOb`), Wand-Zeit je Saat 6,68 → 5,97 s,
+Faden der Ankunft an der teuersten Saat 5 305 → 2 752 ms; die Saaten fahren gestaffelt in zwei Teilen je mit voller Frist
+(`cloud-post/landmarken-9-station/BEGRUENDUNG.txt` Punkte 6–7).
+
 ## Ehrlich offen (mit Datei und Zeile)
 
+- koerper-stand K7 Aufbau (406 Büschel / 33 Pflanzen, Soll ≥ 1 000 / 500) und die blinden Selbsttests wiese/ring: am main b3740dd5
+  lokal gleich rot (415 / 33) — die Werkbank in der Wolke, geerbt, nicht Kopf 2.
+- Der Riss 0,54 m zwischen L1 und L0 an 216/44,1 (`_bodenSichtAt`, stamm/gelaende-boden.js): der Leser steht jetzt auf der Karte, die
+  alle Ecken trägt; die Netze selbst klaffen dort weiter.
 - Die Gesamt-Arbeit im Faden: p95 4 061 ms Wald-Faden je Ankunft (die Spirale × Wald, phyto-core `landmarkeAnkunft`:4517, voxel-worker
   `ankunftRechnen`:1682); die 7 Saaten ohne Marke kosten zusammen ~30,7 s Faden-Zeit, ehe „keine“ steht.
 - Die Aufzählung der Marken im Haupt-Faden ~45 ms je Ankunft (`_landmarkenDesChunks` stamm/vegetation-baum.js:2642, je Zelle
