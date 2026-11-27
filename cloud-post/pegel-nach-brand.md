@@ -165,3 +165,10 @@ Karte 2 gebucht 155 von 1 718 · Status ZWISCHENSTAND.
 - Ehrlich: der S3-Kandidat liest damit ×1,197 (< 1,3).
 
 Karte 2 gebucht 156 von 1 718 · Status ZWISCHENSTAND.
+
+## 27.11. 22:10 — Lebenszeichen: Kopf-4-Baum, Batterie GRÜN bis auf `gate:wasser-leben` (P4) — der Täter beim Namen, geschnitten
+- Am Kopf-4-Baum (bfi 0,7) GRÜN: Playtest „✅ Alle Invarianten OK“ (V9.43-d), WERK-IM-WASSER (Furt F), `gate:kamera-laub` (K7), stand-takt ×3, worker-dichte ×5, wetter-wache, welt-boot, statik, format, lint, daten-contract. Breitester Fluss trocken 0,71 m (main 0,80, Kopf 3 0,43), Mess-Bach 0,558 m.
+- `gate:wasser-leben` ROT (3): „P4 REGEN: {"hub":0.01,"post":1,"koerper":0.01,"fest":0}“ und zweimal K10 LEER. **Täter P4:** `gelaende-core.js` `cnStempel` zählte die Strecke der Kurvenzahl nur bis zum letzten Knoten — ein gehaltenes Wort (der Sturm der Linse: 240 Takte ohne Knoten) hielt P = 0, kein Abfluss. **Schnitt** in `laufFalte`: der Weg bekommt einen Knoten auf jetzt mit dem Regen des letzten; trocken ist das Stück null. Gemessen: nach 20 min Sturm F der schnellen Klasse 0 → 0,31, q 0 → 4,6·10⁻³ m/Tag (über der Krone).
+- K10 LEER (die Höhlen-Probe fand 8 statt ≥ 20 Proben, Spieler/Kamera/Tier 0) — läuft in der Batterie gegen main gemessen.
+
+Karte 2 gebucht 156 von 1 718 · Status ZWISCHENSTAND.

@@ -2219,8 +2219,12 @@
             grund = (Z && ab <= z0 ? Z.grund : 1) * Math.exp(-(t - ab) / kb) + I / mittel;
         }
         const E = LAUF.zustand;
-        // der schnelle Abfluss faltet den abfließenden Regen (die Knoten der Kurvenzahl), der Grund oben den Regen selbst
-        const W = cnStempel(stempel, tagS, cn);
+        // der schnelle Abfluss faltet den abfließenden Regen (die Knoten der Kurvenzahl), der Grund oben den Regen selbst. Das
+        // gehaltene Wort regnet über den letzten Knoten hinaus bis jetzt: die Strecke der Kurvenzahl zählt es (ein Knoten auf
+        // jetzt mit dem Regen des letzten) — ohne ihn blieb P am letzten Knoten stehen, und ein gehaltener Sturm floss nie ab
+        // (gate:wasser-leben P4: 20 min Sturm, Hub 0,01 m); trocken ist das Stück null, der Lauf byte-gleich
+        const tn = stempel[2 * (n - 1)];
+        const W = cnStempel(jetzt > tn ? [...stempel, jetzt, R0(n - 1)] : stempel, tagS, cn);
         const nW = W.length >> 1;
         const TW = (i) => W[2 * i] / tagS;
         const RW = (i) => W[2 * i + 1];
