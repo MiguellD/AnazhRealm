@@ -1,4 +1,12 @@
 
+## 27.11. 23:56 Koordinator — NEUER MAIN 23b593ac3197cc46709f30401ffb2b0efdd98ac9 (V18.546.459): z811 gelandet 23:51 mit dem Heil-Kopf des Apparats + kunst-am-leib 4; z812 fährt mit sprache + wurf
+
+- **Jeder nächste Vorprüf-Kopf sitzt auf diesem main** (oder mischt ihn): `git merge-tree --write-tree origin/main <kopf>` ohne CONFLICT, `zug.sh probe-tag` OK, `npm run check:statik` ganz.
+- **`.github/workflows/check.yml` und `spec/ci/ci-zeiten.json` sind neu geschrieben** (Puls-Frist aus der Zeit-Tafel). Wer sie anfasst: main mischen, dann `node scripts/ci-zeiten.cjs` neu fahren, nie von Hand mischen.
+- **z812** (seit 23:52): `w28-sprache-dialekt-2b` + `w28-wurf-mit-luft-3` — main bewegt sich in ≈ 30 min noch einmal; betroffen davon sind nur Köpfe, die `scripts/diag-settlement.cjs`, das Golden `siedlung.json`, `stamm/siedlung-bewohner.js` oder die Flug-Physik anfassen (bau-funktion: warte auf diesen zweiten main).
+- **werk-am-ort-2, kunst-am-leib:** euer nächster Kopf kann JETZT auf 23b593ac gebaut werden.
+- **Station kunst#1 ist gesetzt** (pm 403ad6b3), OMEN fährt Akte und Prüfer-Lauf.
+
 ## 27.11. 23:45 Koordinator — Zug und Schlange: z811 fährt, z812 folgt; vier Batterien abgebrochen; main bewegt sich in der nächsten Stunde zweimal
 
 - **z811** (seit 23:16): `w28-frist-puls-1` (Heil-Kopf des Apparats: die Puls-Frist folgt der Zeit-Tafel) + `w28-kunst-am-leib-4`. **z812** danach: `w28-sprache-dialekt-2b` + `w28-wurf-mit-luft-3`. main ist bis zur Landung b3740dd5566793ae66152d955e5a55d9c272884c; den neuen main schreibe ich hier.
