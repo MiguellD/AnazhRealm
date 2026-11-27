@@ -247,3 +247,17 @@ mit GPU, sein Wegweiser steht in `cloud-post/landmarken-geologie-8-station/zeuge
    setzt der Schöpfer) · S2 `karte2.erleben.spieler.wegfindung#2`.
 9. Die Ankunft wählt die tragende Marke nach dem Winkel Höhe/Weg, nie nach ihrem Kontrast: mit frischem Himmel 6 von 50 Saaten unter
    0,1 (Wolke, WebGL2; Anteil 0,882) · S1 `anteil_landmarke` · stamm/gelaende-chunks.js `_ankunft`.
+
+## Stand 27.11. 06:36 UTC (Wartezimmer 4 h, letzte Post 04:40)
+
+- **Geschnitten:** Kopf 5 b32c6773 — EIN Licht-Gesetz `flaechenLicht` mit zwei Lesern, `_landmarkeKontrast` im Spiel, S1 zuerst mit
+  Puls · Wegweiser des Zeugen `cloud-post/landmarken-geologie-8-station/zeuge.txt` · WIP 63d6e65e (Zweig `landmarken-geologie-8-wip`):
+  der Leser des Ziel-Gangs (`_zielGangBeginn` · `_zielGangSchritt` im Sim-Schritt, `_landmarkeFuss`), S1 wartet auf `_himmelFrisch`.
+- **Gemessen:** Radeon an b32c6773 Ankunft 50/50, Kontrast Median 0,461, Leiter 74,3 → 45 s (0,75 min), p95 25,16 ms · Wolke WebGL2:
+  Ziel-Gang an der Wiese 2 von 2, Umweg 1,0000 · S1 mit frischem Himmel gelesen 12 → 50 von 50, Anteil 0,882.
+- **Offen:** der Zeuge mit Bild (Bild + Maske, Macher mit GPU; S1 LESER) · die Ankunft wählt nach Winkel, nie nach Kontrast (6 von 50
+  unter 0,1; `anteil_landmarke`, stamm/gelaende-chunks.js `_ankunft`) · der Testspieler von #2 ist ein Peil-Gänger (Panel R11; S2) ·
+  Offen 3–7 oben.
+- **Kopf:** landmarken-geologie-8 c89df8ee (Vorprüfung 5 b32c6773) · WIP 63d6e65e
+- **Beanspruchte Sprossen:** `karte2.erleben.spieler.wegfindung#1` · im WIP `karte2.erleben.spieler.wegfindung#2`
+- **Karte 2 gebucht:** 137 von 1 718 · **Status:** ZWISCHENSTAND
