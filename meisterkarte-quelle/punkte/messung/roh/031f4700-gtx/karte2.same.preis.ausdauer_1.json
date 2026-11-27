@@ -1,0 +1,35 @@
+{
+ "art": "dauer",
+ "sekunden": 41.1,
+ "uhrS": 87,
+ "schritte": [
+  [
+   "ende",
+   "Fehler"
+  ]
+ ],
+ "offen": [],
+ "fehler": {
+  "dauer-ende": "/puffer: DIE PUFFER-LESUNG (draw-zaehler Auftrags-Puffer): Ax liegt nicht auf der GPU"
+ },
+ "strom": {
+  "bloecke": 183,
+  "bilder": 1070,
+  "seiten": 1,
+  "fehler": 0,
+  "verloren": 0
+ },
+ "dauer": {
+  "anfang": true,
+  "ende": false,
+  "torbau": {
+   "bau": true,
+   "tor": true,
+   "heim": true
+  },
+  "nacht": {
+   "nacht": 8.332083333332935e-15,
+   "mittag": 0.500000000000008
+  }
+ }
+}
