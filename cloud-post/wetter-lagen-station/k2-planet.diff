@@ -1,6 +1,92 @@
---- a/meisterkarte-quelle/punkte/stationen/k2-planet.js	2026-11-27 20:41:37.262348495 +0000
-+++ b/meisterkarte-quelle/punkte/stationen/k2-planet.js	2026-11-27 21:37:43.755302175 +0000
-@@ -5993,6 +5993,25 @@
+--- a/meisterkarte-quelle/punkte/stationen/k2-planet.js
++++ b/meisterkarte-quelle/punkte/stationen/k2-planet.js
+@@ -766,8 +766,13 @@
+             };
+             // ── B (S1): die Gebirgsfläche > 2 km als Komponenten, verfolgt über den Faden — von jedem Stichpunkt > 2 km (der höchste zuerst)
+             // wächst eine Flut auf einem Gitter der Kante B.kante (gnomonisch um den Startpunkt: Großkreise sind Geraden) durch jede
+-            // Zelle > 2 km, bis die Komponente geschlossen ist (kein Fenster, das einen Gürtel abschneidet); ihre Achsen aus den Momenten
+-            // (+ Kante²/12), Komponenten < B.minZellen fallen wie in der Linse (diag-planet: < 5·10⁴ km²) aus der Fläche
++            // Zelle > 2 km, bis die Komponente geschlossen ist (kein Fenster, das einen Gürtel abschneidet); Komponenten < B.minZellen
++            // fallen wie in der Linse (diag-planet: < 5·10⁴ km²) aus der Fläche.
++            // DIE ACHSE IST GEODÄTISCH (D²/A): D = der längste kürzeste Weg IN der Komponente (8er-Nachbarn, Schritt Kante bzw. √2·Kante,
++            // zwei Sweeps), A = ihre Fläche — ein Rechteck L × B trägt L/B, eine Scheibe 1,27, ein gebogener oder verzweigter Gürtel
++            // bleibt lang. Vorher stand die Achse aus den Momenten: sie macht jeden Bogen rund, und die ERDE fiel durch dasselbe Maß
++            // (ETOPO1 0,5°, NOAA NGDC, Eisschilde ausgenommen, diese Flut nachgebaut: kovariant 2,1 % in Gürteln, achseP30 2,50;
++            // geodätisch 95,5 %, P30 6,11 — Anden 14,3:1 auf 4 069 km, Himalaya–Tibet 6,2:1 auf 4 878 km). Die Momente bleiben Zeuge.
+             const B = U[1];
+             const rad = Math.PI / 180;
+             const rahmen = (p) => {
+@@ -825,7 +830,28 @@
+                 }
+                 const t = (sxx + syy) / 2, d = Math.sqrt(((sxx - syy) / 2) * ((sxx - syy) / 2) + sxy * sxy);
+                 if (K.voll) gedeckelt++;
+-                formen.push({ s: Z.s, n, achse: Math.sqrt((t + d) / Math.max(1e-9, t - d)), laengeKm: Math.sqrt(12 * (t + d)) });
++                const zelle = new Map(K.berg.map((b, q) => [b[0] + "," + b[1], q]));
++                const sweep = (s0) => {
++                    const dd = new Float64Array(n).fill(Infinity), Q = [s0];
++                    dd[s0] = 0;
++                    let fern = s0;
++                    for (let h = 0; h < Q.length; h++) {
++                        const u = Q[h], [i, j] = K.berg[u];
++                        if (dd[u] > dd[fern]) fern = u;
++                        for (let di = -1; di <= 1; di++)
++                            for (let dj = -1; dj <= 1; dj++) {
++                                const v = di || dj ? zelle.get(i + di + "," + (j + dj)) : undefined;
++                                const nd = v === undefined ? Infinity : dd[u] + (di && dj ? Math.SQRT2 : 1);
++                                if (nd < dd[v]) {
++                                    dd[v] = nd;
++                                    Q.push(v);
++                                }
++                            }
++                    }
++                    return [fern, dd[fern]];
++                };
++                const D = (sweep(sweep(0)[0])[1] + 1) * B.kante, A = n * B.kante * B.kante;
++                formen.push({ s: Z.s, n, achse: (D * D) / A, achseKov: Math.sqrt((t + d) / Math.max(1e-9, t - d)), laengeKm: D, breiteKm: A / D });
+             };
+             for (const Z of zust) Z.komp = naechste(Z);
+             while (M.uhr() < B.bis) {
+@@ -859,8 +885,8 @@
+             }
+             for (const Z of zust) if (Z.komp) abgebrochen++;
+             const flaeche = formen.reduce((u, f) => u + f.n, 0);
+-            const gewichtet = [];
+-            for (const f of formen) for (let q = 0; q < f.n; q++) gewichtet.push(f.achse);
++            const gewichtet = [], kov = [], breite = [];
++            for (const f of formen) for (let q = 0; q < f.n; q++) (gewichtet.push(f.achse), kov.push(f.achseKov), breite.push(f.breiteKm));
+             gewichtet.sort((x, y) => x - y);
+             const jeSaat = zust.map((Z) => {
+                 const F = formen.filter((f) => f.s === Z.s), g = F.reduce((u, f) => u + f.n, 0);
+@@ -882,6 +908,10 @@
+                     jeSaatMedianProzent: r3(100 * med(jeSaat)),
+                     laengsteKm: r3(formen.reduce((u, f) => Math.max(u, f.laengeKm), 0)),
+                     achseMedian: r3(quant(gewichtet, 0.5)),
++                    achseKovP30: r3(quant(kov, 0.3)),
++                    guertelKovProzent: r3(flaeche ? (100 * formen.filter((f) => f.achseKov >= 4).reduce((u, f) => u + f.n, 0)) / flaeche : NaN),
++                    breiteKmP50: r3(quant(breite, 0.5)),
++                    breiteKmP80: r3(quant(breite, 0.8)),
+                 },
+             };
+             // ── C (S5): die Küste zur Zeit −1 Ma an den Küsten-Lagen der Stichprobe: |Δ Küstenabstand| je Ma = der Versatz der Küste (km/Ma = mm/a)
+@@ -1043,7 +1073,7 @@
+         },
+         sprossen: {
+             1: {
+-                u: { saaten: 30, kante: 80, rand: 50, deckel: 350, jeSaat: 450, minZellen: 8, bis: 24, augeBis: 58 },
++                u: { saaten: 30, kante: 80, rand: 50, deckel: 1000, jeSaat: 1500, minZellen: 8, bis: 24, augeBis: 58 },
+                 soll: [
+                     K.soll(PL, 1, "30 Saaten", { key: "saaten", rel: "≥" }),
+                     K.soll(PL, 1, "Gebirgsfläche > 2 km liegt in Gürteln mit Achsen ≥ 4:1", { key: "achseP30" }),
+@@ -1052,7 +1082,7 @@
+                 zeuge: zMin({ antworten: 3000, bergZellen: 30, komponenten: 5 }),
+                 auge: { pose: "Überflug 1 800 m über dem Spawn, Blick nach Norden (die Schummerung der Region)", vorbild: "Schummerung einer realen Gebirgsregion 10⁴ km² (Copernicus DEM), Blindpaar R11" },
+                 taeter: "planet-core.js planetPunktR (Orogen-Schablone der Ränder) über den Faden voxel-worker.js planetOrtAuftrag",
+-                unklar: "„in ≥ 70 %“ gelesen wie die Linse diag-planet (guertel.lang): der Anteil der Gebirgsfläche > 2 km, der in Komponenten mit Achsen ≥ 4:1 liegt (Gitter 80 km, Komponenten ≥ 8 Zellen), über die Saaten gepoolt; eine Hochfläche über 350 Zellen (≈ 2,2 Mio km²) geht mit ihrer verfolgten Teilform ein (Zeuge gedeckelt)",
++                unklar: "„in ≥ 70 %“ gelesen wie die Linse diag-planet (guertel.lang): der Anteil der Gebirgsfläche > 2 km, der in Komponenten mit Achsen ≥ 4:1 liegt (Gitter 80 km, Komponenten ≥ 8 Zellen), über die Saaten gepoolt; die Achse geodätisch D²/A (die Erde durch diese Flut: 95,5 %, P30 6,11 — die Momente ließen sie mit 2,1 % fallen, Zeuge achseKovP30); eine Komponente über 1 000 gefragte Zellen geht mit ihrer verfolgten Teilform ein (Zeuge gedeckelt; der Deckel 350 kappte 77,7 % der Fläche zur Kugel um den Gipfel)",
+                 gruen: gut({ saaten: 30, achseP30: 4.6, guertelProzent: 78 }, { antworten: 5070, bergZellen: 900, komponenten: 60 }),
+                 attrappen: [
+                     { name: "der Gürtel-Anteil als Zahl ohne Fenster des Fadens", roh: leer({ saaten: 30, achseP30: 4.6, guertelProzent: 78 }) },
+@@ -5993,6 +6023,25 @@
  for (const w of W) freq[w] = (freq[w] || 0) + 1;
  let tMittel = 0;
  for (const w of Object.keys(freq)) tMittel += (Tw[w] * freq[w]) / W.length;
@@ -26,7 +112,7 @@
  const tele = [];
  try {
  for (let k = 0; k < ${Number(u4.saaten) || 100}; k++) {
-@@ -6004,7 +6023,7 @@
+@@ -6004,7 +6053,7 @@
  }
  } finally { wm.seed = s0; }
  const sichtSturm = -Math.log(A.LUFT.kontrast) / r._luftBeta(FELD.stormy);
@@ -35,7 +121,7 @@
  `);
              // die Bild-Zeit über 2,5 s im Wetter der Welt (requestAnimationFrame) — headless die Zeit des Software-Renderers
              const takt = await H.seite(`
-@@ -6096,11 +6115,13 @@
+@@ -6096,11 +6145,13 @@
                  auge: await M.auge("wetter-extreme-s1", { ort: "wiese" }, { wetter: "stormy" }),
                  taeter: (RF.fehler.length && !RF.gemessen ? "Leser fehlt: " + RF.fehler[0].fehler + " · " : "") + "gelaende-core.js:1627 pegelHubVon deckelt den Hub an der Krone (Math.min(krone, h)), " + RF.werte.bordvoll + " von " + RF.gemessen + " Adressen bordvoll, " + RF.werte.stark + " mit ≥ " + stark + " mm — die Aue trägt den Überschuss „nicht gerechnet“ (gelaende-core.js:1569) · " + RF.akte,
              };
@@ -53,7 +139,7 @@
              };
              // S3 die Wiederkehr: Gumbel über die Jahresmaxima des Strecken-Regens (Momente), x100 ÷ x2 gegen die Erd-Erwartung
              const jm = welt.jahrMax;
-@@ -6171,7 +6192,7 @@
+@@ -6171,7 +6222,7 @@
                  ],
                  zeuge: zMinStreu({ strecken: 10, worte: 3 }, ["streuDauer", "streuT"]),
                  taeter: "phyto-core.js wetterAt (keine Blockierlage)",

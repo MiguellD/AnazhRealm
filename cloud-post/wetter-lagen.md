@@ -1,5 +1,10 @@
 # Stand-Blatt wetter-lagen (Sprossen `karte2.planet.wetter.lagen#2`, `karte2.planet.wetter.extreme#1`) — oberster Abschnitt = jüngster Stand
 
+## 28.11. 01:58 MEZ — platten#1: der Kandidat der Station liegt (Diff + Begründung im Station-Ordner), das Bild der Region trägt kein Streichen
+
+- **Station-Kandidat** (EIN Diff für die Datei der Station, zusammen mit dem Teil extreme#2; apply --check GRÜN am pm-Kopf 8ec2a4eb): Achse geodätisch D²/A, Deckel 1 000 / Saat 1 500, die Momente bleiben Zeuge. **Der eigene Mess-Code der Station in node** (aus `probe.befehl`, der Faden = `planetPunkt` fuss 16): heute 5,295 % · 1,35 (= Radeon genau) → Kandidat **74,29 % ✓ · achseP30 4,386 ✓**, 45 164 Antworten (vorher 17 747; ob das Fenster 8 → 24 s sie an der Radeon trägt, zählt der Zeuge `abgebrochen`). Wand der Punkte-Liste Basis ↔ Kandidat: ROT-Zeilen 737 ↔ 737.
+- **Das Bild der Region** (`cloud-post/wetter-lagen-bild/platten1-region-heimat.png`, 100 × 100 km aus gelaende-core `hoehe`, Schummerung 315°/45°): isotropes Rauschen, Relief 240 m, kein Gürtel. Die Wurzel: der Ort reicht land · hoehe · rauhLambda · trog · ks · tafel, nie das Streichen des Rands; die Großform liest das Relief-Feld isotrop. Das Blindpaar „Schummerung gegen reale Region“ fällt hier, ehrlich benannt. Der Schnitt dafür liegt am Ort-Gesetz (ein Regler des Streichens, von planetOrt gesetzt, von der Großform gelesen) — ich lese ihn als Nächstes, gemessen vorher ↔ nachher.
+
 ## 28.11. 01:25 MEZ — Auftrag 00:57: platten#1 zuerst — die Frage an die Station beantwortet, mit Zahl
 
 - **Die Station misst an der Gebirgsfläche der Saat, nicht an der Region 10⁴ km²** (Flut auf dem Gitter 80 km um jeden Stichpunkt > 2 km, Rand ±50 Zellen). Ihre Messung B in node nachgebaut (der Faden = `planetPunkt` fuss 16, wie der Auftrag `planet-ort` des voxel-worker) trifft die Radeon-Zahl **genau**: achseP30 **1,35**, guertelProzent **5,29 %** (Radeon 5,295).
