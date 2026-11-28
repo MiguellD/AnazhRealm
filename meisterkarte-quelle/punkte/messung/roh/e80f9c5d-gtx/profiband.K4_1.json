@@ -1,44 +1,44 @@
 {
  "art": "glaette",
- "sekunden": 56.4,
+ "sekunden": 58,
  "uhrS": 98,
  "schritte": [
   [
    "anfang",
-   42.2
+   42.1
   ],
   [
    "k4-geh",
-   5.1
+   4.7
   ],
   [
    "k4-fahrt",
-   9.1
+   11.2
   ]
  ],
  "offen": [],
  "fehler": {},
  "strom": {
-  "bloecke": 69,
-  "bilder": 249,
+  "bloecke": 72,
+  "bilder": 252,
   "seiten": 1,
   "fehler": 0,
   "verloren": 0
  },
  "glaette": {
   "k4-geh": {
-   "n": 90,
-   "frame": 50.01,
-   "p99": 83.32,
-   "max": 83.32,
-   "ueber33": 10,
-   "ueber100": 0,
-   "takt": 40.68,
-   "vram": 143.4,
-   "gpu": 7.15,
-   "gpuN": 11,
-   "befehle": 123,
-   "dreiecke": 303291,
+   "n": 83,
+   "frame": 58.35,
+   "p99": 108.35,
+   "max": 108.35,
+   "ueber33": 13,
+   "ueber100": 1,
+   "takt": 48.79,
+   "vram": 143.9,
+   "gpu": 7.25,
+   "gpuN": 10,
+   "befehle": 117,
+   "dreiecke": 286164,
    "voll": 0,
    "halt": false,
    "last": 0,
@@ -46,7 +46,7 @@
     1,
     2
    ],
-   "sichtWechsel": 4,
+   "sichtWechsel": 3,
    "sattel": "0",
    "wetter": [
     "sunny"
@@ -60,18 +60,18 @@
    }
   },
   "k4-fahrt": {
-   "n": 42,
-   "frame": 99.96,
-   "p99": 108.27,
-   "max": 108.27,
-   "ueber33": 40,
-   "ueber100": 1,
-   "takt": 91.42,
-   "vram": 148.9,
-   "gpu": 10.46,
+   "n": 49,
+   "frame": 116.65,
+   "p99": 141.61,
+   "max": 141.61,
+   "ueber33": 39,
+   "ueber100": 4,
+   "takt": 95.41,
+   "vram": 148.4,
+   "gpu": 10.2,
    "gpuN": 10,
-   "befehle": 148,
-   "dreiecke": 595033,
+   "befehle": 153,
+   "dreiecke": 630092,
    "voll": 0,
    "halt": false,
    "last": 0,
