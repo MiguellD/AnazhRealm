@@ -1,0 +1,9 @@
+$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
+[linse-gpu] nvidia/pascal
+@@ 13.1 s · am Messort stadt-voll (ego) nach 13.1 s, 330 Takte, Anlauf stand
+@@ 13.1 s · Glaube: 3 Kultbauten (provenzalisch/gotisch), 32 Gräber, Baujahre {"von":1224,"bis":1287}
+@@ 51.1 s · Ritus: Stunde 7.5 · im Kultbau 0 · an ihm 27 von 1357 · Tage 27/22/24/24/24/24/24 · nicht alle angekommen
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal
