@@ -71,3 +71,10 @@ Messort der Station: die Gang-Linse fährt an der Pose des Spielers (Preis-Pose 
 - Karte 2 gebucht: 156 von 1 718 (Stand Koordinator 01:09).
 - 28.11. 02:00-Post: masse#1-Kopf 6e1d9d61 steht gegen main 93e4b83b ohne CONFLICT (merge-tree); Probe-Post noch keine.
 - GPU-Probe masse#1 6e1d9d61 GRÜN (Radeon 890M, Lauf 46088267172): gate:analog-nah GRÜN 78 s (E eingeschwungen ab Takt 116) · gate:tier-gang GRÜN 103 s · gate:webgl-probe. Wartet auf den Zug.
+- 28.11. 02:25-Post: masse#1 fährt im Bündel `buendel-nacht-2`; kein neuer Vorprüf-Kopf bis zur Landung.
+- **lebenszyklus#2, drei Diffs (Post 02:25):** `lebenszyklus2-quellen.diff` — quellen.json +3 Sätze (kitz 45 · hirschkuh 30 · ricke 25,
+  Commons, je Klasse ≥ 40, Pose Third 15 m, Tageslicht, Sommer); `hole.cjs --trocken` 100 von 100, liegen geblieben 0; `git apply` auf
+  Blob 67266b2 OK. Das Fach greift auch auf faecher.cjs bf57832 (Selbsttest 17 GRÜN · 0 ROT).
+- **Die Wurzel der Setzzeit (gemessen):** zwei Jahre in der Welt — Leben 262,5 s (refS 2 100 ≙ 8 Jahre), Welt 2 400 s (jahreJeTag 1,5),
+  Faktor 9,14; der Hirsch stirbt mit 0,86 Welt-Jahren. Eine Setzzeit am Welt-Jahr löscht die Art — nicht eingebaut; sie braucht EINE Uhr
+  (die Raffung, leben-core :116). Begründung Punkt 4.

@@ -48,5 +48,12 @@ Kein Soll, kein Richter-Text, kein Umfang der Karte wird geändert.
      zu erwarten, bis die Welt eine Herde mit Kitzen trägt.
    - Das Gesetz: die Geburt ohne Setzzeit (kein Kitz-Gipfel im Frühsommer — Rothirsch setzt Mai/Juni) und der Leib ohne Jugend-Proportion
      (isometrisch, proportionAbw ≈ 0: das Kitz ist ein kleiner Hirsch). Beides trennt der Prüfer erst, wenn die Welt es zeichnet.
+   - DIE WURZEL DER SETZZEIT (gemessen 28.11.): die Welt trägt ZWEI Jahre. Das Leben: leben-core refS 2 100 s ≙ jahreRef 8 Jahre →
+     262,5 s je Jahr (jede Rate je Jahr über taktJeJahr, ZEIT_JAGD Satz 1). Das Jahr der Welt: WELT_GESETZ_ERDE.kalender jahreJeTag 1,5 →
+     jahrK 2 400 s (`_saisonPhaseZu`, Laub, Schnee, Pegel). Faktor 9,14. Der Hirsch lebt 7,9 Lebens-Jahre = 0,86 Welt-Jahre (tod
+     2 062–2 082 s < 2 400 s), reif nach 0,17 Welt-Jahren. Eine Setzzeit am Jahr der Welt (die Geburts-Chance × eine Dichte der Phase
+     mit Mittel 1) LÖSCHT die Art: das Kalb aus dem Gipfel stirbt vor dem nächsten Gipfel, keine Mutter wirft zweimal. Darum ist sie
+     NICHT eingebaut. Die Setzzeit braucht EINE Uhr — Leben-Jahr = Welt-Jahr (refS ≙ jahreRef · jahrK, oder das Jahr der Welt auf
+     262,5 s); beides rückt jede Spanne des Lebens oder den Gang des Laubs und ist die Raffung der Welt (leben-core :116 „unsicher“).
    - Die Wand `punkte.cjs liste` Basis ↔ Kandidat ist hier nicht gefahren (der Zweig punkte-maschine lädt in diesem Container nicht in Frist).
    - L_BODY (k2-leben.js:6878, evolution) zitiert noch `_creatureBodySize` — Text einer fremden Leiter, nicht angefasst.
