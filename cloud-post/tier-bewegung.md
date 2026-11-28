@@ -152,3 +152,19 @@ jungProzent 0 von 6 (Moment) → 24 von 210 Tieren über 107 Welt-Jahre = 11,43 
 wirft → 8,0004 Generationen. Am neuen refS: erbe 177 Geburten, muster 221, S7 17,2 s gegen Budget 15 s (UNGEMESSEN mit Zahl).
 **Ehrlich offen:** bs der Regionen (cv/ek null), Hirsch im Gau (selektion null), S7-Budget am neuen refS. Karte 2 gebucht 158 von 1 718.
 Der Kopf `tier-bewegung-uhr` bleibt WIP bis dein Wort zur gesprengten Linse (Takt-Schnitt oder anders).
+
+## ZWISCHENSTAND 28.11. ~05:00 MEZ — Post 04:46 gelesen: der Weg (1) muster#1 steht auf meiner BERICHTIGTEN Fehlaussage
+**Die Prämisse fällt:** „das Aufholen rechnet 215 088 s Welt-Zeit in 0 ms" war ein Sprung von R.t, keine Rechnung — berichtigt im
+ZWISCHENSTAND ~04:45 (6dbde71): `_bestandRegion` setzt R.t auf jetzt − aufholS (3 600 s) und holt nur Takte nach, solange
+`_bestandGauSteht` gilt; in einer synchronen Probe 0 von 660 Takten. Über die Aufhol-Bahn stehen KEINE 10³ Generationen ohne Takt.
+**Der Täter-Text ist stale:** die Größe ERBT bei der Geburt schon — Bestand `kreatur-leben.js:2049` und Gau `leben-core.js` Beute-Geburt
+rufen `kind(mu.a, va.a, …)` (leben-core :200: a = (aM + aV)/2 + Segregation + Mutation, je Achse, die Größe eingeschlossen); dGroesseMit
+−0,07 ✓ ist genau dieses Erbe. Offen an muster#1 ist allein der UMFANG 10³ Generationen.
+**Was 10³ Generationen kosten (gemessen an Lauf 4 im Kern, 48 × 48 Reviere = EIN Gau, GAU.n 48; beide Läufe liefen zugleich, also
+eher zu teuer):** ≈ 5 ms je Takt (main 4 200 Takte × 8 Saaten in 182 s ohne Wolf; Uhr 38 400 × 8 in 1 414 s). Der Hirsch lebt 2 265 s =
+226 Takte → 10³ Generationen = 226 500 Takte ≈ 1 130 s je Lauf, mit + ohne Wolf ≈ 2 300 s — am alten refS. An der EINEN Uhr × 9,14
+(≈ 21 000 s). Das Budget der Station (sek × TAKT − 15) trägt das in keinem Fall.
+**Der Weg, den ich als nächstes MESSE (nicht gebaut):** die Auslese im Gau-Kern selbst (`leben-core bestand`, wie Lauf 4) auf einem
+kleinen Gau und gröberem Takt — jede Rate steht je Jahr und geht über taktJeJahr (Satz 1), der Takt ist Wirt-Zahl (`wirt.taktS`). Ich
+nenne die Zahl (ms je Generation, Δ ln M̄ mit/ohne Wolf) gegen die Uhr, sobald Lauf 4 der Uhr durch ist (Zeitfrist-Läufe nie parallel).
+erbe#2 (Herde 100, Individuum aus dem Erbgut): die Kosten-Zahl kommt vor dem Bau. Karte 2 gebucht 158 von 1 718.
