@@ -1,7 +1,7 @@
 {
  "sha": "27d2f60e46a1f78c9b9151bc911f13312be7fce5",
  "geraet": "gtx",
- "zeit": "2026-11-28T04:28:57.279Z",
+ "zeit": "2026-11-28T04:58:47.189Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "profiband.K4#1": {
@@ -1502,6 +1502,69 @@
    },
    "zeit": "2026-11-28T03:32:59.691Z",
    "abdruck": "1fee50cfa72d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.leben.wasser.bild#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 190 s gerissen (der Anteil der Fahrt, mit Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT leben.wasser.bild 82.1 s)",
+   "exit": 1,
+   "minuten": 3.17,
+   "grund": "Deckel 190 s gerissen (der Anteil der Fahrt, mit Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT leben.wasser.bild 82.1 s)",
+   "s": 190.1,
+   "fremd": {
+    "s": 192.6,
+    "takte": 88,
+    "fremdS": 56.77,
+    "kerne": 0.295,
+    "fensterKerne": 0.539,
+    "namen": [
+     [
+      "bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \"",
+      10.36
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      6.77
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-27d2f60e-w055712 x listen/kandidat-gtx-27d2f60e-w055712.txt",
+      6.16
+     ]
+    ],
+    "dienerS": 38.81,
+    "diener": [
+     [
+      "System",
+      15.3
+     ],
+     [
+      "dwm.exe",
+      11.09
+     ]
+    ],
+    "geraetS": 96.42,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      65.72
+     ],
+     [
+      "svchost.exe",
+      27.72
+     ],
+     [
+      "SearchIndexer.exe",
+      1.25
+     ]
+    ],
+    "eigenS": 609,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-28T04:58:47.189Z",
+   "abdruck": "67a516002422",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
