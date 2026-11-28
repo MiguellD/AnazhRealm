@@ -1,7 +1,7 @@
 {
  "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
  "geraet": "gtx",
- "zeit": "2026-11-28T09:34:29.162Z",
+ "zeit": "2026-11-28T09:49:02.081Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "profiband.K4#1": {
@@ -2732,6 +2732,76 @@
    },
    "zeit": "2026-11-28T09:30:00.616Z",
    "abdruck": "479e00d5b3b8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.erzaehlkunst#1": {
+   "gruen": false,
+   "zahl": "S1 ROT: fehlender Leser: keine Bühne, kein Erzähler: der Abend trifft sich im Gasthaus (treff), kein Stück, kein Publikum (koerper-core.js:5182) · gemessen 0 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.21,
+   "grund": "ROT: S1 ROT: fehlender Leser: keine Bühne, kein Erzähler: der Abend trifft sich im Gasthaus (treff), kein Stück, kein Publikum (koerper-core.js:5182) · gemessen 0 · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k037717809c18",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0ac82d40df13",
+   "s": 11.6,
+   "fremd": {
+    "s": 15.3,
+    "takte": 7,
+    "fremdS": 4.97,
+    "kerne": 0.325,
+    "fensterKerne": 0.344,
+    "namen": [
+     [
+      "bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \"",
+      0.88
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-e80f9c5d-w104515-s x listen/kandidat-gtx-e80f9c5d-w104515-s.t",
+      0.77
+     ],
+     [
+      "Explorer.EXE",
+      0.72
+     ]
+    ],
+    "dienerS": 2.88,
+    "diener": [
+     [
+      "System",
+      0.98
+     ],
+     [
+      "dwm.exe",
+      0.97
+     ]
+    ],
+    "geraetS": 6.17,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      4.27
+     ],
+     [
+      "svchost.exe",
+      1.56
+     ],
+     [
+      "SearchIndexer.exe",
+      0.16
+     ]
+    ],
+    "eigenS": 41.39,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-28T09:49:02.081Z",
+   "abdruck": "7e2ca9fb0f41",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
