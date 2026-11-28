@@ -1,7 +1,7 @@
 {
  "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
  "geraet": "gtx",
- "zeit": "2026-11-28T09:34:29.162Z",
+ "zeit": "2026-11-28T09:50:53.854Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "profiband.K4#1": {
@@ -2735,6 +2735,146 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.mensch.kultur.erzaehlkunst#1": {
+   "gruen": false,
+   "zahl": "S1 ROT: fehlender Leser: keine Bühne, kein Erzähler: der Abend trifft sich im Gasthaus (treff), kein Stück, kein Publikum (koerper-core.js:5182) · gemessen 0 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.21,
+   "grund": "ROT: S1 ROT: fehlender Leser: keine Bühne, kein Erzähler: der Abend trifft sich im Gasthaus (treff), kein Stück, kein Publikum (koerper-core.js:5182) · gemessen 0 · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k037717809c18",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0ac82d40df13",
+   "s": 11.6,
+   "fremd": {
+    "s": 15.3,
+    "takte": 7,
+    "fremdS": 4.97,
+    "kerne": 0.325,
+    "fensterKerne": 0.344,
+    "namen": [
+     [
+      "bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \"",
+      0.88
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-e80f9c5d-w104515-s x listen/kandidat-gtx-e80f9c5d-w104515-s.t",
+      0.77
+     ],
+     [
+      "Explorer.EXE",
+      0.72
+     ]
+    ],
+    "dienerS": 2.88,
+    "diener": [
+     [
+      "System",
+      0.98
+     ],
+     [
+      "dwm.exe",
+      0.97
+     ]
+    ],
+    "geraetS": 6.17,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      4.27
+     ],
+     [
+      "svchost.exe",
+      1.56
+     ],
+     [
+      "SearchIndexer.exe",
+      0.16
+     ]
+    ],
+    "eigenS": 41.39,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-28T09:49:02.081Z",
+   "abdruck": "7e2ca9fb0f41",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.menge.bild#2": {
+   "gruen": false,
+   "zahl": "S2 ROT an Umfang 57 < 100 Menschen im Bild — Täter: im Bild 57 (drinnen 544, außer Bild 573, verdeckt 173) · Gehende im Bild 10 (Soll ≥ 40) · Zwillinge im Bild 0 (Soll ≤ 0) · Umfang 57 (Soll ≥ 100 Menschen im Bild) · Stände 1357, aus der Zählung {\"drinnen\":544,\"ungezeichnet\":10,\"ausserBild\":573,\"verdeckt\":173}, Auge [836.7,58,453.4], third, tod 0.3356, Takte 0 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.43,
+   "grund": "ROT: S2 ROT an Umfang 57 < 100 Menschen im Bild — Täter: im Bild 57 (drinnen 544, außer Bild 573, verdeckt 173) · Gehende im Bild 10 (Soll ≥ 40) · Zwillinge im Bild 0 (Soll ≤ 0) · Umfang 57 (Soll ≥ 100 Menschen im Bild) · Stände 1357, aus der Zählung {\"drinnen\":544,\"ungezeichnet\":10,\"ausserBild\":573,\"verdeckt\":173}, Auge [836.7,58,453.4], third, tod 0.3356, Takte 0 · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k8f43e0012133",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0ac82d40df13",
+   "s": 85.7,
+   "fremd": {
+    "s": 89.6,
+    "takte": 41,
+    "fremdS": 37.78,
+    "kerne": 0.422,
+    "fensterKerne": 1.03,
+    "namen": [
+     [
+      "bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \"",
+      5.64
+     ],
+     [
+      "Explorer.EXE",
+      4.66
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      2.73
+     ]
+    ],
+    "dienerS": 17.58,
+    "diener": [
+     [
+      "System",
+      8.63
+     ],
+     [
+      "WmiPrvSE.exe",
+      4.23
+     ]
+    ],
+    "geraetS": 47.59,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      32.14
+     ],
+     [
+      "svchost.exe",
+      12.97
+     ],
+     [
+      "SearchIndexer.exe",
+      1.06
+     ]
+    ],
+    "eigenS": 136.78,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-28T09:50:53.854Z",
+   "abdruck": "b77edce78e9d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -2768,7 +2908,8 @@
   "kf85932e04213": "bVXRjpswEPyXPLblFmI4jKV7cMKpF6lX5T5hDWsgIRDZJFSp+u8VJOQC3L4hZtnxzKz5uzhisseMnna2rhZi8W3xY2HxTI4lcybztLMLsYgSb0lMyA/ZFUgp1x0sMcWxsVAWClBVmB/IOZmGivIp6dv0M7qBEtC+ymwLoOECcfvyMm0tFaW106CmodElFnASU+DJZqjIwZPuh93AKvQ9ngjoi8fyPYZbZf3zJoYV7GDyMYVVOmbreRE+h0K2m7WUH1OWaYHUOGVR2WGul4aRdsUwDNr3WY/B1rkg5SWZWxNxz/PVQHbVydlJM2nU5cna0TDO0mDJBUA0xWZkiyRvnKOpFVWDJtEy9FCs5mpnx5OjHxmhUsjVVOscqcrIjDi4LNHPnoA/fPrRPR7IoFNhfoNGLguX6lMbAHibcyl74v2IgbjP+JJ7o8bORDh3AqdyVNvB5GvpdniR3CGZnA21SV6Yw1gu7dPSZeLXnKLNMSXj7Gvb3NGMQt9Voh+wieHKha+mnZ+HGzxERP4QGOAg32Za2lo3LRpysuNpCI1PQRgIKTczcIOHw50W48imRtqmC/ojjWWkg8AXAN+vizI/9HUtnAsVJd1zm4QsEuvYn4LPBg8OqswUWg/uqyDR0VdhbalsHFXXzcCFuW4SCGBQPRr+u7dy8+B1nH34TblqX8cR2Eip5xb3U2rT3G8IVMz3hW5jDsD1FF2YxmkxyQd4yBQRE13uJtALmZIyGsmpPQ+XqYBWX7lfuJTb8HYl6O+jIF9mbl8K6oSu7MkOSifoq0B8YU1LZq+w2t/XEVMW9DFcvcvtSJfX3bFbBzhzGOvVxXUt5fvP7U2/WMqY6/Z63x0pgaOpddHdjpDjyeZYNp+/hn//AQ==",
   "k491a471723b4": "bVXRbqMwEPyXPF6PGjAUY6kPTojUnK5S+glrWAMNgciGcMrp/v0EBBqg+4Y06x3PzJq/mwvEJ0jx+dNU5YZvfmx+bgxc0TKor6ifP82Gb8LYcZFyMRQRQuw6WKzzS21IkUsCsoTsjFaja8yL57hvUy9g+5KTdi/SIyGK3EjUiqn24vV1eUwhMamsGhSOh9hIfYZ8CWxMChItaFQ/+A6WgeewmJO+WCTeI3KvtP8+RGRLPokQkcja1XQJZTK/geOE8BJw0R52Qnws8UkOWFtFXppxvpMEobL5OJS076seDa11A8wK1PcmZI7jyZH0tpOmk2vRqIrGmNkwRhPfZZyQcIlN0eRxVlsXXUksR21CN3CAb9f3Ti+NpR4ZgZTA5FLzDLBMUc842DRWLw4nf9jy0BOcUYNVQnaHhjYNXPmlDSHkbc2l6In3I0biHmUuc2aNnZnk2gmciFkdR7OHUlPc4gmSrmNn4izX57lcykPXpvz3mqLJIEFtnSpTT2iKgWfLYUMOERm4sO2y8+tyo4cAwB4CQxgRbystTaXqFjRa6aUZQ+OhH/hciMMKXMP5PNGiDOjSSFN3QX+k4YbK9z1OyNOwMOtLD2th3TAvcMptHNCQ7yJvCb5qOFsgU50rNbov/ViF34W1xaK2ZFXVIxdq27HfSVI+Gn7srTw8eB2lH15dbNv9PAIHIdTa4n5KpevppQBJPY+rNmKEMLVE57q2WoizER5QiUh5l7sF9Ia6wBRncirHATfhpFUD9xsT4hjcnwT1NAvybeX2LcdO6NI0ZlQ6Bk/6/BtrWtQnCeVpWkdIqM9/CSG27+I402W/S7t16NdmUULshDBPx7t+kRARU+3w3l0wJhddqbx7HUkGjcmgqL9+F//+Aw==",
   "k3e9ed7fdb21d": "bVXRjqJAEPwXH2+PbXBAhkn2YZRN1uT24n5CD/QAimBmUC5e7t8vqLgC9htYTdVUV49/ZwdMdpjR69bW1UzMfsx+ziyeyLFkTmRet3YmZlHizYkJeS2QUq46WGKKQ2OhLBSgqjDfk3M0DRXla3Jp0wt0AyWgfZfZBkDDGeL27W3cWipKa6dBTX2jSyzgJMbAo81QkYNHfSG7gVXoezwRcCkey88YbpVdntcxLGELo48prNKhWs+LcBEK2a5XUn6NVaYFUuOURWV7Xi8NI+2Kngzaz0mPwdY5I+UlmVsTcc/zVS922dnZWTNq1OXR2gEZZ2kw5wIgGmMzskWSN87B1Iqq3pNoHnoollO3s8PR0Y+KUCnkaux1jlRlZAYaXJbohSfgDx9/dId7MuhUmN+gkcvCufr2BgA+plrKi/ALRS/cZ3zOvUFjN0Q4dQanclCbfsjX0m3/Q3KHZHJCapO8MPuhXdqnucvEr6lEm2NKxtnVtrmjGYW+q67bsI7hqoUvx53fh+tniIj8ITDAQX5MvLS1blo05GSHYx8an4IwEFKuJ+AG9/u7LMaRjQdpmy7ojzLmkQ4CXwC8XBdleujrWjhnKkq65zYJWSRWsT8GnwzuHVSZKbTup6+CREfPwtqitaNUYRK5/mI08XFxkJt48ObJRdJS2Tiqrpv+oMx1k0AAg+qx8/clJ+uHIMXZl9+Uy/Z9mK+1fMpQm+Z+9aBivi90G3MArsfowjROi0new0OmiJjoAj2CnsmUlNHAGO15OE8FtPqqe8ul3IS3u0a/DNw4T2J0LqibYGWPth9hgr4KxJOZt2R2Cqvdfc8xZcEl38tPuRl48r7Kuj2D05AfAE5SrqS0+83Nu1jKmOsb0YESOJhaF921CzkebY5l8/2f8+8/",
-  "k1c3dbdf304f9": "bVTRcpswEPwXP6ZVBBYEoZk8yCadeKbpJJ9wgpOgxuCRwHTc6b93wMYxEL1q925vb6W/qyOkezD4+NvV1UqsHlbfVw5OSBzaE9rH324lVnHqr5EJeTlUSrntYaktjo2jZaEoqAryA5LWNliUj+lA00/ghUrQ7kWad0o1PdOke36eU0uFWU0a0DgSPWQhRzEHts6AQgKtHppdwQ8zmIIqm+rw/RieIiG73VbKj3n/rABsSFlUbqzoZ1GsPUHH070tOBY6cgbMS7RXEnLfD9SVxDe9Uf3QM6IuW+cmzTjLwjUXlMZzrEFXpHlDjrZWWF3hKl5HPojN0kdzbIm+VwRKAVdzF3PAyqCdaPBYqp98Qf/wedE9HNACqSC/QmOPRWv16Q2l9HWppRyEDy1G4QHja+5PiJTyhJ56gzM5Oe/DpRlRuhsv0hvEyEVTl+aFPUzt0gGuPSZ+LiW6HDK0ZF+75oZmGAWeuuR8l9CLFr6ZMz+HG3cIAPwuMJRT+brw0tW66cAiMcd2DE2AYRQKKXcLcAOHw00W48Dmi3RNH/R7GetYh2EgKP2WXHK7GPryLMgZixJvuU0jFs+LnywcCChjC63Hzasw1fFXQe2wbIiq62bUwTwvDQVltLpf9q9hjbu7PSfmI3j7Ic3LdP07Odc9dKhtM4pWoFgQCG0STinXc3RhG9JBmo/wiClE9lW+z2hLNDixcf6hnAvsLatc60bPUghUKL4wuUO7V1Dtbw8LMhYOgdq8yfe7GY2UW9MHm544nU6fnORum8i3l9e+8BFTerS1Lvp/jebQuhzK5vO7/vcf"
+  "k1c3dbdf304f9": "bVTRcpswEPwXP6ZVBBYEoZk8yCadeKbpJJ9wgpOgxuCRwHTc6b93wMYxEL1q925vb6W/qyOkezD4+NvV1UqsHlbfVw5OSBzaE9rH324lVnHqr5EJeTlUSrntYaktjo2jZaEoqAryA5LWNliUj+lA00/ghUrQ7kWad0o1PdOke36eU0uFWU0a0DgSPWQhRzEHts6AQgKtHppdwQ8zmIIqm+rw/RieIiG73VbKj3n/rABsSFlUbqzoZ1GsPUHH070tOBY6cgbMS7RXEnLfD9SVxDe9Uf3QM6IuW+cmzTjLwjUXlMZzrEFXpHlDjrZWWF3hKl5HPojN0kdzbIm+VwRKAVdzF3PAyqCdaPBYqp98Qf/wedE9HNACqSC/QmOPRWv16Q2l9HWppRyEDy1G4QHja+5PiJTyhJ56gzM5Oe/DpRlRuhsv0hvEyEVTl+aFPUzt0gGuPSZ+LiW6HDK0ZF+75oZmGAWeuuR8l9CLFr6ZMz+HG3cIAPwuMJRT+brw0tW66cAiMcd2DE2AYRQKKXcLcAOHw00W48Dmi3RNH/R7GetYh2EgKP2WXHK7GPryLMgZixJvuU0jFs+LnywcCChjC63Hzasw1fFXQe2wbIiq62bUwTwvDQVltLpf9q9hjbu7PSfmI3j7Ic3LdP07Odc9dKhtM4pWoFgQCG0STinXc3RhG9JBmo/wiClE9lW+z2hLNDixcf6hnAvsLatc60bPUghUKL4wuUO7V1Dtbw8LMhYOgdq8yfe7GY2UW9MHm544nU6fnORum8i3l9e+8BFTerS1Lvp/jebQuhzK5vO7/vcf",
+  "k8f43e0012133": "bVXRbqMwEPyXPF6PGjAUY6kPTqnUnK5S+glrswYaApEN4ZTT/fsJEmiA7hvKrHc8M+v83ZxAHSDDx09bVxu++bH5ubFwRseiOaN5/LQbvomV5yPl4kP0tRdCvPQwZYpTY0lZSAKygvyITmsaLMpHNbTpJ3BDyUn3KrI9IZpcSNKJqV7F8/PymFJiWjsNaBwPcZGGDPkS2NoMJDrQ6mHwDSyjwGOKk6FYIt4Tcqts+N4lZEs+yTD+YzVdQpXOb+B5MTxFXHS7oWGBTwvAximLyo7zvTSKtcvHoaR7X/UY6JwLYF6iuTUh87xAjqS3PbderkWjLltrZ8MYTUOfcULiJTZDW6i8cU6mlliN2sR+5AHfdqt7Z6fW0feMQEpgcql5DlhlaGYcXKr0k8fJH7Y89ABHNOBUkN+gsUsjX35pQwh5W3MpB+LDiJF4QJnPvFljbyY59wKnYlb70exr6SluaoJk69hZlRfmOJdLB+i7lP9eU7Q5pGicQ22bCU0xClzJhwG75BqwPdsuO78uN3oIAOwuMIQR8bbS0ta66cCgk53aMTQBhlHIhditwA0cjxMtyoAujbRNH/R7Gn6swzDghDxcF2Z96etaOBcsSpxyqyIaLw8/Gzg6IDNTaD06L0Ol4++C2mHZOLKum5EHdV0V9nJU92bvBxt3dz4n2UfQlNvudW7/Tix5DxNq00wvBEgaBFxnCSOE6SW6MI3TgcpHeEQlIuV93hbQC5oSM5zJqD0P/JSTTl95X5gQ++j2FOiHWYAvK5cvBfYCV7a1o8IKAhnybyzp0BwkVIdpDSGlIf8lhNi+Dw/03TP7kvVrMKzLvM7D7/a4v2mXCJEwfRt0QkVOptZF/yqSHFqbQ9l8/U38+w8="
  },
  "ungemessen": {
   "karte2.planet.kosmos.himmelsmechanik#1": {
@@ -3766,21 +3907,6 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
-  },
-  "karte2.mensch.menge.bild#2": {
-   "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 114 s von karte2.mensch.menge.bild#2) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 114 s von karte2.mensch.menge.bild#2) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-28T08:57:38.363Z",
-   "abdruck": "b77edce78e9d",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1,
-   "fahrt": "17520@mx05e57c"
   },
   "karte2.mensch.menge.dichte#3": {
    "gruen": false,
