@@ -1,7 +1,7 @@
 {
  "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
  "geraet": "gtx",
- "zeit": "2026-11-28T10:20:38.565Z",
+ "zeit": "2026-11-28T10:22:10.305Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "profiband.K4#1": {
@@ -2942,6 +2942,76 @@
    },
    "zeit": "2026-11-28T10:20:38.565Z",
    "abdruck": "8b25433a2a61",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.wissen#1": {
+   "gruen": false,
+   "zahl": "S1 ROT: fehlender Leser: kein Technikstand je Ort: die Epoche eines Jahrs (epocheBei) setzt den Bau, kein Stand wächst aus Bevölkerung und Vernetzung (fachwerk-core.js:4168) · gemessen 5 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.24,
+   "grund": "ROT: S1 ROT: fehlender Leser: kein Technikstand je Ort: die Epoche eines Jahrs (epocheBei) setzt den Bau, kein Stand wächst aus Bevölkerung und Vernetzung (fachwerk-core.js:4168) · gemessen 5 · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k4dcf9cce28b8",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k1ca930620453",
+   "s": 13.9,
+   "fremd": {
+    "s": 17.6,
+    "takte": 8,
+    "fremdS": 10.2,
+    "kerne": 0.58,
+    "fensterKerne": 0.68,
+    "namen": [
+     [
+      "Explorer.EXE",
+      2.47
+     ],
+     [
+      "node.exe dienst-omen/runde.cjs push-pfade AnazhRealm-OMEN/n0611-pm punkte-maschine gtx e80",
+      1.17
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      0.92
+     ]
+    ],
+    "dienerS": 4.72,
+    "diener": [
+     [
+      "System",
+      2.08
+     ],
+     [
+      "dwm.exe",
+      1.41
+     ]
+    ],
+    "geraetS": 9.7,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      6.06
+     ],
+     [
+      "svchost.exe",
+      1.94
+     ],
+     [
+      "SearchProtocolHost.exe",
+      0.69
+     ]
+    ],
+    "eigenS": 32.7,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-28T10:22:10.305Z",
+   "abdruck": "cb3943faae14",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
