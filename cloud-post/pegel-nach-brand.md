@@ -207,3 +207,10 @@ Karte 2 gebucht 156 von 1 718 · Status ZWISCHENSTAND.
 - Offen an sukzession#2: das Fach (Fächer, Prüfer-Urteil, Korpus der NPS-Fotoreihe) · die stehenden Totholz-Stangen (der Körper liegt im Pflanzen-Kern, dieser Bahn gesperrt) · der Flächenbrand mit Überlebenden-Inseln. `--brand` der Linse stand-takt bootet hier nicht (die Welt steht nicht, am main ebenso).
 
 Karte 2 gebucht 156 von 1 718 · Status ZWISCHENSTAND.
+
+## 28.11. 02:35 — Wartezimmer: GPU-Probe Kopf 4 GRÜN (02:02), main 93e4b83b gemischt glatt; der Korpus von sukzession#2 gesichtet
+- `merge-tree` Kopf 4 und dieser Kopf gegen main 93e4b83b: 0 CONFLICT. Kopf 4 bleibt gültig.
+- Korpus „Yellowstone 1988, Fotoreihe“ (Commons + NPGallery, Lizenz gemeinfrei · CC BY · CC BY-SA, je Datei gelesen): 199 Kandidaten, 46 nach Titel, Bild für Bild gesichtet. Das Motiv (eine Brandfläche im Lodgepole-Wald, Jahre seit dem Brand am Foto lesbar) tragen 25: ~1 a (1989/90) 8 · 9–12 a (1997–2000, Arnica 2009→2019, Norris 2007→2019) 9 · 18–31 a (2006–2019) 8. Fielen: Löschbilder, Rauch, Luftbilder, Satellit, Nahaufnahmen, Dubletten, geothermisch getötete Bäume.
+- **offen:** Korpus 25 von 40, die Stufe 5 a ohne ein freies Foto (das nächste: 9 a). Das Fach senkt kein Soll — die Reihe trägt 25 Paare, das Blatt braucht 40.
+
+Karte 2 gebucht 158 von 1 718 · Status ZWISCHENSTAND.
