@@ -1,6 +1,75 @@
 # Stand-Blatt sprache-dialekt (Sprosse `karte2.mensch.kultur.sprache#4`) — dritte Sitzung, Start 27.11. 11:52 UTC
 
-Basis: main 52937c92 (V18.546.451), Kopf 1 auf 7e73426e, Kopf 2 auf main 9a75d61c (V18.546.457), Kopf 3 2d05e947 auf main 27d2f60e. Status: ZWISCHENSTAND. Karte 2 gebucht 156 von 1 718.
+Basis: main 52937c92 (V18.546.451), Kopf 1 auf 7e73426e, Kopf 2 auf main 9a75d61c (V18.546.457), Kopf 3 2d05e947 auf main 27d2f60e. Status: ZWISCHENSTAND. Karte 2 gebucht 158 von 1 718.
+
+## SICHERUNG 28.11. 08:5x UTC (auf Zuruf: ein WIP-Commit, keine Batterie, nichts Neues)
+
+**Geschnitten:**
+- Kopf 4 = 52f7f1aa auf main bbb97563: der Preis der Mundart (R15).
+- Kopf 5 als WIP (61499cd und dieser Commit), kein Vorprüf-Kopf: `karte2.mensch.kopplung.kultur#1`, der Baustoff folgt dem Vorrat,
+  die Legende gilt, wo ihr Ort sie trägt. Dazu Linse R16 und Stations-Kandidat. Einzelheiten im Abschnitt Kopf 5 unten.
+
+**Letzte Zahl:**
+- kultur#1 an den 32 Zellen der Station mit dem Eingang der Zelle: 11 → 30 von 32 (34,4 → 93,8 %), Soll ≥ 85 %.
+- Ohne Boden sind 80 Pläne byte-gleich (sha 4ca7ccb7).
+- Kopf 5: `check:statik` RC=0 in 685 s.
+- `gate:settlement` an Kopf 5: unterbrochen (der Arbeiter der Wolke startete neu), kein Ergebnis.
+- `gate:worker-dichte` an Kopf 5: nicht gefahren.
+
+**Rote Zeilen wörtlich:**
+- Post 28.11. 05:04: „GPU-PROBE 52f7f1aa auf keinem Läufer: ABGEWIESEN in 304 s („gate:settlement“: misst in der Cloud 1077 s
+  (spec/ci/ci-zeiten.json), der Deckel je Probe ist 480 s — kein Läufer hält es, sein Richter ist die Cloud-Batterie (check.yml, [ci voll]))“.
+  Mein Fehler: Ich habe gate:settlement als Probe-Ruf genannt, obwohl es über dem Deckel liegt. Kopf 4 trägt keine GPU-Probe. Sein Richter ist [ci voll].
+- `check:statik` (Kopf 4 und Kopf 5, RC=0), die bekannte falsch-rote Mutanten-Zeile: „[H Mutant Objekt-Liste] 16 Häuser · 5779 Teile · 1644
+  Blocker · 276 Byte je Teil (Deckel 128) — ROT: Objekt-Liste gehalten (`_hausHuelle.teile` an 16 von 16 Häusern) · Byte je Hüll-Teil
+  276 über dem Deckel 128“.
+- R16 offen (gemessen, ohne Soll): „heimat/stein 0.0 %“ und „mittelmeer/holz 0.0 %“. Kein Pool im Klima baut den Stoff um 880.
+- `karte2.mensch.kultur.sprache#6` · ROT · geparkt (347a5c2, kandidat-6).
+
+**Nächster Schritt:**
+1. Kopf 5 an der Wolke: `gate:settlement` (R16, die Mutanten der Familie R) und `gate:worker-dichte` (Leser von `_rockExposureAt`).
+2. Danach den Vorprüf-Kopf 5 auf dem main des Moments.
+   - Probe-Ruf nur mit Toren unter 480 s laut spec/ci/ci-zeiten.json. gate:settlement nicht in die Probe, sein Richter ist [ci voll].
+   - Station: den Kandidaten aus dem Stations-Ordner gegen punkte-maschine d35d07e.
+3. Danach sprache#6 aus dem geparkten Stand zurückholen.
+4. Die Worktrees der Wolke räume ich beim Ende.
+
+## Kopf 5: `karte2.mensch.kopplung.kultur#1` „Baustoff aus Boden und Klima“ — geschnitten, gemessen
+
+**Gemessen an den 32 Zellen der Station** (Null-Renderer, die Zellen um Genesis wie KULTUR S1, `_autoSettlementCellInfo`; der Plan mit dem
+Eingang der Zelle, wie der Zug ihn bestellt): passend **11 → 30 von 32 (34,4 → 93,8 %)**, Soll ≥ 85 %. Der Boden fordert Holz 27,
+Lehm 5; die Pläne bauen Holz 25, Lehm 7 (Regionen alpin 14, nordisch 11, mitteleuropa 7). Der Plan wie die Station heute bestellt
+(`{seed, nH}` ohne Eingang) bleibt bei 10 von 32: darum der Stations-Kandidat.
+
+**Täter beim Namen (drei Glieder derselben Klasse, alle am Chokepoint `fachwerk-core.js` DORF):**
+1. Die Region würfelte nur im Klima, nie im Vorrat. Jetzt fällt der Wurf zu 90 % auf die Regionen, deren Pool im Jahr des Wurfs den
+   Stoff des Bodens baut (`stoffDesBodens`, `regionBaut`, `imVorrat`; Region und Wurf bleiben EIN Zug des Samens).
+2. Das Haus wählte seine Kultur blind im Pool, die Scheune war außerhalb des Mittelmeers immer aus Holz. Jetzt baut das Haus zu 90 % im
+   Stoff des Bodens, wo der Pool ihn trägt, und die Scheune im Stil ihres Hauses, wenn das Haus im Stoff des Bodens steht.
+3. Die Epochen-Legende (jede dritte Zelle, `siedlungsEpoche`) setzte Region und Pool ohne den Ort: das mediterrane Dorf im Wald der
+   Heimat, das alpine Holzdorf auf der Wiese. Jetzt gilt sie nur, wo ihre Region im Klima-Band liegt und ihr Pool den Stoff des Bodens
+   baut, sonst nur im Rest des Bands (`legendeAmOrt`).
+Der Eingang der Zelle trägt den Boden am Anker des Dorfs (`_zellEingang` → `boden` {fels, wald}); der Fels liest den Hang der Höhe
+der Saat (`_rockExposureAt` mit Fläche `_terrainSaatY`), nicht das gebaute Netz: der Plan bleibt eine Funktion von Saat und Gesetz,
+das Gedächtnis rechnet denselben Plan.
+
+**Band:** in Finnland, Norwegen und Schweden sind 90 % der Einfamilienhäuser aus Holz (Schauerte 2010, zitiert in Silva Fennica,
+Artikel 10503; Statistik Finnland 2017: 84 % der Wohngebäude). Daraus der Anteil 0,9 im Gesetz (`BODEN_STOFF.anteil`).
+
+**Byte-Beweis:** ohne Boden (das Labor, das Wort, die Kachel einer Stadt) 80 Pläne in zwei Klimaten gleich (sha 4ca7ccb7 = 4ca7ccb7).
+
+**Linse:** gate:settlement **R16** „der Baustoff folgt dem Vorrat“ (Familie R): 32 Saaten je Fall, jede mit der Legende ihrer Saat;
+Heimat/Holz 87,5 % der Pläne und 90,6 % der Wohnhäuser und Scheunen, Heimat/Lehm 87,5 · 82,2 %, Mittelmeer/Stein 100 · 100 %,
+Fernost/Holz (gemischter Pool) 87,5 · 84,1 %; Soll ≥ 85 % der Pläne und ≥ 80 % der Häuser je Fall, ohne Boden 0 von 8 anders.
+Die Mutanten fallen alle in R16 beim Namen: „die Region liest den Boden nicht“ 46,9 % → ROT, „das Haus liest den Boden nicht“ Heimat/Lehm
+63,7 % der Häuser → ROT, „die Legende liest den Ort nicht“ 56,3 % → ROT; Kopf 4 (vor dem Schnitt) ist ROT, der Plan liest keinen Boden.
+
+**Stations-Kandidat:** `cloud-post/sprache-dialekt-station/kandidat-kultur1.diff` gegen punkte-maschine d35d07e (≥ 5e895684): BAU_AN
+bestellt den Plan MIT dem Eingang der Zelle (`..._zellEingang(mit.zelle[a.saat], a.saat)`); kein Soll, kein Richter-Text geändert.
+
+**Offen mit Messname:** der Fels der Heimat (Heimat/Stein 0 %) und der Wald am Mittelmeer (0 %) — kein Pool im Klima baut den Stoff um
+880, dort bleibt der Wurf des Klimas (R16 misst beide, ohne Soll). In der Welt der Station trägt keine Zelle Fels (Stein 0 von 32).
+Die Region aus dem Hausbild (R11, ≥ 70 %, Panel) — Station nicht gefahren: GPU.
 
 ## Die rote Zeile gilt am heutigen main
 
