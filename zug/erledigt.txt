@@ -2978,3 +2978,4 @@ omen-gtx-gtx-27d2f60e-w020502-1-27d2f60e ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · R
 omen-gtx-gtx-27d2f60e-w020502-2-27d2f60e ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · ROT karte2.mensch.fahrzeug.medium#3 ‖ karte2.mensch.fahrzeug.medium#3: S3 ROT: Umfang nicht erzeugbar: Wasser: kein Floß, Boot oder Segler steht in der Welt (gemessen 0, Soll 1 Wasserfahrzeug (Floß bis Segler)) · [linse-gpu] nvidia/pascal (punkte-maschine fd95ac83 messung/27d2f60e-gtx.json)
 2026-11-28 02:53 RUNDE 49 ALARM gtx: ohne Fortschritt seit 17 min (halt, 4/231, Station karte2.mensch.fahrzeug.medium#3, Kopf 27d2f60e) — gesehen von radeon (radeon-dienst)
 2026-11-28 02:56 landung Runde 49 am 27d2f60e: misst 26 von 231 Stationen (vorn; 5 tragen an diesem Kopf schon einen Eintrag), rohe Zahl je Zeile
+2026-11-28 03:13 RUNDE 49 ALARM gtx: ohne Fortschritt seit 17 min (laeuft, 5/231, Station karte2.mensch.fahrzeug.medium#3, Kopf 27d2f60e) — gesehen von radeon (radeon-dienst)
