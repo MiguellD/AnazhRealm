@@ -411,6 +411,61 @@ const STOFF = async (r, T, arg) => {
 
 const WETTER = async (r, T, arg) => window.__wetterSetzen(arg.wort);
 
+// DER AUSDRUCK ZUR STUNDE (mensch.leib.ausdruck S1, Fach des Prüfers): je Bewohner der Sitzung sein Soll zu jeder Stunde des
+// Feierabends (`_bewohnerSoll(b, h)`, 17:15–18:00 — der Schmied, der Händler, die Kirche sind noch am Werk, wer bis 17 Uhr
+// arbeitet, ist schon im Abend: beide Klassen unter demselben Licht, die Uhr verrät die Klasse nicht) und der NAME, den sein Leib
+// dann steht — dieselbe Wahl wie der Wirt (`_koerperMotionName` über `tagesHaltung(akt, rolle, b)` und die erinnerte Furcht, die
+// `_bewohnerGemuet` liest). Die Klasse ist dieser Name, nie ein Wort von Hand: pwalk im Akt des Werks = Arbeit, sad im Abend =
+// Müde, fear = Furcht (die Tat des Spielers im Umkreis, `_kreaturFurchtErinnert`). Die Pose steht SEITLICH (eine Beuge liest das
+// Auge im Profil, nie von vorn — kunst#1 sah von vorn nur die Höhe des Kopfs): 3,5 m quer zu seinem Blick, Augenhöhe 1,2 m, Blick
+// auf 1 m über seinem Grund, die Uhr der Stunde. Jeder Bewohner zuerst einmal (die erste Stunde mit Klasse), dann die nächste.
+const AUSDRUCK = async (r, T, arg) => {
+    const o = arg || {};
+    const KC = window.__koerperCore;
+    if (!KC || typeof KC.tagesHaltung !== "function") return { fehler: "der Kern trägt keine Haltung zum Akt (koerper tagesHaltung)" };
+    const stunden = o.stunden || [17.25, 17.5, 17.75, 18];
+    const tr = (KC.LEIB_SATZ && KC.LEIB_SATZ.trenner) || "/";
+    const pm = r.state.playerMesh.position;
+    const H = [];
+    const je = { Arbeit: 0, "Müde": 0, Furcht: 0 };
+    const sonst = {};
+    let drinnen = 0;
+    for (const S of (r._bewohnerSiedlungen || new Map()).values())
+        for (const b of S.liste || []) {
+            if (!b.uebung || !b.orte) continue;
+            const f = b.leib ? Math.max(0, r._kreaturFurchtErinnert(b.leib)) : 0;
+            let rang = 0;
+            for (const h of stunden) {
+                const s = r._bewohnerSoll(b, h);
+                if (!s || !s.ziel) continue;
+                if (s.drinnen) {
+                    drinnen++;
+                    continue;
+                }
+                const nm = String(r._koerperMotionName(false, { haltung: KC.tagesHaltung(s.akt, b.rolle, b), sorrow: f, chaos: f }) || "");
+                const basis = nm.split(tr)[0];
+                const klasse = basis === "fear" ? "Furcht" : basis === "sad" && s.akt === "abend" ? "Müde" : basis === "pwalk" && (s.akt === "arbeit" || s.akt === "hilft") ? "Arbeit" : null;
+                if (!klasse) {
+                    sonst[s.akt + ":" + (basis || "neutral")] = (sonst[s.akt + ":" + (basis || "neutral")] || 0) + 1;
+                    continue;
+                }
+                const z = s.ziel;
+                const y = Number.isFinite(z.blick) ? z.blick : Math.atan2(pm.x - z.x, pm.z - z.z);
+                const ex = z.x + Math.cos(y) * 3.5;
+                const ez = z.z - Math.sin(y) * 3.5;
+                const gy = r.getTerrainHeightAt(z.x, z.z);
+                je[klasse]++;
+                H.push({ rang: rang++, d: Math.hypot(z.x - pm.x, z.z - pm.z), klasse, uhr: h / 24, pose: { px: +ex.toFixed(2), py: +(r.getTerrainHeightAt(ex, ez) + 1.2).toFixed(2), pz: +ez.toFixed(2), lx: +z.x.toFixed(2), ly: +(gy + 1).toFixed(2), lz: +z.z.toFixed(2) }, wort: (b.rolle || "?") + " im Akt " + s.akt + " (" + nm + "): " + klasse + ", 3,5 m seitlich, " + Math.floor(h) + ":" + String(Math.round((h % 1) * 60)).padStart(2, "0") + " Uhr" }); // prettier-ignore
+            }
+        }
+    H.sort((a, b) => a.rang - b.rang || a.d - b.d);
+    const M = KC.MOTION || {};
+    const grad = (p, k) => (M[p] && Number.isFinite(M[p][k]) ? +((M[p][k] * 180) / Math.PI).toFixed(1) : null);
+    const winkel = {};
+    for (const p of ["pwalk", "sad", "fear", "idle"]) winkel[p] = { rumpf: grad(p, "spineX"), leib: grad(p, "bodyX"), kopf: grad(p, "headX"), ellbogen: grad(p, "elbowL") };
+    return { posen: H, je, sonst, drinnen, winkel, stunden, lage: "zur Stunde des Feierabends " + stunden.join("/") + " Uhr draußen: Arbeit " + je.Arbeit + " · Müde " + je["Müde"] + " · Furcht " + je.Furcht + " · andere " + JSON.stringify(sonst) + " · drinnen " + drinnen }; // prettier-ignore
+};
+
 const PFAD = ["stamm/siedlung-bewohner.js", "stamm/koerper-leib.js", "koerper-core.js", "fachwerk-core.js"];
 const KARTE = "[linse-gpu] amd/rdna-3 (Probe)";
 // die eigene Mutante einer Augen-Leiter: ein Augen-Ergebnis ohne Bild zählt nie (UNGEMESSEN beim Namen)
@@ -733,7 +788,7 @@ module.exports = (F) => [
     F.leiter("mensch.leib.ausdruck", {
         sek: 45,
         pfad: PFAD,
-        seite: { ZENSUS },
+        seite: { ZENSUS, AUSDRUCK },
         messe: async (H, K) => {
             const welt = (name, arg, ms) => K.welt("return await (" + H.seite[name] + ")(r, T, " + JSON.stringify(arg || {}) + ");", ms);
             K.sicht = "third";
@@ -751,13 +806,23 @@ module.exports = (F) => [
             await K.schritt(4, async () => K.nicht(4, { n: z.regionen.length, fehlt: "10⁴ mit Gestik je Kultur: " + z.n + " Bewohner in " + z.regionen.length + " Kultur(en)" }));
             await K.schritt(5, async () => K.nicht(5, { n: z.n, fehlt: "10⁵ mit eigenem Gang und Gestus: die Welt trägt " + z.n }));
             await K.schritt(6, async () => K.nicht(6, { n: 1, fehlt: "fremde Leiber und Kulturen: die Bewohner sind EINE Art (Mensch)" }));
+            // S1: Akt und Gemüt am Leib (koerper TAGES_GESETZ.haltung · MOTION): zur Stunde des Feierabends stehen Arbeit und Müde
+            // unter demselben Licht, die Klasse ist der Name, den der Leib steht (AUSDRUCK); der Prüfer errät sie seitlich am Bild
+            // (Fächer, ≥ 60 %) — die Station nennt die Zahl je Klasse und die Winkel der Profile, GRÜN spricht nur das Urteil
             await K.schritt(1, async () => {
-                const b = await K.bild(1, z.posen.zehn, { wahl: 0 });
-                K.auge(1, { bild: b.datei, pose: "stadt-voll am Markt: 2 m hinter dem nächsten Bewohner, Blick auf die Mitte der zehn nächsten", mass: "Akte " + JSON.stringify(z.akt10) + " · Haltung " + JSON.stringify(z.haltung10) });
+                const A = await welt("AUSDRUCK", {}, 40000);
+                if (!A || A.fehler) throw new Error("der Ausdruck zur Stunde: " + ((A && A.fehler) || "ohne Antwort"));
+                const klassen = Object.keys(A.je).filter((k) => A.je[k] > 0);
+                const mass = A.lage + " · Winkel (Grad: Rumpf/Leib/Kopf/Ellbogen) " + JSON.stringify(A.winkel) + " · die zehn am Markt: Akte " + JSON.stringify(z.akt10);
+                H.zeile("S1 " + mass);
+                if (klassen.length < 2) return K.leser(1, { n: klassen.length, fehlt: "der Leib zeigt zur Stunde des Feierabends < 2 Klassen von Akt und Gemüt: " + mass, wo: "koerper-core.js TAGES_GESETZ.haltung · tagesHaltung" });
+                const P = A.posen[0];
+                const b = await K.bild(1, P.pose, { wahl: 0, uhr: P.uhr });
+                K.auge(1, { bild: b.datei, pose: "stadt-voll: " + P.wort, mass });
             });
         },
         sprossen: {
-            1: { auge: { pose: "stadt-voll am Markt, 2 m hinter dem nächsten Bewohner", vorbild: "Silhouetten realer Menschen bei Arbeit, Müdigkeit, Furcht (Prüfer errät Akt/Gemüt ≥ 60 %)" } },
+            1: { auge: { pose: "stadt-voll zur Stunde des Feierabends, 3,5 m seitlich eines Bewohners im Akt", vorbild: "Silhouetten realer Menschen bei Arbeit, Müdigkeit, Furcht (Prüfer errät Akt/Gemüt ≥ 60 %)" } },
             2: { auge: { pose: "stadt-voll: Markt aus 20 m", vorbild: "Lichtpunkt-Gang (Johansson): Alter ± 15 J., verletzt/beladen ≥ 80 %" }, erwartet: "nicht", fehlt: "kein Gang unter Last oder Verletzung" },
             3: { auge: { pose: "keine: Gestik im Gespräch fehlt", vorbild: "Ganzkörper-Gestik realer Gespräche (≥ 70 %)" }, erwartet: "nicht", fehlt: "10³ Gesten im Gespräch" },
             4: { auge: { pose: "keine: Kulturen der Gestik fehlen", vorbild: "Proxemik-Daten (Sorokowska 2017, ≤ 20 %), Kultur aus Gestik ≥ 50 %" }, erwartet: "nicht", fehlt: "10⁴ mit Gestik je Kultur" },

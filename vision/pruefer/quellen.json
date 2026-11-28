@@ -12189,6 +12189,24 @@
    "liegenGeblieben": [],
    "stand": "ungeholt — geholt wird am Gerät (`--nur hang-schutt`), nie in der Sitzung des Machers · die Kategorie trägt 109 Dateien unmittelbar (Commons categoryinfo 28.11.)",
    "ablage": "2afc/wikimedia-commons/hang-schutt"
+  },
+  {
+   "id": "haltung-arbeit",
+   "art": "2afc",
+   "quelle": "Wikimedia Commons",
+   "fuer": [
+    "mensch.leib.ausdruck#1"
+   ],
+   "soll": 40,
+   "breite": 1280,
+   "lizenz": "je Datei (gemeinfrei · CC0 · CC BY · CC BY-SA)",
+   "abfrage": {
+    "art": "commons",
+    "kategorie": "Farmers at work",
+    "ohne": "map|diagram|chart|logo|poster|painting|drawing|stamp|sign|museum|statue|sculpture|engraving|illustration|lithograph|postcard|tractor|bulldog|combine|machine|generator|Google Art Project"
+   },
+   "dateien": [],
+   "stand": "ungeholt — geholt wird am Gerät (`--nur haltung-arbeit`), nie in der Sitzung des Machers · die Kategorie trägt 108 Dateien unmittelbar (Commons categoryinfo 28.11.; 2 Unterkategorien liest der Holer nicht), davon 52 frei vor den Wänden (Trocken-Lauf des Holers 28.11.: Menschen im Akt der Feldarbeit, draußen, Tageslicht, der ganze Leib auf wenigen Metern — die Art der Pose der Station)"
   }
  ],
  "liegenGebliebenQuellen": [
