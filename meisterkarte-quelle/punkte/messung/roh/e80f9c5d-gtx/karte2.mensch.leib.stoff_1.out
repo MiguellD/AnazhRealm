@@ -1,0 +1,10 @@
+$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
+[linse-gpu] nvidia/pascal
+@@ 25.6 s · am Messort dorf (third) nach 25.6 s, 671 Takte
+@@ 54.2 s · am Messort wiese (third) nach 22.8 s, 817 Takte
+@@ 54.2 s · S1 warf: werkbank eval: ALTER: die Epoche ohne Jahr (fail-closed) ["at  ( at page.<computed> [as evaluate] (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\AnazhRealm-mess\\.claude\\worktrees\\punkte-gtx\\scripts\\lib\\welt-boot.cjs:1537:102), <anonymous>:1:72)","at #evaluate (C:\\Users\\micha\\Desktop\\AnazhRea
+@@ 54.2 s · S2 warf: die Lauf-Reihe des ersten Samens fehlt
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal
