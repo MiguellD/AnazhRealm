@@ -79,3 +79,4 @@ Messort der Station: die Gang-Linse fährt an der Pose des Spielers (Preis-Pose 
   Faktor 9,14; der Hirsch stirbt mit 0,86 Welt-Jahren. Eine Setzzeit am Welt-Jahr löscht die Art — nicht eingebaut; sie braucht EINE Uhr
   (die Raffung, leben-core :116). Begründung Punkt 4.
 - 28.11. 03:05 MEZ: masse#1 6e1d9d61 noch nicht im main 9885e7c, merge-tree ohne CONFLICT; keine neue Post seit 02:25. Wartezimmer.
+- 28.11. 03:03-Post abgearbeitet: der Kandidat lebenszyklus#2 nennt Ort und Bildzahl (wiese · 20 je Klasse an EINER Uhr = 40 Bilder; vorher fächerte er über 9 Uhren, bis 396) und trägt den Satz der Quellen im Muster boden#1 (stand · motiv · ablage), alle drei Diffs neu auf die Blobs faecher bf57832 · k2-leben 4f1f810 · quellen 180c397, git apply OK, Selbsttest 17 GRÜN, Mutante ohne uhren ROT.

@@ -109,10 +109,10 @@ index 4f1f810..0930b70 100644
                              const an = await r._planetAnker();
                              const grad = (x) => Math.round(((x * 180) / Math.PI) * 100) / 100;
 diff --git a/vision/pruefer/faecher.cjs b/vision/pruefer/faecher.cjs
-index 9b4d3fe..881f38e 100644
+index bf57832..4bf5231 100644
 --- a/vision/pruefer/faecher.cjs
 +++ b/vision/pruefer/faecher.cjs
-@@ -380,6 +380,33 @@ const SPROSSEN = {
+@@ -398,6 +398,35 @@ const SPROSSEN = {
              "H.sort((a, b) => a.d - b.d);" +
              "return { saat, posen: H, lage: 'im Akt einer Kunst um 10 Uhr draußen: Meister ' + je.Meister + ' · Anfänger ' + je['Anfänger'] + ' · dazwischen ' + mitte + ' · drinnen ' + drinnen };",
      },
@@ -121,14 +121,16 @@ index 9b4d3fe..881f38e 100644
 +    // Bestands am Messort, dessen Leib in der Szene steht (`userData._bestand`); Jungtier nach dem Gesetz der Station, Alttier ab der
 +    // Reife (`reif`, das Gesetz der Mutterschaft), dazwischen keine Klasse. Die Pose: Third aus 15 m von der Seite des Spielers, 3 m
 +    // über Grund, Blick auf die Mitte der Leib-Box; das Ziel trägt den Namen seiner Klasse — steht kein Leib binnen 1,5 m am Blickziel
-+    // oder ist er UNGEZEICHNET, ist die Abnahme ROT und das Bild trägt kein Motiv. Sommer (die Station: „im Frühsommer“)
++    // oder ist er UNGEZEICHNET, ist die Abnahme ROT und das Bild trägt kein Motiv. Sommer (die Station: „im Frühsommer“), EINE Uhr: Mittag
++    // (das Tageslicht der Station) — der billigste Schuss, den das Gesetz erlaubt: an der wiese 20 je Klasse = 40 Bilder
 +    "leben.tiere.lebenszyklus#2": {
 +        ort: "wiese",
 +        gesetz: "meisterkarte-quelle/punkte/stationen/k2-leben.js:2828",
 +        faecher: "jedes Tier des nahen Bestands mit Leib in der Szene am Messort wiese: Jungtier (jünger als 1/10 seiner Lebensdauer und nicht reif) oder Alttier (reif), Third aus 15 m von der Seite des Spielers, 3 m über Grund, Blick auf die Mitte der Leib-Box, Ziel benannt, Klassen im Wechsel, Sommer",
 +        ordner: "leben.tiere.lebenszyklus.2-b1",
 +        frage: "Ist das Tier in der Bildmitte ein Jungtier oder ein ausgewachsenes Tier?",
-+        je: 22,
++        je: 20,
++        uhren: [0.5],
 +        mehr: { saison: "sommer" },
 +        wahl: 0,
 +        motiv: (a) => AN_DER_POSE(a) && GRUEN(a),
@@ -146,7 +148,7 @@ index 9b4d3fe..881f38e 100644
      // die Talform an 20 Saaten: die Station rechnet je Saat (Land-Lage der Fibonacci-Kugel) × Stelle 1/4 · 1/2 · 3/4 des größten Laufs
      // den Querschnitt (k2-planet.js:2662 PROFIL_AN, V-Tal b < 1,5 ≤ Trog) und nennt die Pose „Ego 8 m über der Sohle, Blick talauf“
      // (:2706) — der Fächer REIST je Saat an ihre Lage (der Satz des Spielers „reise <Breite> <Länge>“, wie die Werkbank ihre Reise-Orte
-@@ -679,6 +706,22 @@ function selbsttest() {
+@@ -724,6 +753,23 @@ function selbsttest() {
      const kl = Array.from({ length: 30 }, (_, i) => ({ pose: { px: i }, wort: "h" + i, klasse: i < 24 ? "Wohnhaus" : i < 28 ? "Scheune" : "Schmiede", ziel: { art: "eiche", d: 12 } }));
      const w = imWechsel(kl, 3);
      t("die Klassen im Wechsel: höchstens 3 je Klasse, die seltene Klasse vor dem vierten Wohnhaus, die Klasse reist in die Pose", w.length === 8 && w.slice(0, 3).map((x) => x.klasse).join() === "Wohnhaus,Scheune,Schmiede" && w.filter((x) => x.klasse === "Wohnhaus").length === 3 && faechern(w, [0.5], {})[1].klasse === "Scheune" && faechern(w, [0.5], {})[0].ziel.art === "eiche" && !("klasse" in faechern(basis(2), [0.5], {})[0]));
@@ -154,12 +156,13 @@ index 9b4d3fe..881f38e 100644
 +    // ändert die Station ihr Gesetz, wird dieser Satz ROT, statt still eine andere Klasse zu schießen
 +    const LZ = SPROSSEN["leben.tiere.lebenszyklus#2"], lzR = LZ.rumpf(), lzS = fs.readFileSync(path.join(STATIONEN, "k2-leben.js"), "utf8");
 +    t(
-+        "Kitz oder Hirsch: Jungtier = jünger als 1/10 seines Lebens und nicht reif, wie die Station zählt; Alttier = reif; ≥ 20 je Klasse, Sommer, das Ziel benannt",
++        "Kitz oder Hirsch: Jungtier = jünger als 1/10 seines Lebens und nicht reif, wie die Station zählt; Alttier = reif; 20 je Klasse an EINER Uhr (40 Bilder), Sommer, das Ziel benannt",
 +        lzR.includes("t.alterS < Math.min(0.1 * E.tod, E.reif) ? 'Jungtier' : t.alterS >= E.reif ? 'Alttier' : null") &&
 +            lzS.includes("return t.alterS < Math.min(a.jungBruch * E.tod, E.reif);") &&
 +            /const z = await lauf\(probe, \{ jungBruch: 0\.1,/.test(lzS) &&
 +            lzR.includes("ziel: klasse") &&
-+            LZ.je >= 20 &&
++            LZ.je === 20 &&
++            String(LZ.uhren) === "0.5" &&
 +            LZ.mehr.saison === "sommer" &&
 +            LZ.wahl === 0 &&
 +            !LZ.motiv("ABNAHME ROT [Jungtier fehlt (keine Gestalt binnen 1.5 m)]") &&

@@ -1,21 +1,24 @@
 STATIONS-KANDIDAT leben.tiere.lebenszyklus#2 (Post 28.11. 00:57 „Front nach Ursache“) — Bahn tier-bewegung
-Basis: punkte-maschine 6cd4d721 (faecher.cjs auch auf bf57832: greift, Selbsttest 17 GRÜN · 0 ROT, Basis 16) · auge-klasse.cjs trägt die
-Zeile P schon („Bildpaar Kitz/Hirsch Panel“). DREI Diffs (Post 28.11. 02:25): Fach + Station in lebenszyklus2.diff (faecher.cjs ·
-k2-leben.js), der Satz der Quellen in lebenszyklus2-quellen.diff (vision/pruefer/quellen.json, `git apply` auf Blob 67266b2 OK).
+Basis: punkte-maschine 28.11. 03:10 — die Blobs faecher.cjs bf57832 · k2-leben.js 4f1f810 · quellen.json 180c397 (nach boden#1 pm
+24e2a187); `git apply` aller drei Diffs auf diese Blobs OK. auge-klasse.cjs trägt die Zeile P schon („Bildpaar Kitz/Hirsch Panel“).
+DREI Diffs (Post 28.11. 02:25): Fach + Station in lebenszyklus2.diff (faecher.cjs · k2-leben.js), der Satz der Quellen in
+lebenszyklus2-quellen.diff (vision/pruefer/quellen.json).
+ORT UND BILDZAHL (Post 03:03): wiese (der Messort der Station, kein stadt-voll) · 20 je Klasse im Wechsel an EINER Uhr (Mittag) = 40 Bilder.
 
 Kein Soll, kein Richter-Text, kein Umfang der Karte wird geändert.
 
 1. DAS FACH (vision/pruefer/faecher.cjs „leben.tiere.lebenszyklus#2“)
-   - Frage: „Ist das Tier in der Bildmitte ein Jungtier oder ein ausgewachsenes Tier?“ — je 22 im Wechsel, Ordner leben.tiere.lebenszyklus.2-b1.
-   - Ort wiese (die Station: AUGE_ORT). Saison sommer (die Station: „im Frühsommer“), Uhren der Fächer-Reihe.
+   - Frage: „Ist das Tier in der Bildmitte ein Jungtier oder ein ausgewachsenes Tier?“ — je 20 im Wechsel, Ordner leben.tiere.lebenszyklus.2-b1.
+   - Ort wiese (die Station: AUGE_ORT). Saison sommer (die Station: „im Frühsommer“), EINE Uhr 0,5 (Mittag, das Tageslicht der Station —
+     ohne `uhren` fächerte das Fach über die neun Uhren der Reihe: bis 396 Bilder; der Selbsttest nagelt 20 × 2 × 1 = 40).
    - Posen aus dem Gesetz: JEDES Tier des Bestands mit Leib in der Szene (`userData._bestand`). Third aus 15 m von der Seite des Spielers,
      3 m über Grund, Blick auf die Mitte der Leib-Box (die Station: „Third auf eine Herde mit Kitz aus 15 m“).
    - Die WAHRE Klasse aus der Welt: Jungtier = alterS < min(0,1 · Lebensdauer, Reife), Alttier = alterS ≥ Reife (`_bestandErbe(t).tod/.reif`,
      leben-core lebensdauerS · reifeS); dazwischen keine Klasse.
    - Das Ziel trägt den Namen seiner Klasse: steht kein Leib binnen 1,5 m am Blickziel oder ist er UNGEZEICHNET (masse#1), ist die
      Abnahme ROT und das Bild trägt kein Motiv. motiv = an der Pose ∧ ABNAHME GRÜN, wahl 0.
-   - Selbsttest 16 GRÜN · 0 ROT (Basis 15). Die neue Zeile liest die Station am Wortlaut (`istJung`, jungBruch 0,1): die Mutante
-     „ohne Reife“ in k2-leben.js → die Zeile ROT (15 GRÜN · 1 ROT).
+   - Selbsttest 17 GRÜN · 0 ROT (Basis bf57832: 16). Die neue Zeile liest die Station am Wortlaut (`istJung`, jungBruch 0,1): die Mutante
+     „ohne Reife“ in k2-leben.js → die Zeile ROT; die Mutante „ohne uhren“ → die Zeile ROT (16 GRÜN · 1 ROT).
 
 2. DIE STATION LIEST DAS GESETZ DES SPIELS (k2-leben.js) — die Klasse „A.FAUNA_MAX_AGE_MS“, sechs Stellen in einer Welle
    `FAUNA_MAX_AGE_MS` fiel mit c6038905 (git grep am main 27d2f60e leer); jede Probe las NaN:
@@ -35,6 +38,8 @@ Kein Soll, kein Richter-Text, kein Umfang der Karte wird geändert.
    - ohne (am Titel): Karte, Zeichnung, Stich, Museum, Präparat, Schädel, Zoo/Gehege, Nahaufnahme/Kopf/Porträt, Jagd/Kadaver, Haustier,
      liegend/versteckt/neugeboren (nicht die Pose „steht in der Wiese“), Schnee/Winter und die Wintermonate (die Station: Frühsommer);
      im Alttier-Satz dazu Kitz/Kalb/Jung/Zwillinge und Geweih/Brunft (Hirschkuh und Ricke, die Herde des Kitz).
+   - Je Satz die Felder des Musters boden#1: motiv, dateien [], liegenGeblieben [], stand („ungeholt — geholt wird am Gerät …“ mit der
+     Treffer-Zahl der Suche), ablage 2afc/wikimedia-commons/<id>.
    - GEMESSEN: `hole.cjs --nur <id> --trocken` auf dem Kandidaten: kitz 45 von 45 · hirschkuh 30 von 30 · ricke 25 von 25, liegen
      geblieben 0 (die Abfrage trägt mehr: fawn 204 frei, hind 33, doe 30 vor dem Wintermonats-Filter). UNGESICHTET, bis der Bauer am
      Gerät Bild für Bild liest (die Wand des Manifests); `summe` schreibt hole.cjs beim Holen selbst, der Diff fasst sie nicht an.
