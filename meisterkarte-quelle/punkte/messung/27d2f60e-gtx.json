@@ -1,7 +1,7 @@
 {
  "sha": "27d2f60e46a1f78c9b9151bc911f13312be7fce5",
  "geraet": "gtx",
- "zeit": "2026-11-28T05:09:54.067Z",
+ "zeit": "2026-11-28T05:19:18.088Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "profiband.K4#1": {
@@ -1913,18 +1913,132 @@
   },
   "karte2.same.entfaltung.schirm#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: Prozess unbekannt · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\3aaa2852-0ec4-4311-8efa-355fa28ae5a1.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\punkte-gtx\\\\scripts\\\\lib\\\\welt-boot.c) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: Prozess unbekannt · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\3aaa2852-0ec4-4311-8efa-355fa28ae5a1.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\punkte-gtx\\\\scripts\\\\lib\\\\welt-boot.c) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-28T05:09:54.044Z",
+   "zahl": "Deckel 139 s gerissen: Stille seit 15 s nach 455.3 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt, kein Schritt der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT stadt 439.2 s)",
+   "exit": 1,
+   "minuten": 7.71,
+   "grund": "Deckel 139 s gerissen: Stille seit 15 s nach 455.3 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt, kein Schritt der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT stadt 439.2 s)",
+   "s": 462.7,
+   "fremd": {
+    "s": 493.4,
+    "takte": 222,
+    "fremdS": 149.27,
+    "kerne": 0.303,
+    "fensterKerne": 0.578,
+    "namen": [
+     [
+      "bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \"",
+      27.09
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      20.39
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-27d2f60e-w061758 x listen/kandidat-gtx-27d2f60e-w061758.txt",
+      13.27
+     ]
+    ],
+    "dienerS": 133.77,
+    "diener": [
+     [
+      "System",
+      64.73
+     ],
+     [
+      "dwm.exe",
+      32.81
+     ]
+    ],
+    "geraetS": 247.41,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      175.86
+     ],
+     [
+      "svchost.exe",
+      63.81
+     ],
+     [
+      "SearchIndexer.exe",
+      3.06
+     ]
+    ],
+    "eigenS": 1632.88,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.436,
+     "nach": 0.132,
+     "station": 1.011
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 100.1,
+     "alle": 235.7,
+     "cpuEin": 94,
+     "tor": {
+      "ruhig": true,
+      "kerne": 2.82,
+      "s": 2,
+      "soll": 3,
+      "reihe": [
+       6.35,
+       5.16,
+       3.56,
+       2.86,
+       2.84,
+       2.75
+      ]
+     },
+     "spanne": [
+      1795843160105,
+      1795843160572
+     ]
+    },
+    "nach": {
+     "ein": 171.1,
+     "alle": 404.6,
+     "cpuEin": 157,
+     "tor": {
+      "ruhig": true,
+      "kerne": 2.24,
+      "s": 24.1,
+      "soll": 3,
+      "reihe": [
+       3.88,
+       3.71,
+       4.15,
+       3.37,
+       1.8,
+       1.54
+      ]
+     },
+     "spanne": [
+      1795843647332,
+      1795843648171
+     ]
+    },
+    "ruhe": {
+     "ein": 89.2,
+     "alle": 220.9,
+     "n": 1190,
+     "von": "2026-11-27"
+    },
+    "f": 1.918,
+    "fEin": 1.918,
+    "fAlle": 1.832,
+    "verdraengt": 1,
+    "schwankt": true,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-28T05:19:18.088Z",
    "abdruck": "0b389cec986f",
    "port": 7804,
    "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1,
-   "fahrt": "2896@mwzxvyrz"
+   "modus": "session"
   },
   "karte2.planet.relief.grossform#1": {
    "gruen": false,
@@ -1943,81 +2057,48 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-28T02:38:16.989Z",
-  "ordner": "sitzung-20261128-033816",
+  "start": "2026-11-28T05:18:36.886Z",
+  "ordner": "sitzung-20261128-061836",
   "port": 7804,
-  "warten": 0.03,
-  "bootS": 7.6,
-  "grundstellungS": [
-   0.2
-  ],
-  "proben": 2,
+  "warten": 0.02,
+  "bootS": 6.9,
+  "grundstellungS": [],
+  "proben": 1,
   "freigaben": [],
   "geraet": {
    "name": "GTX 1060",
    "adapter": "NVIDIA GeForce GTX 1060",
    "preis": true
   },
-  "offen": [
-   "karte2.same.preis.ausdauer#1",
-   "karte2.leben.tiere.masse#1",
-   "karte2.mensch.macht.recht#1",
-   "karte2.mensch.nahrung.tier#2",
-   "karte2.leben.oeko.netz#2",
-   "karte2.leben.evolution.fremde-physik#1",
-   "karte2.same.kopplung.ereignis#2",
-   "karte2.same.kopplung.gewalt#1",
-   "karte2.same.kopplung.kohaerenz#1",
-   "karte2.same.kopplung.terraform#1",
-   "karte2.erleben.klang.stimme#1"
-  ],
   "orte": [
    {
-    "ort": "genesis",
-    "vor": "karte2.planet.kosmos.himmelsmechanik#1",
-    "s": 26.1,
-    "takte": 534,
+    "ort": null,
+    "vor": "karte2.same.entfaltung.schirm#1",
+    "s": 27.5,
+    "takte": 779,
     "chunks": 81,
-    "nach": "der Grundstellung"
+    "nach": null
    }
   ],
   "wegeTueren": [],
-  "felder": [
+  "felderBlind": [
    {
-    "probe": "profiband.K4#1",
-    "weg": [
-     "__ortZeit",
-     "__weltaktSpionBuch",
-     "__wetterSpionBuch",
-     "__buehneUhr",
-     "__impostorRttBaked",
-     "__flussBibliothekS",
-     "__zensusCalls",
-     "__k4"
-    ]
-   },
-   {
-    "probe": "karte2.planet.kosmos.himmelsmechanik#1",
-    "weg": [
-     "__linse___aufnahmeRuhig",
-     "__imSchuss",
-     "__ruheBilder",
-     "__wegProbe",
-     "__abbruchEpoche"
-    ]
+    "probe": "karte2.same.entfaltung.schirm#1",
+    "wann": "nach",
+    "fehler": "/eval ohne Antwort binnen 30 s"
    }
   ],
   "wirt": [
    {
-    "probe": "profiband.K4#1",
+    "probe": "karte2.same.entfaltung.schirm#1",
     "anders": [
      "r._bildZeit",
      "r._wolkenZeit",
      "r._weltaktGehalten",
      "r._setWeather",
-     "r._feuchteLeser",
-     "r._knotenRate",
      "r.state.weather",
+     "window.__wieseMessen",
+     "window.__wieseUrteil",
      "window.__ortSchritt"
     ],
     "wie": {
@@ -2025,95 +2106,50 @@
      "r._wolkenZeit": "getauscht: () => S.T → der Wert 12.5",
      "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
      "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
-     "r._feuchteLeser": "neu: (px, pz, py) => this._feuchteAt(px, pz, py)",
-     "r._knotenRate": "neu: function (N, ro) { const t0 = performance.now(); const s = kr.apply(this, argume",
      "r.state.weather": "getauscht: () => wert → der Wert sunny",
+     "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
+     "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
      "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
     },
     "haelt": [],
     "heap": [
-     null,
-     286.8
+     201,
+     603.5
     ],
     "ungemessen": null
-   },
-   {
-    "probe": "karte2.planet.kosmos.himmelsmechanik#1",
-    "anders": [
-     "window.__tagKurve",
-     "window.__wieseMessen",
-     "window.__wieseUrteil",
-     "window.__ortSchritt",
-     "window.__aufnahmeRuhig",
-     "window.__linse___tagKurve"
-    ],
-    "wie": {
-     "window.__tagKurve": "getauscht: function tagKurve(o) { return (async () => { const T = window.THREE; const rend ",
-     "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
-     "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
-     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit",
-     "window.__aufnahmeRuhig": "neu: function ausgabeAufnahme(W, H, warm, opt) { return (async () => { const T = wind",
-     "window.__linse___tagKurve": "neu: function tagKurve(o) { return (async () => { const T = window.THREE; const rend "
-    },
-    "haelt": [
-     "window.__linse___aufnahmeRuhig = window.__aufnahmeRuhig; window.__aufnahmeRuhig = function ausgabeAufnahme(W, H, warm, o",
-     "return await __tagKurve({\"uhren\":[0.082,0.084,0.086,0.088,0.092,0.094,0.096,0.098,0.102,0.104,0.106,0.108,0.112,0.114,0."
-    ],
-    "heap": [
-     251.5,
-     1205.3
-    ],
-    "ungemessen": "die Arbeit der Probe läuft noch: /eval werkbank/eval/ruf-22.js (Rufer tot seit 33.4 s) · den Kontext der Probe hält noch: window.__linse___aufnahmeRuhig = window.__aufnahmeRuhig; window.__aufnahmeRuhig = function ausgabeAufnahme(W, H, warm, o | return await __tagKurve({\"uhren\":[0.082,0.084,0.086,0.088,0.092,0.094,0.096,0.098,0.102,0.104,0.106,0.108,0.112,0.114,0. — Heap nach der Rücknahme 251.5 → 1205.3 MB (+953.8 > 64)"
    }
   ],
   "messHalt": [
    {
-    "probe": "profiband.K4#1",
+    "probe": "karte2.same.entfaltung.schirm#1",
     "halt": -1000000000,
     "zurueck": 0
-   },
-   {
-    "probe": "karte2.planet.kosmos.himmelsmechanik#1",
-    "gehalten": [
-     "skala",
-     "spiegel"
-    ],
-    "offen": []
    }
   ],
-  "wanderung": [
-   {
-    "probe": "karte2.planet.kosmos.himmelsmechanik#1",
-    "ort": "genesis",
-    "m": 1082.54,
-    "dreh": 0.401
-   }
-  ],
-  "grund": "die Welt trägt nicht mehr vor karte2.same.preis.ausdauer#1: /fenster ohne Antwort binnen 30 s — offen: karte2.same.preis.ausdauer#1, karte2.leben.tiere.masse#1, karte2.mensch.macht.recht#1, karte2.mensch.nahrung.tier#2, karte2.leben.oeko.netz#2, karte2.leben.evolution.fremde-physik#1, karte2.same.kopplung.ereignis#2, karte2.same.kopplung.gewalt#1, karte2.same.kopplung.kohaerenz#1, karte2.same.kopplung.terraform#1, karte2.erleben.klang.stimme#1",
-  "ciBlicke": 4,
+  "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 244,
-   "frameP95": 91.67,
-   "taktP95": 79.93,
-   "vramMax": 148.6,
-   "seiten": 3,
-   "marken": 1,
+   "bilder": 834,
+   "frameP95": 49.99,
+   "taktP95": 41.2,
+   "vramMax": 260.3,
+   "seiten": 1,
+   "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "karte2.planet.kosmos.himmelsmechanik#1",
-     "m": 1083,
+     "probe": "karte2.same.entfaltung.schirm#1",
+     "m": 1204,
      "ringVor": 4,
      "ringMin": -1
     }
    ],
-   "zapfen": 813,
-   "luecken": 1,
-   "letzteLuecke": "kein Renderer"
+   "zapfen": 489,
+   "luecken": 4,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
   },
-  "fahrtS": 866.4,
-  "minuten": 14.62
+  "fahrtS": 572.7,
+  "minuten": 9.73
  }
 }
