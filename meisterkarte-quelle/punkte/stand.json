@@ -18252,7 +18252,7 @@
   },
   "karte2.mensch.kultur.erzaehlkunst": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.erzaehlkunst#1 radeon: ungemessen (R10) · karte2.mensch.kultur.erzaehlkunst#1 gtx: Station seit der Messung geändert · karte2.mensch.kultur.erzaehlkunst#2 radeon: ungemessen (R10) · karte2.mensch.kultur.erzaehlkunst#2 gtx: ungemessen (R10) · karte2.mensch.kultur.erzaehlkunst#3 radeon: ungemessen (R10) · karte2.mensch.kultur.erzaehlkunst#3 gtx: ungemessen (R10) · karte2.mensch.kultur.erzaehlkunst#4 radeon: ungemessen (R10) · karte2.mensch.kultur.erzaehlkunst#4 gtx: ungemessen (R10) · karte2.mensch.kultur.erzaehlkunst#5 radeon: ungemessen (R10) · karte2.mensch.kultur.erzaehlkunst#5 gtx: ungemessen (R10) · karte2.mensch.kultur.erzaehlkunst#6 radeon: ungemessen (R10) · karte2.mensch.kultur.erzaehlkunst#6 gtx: ungemessen (R10) · karte2.mensch.kultur.erzaehlkunst#7 radeon: ungemessen (R10) · karte2.mensch.kultur.erzaehlkunst#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.erzaehlkunst#1 radeon: ungemessen (R10) · karte2.mensch.kultur.erzaehlkunst#1 gtx: ROT: S1 ROT: fehlender Leser: keine Bühne, kein Erzähler: der Abend trifft sich im Gasthaus (treff), kein Stück, kein Publikum (koerper-core.js:5182) · gemessen 0 · [linse-gpu] nvidia/pascal an e80f9c5d · karte2.mensch.kultur.erzaehlkunst#2 radeon: ungemessen (R10) · karte2.mensch.kultur.erzaehlkunst#2 gtx: ungemessen (R10) · karte2.mensch.kultur.erzaehlkunst#3 radeon: ungemessen (R10) · karte2.mensch.kultur.erzaehlkunst#3 gtx: ungemessen (R10) · karte2.mensch.kultur.erzaehlkunst#4 radeon: ungemessen (R10) · karte2.mensch.kultur.erzaehlkunst#4 gtx: ungemessen (R10) · karte2.mensch.kultur.erzaehlkunst#5 radeon: ungemessen (R10) · karte2.mensch.kultur.erzaehlkunst#5 gtx: ungemessen (R10) · karte2.mensch.kultur.erzaehlkunst#6 radeon: ungemessen (R10) · karte2.mensch.kultur.erzaehlkunst#6 gtx: ungemessen (R10) · karte2.mensch.kultur.erzaehlkunst#7 radeon: ungemessen (R10) · karte2.mensch.kultur.erzaehlkunst#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.kultur.erzaehlkunst#1",
@@ -18268,10 +18268,10 @@
      "id": "karte2.mensch.kultur.erzaehlkunst#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true,
+     "zahl": "S1 ROT: fehlender Leser: keine Bühne, kein Erzähler: der Abend trifft sich im Gasthaus (treff), kein Stück, kein Publikum (koerper-core.js:5182) · gemessen 0 · [linse-gpu] nvidia/pascal",
+     "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
+     "grund": "ROT: S1 ROT: fehlender Leser: keine Bühne, kein Erzähler: der Abend trifft sich im Gasthaus (treff), kein Stück, kein Publikum (koerper-core.js:5182) · gemessen 0 · [linse-gpu] nvidia/pascal",
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -21010,7 +21010,7 @@
   },
   "karte2.mensch.menge.bild": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 25 Menschen im Bild, 15 gehend (Soll ≥ 10 · ≥ 3) am Dorfplatz um 08:04 (Soll 08:00), third · Stände 77, davon mit Leib 1 · 34.3 fps · [linse-gpu] amd/rdna-3 an e489088a radeon · gehalten: 25 Menschen im Bild, 15 gehend (Soll ≥ 10 · ≥ 3) am Dorfplatz um 08:04 (Soll 08:00), third · Stände 77, davon mit Leib 1 · 24.9 fps · [linse-gpu] nvidia/pascal an 18058dba gtx — offen: karte2.mensch.menge.bild#2 radeon: ungemessen (R10) · karte2.mensch.menge.bild#2 gtx: Station seit der Messung geändert — zuletzt an e80f9c5d: die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 114 s von karte2.mensch.menge.bild#2) — offen, UNGEMESSEN · karte2.mensch.menge.bild#3 radeon: ungemessen (R10) · karte2.mensch.menge.bild#3 gtx: ungemessen (R10) · karte2.mensch.menge.bild#4 radeon: ungemessen (R10) · karte2.mensch.menge.bild#4 gtx: Station seit der Messung geändert · karte2.mensch.menge.bild#5 radeon: ungemessen (R10) · karte2.mensch.menge.bild#5 gtx: Station seit der Messung geändert · karte2.mensch.menge.bild#6 radeon: ungemessen (R10) · karte2.mensch.menge.bild#6 gtx: Station seit der Messung geändert · karte2.mensch.menge.bild#7 radeon: ungemessen (R10) · karte2.mensch.menge.bild#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: 25 Menschen im Bild, 15 gehend (Soll ≥ 10 · ≥ 3) am Dorfplatz um 08:04 (Soll 08:00), third · Stände 77, davon mit Leib 1 · 34.3 fps · [linse-gpu] amd/rdna-3 an e489088a radeon · gehalten: 25 Menschen im Bild, 15 gehend (Soll ≥ 10 · ≥ 3) am Dorfplatz um 08:04 (Soll 08:00), third · Stände 77, davon mit Leib 1 · 24.9 fps · [linse-gpu] nvidia/pascal an 18058dba gtx — offen: karte2.mensch.menge.bild#2 radeon: ungemessen (R10) · karte2.mensch.menge.bild#2 gtx: ROT: S2 ROT an Umfang 57 < 100 Menschen im Bild — Täter: im Bild 57 (drinnen 544, außer Bild 573, verdeckt 173) · Gehende im Bild 10 (Soll ≥ 40) · Zwillinge im Bild 0 (Soll ≤ 0) · Umfang 57 (Soll ≥ 100 Menschen im Bild) · Stände 1357, aus der Zählung {\"drinnen\":544,\"ungezeichnet\":10,\"ausserBild\":573,\"verdeckt\":173}, Auge [836.7,58,453.4], third, tod 0.3356, Takte 0 · [linse-gpu] nvidia/pascal an e80f9c5d · karte2.mensch.menge.bild#3 radeon: ungemessen (R10) · karte2.mensch.menge.bild#3 gtx: ungemessen (R10) · karte2.mensch.menge.bild#4 radeon: ungemessen (R10) · karte2.mensch.menge.bild#4 gtx: Station seit der Messung geändert · karte2.mensch.menge.bild#5 radeon: ungemessen (R10) · karte2.mensch.menge.bild#5 gtx: Station seit der Messung geändert · karte2.mensch.menge.bild#6 radeon: ungemessen (R10) · karte2.mensch.menge.bild#6 gtx: Station seit der Messung geändert · karte2.mensch.menge.bild#7 radeon: ungemessen (R10) · karte2.mensch.menge.bild#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.menge.bild#1",
@@ -21047,10 +21047,10 @@
      "id": "karte2.mensch.menge.bild#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an e80f9c5d: die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 114 s von karte2.mensch.menge.bild#2) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "S2 ROT an Umfang 57 < 100 Menschen im Bild — Täter: im Bild 57 (drinnen 544, außer Bild 573, verdeckt 173) · Gehende im Bild 10 (Soll ≥ 40) · Zwillinge im Bild 0 (Soll ≤ 0) · Umfang 57 (Soll ≥ 100 Menschen im Bild) · Stände 1357, aus der Zählung {\"drinnen\":544,\"ungezeichnet\":10,\"ausserBild\":573,\"verdeckt\":173}, Auge [836.7,58,453.4], third, tod 0.3356, Takte 0 · [linse-gpu] nvidia/pascal",
+     "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
+     "grund": "ROT: S2 ROT an Umfang 57 < 100 Menschen im Bild — Täter: im Bild 57 (drinnen 544, außer Bild 573, verdeckt 173) · Gehende im Bild 10 (Soll ≥ 40) · Zwillinge im Bild 0 (Soll ≤ 0) · Umfang 57 (Soll ≥ 100 Menschen im Bild) · Stände 1357, aus der Zählung {\"drinnen\":544,\"ungezeichnet\":10,\"ausserBild\":573,\"verdeckt\":173}, Auge [836.7,58,453.4], third, tod 0.3356, Takte 0 · [linse-gpu] nvidia/pascal",
+     "r6": "konsum"
     },
     {
      "id": "karte2.mensch.menge.bild#3",
@@ -37461,12 +37461,10 @@
    ]
   }
  },
- "rueckfall": [
-  "tiere.K5#1 gtx: ego (first) 0 Sichtungen in 601 Spiel-s (), 613 Prüfungen, 25 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 5 Sichtungen in 600 Spiel-s (baer 359 px 34 m 143 s · baer 328 px 33 m 146 s · fuchs 290 px 21 m 419 s · wesen 220 px 39 m 586 s · wesen 238 px 38 m 589 s), 620 Prüfungen, 40 Masken, Bestand bis 20, im Blick erschienen 0 an e80f9c5d (grün gebucht an b7ed8419)"
- ],
+ "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 305,
+  "konsum": 307,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37598,16 +37596,14 @@
    "karte2.same.kopplung.terraform#1 gtx",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3353
+  "ohne": 3351
  },
  "kopfVoll": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
- "zeit": "2026-11-28T09:40:04.799Z",
+ "zeit": "2026-11-28T09:56:53.386Z",
  "vorher": "e80f9c5d",
  "bilanz": {
   "gewinn": [],
-  "fall": [
-   "tiere.K5 1→0 (tiere.K5#1 gtx: ROT: ego (first) 0 Sichtungen in 601 Spiel-s (), 613 Prüfung)"
-  ],
+  "fall": [],
   "massenFall": false
  }
 }
