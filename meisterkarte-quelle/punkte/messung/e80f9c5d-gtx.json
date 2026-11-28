@@ -1,7 +1,7 @@
 {
  "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
  "geraet": "gtx",
- "zeit": "2026-11-28T11:37:27.214Z",
+ "zeit": "2026-11-28T11:39:47.550Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "profiband.K4#1": {
@@ -4472,18 +4472,67 @@
   },
   "karte2.same.physik.koerper#1": {
    "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 145 s von karte2.same.physik.koerper#1) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 145 s von karte2.same.physik.koerper#1) — offen, UNGEMESSEN",
+   "zahl": "Frist der Probe 139 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter same.physik.koerper) · Täter: @@PUNKTE@@ FRIST 139 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 2.32,
+   "grund": "Frist der Probe 139 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter same.physik.koerper) · Täter: @@PUNKTE@@ FRIST 139 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "nvidia/pascal",
    "ungemessen": true,
-   "zeit": "2026-11-28T08:57:38.806Z",
+   "s": 139.3,
+   "fremd": {
+    "s": 142.9,
+    "takte": 64,
+    "fremdS": 51.92,
+    "kerne": 0.363,
+    "fensterKerne": 0.573,
+    "namen": [
+     [
+      "bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \"",
+      7.81
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      6.28
+     ],
+     [
+      "bash.exe grenze.sh k01 1200 sk/vr2.cjs e80f9c5d0c5db273352ab3dcda920df4b149fe59 karte2.men",
+      5.25
+     ]
+    ],
+    "dienerS": 32.23,
+    "diener": [
+     [
+      "System",
+      13.94
+     ],
+     [
+      "dwm.exe",
+      7.48
+     ]
+    ],
+    "geraetS": 76.13,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      53.09
+     ],
+     [
+      "svchost.exe",
+      21.22
+     ],
+     [
+      "SearchIndexer.exe",
+      0.83
+     ]
+    ],
+    "eigenS": 539.3,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-28T11:39:47.550Z",
    "abdruck": "10e27827b664",
    "port": 7804,
    "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1,
-   "fahrt": "17520@mx05e57c"
+   "modus": "session"
   },
   "karte2.same.entfaltung.abwesenheit#1": {
    "gruen": false,
