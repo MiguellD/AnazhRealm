@@ -151,7 +151,7 @@ hält die GTX danach weiter auf der Stufe 41,7 ms, liegt der Täter nicht in der
 
 ## R11-Zuteilung: `karte2.mensch.kopplung.kultur#1` „Baustoff aus Boden und Klima“ — Täter-Zahl (Bau nach Kopf 4)
 
-Soll (Zweig `punkte-maschine`, `k2-zusammenspiel.js` KULTUR S1): 32 Saaten, passender Baustoff ≥ 85 % (Boden der Zelle: Fels ≥ 0,3 →
+Soll (Zweig `punkte-maschine`, die Station Zusammenspiel, KULTUR S1): 32 Saaten, passender Baustoff ≥ 85 % (Boden der Zelle: Fels ≥ 0,3 →
 Stein, Wald ≥ 0,5 → Holz, sonst Lehm; der Plan: der Mehrheits-Stil seiner Häuser), Region aus Hausbild ≥ 70 % (Panel).
 Gemessen am Kopf (Null-Renderer, die 32 Zellen der Station um Genesis, `_autoSettlementCellInfo`):
 - Plan wie die Station (`_foundryRequestSettlement({seed, nH})`): **10 von 32 = 31,3 %** passend.
