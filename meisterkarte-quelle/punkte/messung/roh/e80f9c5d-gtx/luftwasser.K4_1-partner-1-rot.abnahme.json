@@ -1,0 +1,135 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.466",
+  "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 218,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "nvidia pascal",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0.5556,
+  "taeter": {
+   "Laub baum_eiche": 0.5556
+  },
+  "vordergrund": {
+   "radius": 5.28,
+   "deckung": 0.6267,
+   "taeter": {
+    "Laub baum_eiche": 0.5538,
+    "Laub grown_busch_hazel_v2": 0.0313,
+    "Laub baum_birke": 0.026,
+    "Rinde baum_eiche": 0.0156
+   },
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": false,
+  "vor": "Rinde grown_busch_hazel_v2",
+  "vorAbstand": 3.57,
+  "leiber": null,
+  "abstand": 10.55,
+  "gestalt": [
+   "grown_busch_hazel_v2 185"
+  ],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -320.4,
+   31.143,
+   -1075.6
+  ],
+  "blick": [
+   0,
+   -0.31995,
+   -0.94743
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 58.9,
+  "sigma": 31.9,
+  "schwarz": 0.0015,
+  "weiss": 0
+ },
+ "ok": false,
+ "zeile": "ABNAHME ROT [Sicht verdeckt 55.6 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Laub baum_eiche 55.6 % · Vordergrund 62.7 % näher als 5.28 m (der halbe Ziel-Abstand): Laub baum_eiche 55.4 %, Laub grown_busch_hazel_v2 3.1 %, Laub baum_birke 2.6 % · Ziel Blickziel verdeckt von Rinde grown_busch_hazel_v2 in 3.57 m] · beweis · Sicht 55.6 % (Laub baum_eiche 55.6 %) · Ziel Blickziel im Bild VERDECKT 10.55 m · Luma 58.9 σ 31.9 schwarz 0.1 % weiß 0.0 % · Stand 18.546.466 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal",
+ "rot": [
+  {
+   "feld": "sicht.deckung",
+   "grund": "Sicht verdeckt 55.6 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Laub baum_eiche 55.6 %"
+  },
+  {
+   "feld": "sicht.vordergrund.deckung",
+   "grund": "Vordergrund 62.7 % näher als 5.28 m (der halbe Ziel-Abstand): Laub baum_eiche 55.4 %, Laub grown_busch_hazel_v2 3.1 %, Laub baum_birke 2.6 %"
+  },
+  {
+   "feld": "ziel.frei",
+   "grund": "Ziel Blickziel verdeckt von Rinde grown_busch_hazel_v2 in 3.57 m"
+  }
+ ],
+ "urteil": "ROT",
+ "klasse": {
+  "ausdruck": "^tier:bestaeuber|blume",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "kenn": {
+   "n": 8,
+   "tw": 1440,
+   "th": 810,
+   "ms": 2466,
+   "wechsel": 1164989
+  },
+  "rinde": null,
+  "toene": [
+   "f:blume:L0=255/80/80",
+   "f:blume:L0:holz=80/255/80",
+   "f:blume:L2=80/120/255",
+   "f:blume:L2:holz=255/220/60",
+   "streuNah:blume=255/80/255",
+   "tier:bestaeuber=60/230/230"
+  ],
+  "klassen": {
+   "streuNah:blume": {
+    "objekte": 8,
+    "pixel": 53
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\e80f9c5d-gtx\\luftwasser.K4_1-partner-1-rot.maske.png"
+ }
+}
