@@ -85,3 +85,17 @@ NACHTRAG zum vierten Kandidaten (28.11. 04:36 MEZ): neu gegen 5e895684 (die Basi
 - Geprüft: `git apply --check` an frischen Kopien von 5e895684 und vom pm-Kopf 1e388d30 GRÜN; Selbsttest des Fächers an 5e895684
   20 → 21 GRÜN · 0 ROT (neu: „die Brandfläche liest das Gesetz der Folge … je Ort EINE rückdatierte Tat „brand“, gerahmt“).
   OFFEN unverändert: 28 von 40, die Stufe 5 a trägt kein freies Foto — an die Wand erst mit 40.
+
+FÜNFTER KANDIDAT (28.11. 04:52 MEZ): das Fach leben.oeko.zerfall#2 — zerfall-2-fach.diff (4 Dateien, auf 5e895684 NACH dem vierten
+Kandidaten anzuwenden: beide Gesetze stehen am selben Ort im Fächer).
+- Fach: `zerfallGesetz` liest am Wortlaut der Station die Art und den Fall (`_kreaturFaellt`), die Tage des Solls S2 (0/3/10/30)
+  und die 10 Kadaver der Pose; je Kadaver ein Spawn im Größen-Band des Gesetzes, gealtert an `_tickLeichname`, gerahmt aus
+  8 Richtungen. Pose der Station (k2-leben.js, nur `auge.pose`; Soll und Richter unberührt). Ort `wiese`, Bildzahl 44 (je 11 × 4 Tage; der Rumpf gibt bis 80 Posen, 2 Rahmen je Kadaver und Tag).
+- Satz der Quellen `wildschwein-2020` (Liste, wahrheit = Tage seit dem Tod): Vet. Sci. 2020 (doi 10.3390/vetsci7010006, CC BY 4.0),
+  Abb. 2 (16 Felder) · 3 (16) · 5 (8) · 6 (12) · 8 (12) · 9 (12), Abb. 7 fällt → 38 Felder in den Bändern 0 · 3 · 10 · 30 Tage
+  (2 · 4 · 14 · 18).
+- Geprüft: `git apply --check` an einer frischen Kopie von 5e895684 nach dem vierten Kandidaten GRÜN; Selbsttest 21 → 22 GRÜN · 0 ROT;
+  `hole.cjs --trocken --nur wildschwein-2020`: „geholt 0 von 40 · liegen geblieben 38“ (zum Vergleich yellowstone-1988: 28 von 40).
+  OFFEN: Korpus 38 von 40, und 0 an der Wand — der Holer liest den Wirt mdpi-res.com nicht (LISTEN_QUELLEN) und schneidet kein
+  Feld einer Tafel (#xywh=percent); das Band 0 Tage trägt 2 Fotos. Die Station trägt keine Verwesungsstufe (`_tickLeichname`):
+  das Fach misst sie, es heilt sie nicht.

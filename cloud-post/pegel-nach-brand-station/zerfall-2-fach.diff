@@ -1,0 +1,196 @@
+diff --git a/meisterkarte-quelle/punkte/stationen/k2-leben.js b/meisterkarte-quelle/punkte/stationen/k2-leben.js
+index 63edb39..8c106de 100644
+--- a/meisterkarte-quelle/punkte/stationen/k2-leben.js
++++ b/meisterkarte-quelle/punkte/stationen/k2-leben.js
+@@ -6208,7 +6208,7 @@ L.perspektive("oeko", (() => {
+                     2: {
+                         u: { auge: { ort: "wiese" } },
+                         soll: [K.soll(ZE, 2, "Bildreihe 0/3/10/30 Tage", { key: "kadaverTage", rel: "≥", zahl: 30, einheit: "Tage" })],
+-                        auge: { pose: "Ego vor 10 Kadavern jeder Größe (heute: die Wiese)", vorbild: "Bildreihe 0/3/10/30 Tage gegen eine forensische Referenz; Gilde-Folge gegen Kamerafallen-Studien (Prüfer-Satz R11)" },
++                        auge: { pose: "Ego 1,7 m vor 10 Kadavern jeder Größe (die Art der Station im Größen-Band des Gesetzes) an der Wiese, je 0/3/10/30 Tage nach dem Fall gealtert an `_tickLeichname`, gerahmt aus 8 Richtungen (Fächer leben.oeko.zerfall#2)", vorbild: "Bildreihe 0/3/10/30 Tage gegen eine forensische Referenz; Gilde-Folge gegen Kamerafallen-Studien (Prüfer-Satz R11)" },
+                         taeter: "stamm/kreatur-leben.js _tickLeichname (keine Verwesungsstufe)",
+                         nicht: "keine Verwesungsstufen, keine Gilde-Folge",
+                         leser: "stamm/kreatur-leben.js:3179 _tickLeichname — kennt Fleisch und Sinken, keine Verwesungsstufe; kein Vogel, kein Insekt am Aas",
+diff --git a/vision/pruefer/faecher.cjs b/vision/pruefer/faecher.cjs
+index 4918e8e..107daa3 100644
+--- a/vision/pruefer/faecher.cjs
++++ b/vision/pruefer/faecher.cjs
+@@ -170,6 +170,25 @@ function folgeGesetz() {
+     return { orte: +ruf[1], abstand: ruf[2], jahrH, ort: t.slice(a, e + zz.length).replace(/\s*\n\s*/g, " "), jahre: soll[1].split("/").map(Number) };
+ }
+ 
++// DAS GESETZ DES ZERFALLS (k2-leben.js, Leiter leben.oeko.zerfall, Rumpf `kadaver`, kein `seite`-Export): am Wortlaut gefasst — die
++// Art des Kadavers und sein Fall (der Spawn und `_kreaturFaellt` im Rumpf), die Tage des Solls S2 („Bildreihe 0/3/10/30 Tage“) und
++// die Zahl der Kadaver der Pose S2 („Ego … vor 10 Kadavern jeder Größe“). Ändert die Station eines davon, wirft der Fächer beim Namen.
++function zerfallGesetz() {
++    const t = fs.readFileSync(path.join(STATIONEN, "k2-leben.js"), "utf8");
++    const weg = (was) => {
++        throw new Error("Gesetz fehlt: k2-leben.js trägt " + was + " im Zerfall nicht mehr");
++    };
++    const a = t.indexOf("const kadaver = async (r, T, a) => {"),
++        e = t.indexOf("aus.tagS = r._kalender().tagS;", a);
++    if (a < 0 || e < 0 || e - a > 6000) weg("den Rumpf `kadaver` (Spawn, Fall, Tag)");
++    const k = t.slice(a, e);
++    const sp = k.match(/r\.spawnCreatureAt\(p\.x, pm\.y, p\.z, "happy", "(\w+)", \{ precise: true, bodySize: 1 \}\)/) || weg("den Spawn des Kadavers");
++    if (!/r\._kreaturFaellt\(k\);/.test(k)) weg("den Fall `_kreaturFaellt`");
++    const soll = t.match(/K\.soll\(ZE, 2, "Bildreihe ([\d/]+) Tage"/) || weg("das Soll S2 „Bildreihe … Tage“");
++    const n = t.match(/pose: "Ego[^"]*? vor (\d+) Kadavern jeder Größe/) || weg("die Pose S2 „Ego … vor … Kadavern jeder Größe“");
++    return { art: sp[1], tage: soll[1].split("/").map(Number), n: +n[1] };
++}
++
+ // JE SPROSSE: der Messort, die Zeile des Gesetzes, der Rumpf in der Seite (r = Welt, T = THREE) → { saat, posen: [{ pose, wort }], lage }
+ const SPROSSEN = {
+     // der Ortsrand: die Station nimmt von 8 Richtungen die mit den meisten Häusern im Kegel der Kamera (k2-mensch-stadt.js:224–236,
+@@ -601,6 +620,47 @@ const SPROSSEN = {
+             );
+         },
+     },
++    // der Kadaver nach 0/3/10/30 Tagen: die Station lässt im Rumpf `kadaver` (k2-leben.js:6055) einen Hirsch fallen
++    // (`_kreaturFaellt`) und liest seine Frist (Nachklang + Sinken ÷ Tag); der Fächer lässt an der Wiese die Zahl der Pose (10)
++    // fallen, die Größen gleich verteilt über das Band des Gesetzes (`_lebenKern().spanne()`), je Größe jedes Alter des Solls, und
++    // altert jeden Kadaver allein am Gesetz des Leichnams (`_tickLeichname`, die Liste der Gefallenen nur er — wie die Station) um
++    // Kipp-Dauer + Vorlauf + Alter × Tag (`_kalender().tagS`, die Zeit der Welt, nie gemalt); was das Gesetz in der Frist versinken
++    // lässt, fehlt im Bild — dort rahmt der Fächer den Ort, an dem er lag. Gerahmt (RAHMEN, die Höhe des liegenden Leibs) aus 8
++    // Richtungen, die ersten 2 freien; das Alter ist die Klasse und reist in die Akte. Kein Fleisch, keine Stufe wird gemalt.
++    "leben.oeko.zerfall#2": {
++        ort: "wiese",
++        gesetz: "meisterkarte-quelle/punkte/stationen/k2-leben.js:6055",
++        faecher: "10 Kadaver der Art der Station im Größen-Band des Gesetzes × die Tage des Solls (0/3/10/30), gealtert an `_tickLeichname`, je Kadaver gerahmt (RAHMEN, liegender Leib) aus 8 Richtungen, die ersten 2 freien, Mittag",
++        ordner: "leben.oeko.zerfall.2-b1",
++        uhren: [0.5],
++        frage: "Welches Bild ist das Foto?",
++        je: 11,
++        mehr: {},
++        wahl: 0,
++        motiv: (a) => AN_DER_POSE(a) && GRUEN(a),
++        rumpf: () => {
++            const G = zerfallGesetz();
++            return (
++                SAAT +
++                "const s = r.state, pm = s.playerMesh.position, A = r.constructor, ART = " + JSON.stringify(G.art) + ", N = " + G.n + ", TAGE = " + JSON.stringify(G.tage) + ", tagS = r._kalender().tagS;" +
++                "const [lo, hi] = A._lebenKern().spanne(), auge = r._lodAuge() || pm, zeilen = r._schirm().hoehe;" +
++                RAHMEN +
++                "const posen = [], je = {}, liegt = {}; let ohneFrei = 0, i = 0;" +
++                "for (let g = 0; g < N; g++) for (const D of TAGE) { const bs = Math.round((lo + ((hi - lo) * (g + 0.5)) / N) * 1000) / 1000;" +
++                " let x = pm.x - 35 + (i % 8) * 10, z = pm.z + 25 + Math.floor(i / 8) * 10; i++; for (let q = 0; q < 6 && !r._landAt(x, z); q++) z += 4;" +
++                " const k = r.spawnCreatureAt(x, pm.y, z, 'happy', ART, { precise: true, bodySize: bs }); if (!k) throw new Error('Spawn ' + ART);" +
++                " r._kreaturFaellt(k); const dy = k.userData.dying, ziel = dy.dauer + A.TOD_LAGE.vorlaufSec + D * tagS, schritt = Math.max(0.25, ziel / 2000), L0 = s.leichname, L = [k];" +
++                " const leib = r._kreaturLeib(k, 0, {}), kx = k.position.x, kz = k.position.z;" +
++                " try { s.leichname = L; while (L.length && dy.t < ziel) r._tickLeichname(Math.min(schritt, ziel - dy.t), auge, zeilen); } finally { s.leichname = L0; }" +
++                " if (!L.length && L0.indexOf(k) >= 0) L0.splice(L0.indexOf(k), 1); liegt[D] = (liegt[D] || 0) + (L.length ? 1 : 0);" +
++                " const y0 = r.getTerrainHeightAt(kx, kz), T0 = { x: kx, z: kz, h: Math.max(0.5, 2 * leib.radius), y0, rad: leib.halb + leib.radius }, w = Math.atan2(kz - pm.z, kx - pm.x); let n = 0;" +
++                " for (let o = 0; o < 8 && n < 2; o++) { const f = rahmen(T0, w + Math.PI + (o * Math.PI) / 4); if (!f.frei) continue; n++; je[D] = (je[D] || 0) + 1;" +
++                "  posen.push({ klasse: D + ' Tage', pose: f.pose, wort: 'Kadaver ' + (g + 1) + ' von ' + N + ' (' + ART + ', Größe ' + bs + ', ' + kx.toFixed(1) + '/' + kz.toFixed(1) + '): ' + D + ' Tage nach dem Fall — ' + (L.length ? 'liegt, Fleisch ' + Math.round(((k.userData.kadaver && k.userData.kadaver.fleisch) || 0) * 10) / 10 : 'versunken nach ' + Math.round(dy.dauer + dy.nachklang) + ' s') + '; gerahmt aus ' + Math.round(f.d) + ' m' }); }" +
++                " if (!n) ohneFrei++; }" +
++                "return { saat, posen, lage: N + ' Kadaver × ' + TAGE.length + ' Alter (Tag ' + tagS + ' s), Größe ' + lo + '–' + hi + ', gerahmt ' + JSON.stringify(je) + ', liegend ' + JSON.stringify(liegt) + ', ohne freie Richtung ' + ohneFrei };"
++            );
++        },
++    },
+ };
+ 
+ // ───────────────────────── reine Teile (der Selbsttest fährt sie) ─────────────────────────
+@@ -912,6 +972,8 @@ function selbsttest() {
+     t("der Boden am Hang liest das Gesetz der Station: BODEN_AN, HANG_BLICK und den Strom der Saat 12345 (100 Posen), nie eine eigene Formel", /BODEN_AN = async \(r, T, a, mit\) =>/.test(boden) && /HANG_BLICK = \(r, x, z\) =>/.test(boden) && /let sz = 12345;/.test(boden) && /p < N; p\+\+/.test(boden) && !/u1\.posen/.test(boden));
+     const folge = rumpf.startsWith("FEHLER") ? "" : SPROSSEN["leben.oeko.sukzession#2"].rumpf();
+     t("die Brandfläche liest das Gesetz der Folge: die Orte der Station (16, Abstand 40/70/100/130), ihr Spieljahr und die Jahre des Solls (1/5/25), je Ort EINE rückdatierte Tat „brand“, gerahmt", /orte: 16, abstand: \[40, 70, 100, 130\]/.test(folge) && /const w = \(i \/ a\.orte\) \* Math\.PI \* 2;/.test(folge) && /K\.tagStunden \* K\.jahrK/.test(folge) && /JAHRE = \[1,5,25\]/.test(folge) && /_tatSchreiben\('brand', x, z, \{ h: /.test(folge) && /rahmen\(T0, /.test(folge) && (folge.match(/_tatSchreiben\(/g) || []).length === 1);
++    const zerfall = rumpf.startsWith("FEHLER") ? "" : SPROSSEN["leben.oeko.zerfall#2"].rumpf();
++    t("der Kadaver liest das Gesetz des Zerfalls: Art und Fall der Station (wesen, _kreaturFaellt), die Tage des Solls (0/3/10/30), die 10 Kadaver der Pose im Größen-Band, gealtert an _tickLeichname, gerahmt", /ART = "wesen", N = 10, TAGE = \[0,3,10,30\]/.test(zerfall) && /_kreaturFaellt\(k\)/.test(zerfall) && /_tickLeichname\(/.test(zerfall) && /_lebenKern\(\)\.spanne\(\)/.test(zerfall) && /rahmen\(T0, /.test(zerfall) && (zerfall.match(/spawnCreatureAt\(/g) || []).length === 1);
+     let wurf = "";
+     try {
+         seiteVon("k2-mensch-stadt.js", "mensch.stadt.groesse", "GIBTESNICHT");
+diff --git a/vision/pruefer/listen/wildschwein-2020.csv b/vision/pruefer/listen/wildschwein-2020.csv
+new file mode 100644
+index 0000000..09f3427
+--- /dev/null
++++ b/vision/pruefer/listen/wildschwein-2020.csv
+@@ -0,0 +1,41 @@
++# Wildschwein-Kadaver, Vet. Sci. 2020 (doi 10.3390/vetsci7010006, CC BY 4.0): Abb. 2/3/5/6/8/9, je Feld ein Foto desselben Kadavers, die Tage seit dem Tod je Feld (wahrheit, Tage)
++# gesichtet am 28.11. Feld für Feld (Abb. 7 Suhle, Nahaufnahmen, fällt): 38 Felder in den Bändern der Station 0 Tage ≤ 2 · 3 Tage 3–5 · 10 Tage 7–15 · 30 Tage 21–44 (2 · 4 · 14 · 18)
++url;lizenz;wahrheit;beleg
++https://mdpi-res.com/vetsci/vetsci-07-00006/article_deploy/html/images/vetsci-07-00006-g002.png#xywh=percent:0.0,0.0,25.0,25.0;CC BY 4.0;2;https://doi.org/10.3390/vetsci7010006 Abb. 2, Reihe 1 (domestic), Feld 1/1
++https://mdpi-res.com/vetsci/vetsci-07-00006/article_deploy/html/images/vetsci-07-00006-g002.png#xywh=percent:25.0,0.0,25.0,25.0;CC BY 4.0;11;https://doi.org/10.3390/vetsci7010006 Abb. 2, Reihe 1 (domestic), Feld 1/2
++https://mdpi-res.com/vetsci/vetsci-07-00006/article_deploy/html/images/vetsci-07-00006-g002.png#xywh=percent:50.0,0.0,25.0,25.0;CC BY 4.0;15;https://doi.org/10.3390/vetsci7010006 Abb. 2, Reihe 1 (domestic), Feld 1/3
++https://mdpi-res.com/vetsci/vetsci-07-00006/article_deploy/html/images/vetsci-07-00006-g002.png#xywh=percent:0.0,25.0,25.0,25.0;CC BY 4.0;22;https://doi.org/10.3390/vetsci7010006 Abb. 2, Reihe 1 (domestic), Feld 2/1
++https://mdpi-res.com/vetsci/vetsci-07-00006/article_deploy/html/images/vetsci-07-00006-g002.png#xywh=percent:25.0,25.0,25.0,25.0;CC BY 4.0;26;https://doi.org/10.3390/vetsci7010006 Abb. 2, Reihe 1 (domestic), Feld 2/2
++https://mdpi-res.com/vetsci/vetsci-07-00006/article_deploy/html/images/vetsci-07-00006-g002.png#xywh=percent:50.0,25.0,25.0,25.0;CC BY 4.0;29;https://doi.org/10.3390/vetsci7010006 Abb. 2, Reihe 1 (domestic), Feld 2/3
++https://mdpi-res.com/vetsci/vetsci-07-00006/article_deploy/html/images/vetsci-07-00006-g002.png#xywh=percent:75.0,25.0,25.0,25.0;CC BY 4.0;33;https://doi.org/10.3390/vetsci7010006 Abb. 2, Reihe 1 (domestic), Feld 2/4
++https://mdpi-res.com/vetsci/vetsci-07-00006/article_deploy/html/images/vetsci-07-00006-g002.png#xywh=percent:0.0,50.0,25.0,25.0;CC BY 4.0;40;https://doi.org/10.3390/vetsci7010006 Abb. 2, Reihe 1 (domestic), Feld 3/1
++https://mdpi-res.com/vetsci/vetsci-07-00006/article_deploy/html/images/vetsci-07-00006-g003.png#xywh=percent:0.0,0.0,25.0,25.0;CC BY 4.0;2;https://doi.org/10.3390/vetsci7010006 Abb. 3, Reihe 1 (wild), Feld 1/1
++https://mdpi-res.com/vetsci/vetsci-07-00006/article_deploy/html/images/vetsci-07-00006-g003.png#xywh=percent:25.0,0.0,25.0,25.0;CC BY 4.0;11;https://doi.org/10.3390/vetsci7010006 Abb. 3, Reihe 1 (wild), Feld 1/2
++https://mdpi-res.com/vetsci/vetsci-07-00006/article_deploy/html/images/vetsci-07-00006-g003.png#xywh=percent:50.0,0.0,25.0,25.0;CC BY 4.0;15;https://doi.org/10.3390/vetsci7010006 Abb. 3, Reihe 1 (wild), Feld 1/3
++https://mdpi-res.com/vetsci/vetsci-07-00006/article_deploy/html/images/vetsci-07-00006-g003.png#xywh=percent:0.0,25.0,25.0,25.0;CC BY 4.0;22;https://doi.org/10.3390/vetsci7010006 Abb. 3, Reihe 1 (wild), Feld 2/1
++https://mdpi-res.com/vetsci/vetsci-07-00006/article_deploy/html/images/vetsci-07-00006-g003.png#xywh=percent:25.0,25.0,25.0,25.0;CC BY 4.0;26;https://doi.org/10.3390/vetsci7010006 Abb. 3, Reihe 1 (wild), Feld 2/2
++https://mdpi-res.com/vetsci/vetsci-07-00006/article_deploy/html/images/vetsci-07-00006-g003.png#xywh=percent:50.0,25.0,25.0,25.0;CC BY 4.0;29;https://doi.org/10.3390/vetsci7010006 Abb. 3, Reihe 1 (wild), Feld 2/3
++https://mdpi-res.com/vetsci/vetsci-07-00006/article_deploy/html/images/vetsci-07-00006-g003.png#xywh=percent:75.0,25.0,25.0,25.0;CC BY 4.0;33;https://doi.org/10.3390/vetsci7010006 Abb. 3, Reihe 1 (wild), Feld 2/4
++https://mdpi-res.com/vetsci/vetsci-07-00006/article_deploy/html/images/vetsci-07-00006-g003.png#xywh=percent:0.0,50.0,25.0,25.0;CC BY 4.0;40;https://doi.org/10.3390/vetsci7010006 Abb. 3, Reihe 1 (wild), Feld 3/1
++https://mdpi-res.com/vetsci/vetsci-07-00006/article_deploy/html/images/vetsci-07-00006-g005.png#xywh=percent:0.0,0.0,25.0,50.0;CC BY 4.0;3;https://doi.org/10.3390/vetsci7010006 Abb. 5, Reihe 2 (sun), Feld 1/1
++https://mdpi-res.com/vetsci/vetsci-07-00006/article_deploy/html/images/vetsci-07-00006-g005.png#xywh=percent:25.0,0.0,25.0,50.0;CC BY 4.0;7;https://doi.org/10.3390/vetsci7010006 Abb. 5, Reihe 2 (sun), Feld 1/2
++https://mdpi-res.com/vetsci/vetsci-07-00006/article_deploy/html/images/vetsci-07-00006-g005.png#xywh=percent:50.0,0.0,25.0,50.0;CC BY 4.0;9;https://doi.org/10.3390/vetsci7010006 Abb. 5, Reihe 2 (sun), Feld 1/3
++https://mdpi-res.com/vetsci/vetsci-07-00006/article_deploy/html/images/vetsci-07-00006-g005.png#xywh=percent:75.0,0.0,25.0,50.0;CC BY 4.0;11;https://doi.org/10.3390/vetsci7010006 Abb. 5, Reihe 2 (sun), Feld 1/4
++https://mdpi-res.com/vetsci/vetsci-07-00006/article_deploy/html/images/vetsci-07-00006-g005.png#xywh=percent:0.0,50.0,25.0,50.0;CC BY 4.0;15;https://doi.org/10.3390/vetsci7010006 Abb. 5, Reihe 2 (sun), Feld 2/1
++https://mdpi-res.com/vetsci/vetsci-07-00006/article_deploy/html/images/vetsci-07-00006-g005.png#xywh=percent:25.0,50.0,25.0,50.0;CC BY 4.0;21;https://doi.org/10.3390/vetsci7010006 Abb. 5, Reihe 2 (sun), Feld 2/2
++https://mdpi-res.com/vetsci/vetsci-07-00006/article_deploy/html/images/vetsci-07-00006-g005.png#xywh=percent:50.0,50.0,25.0,50.0;CC BY 4.0;34;https://doi.org/10.3390/vetsci7010006 Abb. 5, Reihe 2 (sun), Feld 2/3
++https://mdpi-res.com/vetsci/vetsci-07-00006/article_deploy/html/images/vetsci-07-00006-g005.png#xywh=percent:75.0,50.0,25.0,50.0;CC BY 4.0;44;https://doi.org/10.3390/vetsci7010006 Abb. 5, Reihe 2 (sun), Feld 2/4
++https://mdpi-res.com/vetsci/vetsci-07-00006/article_deploy/html/images/vetsci-07-00006-g006.png#xywh=percent:0.0,0.0,25.0,33.33;CC BY 4.0;3;https://doi.org/10.3390/vetsci7010006 Abb. 6, Reihe 2 (shade), Feld 1/1
++https://mdpi-res.com/vetsci/vetsci-07-00006/article_deploy/html/images/vetsci-07-00006-g006.png#xywh=percent:25.0,0.0,25.0,33.33;CC BY 4.0;7;https://doi.org/10.3390/vetsci7010006 Abb. 6, Reihe 2 (shade), Feld 1/2
++https://mdpi-res.com/vetsci/vetsci-07-00006/article_deploy/html/images/vetsci-07-00006-g006.png#xywh=percent:50.0,0.0,25.0,33.33;CC BY 4.0;9;https://doi.org/10.3390/vetsci7010006 Abb. 6, Reihe 2 (shade), Feld 1/3
++https://mdpi-res.com/vetsci/vetsci-07-00006/article_deploy/html/images/vetsci-07-00006-g006.png#xywh=percent:75.0,0.0,25.0,33.33;CC BY 4.0;11;https://doi.org/10.3390/vetsci7010006 Abb. 6, Reihe 2 (shade), Feld 1/4
++https://mdpi-res.com/vetsci/vetsci-07-00006/article_deploy/html/images/vetsci-07-00006-g006.png#xywh=percent:0.0,33.33,25.0,33.33;CC BY 4.0;15;https://doi.org/10.3390/vetsci7010006 Abb. 6, Reihe 2 (shade), Feld 2/1
++https://mdpi-res.com/vetsci/vetsci-07-00006/article_deploy/html/images/vetsci-07-00006-g006.png#xywh=percent:25.0,33.33,25.0,33.33;CC BY 4.0;21;https://doi.org/10.3390/vetsci7010006 Abb. 6, Reihe 2 (shade), Feld 2/2
++https://mdpi-res.com/vetsci/vetsci-07-00006/article_deploy/html/images/vetsci-07-00006-g006.png#xywh=percent:50.0,33.33,25.0,33.33;CC BY 4.0;34;https://doi.org/10.3390/vetsci7010006 Abb. 6, Reihe 2 (shade), Feld 2/3
++https://mdpi-res.com/vetsci/vetsci-07-00006/article_deploy/html/images/vetsci-07-00006-g006.png#xywh=percent:75.0,33.33,25.0,33.33;CC BY 4.0;44;https://doi.org/10.3390/vetsci7010006 Abb. 6, Reihe 2 (shade), Feld 2/4
++https://mdpi-res.com/vetsci/vetsci-07-00006/article_deploy/html/images/vetsci-07-00006-g008.png#xywh=percent:0.0,0.0,25.0,33.33;CC BY 4.0;5;https://doi.org/10.3390/vetsci7010006 Abb. 8, Reihe 3 (sun), Feld 1/1
++https://mdpi-res.com/vetsci/vetsci-07-00006/article_deploy/html/images/vetsci-07-00006-g008.png#xywh=percent:25.0,0.0,25.0,33.33;CC BY 4.0;15;https://doi.org/10.3390/vetsci7010006 Abb. 8, Reihe 3 (sun), Feld 1/2
++https://mdpi-res.com/vetsci/vetsci-07-00006/article_deploy/html/images/vetsci-07-00006-g008.png#xywh=percent:50.0,0.0,25.0,33.33;CC BY 4.0;27;https://doi.org/10.3390/vetsci7010006 Abb. 8, Reihe 3 (sun), Feld 1/3
++https://mdpi-res.com/vetsci/vetsci-07-00006/article_deploy/html/images/vetsci-07-00006-g009.png#xywh=percent:0.0,0.0,25.0,33.33;CC BY 4.0;5;https://doi.org/10.3390/vetsci7010006 Abb. 9, Reihe 3 (shade), Feld 1/1
++https://mdpi-res.com/vetsci/vetsci-07-00006/article_deploy/html/images/vetsci-07-00006-g009.png#xywh=percent:25.0,0.0,25.0,33.33;CC BY 4.0;15;https://doi.org/10.3390/vetsci7010006 Abb. 9, Reihe 3 (shade), Feld 1/2
++https://mdpi-res.com/vetsci/vetsci-07-00006/article_deploy/html/images/vetsci-07-00006-g009.png#xywh=percent:50.0,0.0,25.0,33.33;CC BY 4.0;27;https://doi.org/10.3390/vetsci7010006 Abb. 9, Reihe 3 (shade), Feld 1/3
+diff --git a/vision/pruefer/quellen.json b/vision/pruefer/quellen.json
+index 099787c..9ba86df 100644
+--- a/vision/pruefer/quellen.json
++++ b/vision/pruefer/quellen.json
+@@ -12334,6 +12334,24 @@
+    "liegenGeblieben": [],
+    "stand": "ungeholt — geholt wird am Gerät (`--nur yellowstone-1988`), nie in der Sitzung des Machers · gelesen aus Commons `Yellowstone fires of 1988` (65 Dateien unmittelbar), `Natural regeneration of Yellowstone` (21), der Commons-Suche und der NPGallery-Suche (199 Kandidaten, 46 nach Titel) und der zweiten Commons-Suche `Maple Fire` (50 Dateien) · gesichtet in der Vorschau (360 px) am 28.11., Bild für Bild: 28 tragen das Motiv — eine Brandfläche im Lodgepole-Wald, die Jahre seit dem Brand am Foto lesbar (wahrheit): 1–2 a 11 · 9–13 a 9 · 18–31 a 8; die Stufe 5 a trägt kein freies Foto. Korpus 28 von 40",
+    "ablage": "2afc/wikimedia-commons/yellowstone-1988"
++  },
++  {
++   "id": "wildschwein-2020",
++   "art": "2afc",
++   "quelle": "Vet. Sci. 2020, 7(1), 6 (MDPI, Abbildungen des Artikels)",
++   "fuer": [
++    "leben.oeko.zerfall#2"
++   ],
++   "soll": 40,
++   "lizenz": "CC BY 4.0 (der Artikel)",
++   "abfrage": {
++    "art": "liste",
++    "datei": "vision/pruefer/listen/wildschwein-2020.csv"
++   },
++   "dateien": [],
++   "liegenGeblieben": [],
++   "stand": "ungeholt — zwei Wände des Holers: der Wirt mdpi-res.com steht nicht in LISTEN_QUELLEN, und ein Feld einer Tafel (#xywh=percent) schneidet er nicht · gelesen am 28.11. aus „Estimating the Postmortem Interval of Wild Boar Carcasses“ (doi 10.3390/vetsci7010006): Abb. 2 (16 Felder), 3 (16), 5 (8), 6 (12), 8 (12), 9 (12), Abb. 7 (Suhle, Nahaufnahmen) fällt → 38 Felder in den Bändern der Station 0 Tage ≤ 2 · 3 Tage 3–5 · 10 Tage 7–15 · 30 Tage 21–44 (2 · 4 · 14 · 18) · Korpus 38 von 40, das Band 0 Tage trägt 2",
++   "ablage": "2afc/mdpi/wildschwein-2020"
+   }
+  ],
+  "liegenGebliebenQuellen": [
+@@ -12781,12 +12799,14 @@
+    "a": null,
+    "fotos": 0,
+    "b": false,
+-   "c": "nicht-gelesen",
+-   "station": "k2-leben.js",
+-   "motiv": "Bildreihe 0/3/10/30 Tage",
+-   "saetze": [],
++   "c": "einzelbild",
++   "station": "k2-leben.js leben.oeko.zerfall S2 M.auge am Messort wiese",
++   "motiv": "10 Kadaver der Art der Station je 0/3/10/30 Tage nach dem Fall, gerahmt, Ego 1,7 m",
++   "saetze": [
++    "wildschwein-2020"
++   ],
+    "bereitBisAufDenFaecher": false,
+-   "fehlt": "a: keine Schwelle im Satz · b: forensische Referenz-Reihen"
++   "fehlt": "a: keine Schwelle im Satz · b: 38 von 40 gesichtet (Satz wildschwein-2020), der Holer liest den Wirt und das Feld einer Tafel nicht"
+   },
+   {
+    "id": "leben.oeko.sukzession#2",
