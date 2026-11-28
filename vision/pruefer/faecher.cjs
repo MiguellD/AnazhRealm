@@ -141,6 +141,18 @@ function bodenGesetz() {
     return { an: fn("BODEN_AN"), blick: fn("HANG_BLICK"), posen: t.slice(s, t.indexOf("\n", g)).replace("(Number(u1.posen) || 30)", "N") };
 }
 
+// DAS GESETZ DER FELSWAND (planet.geologie.gebirge#1): FELS_AN der Station (k2-planet.js) — Zone des Planet-Fadens, Wände ≥ 40° und
+// ihr Einfallen (gelaende-core `felsEinfall`), dazu die zehn steilsten Wände je Lage (≥ 60 m auseinander); der Fächer ruft es wörtlich, nie eine Abschrift
+function gebirgeGesetz() {
+    const t = fs.readFileSync(path.join(STATIONEN, "k2-planet.js"), "utf8");
+    const a = t.indexOf("const FELS_AN = async (r, T, a, mit) => {");
+    const e = a < 0 ? -1 : t.indexOf("\n            };\n", a);
+    if (a < 0 || e < 0) throw new Error("Gesetz fehlt: k2-planet.js trägt FELS_AN im Gebirge nicht mehr");
+    const fn = t.slice(a + "const FELS_AN = ".length, e + 14).trim();
+    if (!/bilder: steil/.test(fn)) throw new Error("Gesetz fehlt: FELS_AN gibt die steilsten Wände („bilder: steil“) nicht zurück");
+    return fn;
+}
+
 // JE SPROSSE: der Messort, die Zeile des Gesetzes, der Rumpf in der Seite (r = Welt, T = THREE) → { saat, posen: [{ pose, wort }], lage }
 const SPROSSEN = {
     // der Ortsrand: die Station nimmt von 8 Richtungen die mit den meisten Häusern im Kegel der Kamera (k2-mensch-stadt.js:224–236,
@@ -501,6 +513,29 @@ const SPROSSEN = {
             );
         },
     },
+    // die Felswand: die Station misst an 200 Lagen der Fibonacci-Kugel (k2-planet.js FELS_AN) das Einfallen jeder Wand ≥ 40° im
+    // Quadratkilometer der Reise-Welt — der Fächer REIST an jede Lage der Kollisionszone (Orogen aktiv) und des Kratons (Kruste
+    // > 1 500 Ma ohne Orogen) und stellt das Ego 40 m hangab vor jede ihrer zehn steilsten Wände (Reise-Welten: das Gesetz verlangt die Zone, die Heimat ist flach; je Klasse 20 Bilder = 40, gezählt Kollision 22 Wände an 3 Lagen, Kraton 150 an 15 Lagen; geschossen werden 3 + 2 Reisen), Augenhöhe, Blick auf die Wand; die Klasse sagt
+    // die Zone des Planet-Fadens (gefaltet · flach), das Einfallen der Bänke an der Wand reist ins Wort
+    "planet.geologie.gebirge#1": {
+        ort: "wiese",
+        gesetz: "meisterkarte-quelle/punkte/stationen/k2-planet.js:1481",
+        faecher: "200 Lagen der Fibonacci-Kugel der Saat der Welt (FELS_AN, auf 0,01°), je Lage der Kollisionszone und des Kratons die zehn steilsten Wände ≥ 40° (≥ 60 m auseinander) im Quadratkilometer der Reise-Welt, Ego 1,7 m über dem Boden 40 m hangab, Blick auf die Wand 4 m über ihrem Fuß, Klassen im Wechsel, Mittag",
+        ordner: "planet.geologie.gebirge.1-b1",
+        uhren: [0.5],
+        frage: "Sind die Bänke der Felswand in der Bildmitte gefaltet oder gekippt?",
+        je: 20,
+        mehr: {},
+        wahl: 0,
+        motiv: (a) => AN_DER_POSE(a) && GRUEN(a),
+        rumpf: () =>
+            SAAT +
+            "const FELS_AN = " + gebirgeGesetz() + ", posen = [], je = {}; let meer = 0, sonst = 0, ohneWand = 0, fehlt = null;" +
+            "for (let ort = 0; ort < 200; ort++) { let w = null; try { w = await FELS_AN(r, T, { ort }, { halb: 500 }); } catch (e) { w = null; } if (!w || w.meer) { meer++; continue; } if (w.fehlt) { fehlt = w.fehlt; break; }" +
+            " const klasse = w.zone === 'kollision' ? 'gefaltet' : w.zone === 'kraton' ? 'flach' : null; if (!klasse) { sonst++; continue; } if (!w.bilder || !w.bilder.length) { ohneWand++; continue; }" +
+            " w.bilder.forEach((s, rang) => { je[klasse] = (je[klasse] || 0) + 1; posen.push({ rang, klasse, reise: 'reise ' + w.breite + ' ' + w.laenge, pose: { px: +(s.x - s.fx * 40).toFixed(2), py: +(s.yEgo + 1.7).toFixed(2), pz: +(s.z - s.fz * 40).toFixed(2), lx: s.x, ly: +(s.y + 4).toFixed(2), lz: s.z }, wort: 'Lage ' + ort + ' (' + w.breite + ' ' + w.laenge + ', ' + w.zone + '): Wand ' + (rang + 1) + ' der steilsten von ' + w.waende + ' Wänden ≥ 40°, ihre Bänke fallen ' + s.einfall + '°, Ego 40 m hangab' }); }); }" +
+            "return { saat, posen, lage: fehlt ? 'Leser fehlt: ' + fehlt : '200 Lagen: ' + JSON.stringify(je) + ', Meer ' + meer + ', weder Kollision noch Kraton ' + sonst + ', ohne Wand ≥ 40° ' + ohneWand };",
+    },
     // die Glut: die Station setzt ihre Lava-Tat selbst und schießt am Spawn (k2-planet.js:1228); das Gesetz der Welt stellt keinen
     // Vulkan (kein Schlüssel am Planet-Faden, kein Leser eines Ausbruchs) — Adressen der Glut sind nur die Lava-Zellen, die die Welt trägt
     "planet.geologie.vulkan#1": {
@@ -805,6 +840,7 @@ function selbsttest() {
     t("eine Pose mit eigener Uhr schießt EINMAL zu ihr, die anderen über die Uhren des Fächers", ub.length === 3 && ub.filter((x) => x.basis === 0).length === 1 && ub.find((x) => x.basis === 0).mehr.uhr === 0.72 && ub.find((x) => x.basis === 0).klasse === "Arbeit" && ub.filter((x) => x.basis === 1).map((x) => x.mehr.uhr).join() === "0.5,0.6");
     const AU = seiteVon("k2-mensch-leib.js", "mensch.leib.ausdruck", "AUSDRUCK");
     t("Akt und Gemüt: die Klasse ist der Name, den der Leib steht (Wahl des Wirts), je Pose ihre Uhr, seitlich, ≥ 20 je Klasse", /_koerperMotionName\(false, \{ haltung: KC\.tagesHaltung\(s\.akt, b\.rolle, b\)/.test(AU) && /basis === "sad" && s\.akt === "abend" \? "Müde"/.test(AU) && /uhr: h \/ 24/.test(AU) && /Math\.cos\(y\) \* 3\.5/.test(AU) && /uhr: p\.uhr/.test(SPROSSEN["mensch.leib.ausdruck#1"].rumpf()) && SPROSSEN["mensch.leib.ausdruck#1"].je >= 20);
+    t("die Felswand liest das Gesetz der Station: FELS_AN wörtlich (Zone und die steilsten Wände), die Klasse aus der Zone des Planet-Fadens, je Lage eine Reise", (() => { try { const g = SPROSSEN["planet.geologie.gebirge#1"].rumpf(); return /const FELS_AN = async \(r, T, a, mit\) =>/.test(g) && /w\.zone === 'kollision' \? 'gefaltet' : w\.zone === 'kraton' \? 'flach'/.test(g) && /reise: 'reise '/.test(g) && SPROSSEN["planet.geologie.gebirge#1"].je >= 20; } catch (e) { return false; } })());
     t("jede Klassen-Sprosse trägt ihre Frage", Object.values(SPROSSEN).filter((d) => d.je).every((d) => /\?$/.test(d.frage || "")));
     t("eine feste Uhr (Erntetag) fächert nur über Adressen", faechern(basis(12), [10 / 24], { uhr: 1 }).length === 12 && faechern(basis(12), [10 / 24], {})[0].mehr.uhr === 10 / 24);
     const png = Buffer.alloc(24);
