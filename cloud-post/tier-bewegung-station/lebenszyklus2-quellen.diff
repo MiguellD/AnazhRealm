@@ -1,0 +1,62 @@
+diff --git a/vision/pruefer/quellen.json b/vision/pruefer/quellen.json
+index 67266b2..2dc4ddc 100644
+--- a/vision/pruefer/quellen.json
++++ b/vision/pruefer/quellen.json
+@@ -12057,6 +12057,57 @@
+    "liegenGeblieben": [],
+    "stand": "geholt 40 von 40 · gesichtet am Bogen des Satzes (26.11., dritte Welle): 31 tragen das Motiv, 9 fielen (nicht)",
+    "ablage": "2afc/wikimedia-commons/haus-zehn-meter-2"
++  },
++  {
++   "id": "kitz",
++   "art": "2afc",
++   "quelle": "Wikimedia Commons",
++   "fuer": [
++    "leben.tiere.lebenszyklus#2"
++   ],
++   "soll": 45,
++   "breite": 1280,
++   "lizenz": "je Datei (gemeinfrei · CC0 · CC BY · CC BY-SA)",
++   "abfrage": {
++    "art": "commons-suche",
++    "suche": "white-tailed deer fawn",
++    "mit": "fawn",
++    "ohne": "map|diagram|drawing|painting|illustration|engraving|wellcome|stamp|museum|taxiderm|mounted|skull|sign|logo|zoo|enclosure|close.?up|portrait|head|face|track|footprint|hunt|dead|carcass|meat|venison|roadkill|statue|sculpture|coat of arms|\\bpet\\b|nursing|sleep|bedded|hiding|curled|newborn|gazelle|te papa|snow|winter|january|february|december|november|frost"
++   }
++  },
++  {
++   "id": "hirschkuh",
++   "art": "2afc",
++   "quelle": "Wikimedia Commons",
++   "fuer": [
++    "leben.tiere.lebenszyklus#2"
++   ],
++   "soll": 30,
++   "breite": 1280,
++   "lizenz": "je Datei (gemeinfrei · CC0 · CC BY · CC BY-SA)",
++   "abfrage": {
++    "art": "commons-suche",
++    "suche": "red deer hind",
++    "mit": "hind|deer",
++    "ohne": "map|diagram|drawing|painting|illustration|engraving|wellcome|stamp|museum|taxiderm|mounted|skull|sign|logo|zoo|enclosure|close.?up|portrait|head|face|track|footprint|hunt|dead|carcass|meat|venison|roadkill|statue|sculpture|coat of arms|\\bpet\\b|nursing|sleep|bedded|hiding|curled|newborn|gazelle|te papa|snow|winter|january|february|december|november|frost|fawn|calf|calves|young|juvenile|twins|antler|velvet|rut|fight|roar"
++   }
++  },
++  {
++   "id": "ricke",
++   "art": "2afc",
++   "quelle": "Wikimedia Commons",
++   "fuer": [
++    "leben.tiere.lebenszyklus#2"
++   ],
++   "soll": 25,
++   "breite": 1280,
++   "lizenz": "je Datei (gemeinfrei · CC0 · CC BY · CC BY-SA)",
++   "abfrage": {
++    "art": "commons-suche",
++    "suche": "white-tailed deer doe",
++    "mit": "doe",
++    "ohne": "map|diagram|drawing|painting|illustration|engraving|wellcome|stamp|museum|taxiderm|mounted|skull|sign|logo|zoo|enclosure|close.?up|portrait|head|face|track|footprint|hunt|dead|carcass|meat|venison|roadkill|statue|sculpture|coat of arms|\\bpet\\b|nursing|sleep|bedded|hiding|curled|newborn|gazelle|te papa|snow|winter|january|february|december|november|frost|fawn|calf|calves|young|juvenile|twins|antler|velvet|rut|fight|roar"
++   }
+   }
+  ],
+  "liegenGebliebenQuellen": [

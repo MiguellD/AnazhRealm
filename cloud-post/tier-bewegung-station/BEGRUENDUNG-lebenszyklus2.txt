@@ -1,5 +1,7 @@
 STATIONS-KANDIDAT leben.tiere.lebenszyklus#2 (Post 28.11. 00:57 „Front nach Ursache“) — Bahn tier-bewegung
-Basis: punkte-maschine 6cd4d721 · Diff: lebenszyklus2.diff (zwei Dateien) · auge-klasse.cjs trägt die Zeile P schon („Bildpaar Kitz/Hirsch Panel“)
+Basis: punkte-maschine 6cd4d721 (faecher.cjs auch auf bf57832: greift, Selbsttest 17 GRÜN · 0 ROT, Basis 16) · auge-klasse.cjs trägt die
+Zeile P schon („Bildpaar Kitz/Hirsch Panel“). DREI Diffs (Post 28.11. 02:25): Fach + Station in lebenszyklus2.diff (faecher.cjs ·
+k2-leben.js), der Satz der Quellen in lebenszyklus2-quellen.diff (vision/pruefer/quellen.json, `git apply` auf Blob 67266b2 OK).
 
 Kein Soll, kein Richter-Text, kein Umfang der Karte wird geändert.
 
@@ -25,6 +27,17 @@ Kein Soll, kein Richter-Text, kein Umfang der Karte wird geändert.
    - :7930 evolution.fremde-physik (lebensS NaN): die langlebigste Gattung.
    - S2 taeter/leser am Gesetz von heute: `_creatureBodySize` (:1993) gibt es nicht mehr — die Größe liest das Alter
      (`_bestandBs`, kreatur-erbe.js:77, masseZurZeit), die Proportion nicht; die Geburt kennt keine Setzzeit.
+
+2b. DER SATZ DER QUELLEN (vision/pruefer/quellen.json `saetze`, drei Sätze, fuer leben.tiere.lebenszyklus#2, art 2afc, Commons, breite 1280)
+   - Die Pose der Station: Third auf Hirsch bzw. Kitz aus 15 m, Tageslicht, Sommer, Wiese — beide Klassen des Fachs tragen eigene Fotos:
+     kitz (Jungtier, soll 45): „white-tailed deer fawn“, mit fawn · hirschkuh (Alttier, soll 30): „red deer hind“, mit hind|deer ·
+     ricke (Alttier, soll 25): „white-tailed deer doe“, mit doe. Alttier zusammen 55, Jungtier 45 — je Klasse ≥ 40.
+   - ohne (am Titel): Karte, Zeichnung, Stich, Museum, Präparat, Schädel, Zoo/Gehege, Nahaufnahme/Kopf/Porträt, Jagd/Kadaver, Haustier,
+     liegend/versteckt/neugeboren (nicht die Pose „steht in der Wiese“), Schnee/Winter und die Wintermonate (die Station: Frühsommer);
+     im Alttier-Satz dazu Kitz/Kalb/Jung/Zwillinge und Geweih/Brunft (Hirschkuh und Ricke, die Herde des Kitz).
+   - GEMESSEN: `hole.cjs --nur <id> --trocken` auf dem Kandidaten: kitz 45 von 45 · hirschkuh 30 von 30 · ricke 25 von 25, liegen
+     geblieben 0 (die Abfrage trägt mehr: fawn 204 frei, hind 33, doe 30 vor dem Wintermonats-Filter). UNGESICHTET, bis der Bauer am
+     Gerät Bild für Bild liest (die Wand des Manifests); `summe` schreibt hole.cjs beim Holen selbst, der Diff fasst sie nicht an.
 
 3. GEMESSEN (Werkbank an der wiese, swiftshader, main b56b51f0 + masse#1; die Welt steht hier nicht, darum der Bestand direkt):
    - Lebensdauer aus dem Gesetz: deer 2 265 s · fox 1 566 s · wolf 2 097 s · bear 2 923 s; der nahe Bestand 2 062–2 082 s, Reife 410–416 s.
