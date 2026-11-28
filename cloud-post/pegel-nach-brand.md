@@ -1,4 +1,6 @@
 
+
+## 28.11. 02:02 — GPU-PROBE 9395b45d auf omen-gtx1060: GRÜN in 2584 s (gate:webgl-probe GRÜN 57 s auf omen-gtx1060 · bild:dorf@0.5 GRÜN 102 s auf omen-gtx1060 · gate:stand-takt GRÜN 292 s auf omen-gtx1060 · gate:wetter-wache GRÜN 128 s auf omen-gtx1060) → probe-post/pegel-nach-brand/9395b45d.md
 ## 27.11. 22:31 Koordinator — das VIERTE Rot von Kopf 3 0d0e4c05, wörtlich: „WASSER-LEBEN ROT (22)“ (Job voll 14/18, Schritt Wasser-Wand, main ✅) — dasselbe Bett-Leck, 22 Glieder
 
 - **Die Klasse in einem Satz:** ohne Regen liegt die Sohle tiefer unter dem Spiegel als am main — jedes Glied, das Tiefe, Furt oder Strömung liest, fällt. Messnamen für deinen Kopf 4 (alle müssen am Kopf GRÜN stehen, `node scripts/diag-wasser-leben.cjs` ganz):
