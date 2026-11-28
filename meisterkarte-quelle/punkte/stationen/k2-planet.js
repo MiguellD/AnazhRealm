@@ -1547,10 +1547,14 @@ L.perspektive("geologie", (() => {
             });
             // ── die Felswände der Heimat (Hang ≥ 40° der Welt-Höhe, 1 km²) und das Einfallen ihrer Bänke, wie der Fels-Stoff es liest — der Zeuge
             const w = await H.seite(
+                // der Zeuge liest, was der Fels-Stoff DIESES Kerns liest: die Funktion des Orts (felsEinfall · felsGeologie), und an einem Kern
+                // ohne sie die EINE Konstante FELS (GTX 1050, main bbb97563: „G.felsEinfall is not a function“ warf die ganze Leiter — S1 nennt
+                // den fehlenden Leser beim Namen über FELS_AN, die übrigen Sprossen der Leiter messen weiter)
                 "const G = globalThis.__gelaendeCore; const L0 = r._gelaende(); const hoch = (x, z) => r._terrainMacroSurfaceY(x, z); const wl = r.state.waterLevel; let n = 0, wand = 0; const ein = [];" +
+                    "const einAn = typeof G.felsEinfall === 'function' ? (x, z) => G.felsEinfall(L0, x, z) : () => G.FELS.einfall; const geo = typeof G.felsGeologie === 'function' ? G.felsGeologie(L0) : null;" +
                     "for (let z = -500; z < 500; z += 5) for (let x = -500; x < 500; x += 5) { const h0 = hoch(x, z); n++; if (h0 < wl + 1) continue; const t = Math.hypot(hoch(x + 1.8, z) - h0, hoch(x, z + 1.8) - h0) / 1.8; " +
-                    "if (Math.atan(t) * 180 / Math.PI >= 40) { wand++; if (ein.length < 400) ein.push(G.felsEinfall(L0, x, z) * 180 / Math.PI); } } " +
-                    "const geo = G.felsGeologie(L0); return { n, wand, ein, streichenGrad: Math.atan2(geo.sn, geo.cs) * 180 / Math.PI };"
+                    "if (Math.atan(t) * 180 / Math.PI >= 40) { wand++; if (ein.length < 400) ein.push(einAn(x, z) * 180 / Math.PI); } } " +
+                    "return { n, wand, ein, streichenGrad: (geo ? Math.atan2(geo.sn, geo.cs) : G.FELS.streichen) * 180 / Math.PI };"
             );
             const verformt = w.ein.filter((x) => x >= 10).length;
             const einMittel = w.ein.length ? w.ein.reduce((s, x) => s + x, 0) / w.ein.length : NaN;
