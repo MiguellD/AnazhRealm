@@ -1,7 +1,7 @@
 {
  "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
  "geraet": "gtx",
- "zeit": "2026-11-28T11:24:46.356Z",
+ "zeit": "2026-11-28T11:39:47.550Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "profiband.K4#1": {
@@ -3365,6 +3365,76 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.erleben.klang.getuemmel#1": {
+   "gruen": false,
+   "zahl": "S1 · ROT ✅ spitze_dbfs -12,82 (Soll ≤ 0) · ❌ dauer_min 0,235 (Soll ≥ 10) · ✅ duck_db 11,45 (Soll ≥ 8) · ✅ duck_db_bis 11,45 (Soll ≤ 12) · ❌ Umfang verlangt 7 Stimmen zugleich, die Welt erzeugte 2 — Täter: nur 2 Stimmen zugleich an der Wiese im Regen (wind, regen) · die Leiter hört 0.235 min — 10 min übersteigen den Deckel einer Leiter (60 s) · dauer_min 0,235 statt ≥ 10 · gemessen unter dem Umfang (verlangt 7 Stimmen zugleich, die Welt erzeugte 2)",
+   "exit": 0,
+   "minuten": 0.68,
+   "grund": "ROT: S1 · ROT ✅ spitze_dbfs -12,82 (Soll ≤ 0) · ❌ dauer_min 0,235 (Soll ≥ 10) · ✅ duck_db 11,45 (Soll ≥ 8) · ✅ duck_db_bis 11,45 (Soll ≤ 12) · ❌ Umfang verlangt 7 Stimmen zugleich, die Welt erzeugte 2 — Täter: nur 2 Stimmen zugleich an der Wiese im Regen (wind, regen) · die Leiter hört 0.235 min — 10 min übersteigen den Deckel einer Leiter (60 s) · dauer_min 0,235 statt ≥ 10 · gemessen unter dem Umfang (verlangt 7 Stimmen zugleich, die Welt erzeugte 2)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k4f409c591b42",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0ac82d40df13",
+   "s": 39.6,
+   "fremd": {
+    "s": 42.5,
+    "takte": 19,
+    "fremdS": 17.41,
+    "kerne": 0.41,
+    "fensterKerne": 0.553,
+    "namen": [
+     [
+      "bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \"",
+      2.45
+     ],
+     [
+      "Explorer.EXE",
+      2.27
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      2.27
+     ]
+    ],
+    "dienerS": 19.56,
+    "diener": [
+     [
+      "System",
+      9.58
+     ],
+     [
+      "dwm.exe",
+      5.86
+     ]
+    ],
+    "geraetS": 27.56,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      18.41
+     ],
+     [
+      "svchost.exe",
+      6.69
+     ],
+     [
+      "SearchIndexer.exe",
+      1.94
+     ]
+    ],
+    "eigenS": 204.81,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-28T11:37:27.214Z",
+   "abdruck": "241c27709aee",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -3400,7 +3470,8 @@
   "k3e9ed7fdb21d": "bVXRjqJAEPwXH2+PbXBAhkn2YZRN1uT24n5CD/QAimBmUC5e7t8vqLgC9htYTdVUV49/ZwdMdpjR69bW1UzMfsx+ziyeyLFkTmRet3YmZlHizYkJeS2QUq46WGKKQ2OhLBSgqjDfk3M0DRXla3Jp0wt0AyWgfZfZBkDDGeL27W3cWipKa6dBTX2jSyzgJMbAo81QkYNHfSG7gVXoezwRcCkey88YbpVdntcxLGELo48prNKhWs+LcBEK2a5XUn6NVaYFUuOURWV7Xi8NI+2Kngzaz0mPwdY5I+UlmVsTcc/zVS922dnZWTNq1OXR2gEZZ2kw5wIgGmMzskWSN87B1Iqq3pNoHnoollO3s8PR0Y+KUCnkaux1jlRlZAYaXJbohSfgDx9/dId7MuhUmN+gkcvCufr2BgA+plrKi/ALRS/cZ3zOvUFjN0Q4dQanclCbfsjX0m3/Q3KHZHJCapO8MPuhXdqnucvEr6lEm2NKxtnVtrmjGYW+q67bsI7hqoUvx53fh+tniIj8ITDAQX5MvLS1blo05GSHYx8an4IwEFKuJ+AG9/u7LMaRjQdpmy7ojzLmkQ4CXwC8XBdleujrWjhnKkq65zYJWSRWsT8GnwzuHVSZKbTup6+CREfPwtqitaNUYRK5/mI08XFxkJt48ObJRdJS2Tiqrpv+oMx1k0AAg+qx8/clJ+uHIMXZl9+Uy/Z9mK+1fMpQm+Z+9aBivi90G3MArsfowjROi0new0OmiJjoAj2CnsmUlNHAGO15OE8FtPqqe8ul3IS3u0a/DNw4T2J0LqibYGWPth9hgr4KxJOZt2R2Cqvdfc8xZcEl38tPuRl48r7Kuj2D05AfAE5SrqS0+83Nu1jKmOsb0YESOJhaF921CzkebY5l8/2f8+8/",
   "k1c3dbdf304f9": "bVTRcpswEPwXP6ZVBBYEoZk8yCadeKbpJJ9wgpOgxuCRwHTc6b93wMYxEL1q925vb6W/qyOkezD4+NvV1UqsHlbfVw5OSBzaE9rH324lVnHqr5EJeTlUSrntYaktjo2jZaEoqAryA5LWNliUj+lA00/ghUrQ7kWad0o1PdOke36eU0uFWU0a0DgSPWQhRzEHts6AQgKtHppdwQ8zmIIqm+rw/RieIiG73VbKj3n/rABsSFlUbqzoZ1GsPUHH070tOBY6cgbMS7RXEnLfD9SVxDe9Uf3QM6IuW+cmzTjLwjUXlMZzrEFXpHlDjrZWWF3hKl5HPojN0kdzbIm+VwRKAVdzF3PAyqCdaPBYqp98Qf/wedE9HNACqSC/QmOPRWv16Q2l9HWppRyEDy1G4QHja+5PiJTyhJ56gzM5Oe/DpRlRuhsv0hvEyEVTl+aFPUzt0gGuPSZ+LiW6HDK0ZF+75oZmGAWeuuR8l9CLFr6ZMz+HG3cIAPwuMJRT+brw0tW66cAiMcd2DE2AYRQKKXcLcAOHw00W48Dmi3RNH/R7GetYh2EgKP2WXHK7GPryLMgZixJvuU0jFs+LnywcCChjC63Hzasw1fFXQe2wbIiq62bUwTwvDQVltLpf9q9hjbu7PSfmI3j7Ic3LdP07Odc9dKhtM4pWoFgQCG0STinXc3RhG9JBmo/wiClE9lW+z2hLNDixcf6hnAvsLatc60bPUghUKL4wuUO7V1Dtbw8LMhYOgdq8yfe7GY2UW9MHm544nU6fnORum8i3l9e+8BFTerS1Lvp/jebQuhzK5vO7/vcf",
   "k8f43e0012133": "bVXRbqMwEPyXPF6PGjAUY6kPTqnUnK5S+glrswYaApEN4ZTT/fsJEmiA7hvKrHc8M+v83ZxAHSDDx09bVxu++bH5ubFwRseiOaN5/LQbvomV5yPl4kP0tRdCvPQwZYpTY0lZSAKygvyITmsaLMpHNbTpJ3BDyUn3KrI9IZpcSNKJqV7F8/PymFJiWjsNaBwPcZGGDPkS2NoMJDrQ6mHwDSyjwGOKk6FYIt4Tcqts+N4lZEs+yTD+YzVdQpXOb+B5MTxFXHS7oWGBTwvAximLyo7zvTSKtcvHoaR7X/UY6JwLYF6iuTUh87xAjqS3PbderkWjLltrZ8MYTUOfcULiJTZDW6i8cU6mlliN2sR+5AHfdqt7Z6fW0feMQEpgcql5DlhlaGYcXKr0k8fJH7Y89ABHNOBUkN+gsUsjX35pQwh5W3MpB+LDiJF4QJnPvFljbyY59wKnYlb70exr6SluaoJk69hZlRfmOJdLB+i7lP9eU7Q5pGicQ22bCU0xClzJhwG75BqwPdsuO78uN3oIAOwuMIQR8bbS0ta66cCgk53aMTQBhlHIhditwA0cjxMtyoAujbRNH/R7Gn6swzDghDxcF2Z96etaOBcsSpxyqyIaLw8/Gzg6IDNTaD06L0Ol4++C2mHZOLKum5EHdV0V9nJU92bvBxt3dz4n2UfQlNvudW7/Tix5DxNq00wvBEgaBFxnCSOE6SW6MI3TgcpHeEQlIuV93hbQC5oSM5zJqD0P/JSTTl95X5gQ++j2FOiHWYAvK5cvBfYCV7a1o8IKAhnybyzp0BwkVIdpDSGlIf8lhNi+Dw/03TP7kvVrMKzLvM7D7/a4v2mXCJEwfRt0QkVOptZF/yqSHFqbQ9l8/U38+w8=",
-  "kbfa885f49ab6": "bVXRjqM4EPyXPO6upyHAYCztgzOMdiPtnDKf0IY2MCEQ2SacOO2/n0hCJpDpp6BUu4uqavPf6ojZHgt6+rBtsxKrb6sfK4snYpbMiczTh12JVZL5awqEfJdjgZTyZYRlpjo6C3mFBevJ7K1D51hPxVN2bvt2B6orBagaLA/EOuOoqq8g/YxepAT0r7LYAWgYIO1//ly21oryljnUNDV6FEScxBLY2QIVMez0edgVrOLQ55mAc/FUvqVwreL8vE1hAx+wOExhk8/Z+n6Cz7E46yDflyzzCsmxumrsNNfP40R7YhoG/dtDj8GeDUhlTebaRNz3QzWR3YyjRmkWjbrurJ0N40EerbkASJbYgmyVlY4dTauomTRJ1rGPYvOodnHsmL5nhEohV0utS6SmIDPj4AWZfvYF/MuXh+7xQAZZg+UVmnhBvFaf2gDA70cu9Zn4ecREPAz4mvuzxtFEOI0C53JWu8nkS+l++iO7QQr5MNRmZWUOc7l0SGsvEH8eKdoSczJs31p3QwcUh566BGWbwoUL3yw7P19u8hAR+V1ggIP8/aClbbXr0RArjt0UmpCiOBJSbh/ADg+HG62AY7A00rox6Pc01omOolAAfL8syuNLX9aCDVTVdMttFgeJeEnDJfhk8MBQFabSenJfRZlOvgprT7Vjqm3dxCXwvCwSMEBzb/g/vXyRcnvndVq8h67e9K/X54386uTWuNutgCoIQ6GLlANwvURXxrEes3KCx4EiCsSYtQV0IFNTQTMJte/jOhfQ6wvfgUu5i6/XgP4+C+/w4PBQ0ShuYzs7qZthqCLxhR3j3auw2d9WEPMgOkdv8yZ3dwIV8vXjOK4A7DjM1mSbnuRWpvLt1wU//pYp19dBR8rgaFpdjTcilNjZEms3+2ZcIB1pi24AhR01bB98Qv7+Dw=="
+  "kbfa885f49ab6": "bVXRjqM4EPyXPO6upyHAYCztgzOMdiPtnDKf0IY2MCEQ2SacOO2/n0hCJpDpp6BUu4uqavPf6ojZHgt6+rBtsxKrb6sfK4snYpbMiczTh12JVZL5awqEfJdjgZTyZYRlpjo6C3mFBevJ7K1D51hPxVN2bvt2B6orBagaLA/EOuOoqq8g/YxepAT0r7LYAWgYIO1//ly21oryljnUNDV6FEScxBLY2QIVMez0edgVrOLQ55mAc/FUvqVwreL8vE1hAx+wOExhk8/Z+n6Cz7E46yDflyzzCsmxumrsNNfP40R7YhoG/dtDj8GeDUhlTebaRNz3QzWR3YyjRmkWjbrurJ0N40EerbkASJbYgmyVlY4dTauomTRJ1rGPYvOodnHsmL5nhEohV0utS6SmIDPj4AWZfvYF/MuXh+7xQAZZg+UVmnhBvFaf2gDA70cu9Zn4ecREPAz4mvuzxtFEOI0C53JWu8nkS+l++iO7QQr5MNRmZWUOc7l0SGsvEH8eKdoSczJs31p3QwcUh566BGWbwoUL3yw7P19u8hAR+V1ggIP8/aClbbXr0RArjt0UmpCiOBJSbh/ADg+HG62AY7A00rox6Pc01omOolAAfL8syuNLX9aCDVTVdMttFgeJeEnDJfhk8MBQFabSenJfRZlOvgprT7Vjqm3dxCXwvCwSMEBzb/g/vXyRcnvndVq8h67e9K/X54386uTWuNutgCoIQ6GLlANwvURXxrEes3KCx4EiCsSYtQV0IFNTQTMJte/jOhfQ6wvfgUu5i6/XgP4+C+/w4PBQ0ShuYzs7qZthqCLxhR3j3auw2d9WEPMgOkdv8yZ3dwIV8vXjOK4A7DjM1mSbnuRWpvLt1wU//pYp19dBR8rgaFpdjTcilNjZEms3+2ZcIB1pi24AhR01bB98Qv7+Dw==",
+  "k4f409c591b42": "bVXRbptAEPwXP7YlCxyE46Q8nE2qWKqr5BP2YA+IMVh3YCpX/fcKOzgGsk9Int0dZmbx39UR0z3m9PBum3olVt9WP1YWT+RYMicyD+92JVZx6vnEhLwWSCk3Ayw15bG1UJUKUNVYHMjpTEtl9ZBe2vQjuqES0D/L/BVAwxmS/ulp3lopyhqnRU1jo0ss5CTmwM7mqMjBTl+WfYBVFHg8FXApnshdAh+VA3Aptwms4R1mwxTW2ZSt58X4GAnZbzdSvs1ZZiVS61Rlbce9XhbF2hXjMuh3ix6DvXNGKioyH03EPS9QI9n1IOcgzaxRV521k2WcZaHPBUA8x+Zky7RonaNpFNWjJrEfeSjWS7XzY+foe0aoFHI117pAqnMyEw4uS/WjJ+APnw/d44EMOjUWH9DYZZGvPrUBgJcll+pC/LJiJB4w7nNv0jiYCqdB4ExO6nU0+Vq6H39Ib5BcLpbatCjNYSqXDsh3mfi1pGgLzMg4+8a2NzSjKHDV9Rq2CVy58PW88/PlRg8Rkd8FBjjIl4WWttFtj4ac/NiNoQkojEIh5XYBbvFwuNFiHNncSNsOQb+n4cc6DAMB8P16KMuXvp6Fc6ayoltu04jF8+EngwcHVW5KrUfnVZjq+Kug9lS1jmqaduTBXDcNBTCo783+fbFxe+dzkr8Fu58yf57av5Vz3pcNjWlvXwZULAiEzhMOwPUcXZrW6TEtRnjEFBH7Kt9nMhXlNJFRex76mYA+vWMajA/fJwE+LyeWNAhc286OCqcYqFB8YUlPZq+w3t/OEDMWXuK33snXqSibfDgDOHGYapWcpNxIuXt+GQYfKYWjaXQ5fAWhwM4WWLWffwH//gM="
  },
  "ungemessen": {
   "karte2.planet.kosmos.himmelsmechanik#1": {
@@ -4399,35 +4470,69 @@
    "bahn": "sitzung",
    "modus": "session"
   },
-  "karte2.erleben.klang.getuemmel#1": {
-   "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 70 s von karte2.erleben.klang.getuemmel#1) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 70 s von karte2.erleben.klang.getuemmel#1) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-28T08:57:38.769Z",
-   "abdruck": "241c27709aee",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1,
-   "fahrt": "17520@mx05e57c"
-  },
   "karte2.same.physik.koerper#1": {
    "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 145 s von karte2.same.physik.koerper#1) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 145 s von karte2.same.physik.koerper#1) — offen, UNGEMESSEN",
+   "zahl": "Frist der Probe 139 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter same.physik.koerper) · Täter: @@PUNKTE@@ FRIST 139 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 2.32,
+   "grund": "Frist der Probe 139 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter same.physik.koerper) · Täter: @@PUNKTE@@ FRIST 139 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "nvidia/pascal",
    "ungemessen": true,
-   "zeit": "2026-11-28T08:57:38.806Z",
+   "s": 139.3,
+   "fremd": {
+    "s": 142.9,
+    "takte": 64,
+    "fremdS": 51.92,
+    "kerne": 0.363,
+    "fensterKerne": 0.573,
+    "namen": [
+     [
+      "bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \"",
+      7.81
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      6.28
+     ],
+     [
+      "bash.exe grenze.sh k01 1200 sk/vr2.cjs e80f9c5d0c5db273352ab3dcda920df4b149fe59 karte2.men",
+      5.25
+     ]
+    ],
+    "dienerS": 32.23,
+    "diener": [
+     [
+      "System",
+      13.94
+     ],
+     [
+      "dwm.exe",
+      7.48
+     ]
+    ],
+    "geraetS": 76.13,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      53.09
+     ],
+     [
+      "svchost.exe",
+      21.22
+     ],
+     [
+      "SearchIndexer.exe",
+      0.83
+     ]
+    ],
+    "eigenS": 539.3,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-28T11:39:47.550Z",
    "abdruck": "10e27827b664",
    "port": 7804,
    "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1,
-   "fahrt": "17520@mx05e57c"
+   "modus": "session"
   },
   "karte2.same.entfaltung.abwesenheit#1": {
    "gruen": false,
