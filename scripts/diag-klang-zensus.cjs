@@ -2178,7 +2178,7 @@ async function marktSeite(o) {
     };
     // DIE A-BEWERTUNG DER SPRECHSTIMME (die Eichung liest sie heraus): ihr Laut im Gesetz, Hann-Fenster je 4096, eine DFT der Bänder
     // (sprache#5: die Rede trägt ihre Konsonanten — die Eichung hört einen Satz der Sprache des Markts, den ersten des Wirts)
-    const LS = window.__fachwerkCore.spracheDesOrts(W.S.plan);
+    const LS = window.__fachwerkCore.spracheVon(W.S.plan.region, W.S.plan.mundart);
     const refRede = K.stimmRede(window.__fachwerkCore.sprachSilben(r._bewohnerLauf(W.S, W.S.liste[0], "rede", 1), LS), LS.gesetz.einsatz);
     const ref = K.stimmPuffer({ leib: K.STIMME.bezug, laut: K.MENGE.laut, rede: refRede.slice(0, K.MENGE.silbenMax), einsatz: LS.gesetz.einsatz, saat: 7 });
     const rb = new Float64Array(mitten.length), rbb = bandVon(ref.sr, N);
@@ -2326,7 +2326,7 @@ async function marktSeite(o) {
         if (soll === z.satz) satz.gleich++;
         else if (satz.fremd.length < 3) satz.fremd.push(`„${z.satz}“ statt „${soll}“`);
         if (satz.beispiel.length < 4) satz.beispiel.push(z.satz);
-        for (const sb of FC.sprachSilben(z.satz, FC.spracheDesOrts(W.S.plan))) for (const c of sb.k) if (!vokale.has(c) && satz.vokaleFremd.length < 3) satz.vokaleFremd.push(`${c} in „${z.satz}“`); // prettier-ignore
+        for (const sb of FC.sprachSilben(z.satz, FC.spracheVon(W.S.plan.region, W.S.plan.mundart))) for (const c of sb.k) if (!vokale.has(c) && satz.vokaleFremd.length < 3) satz.vokaleFremd.push(`${c} in „${z.satz}“`); // prettier-ignore
     }
     const G = 20 * Math.log10(sy.masterGain.gain.value * um.bus.gain.value);
     const dbA = (lTap) => +(lTap - G - aSprache + K.mengeDbA(0)).toFixed(2);

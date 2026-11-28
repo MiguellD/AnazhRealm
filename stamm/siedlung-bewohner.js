@@ -383,13 +383,12 @@ class AnazhRealm_siedlung_bewohner {
         const plan = S.plan;
         const ps = plan.seed >>> 0;
         if (feld === "vorname" || feld === "familie" || feld === "name") {
-            // DIE SPRACHE DES ORTS (kultur-aus-klima): das EINE Sprachgesetz des Fachwerk-Studios (fachwerk `spracheDesOrts`: die Region
-            // des Plans ist die Familie, die Mundart seines Orts — `plan.mundart`, sprache#4 — die Blätter ihres Stammbaums, sein Jahr
-            // die Stufe, sprache#6) —
+            // DIE SPRACHE DES ORTS (kultur-aus-klima): das EINE Sprachgesetz des Fachwerk-Studios (fachwerk `spracheVon`: die Region
+            // des Plans ist die Familie, die Mundart seines Orts — `plan.mundart`, sprache#4 — die Blätter ihres Stammbaums) —
             // dasselbe, das den Ort nennt (`ORTSNAME`): Ort und Leute einer Region klingen verwandt, Nachbarn im Tal sprechen gleich
             const FC = globalThis.__fachwerkCore;
             if (!FC || typeof FC.sprachName !== "function") return AnazhRealm._kernPflichtBruch("fachwerk:sprachName");
-            const S2 = FC.spracheDesOrts(plan);
+            const S2 = FC.spracheVon(plan.region, plan.mundart);
             const vorname = FC.sprachName(S2, "vorname", b.seed);
             // die Familie ist der Haushalt (Laslett): der Stamm aus dem Samen des Hauses, die Endung das Wort der Sprache für das Haus
             const familie = FC.sprachName(S2, "familie", `${ps}:${b.heim}`);
@@ -402,7 +401,7 @@ class AnazhRealm_siedlung_bewohner {
             // (`b.akt`, SATZ_GESETZ.handlung — sprache#5 „Satz ↔ Handlung“)
             const FC = globalThis.__fachwerkCore;
             if (!FC || typeof FC.sprachSatz !== "function") return AnazhRealm._kernPflichtBruch("fachwerk:sprachSatz");
-            return FC.sprachSatz(FC.spracheDesOrts(plan), `${b.seed}:${tag}`, b.akt);
+            return FC.sprachSatz(FC.spracheVon(plan.region, plan.mundart), `${b.seed}:${tag}`, b.akt);
         }
         if (feld === "freunde" || feld === "kreis") {
             // die Sympathie-Gruppe ohne den Haushalt: je Platz ein Mensch eines anderen Hauses des Plans, das Leute trägt. `kreis`
