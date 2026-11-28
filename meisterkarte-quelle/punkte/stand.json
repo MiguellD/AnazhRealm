@@ -3020,7 +3020,7 @@
   },
   "profiband.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Gehen 63 Bilder · max 75.35 ms · 68.25 % > 33 ms · Fahrt 47 Bilder · max 125.6 ms · 95.74 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 68.25 % > 33 ms | Fahrt: 4 Bild(er) > 100 ms (max 125.6), 95.74 % > 33 ms an 27d2f60e radeon · gehalten: Gehen 79 Bilder · max 83.36 ms · 21.52 % > 33 ms · Fahrt 54 Bilder · max 116.68 ms · 74.07 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 21.52 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 116.68), 74.07 % > 33 ms an b3740dd5 gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an 27d2f60e: Last: Referenz f 1,54 (Faden 1,54 · alle Kerne 1,189; vor 104,4/308,7 ms, nach 128,6/295 ms, Ruhe 83,5/259,6 ms seit 2026-11-16) · fremd: git pack-objects --delta-base-offset --honor-pack-keep pack/.t · profiband.K4#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, koerper-core.js +31) — zuletzt an 27d2f60e: Last: Referenz f 1,229 (Faden 1,15 · alle Kerne 1,229; vor 102,5/271,2 ms, nach 94,8/217 ms, Ruhe 89,1/220,7 ms seit 2026-11-17) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --use",
+   "beleg": "Maschine: gehalten: Gehen 63 Bilder · max 75.35 ms · 68.25 % > 33 ms · Fahrt 47 Bilder · max 125.6 ms · 95.74 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 68.25 % > 33 ms | Fahrt: 4 Bild(er) > 100 ms (max 125.6), 95.74 % > 33 ms an 27d2f60e radeon · gehalten: Gehen 79 Bilder · max 83.36 ms · 21.52 % > 33 ms · Fahrt 54 Bilder · max 116.68 ms · 74.07 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 21.52 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 116.68), 74.07 % > 33 ms an b3740dd5 gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an 27d2f60e: Last: Referenz f 1,54 (Faden 1,54 · alle Kerne 1,189; vor 104,4/308,7 ms, nach 128,6/295 ms, Ruhe 83,5/259,6 ms seit 2026-11-16) · fremd: git pack-objects --delta-base-offset --honor-pack-keep pack/.t · profiband.K4#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, koerper-core.js +31) — zuletzt an 27d2f60e: Last: Referenz f 1,283 (Faden 1,25 · alle Kerne 1,283; vor 111,4/283,1 ms, nach 101,7/241,7 ms, Ruhe 89,1/220,7 ms seit 2026-11-18) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjx",
    "stationen": [
     {
      "id": "profiband.K4#1",
@@ -3038,7 +3038,7 @@
      "gruen": true,
      "zahl": "Gehen 79 Bilder · max 83.36 ms · 21.52 % > 33 ms · Fahrt 54 Bilder · max 116.68 ms · 74.07 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 21.52 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 116.68), 74.07 % > 33 ms",
      "sha": "b3740dd5566793ae66152d955e5a55d9c272884c",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, koerper-core.js +31) — zuletzt an 27d2f60e: Last: Referenz f 1,229 (Faden 1,15 · alle Kerne 1,229; vor 102,5/271,2 ms, nach 94,8/217 ms, Ruhe 89,1/220,7 ms seit 2026-11-17) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --use",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, koerper-core.js +31)",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -3057,7 +3057,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, koerper-core.js +31) — zuletzt an 27d2f60e: Last: Referenz f 1,229 (Faden 1,15 · alle Kerne 1,229; vor 102,5/271,2 ms, nach 94,8/217 ms, Ruhe 89,1/220,7 ms seit 2026-11-17) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --use",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, koerper-core.js +31) — zuletzt an 27d2f60e: Last: Referenz f 1,283 (Faden 1,25 · alle Kerne 1,283; vor 111,4/283,1 ms, nach 101,7/241,7 ms, Ruhe 89,1/220,7 ms seit 2026-11-18) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjx",
      "ungemessen": true,
      "r6": "konsum"
     }
@@ -29327,7 +29327,7 @@
   },
   "karte2.planet.kosmos.himmelsmechanik": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.himmelsmechanik#1 radeon: Station seit der Messung geändert — zuletzt an b3740dd5: Deckel 440 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /umstellen {\"ort\":\"genesis\",\"sicht\":\"third\"} · 16.1 s · 394.6 s) · karte2.planet.kosmos.himmelsmechanik#1 gtx: Station seit der Messung geändert — zuletzt an b3740dd5: Deckel 678 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /umstellen {\"ort\":\"wiese\",\"sicht\":\"third\"} · 21.6 s · 627.4 s) · karte2.planet.kosmos.himmelsmechanik#2 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#2 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#3 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#3 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#4 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#4 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#5 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#5 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#6 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#6 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#7 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#7 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#8 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#8 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.himmelsmechanik#1 radeon: Station seit der Messung geändert — zuletzt an b3740dd5: Deckel 440 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /umstellen {\"ort\":\"genesis\",\"sicht\":\"third\"} · 16.1 s · 394.6 s) · karte2.planet.kosmos.himmelsmechanik#1 gtx: Station seit der Messung geändert — zuletzt an 27d2f60e: Deckel 678 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0,0.01,0.02,0. (100 Uhren) · 52.2 s · 668.0 s) · Wirt-Wache: die Arbeit der Probe läuft noch: /eval we · karte2.planet.kosmos.himmelsmechanik#2 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#2 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#3 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#3 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#4 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#4 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#5 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#5 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#6 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#6 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#7 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#7 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#8 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#8 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.planet.kosmos.himmelsmechanik#1",
@@ -29345,7 +29345,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an b3740dd5: Deckel 678 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /umstellen {\"ort\":\"wiese\",\"sicht\":\"third\"} · 21.6 s · 627.4 s)",
+     "grund": "Station seit der Messung geändert — zuletzt an 27d2f60e: Deckel 678 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0,0.01,0.02,0. (100 Uhren) · 52.2 s · 668.0 s) · Wirt-Wache: die Arbeit der Probe läuft noch: /eval we",
      "ungemessen": true,
      "beide": true
     },
@@ -37614,8 +37614,8 @@
   "ohne": 3383
  },
  "kopfVoll": "896eb419df183716072caa63a32ae4e3b0bbff3f",
- "zeit": "2026-11-28T02:49:03.866Z",
- "vorher": "9885e7c4",
+ "zeit": "2026-11-28T02:56:36.694Z",
+ "vorher": "896eb419",
  "bilanz": {
   "gewinn": [],
   "fall": [],
