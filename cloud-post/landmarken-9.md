@@ -58,7 +58,7 @@ Zeuge 3 ohne Lesung · Richter ROT an drei Saaten („Blickziel verdeckt“ von 
 | frei im Bild von 51 Saaten | ROT 3 von 3 (GTX f07abc1a) | ungemessen — braucht die GTX (der Zeuge mit dem Kandidaten) |
 | Bilder-p95 GTX 1060 | 41,72 ms (ohne den Kopf 25,02) | ungemessen in der Wolke |
 
-## Kopf 2 (auf main b3740dd5) — die sechs roten Schritte von Kopf 1, je vorher → nachher (lokal, swiftshader, je mit Selbsttest)
+## Kopf 2 (auf main b56b51f0) — die sechs roten Schritte von Kopf 1, je vorher → nachher (lokal, swiftshader, je mit Selbsttest)
 
 Die gemeinsame Wurzel: Kopf 2 stellt den Spieler an den Stand der Landmarke (34/−34 statt der Plan-Mitte 0/0). Jede Linse, deren Probe
 vom Start aus zählt, stand auf dem Glück des alten Orts — die Klasse fällt je Linse an ihrer Wahl, nie an einer gesenkten Schwelle.
@@ -66,12 +66,15 @@ vom Start aus zählt, stand auf dem Glück des alten Orts — die Klasse fällt 
 | Schritt (Kopf 1 rot) | vorher | nachher | Schnitt |
 |---|---|---|---|
 | Kreatur-Linse 1/3 `begegnung` | beruehrt [0,0,0,11] | [0,0,0,0], Teil 1 GRÜN | EIN Auge (der Leib, wo das Gesetz sah) |
-| koerper-stand K6 Rand-Streifen + Stufen-Naht | 6 von 792 · 29 von 40 458 | 0 · 0 | `_bodenSichtAt` (stamm/gelaende-boden.js): die Zelle gehört der Karte, die alle vier Ecken trägt |
+| koerper-stand K6 Rand-Streifen + Stufen-Naht | 6 von 792 · 29 von 40 458 | 0 · 0 | `_bodenSichtAt` (stamm/gelaende-boden.js:68): der Rand der gröberen Karte weicht nur der Karte, die die Zelle ganz trägt |
+| Kreatur-Linse 3/3 `querhang` (Folge des ersten K6-Schnitts) | Stand-Schlupf Wolf 0,178 | 0,024 | derselbe Leser: die Karte gleicher Stufe mit Teil-Ecken zählt wieder |
+| Kreatur-Linse 2/3 `herde` | vakuös: Anker 1 040 m vor den Gliedern, sie zogen 372 m fort, die Flucht fand niemanden | GRÜN, Leine jenseits 0, Anker 0 m, Selbsttest 9 von 9 Tätern (herde 32 s) | scripts/lib/kreatur-proben.cjs:1047: das Heim ist ein Ort, an dem `_kreaturRevier` den Anker des Wurfs lässt (die Frage von herde-bild T3); Täter herde-park an der Plan-Mitte + 70 m |
+| Kreatur-Linse 2/3 `lebensraum` | vakuös: der Rand-Leib stand 31 m fern im Nah-Kreis und hielt | GRÜN, 6 von 6 Tätern (18 s) | scripts/diag-kreatur-leben.cjs: der Rand-Leib jenseits von `_kreaturNah` |
 | Werfer-Wand W6 | 1 unbekannter Werfer (streuNah:geroell) | 0 | WIP 3 |
 | Werfer-Wand S10 (blind an 34/142) | Zellen falsch 0 bei Kapsel-Schnitt 19 | 1 (W9 an Sonne [0,5, π/2], 15 Zellen) | scripts/diag-schatten-werfer.cjs: ungestempelte Höhlen-Zellen zählen nicht, die Pose sucht den Schnitt |
 | kampf Q13 Staffel 1 | tod (Anker 1 076 m) | GRÜN 2 von 2 | WIP 2: der Anker der Wiederkehr |
-| kampf LF Posten 5 jagd | rot 2 von 3 Läufen | s. unten | der Wolf windab (offen bis zum Lauf) |
-| haus-welt 2/2 Selbsttest `promotion` | 4 Zellen unter den Häusern (Soll ≥ 5) | s. unten | scripts/diag-haus-welt.cjs: das ferne Dorf am dichtesten Kreis der Baum-Zellen |
+| kampf LF Posten 5 jagd | rot 2 von 3 Läufen | GRÜN 3 von 3 (79 s je Lauf) | scripts/lib/kampf-proben.cjs:2305: der Wolf 6 m windab nach `_rauchWindAt` (am Ort 32,9/−42 weht 0,46/0,89 — der alte Platz +6 m z lag schon windab, cos 0,92: die Ursache der zwei roten Läufe ist nicht nachgestellt, s. offen) |
+| haus-welt 2/2 Selbsttest `promotion` | blind: 4 Zellen unter den Häusern (Soll ≥ 5) | Täter sieht 8 Natur-Einträge im Grundriss; Teil 2/2 21 grün, 0 rot (912 s) | scripts/diag-haus-welt.cjs:1613: das ferne Dorf am dichtesten Kreis der Baum-Zellen (`promotable`) |
 | Prägung kreatur:diet | 154 von 155 | 155 von 155 | scripts/diag-praegung-welt.cjs: je kreatur-Zeile die volle Kappe gewürfelt (Würfe diet 2, sonst 1) |
 
 Die Frist der 50 Saaten (GTX 1050: 43 von 50 in 544 s): die Erde-Decke fragt nur das OB (`nurOb`), Wand-Zeit je Saat 6,68 → 5,97 s,
@@ -82,13 +85,15 @@ Faden der Ankunft an der teuersten Saat 5 305 → 2 752 ms; die Saaten fahren ge
 
 - koerper-stand K7 Aufbau (406 Büschel / 33 Pflanzen, Soll ≥ 1 000 / 500) und die blinden Selbsttests wiese/ring: am main b3740dd5
   lokal gleich rot (415 / 33) — die Werkbank in der Wolke, geerbt, nicht Kopf 2.
-- Der Riss 0,54 m zwischen L1 und L0 an 216/44,1 (`_bodenSichtAt`, stamm/gelaende-boden.js): der Leser steht jetzt auf der Karte, die
+- kampf LF Posten 5: zwei rote Läufe von drei am Kopf vor der Mischung, danach 3 von 3 grün; der Wind am Ort ist in jedem Lauf
+  derselbe (0,46/0,89), die Ursache der roten Läufe ist nicht benannt (Spur `jagdSpur` im Befund, scripts/lib/kampf-proben.cjs:2363).
+- Der Riss 0,54 m zwischen L1 und L0 an 216/44,1 (`_bodenSichtAt`, stamm/gelaende-boden.js:20): der Leser steht jetzt auf der Karte, die
   alle Ecken trägt; die Netze selbst klaffen dort weiter.
-- Die Gesamt-Arbeit im Faden: p95 4 061 ms Wald-Faden je Ankunft (die Spirale × Wald, phyto-core `landmarkeAnkunft`:4517, voxel-worker
-  `ankunftRechnen`:1682); die 7 Saaten ohne Marke kosten zusammen ~30,7 s Faden-Zeit, ehe „keine“ steht.
+- Die Gesamt-Arbeit im Faden: p95 4 061 ms Wald-Faden je Ankunft (die Spirale × Wald, phyto-core `landmarkeAnkunft`:4521, voxel-worker
+  `ankunftRechnen`:1780); die 7 Saaten ohne Marke kosten zusammen ~30,7 s Faden-Zeit, ehe „keine“ steht.
 - Die Aufzählung der Marken im Haupt-Faden ~45 ms je Ankunft (`_landmarkenDesChunks` stamm/vegetation-baum.js:2642, je Zelle
   `_rollGenome`, 18 132 Zellen) — der größte Rest der 74,6 ms.
-- Die Station rechnet den Kronen-Leser im Haupt-Faden (`_landmarkeSicht` → `_sichtWald` stamm/vegetation-baum.js:2744), auch für die
+- Die Station rechnet den Kronen-Leser im Haupt-Faden (`_landmarkeSicht` → `_sichtWald` stamm/vegetation-baum.js:2747), auch für die
   Erde-Decke im 200-m-Gitter: S1 0,6 – 8,4 s je Saat in der Werkbank.
 - Mutant M2 des Kandidaten (S1 wählt die nächste freie) fällt an s1-3/4/7 nicht (die Marke der Ankunft ist dort auch die nächste).
 - Bilder-p95 und „frei im Bild“: erst die GTX misst sie.
