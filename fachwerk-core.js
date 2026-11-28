@@ -4941,9 +4941,22 @@
     // Leser: `spracheVon` (die Sprache des Plans), der Wirt (`_mundartAm` → `_zellEingang` → `DP.mundart`), die Station (sprache#4).
     var SPRACH_RAUM = { sigma: 5000, faecher: 0.3 };
     var _FAECHER = new Map();
+    // DER PREIS (Post 28.11. 02:00): die Mundart ist eine Funktion von Welt und Senke — EINMAL je Senke gerechnet (105 Wörter × 5
+    // Ebenen × 9 Herde: 374 µs je Ruf, auch warm), dasselbe eingefrorene Objekt für jeden Ort des Tals (das Merkbuch der Sprache
+    // `_ORTSPRACHE` trifft darum je Tal). Gehalten ≤ 4 096 Senken (~1 KB je Senke). Leser: der Eingang jeder Zelle (`_zellEingang`).
+    var _MUNDART_SENKE = new Map();
     // prettier-ignore
     function mundartVon(saat, x, z) {
       if (!(Number.isFinite(x) && Number.isFinite(z))) throw new Error("fachwerk mundartVon: die Senke (" + x + ", " + z + ") ist kein Ort");
+      var sk = String(saat) + "|" + x + "," + z, M = _MUNDART_SENKE.get(sk);
+      if (M) return M;
+      M = _mundartRechne(saat, x, z);
+      if (_MUNDART_SENKE.size >= 4096) _MUNDART_SENKE.delete(_MUNDART_SENKE.keys().next().value);
+      _MUNDART_SENKE.set(sk, M);
+      return M;
+    }
+    // prettier-ignore
+    function _mundartRechne(saat, x, z) {
       var T = SPRACH_BAUM.tiefe, NB = SPRACH_BAUM.bedeutungen.length, S = String(saat), herde = new Map();
       var F = _FAECHER.get(S);
       if (!F) { F = [];
@@ -4983,7 +4996,19 @@
         throw new Error("fachwerk spracheVon: der Ort trägt keine Mundart ({kern, worte}, fachwerk mundartVon), sondern " + JSON.stringify(mundart));
       if (jahr != null && !Number.isFinite(jahr)) throw new Error("fachwerk spracheVon: das Jahr " + jahr + " ist keine Zeit");
       var J = jahr == null || jahr >= SPRACH_ZEIT.gegenwart ? null : jahr;
-      var K = _blattSprache(R, mundart.kern, J), gleich = true;
+      // DER PREIS (Post 28.11. 02:00, stadt-voll auf der vsync-Kante): die Sprache eines Orts rechnet EINMAL je Ort und Jahr — das
+      // Merkbuch hängt am Mundart-Objekt seines Plans (WeakMap: fällt der Plan, fällt der Eintrag), nie je Bewohner, nie je Satz.
+      // Gemessen je Aufruf mit Mundart: main 6,2 µs (der Schlüssel aus 100 Wörtern), mit dem Jahr (sprache#6) 702 µs → 0,3 µs
+      var O = _ORTSPRACHE.get(mundart), ok = R + "|" + (J == null ? "" : J), o = O && O.get(ok);
+      if (o) return o;
+      if (!O) _ORTSPRACHE.set(mundart, (O = new Map()));
+      O.set(ok, (o = _mundartSprache(R, mundart, J)));
+      return o;
+    }
+    var _ORTSPRACHE = new WeakMap();
+    // prettier-ignore
+    function _mundartSprache(R, mundart, J) {
+      var NB = SPRACH_BAUM.bedeutungen.length, K = _blattSprache(R, mundart.kern, J), gleich = true;
       for (var i = 0; i < NB && gleich; i++) gleich = mundart.worte[i] === mundart.kern;
       if (gleich) return K;
       var B = new Map([[mundart.kern, K]]), W = mundart.worte.map(function (b, j) { if (!B.has(b)) B.set(b, _blattSprache(R, b, J)); return B.get(b).lex[j]; }), key = K.stufe + "|" + Array.prototype.join.call(mundart.worte, ",") + (J == null ? "" : "|" + W.join(",")), m = _MUNDARTEN.get(key);
