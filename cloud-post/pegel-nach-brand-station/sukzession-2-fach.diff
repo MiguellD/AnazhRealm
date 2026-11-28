@@ -1,0 +1,186 @@
+--- a/meisterkarte-quelle/punkte/stationen/k2-leben.js
++++ b/meisterkarte-quelle/punkte/stationen/k2-leben.js
+@@ -6389,7 +6389,7 @@
+                     2: {
+                         u: { auge: { ort: "wiese" } },
+                         soll: [K.soll(SU, 2, "Bildpaar nach 1/5/25 Spieljahren", { key: "jahre", rel: "≥", zahl: 25, einheit: "Spieljahre" })],
+-                        auge: { pose: "Überflug über der Brandfläche (heute: Ego an der Wiese)", vorbild: "Yellowstone-1988-Fotoreihe nach 1/5/25 Jahren (Prüfer-Satz R11)" },
++                        auge: { pose: "die Zelle der Tat „brand“ nach 1/5/25 Spieljahren an den 16 Orten der Folge, gerahmt aus 8 Richtungen, Ego 1,7 m (Fächer leben.oeko.sukzession#2; kein Flächenbrand, kein Überflug)", vorbild: "Yellowstone-1988-Fotoreihe nach 1/5/25 Jahren (Prüfer-Satz R11, Satz yellowstone-1988)" },
+                         taeter: "stamm/feld-brand.js _brandEntfachen (kein Flächenbrand mit Inseln in der Folge)",
+                         nicht: "kein 1-km²-Brand mit Überlebenden-Inseln",
+                         leser: "stamm/vegetation-wiese.js:2120 _sukzession — EINE Rampe je Zelle, kein Feuer-Regime je Biom, keine Überlebenden",
+--- a/vision/pruefer/faecher.cjs
++++ b/vision/pruefer/faecher.cjs
+@@ -141,6 +141,23 @@
+     return { an: fn("BODEN_AN"), blick: fn("HANG_BLICK"), posen: t.slice(s, t.indexOf("\n", g)).replace("(Number(u1.posen) || 30)", "N") };
+ }
+ 
++// DAS GESETZ DER FOLGE (k2-leben.js, Leiter leben.oeko.sukzession, Rumpf `folge`, kein `seite`-Export): am Wortlaut aus der Station
++// gefasst — die Orte im Ring der Ankunft (der Aufruf `seite(folge, { orte, abstand, … })` und die Formel des Orts `w · d · x · z`),
++// das Spieljahr in Welt-Stunden (`jahrH`) und die Jahre des Solls S2 („Bildpaar nach 1/5/25 Spieljahren“). Ändert die Station den
++// Wortlaut, wirft der Fächer
++function folgeGesetz() {
++    const t = fs.readFileSync(path.join(STATIONEN, "k2-leben.js"), "utf8");
++    const weg = (was) => {
++        throw new Error("Gesetz fehlt: k2-leben.js trägt " + was + " in der Folge nicht mehr");
++    };
++    const ruf = t.match(/await seite\(folge, \{ orte: (\d+), abstand: (\[[\d, ]+\])/) || weg("den Ruf seite(folge, { orte, abstand })");
++    const jahrH = (t.match(/const jahrH = \(\(K\) => \(K\.tagStunden \* K\.jahrK\) \/ K\.normS\)\(r\._kalender\(\)\);/) || weg("das Spieljahr jahrH"))[0];
++    const a = t.indexOf("const w = (i / a.orte) * Math.PI * 2;"), zz = "const z = Math.floor((pm.z + Math.sin(w) * d) / cs) * cs + cs / 2;", e = t.indexOf(zz, a);
++    if (a < 0 || e < 0 || e - a > 400) weg("die Formel des Orts (w · d · x · z)");
++    const soll = t.match(/K\.soll\(SU, 2, "Bildpaar nach ([\d/]+) Spieljahren"/) || weg("das Soll S2 „Bildpaar nach … Spieljahren“");
++    return { orte: +ruf[1], abstand: ruf[2], jahrH, ort: t.slice(a, e + zz.length).replace(/\s*\n\s*/g, " "), jahre: soll[1].split("/").map(Number) };
++}
++
+ // JE SPROSSE: der Messort, die Zeile des Gesetzes, der Rumpf in der Seite (r = Welt, T = THREE) → { saat, posen: [{ pose, wort }], lage }
+ const SPROSSEN = {
+     // der Ortsrand: die Station nimmt von 8 Richtungen die mit den meisten Häusern im Kegel der Kamera (k2-mensch-stadt.js:224–236,
+@@ -463,6 +480,40 @@
+             "const N = [...namen], leser = N.filter((n) => /vulkan|volcan|magma|ausbruch|eruption|roehre/i.test(n)), schl = Object.keys(o).sort().join(',') + ' · delta ' + Object.keys(o.delta || {}).sort().join(',');" +
+             "return { saat, posen: [], lage: 'der Planet-Faden trägt ' + (/vulkan/.test(schl) ? 'einen' : 'keinen') + ' Vulkan (' + schl + '), die Welt ' + leser.length + ' Leser eines Ausbruchs; Glut steht nur an einer gesetzten Lava-Tat' };",
+     },
++    // die Brandfläche nach 1/5/25 Spieljahren: die Station schreibt an 16 Orten im Ring der Ankunft je EINE Tat „brand“ und liest ihre
++    // Folge über die Uhr (k2-leben.js:6328, `folge`; S2 k2-leben.js:6391) — der Fächer schreibt an DENSELBEN Orten (dieselbe Formel)
++    // dieselbe Tat, je Ort ein Alter des Solls im Wechsel, rückdatiert um Alter × Spieljahr (`_tatSchreiben` mit `h`: die Tat lebt in
++    // der Zeit der Welt, nie gemalt), und rahmt die Zelle der Tat GANZ (RAHMEN, die Höhe des Jungwalds nach 24 a: 3–4 m, Turner u. a.
++    // 2016) aus 8 Richtungen, die ersten 3 freien je Ort; das Alter ist die Klasse und reist in die Akte (das Paar nimmt das Foto
++    // derselben Stufe). Die Welt trägt keinen Flächenbrand mit Überlebenden-Inseln (die Station: „nicht“) — der Fächer brennt keinen
++    "leben.oeko.sukzession#2": {
++        ort: "wiese",
++        gesetz: "meisterkarte-quelle/punkte/stationen/k2-leben.js:6328",
++        faecher: "die 16 Orte der Folge (k2-leben.js:6289), je Ort EINE Tat „brand“ rückdatiert um 1/5/25 Spieljahre im Wechsel, die Zelle der Tat gerahmt (RAHMEN, Höhe 4 m) aus 8 Richtungen, die ersten 3 freien, Mittag",
++        ordner: "leben.oeko.sukzession.2-b1",
++        uhren: [0.5],
++        frage: "Welches Bild ist das Foto?",
++        je: 16,
++        mehr: {},
++        wahl: 0,
++        motiv: (a) => AN_DER_POSE(a) && GRUEN(a),
++        rumpf: () => {
++            const G = folgeGesetz();
++            return (
++                SAAT +
++                "const s = r.state, cs = r.constructor.LIFE_FIELD.cell, pm = s.playerMesh.position, a = { orte: " + G.orte + ", abstand: " + G.abstand + " }, JAHRE = " + JSON.stringify(G.jahre) + ";" +
++                G.jahrH + RAHMEN +
++                "const h0 = r._weltStunde(), posen = [], je = {}; let ohneFrei = 0;" +
++                "for (let i = 0; i < a.orte; i++) { " + G.ort +
++                " const J = JAHRE[i % JAHRE.length], b = r._tatSchreiben('brand', x, z, { h: Math.round((h0 - J * jahrH) * 1e4) / 1e4 }), su = r._sukzession(b, h0), y0 = r.getTerrainHeightAt(x, z);" +
++                " const T0 = { x, z, hx: cs / 2, hz: cs / 2, h: 4, y0, rad: cs / 2 }; let n = 0;" +
++                " for (let k = 0; k < 8 && n < 3; k++) { const f = rahmen(T0, w + Math.PI + (k * Math.PI) / 4); if (!f.frei) continue; n++; je[J] = (je[J] || 0) + 1;" +
++                "  posen.push({ klasse: J + ' Spieljahre', pose: f.pose, wort: 'Ort ' + i + ' (' + x + '/' + z + ', ' + d + ' m): Brand vor ' + J + ' Spieljahren — Asche ' + su.asche + ', Busch ' + su.busch + ', Wald ' + su.wald + '; die Zelle gerahmt aus ' + Math.round(f.d) + ' m, ' + Math.round(((w + Math.PI + (k * Math.PI) / 4) * 180) / Math.PI) % 360 + '°' }); }" +
++                " if (!n) ohneFrei++; }" +
++                "return { saat, posen, lage: a.orte + ' Orte der Folge, je Alter gerahmt ' + JSON.stringify(je) + ', ohne freie Richtung ' + ohneFrei + ', Spieljahr ' + jahrH + ' Welt-Stunden' };"
++            );
++        },
++    },
+ };
+ 
+ // ───────────────────────── reine Teile (der Selbsttest fährt sie) ─────────────────────────
+@@ -746,6 +797,8 @@
+     t("die Rümpfe tragen die Seiten-Funktionen der Stationen und sind gültiger Text" + (rumpf.startsWith("FEHLER") ? " — " + rumpf : ""), !rumpf.startsWith("FEHLER") && /_bewohnerSiedlungen/.test(rumpf) && /aus\.alle/.test(rumpf) && /i < 16/.test(rumpf));
+     const boden = rumpf.startsWith("FEHLER") ? "" : SPROSSEN["planet.relief.boden#1"].rumpf();
+     t("der Boden am Hang liest das Gesetz der Station: BODEN_AN, HANG_BLICK und den Strom der Saat 12345 (100 Posen), nie eine eigene Formel", /BODEN_AN = async \(r, T, a, mit\) =>/.test(boden) && /HANG_BLICK = \(r, x, z\) =>/.test(boden) && /let sz = 12345;/.test(boden) && /p < N; p\+\+/.test(boden) && !/u1\.posen/.test(boden));
++    const folge = rumpf.startsWith("FEHLER") ? "" : SPROSSEN["leben.oeko.sukzession#2"].rumpf();
++    t("die Brandfläche liest das Gesetz der Folge: die Orte der Station (16, Abstand 40/70/100/130), ihr Spieljahr und die Jahre des Solls (1/5/25), je Ort EINE rückdatierte Tat „brand“, gerahmt", /orte: 16, abstand: \[40, 70, 100, 130\]/.test(folge) && /const w = \(i \/ a\.orte\) \* Math\.PI \* 2;/.test(folge) && /K\.tagStunden \* K\.jahrK/.test(folge) && /JAHRE = \[1,5,25\]/.test(folge) && /_tatSchreiben\('brand', x, z, \{ h: /.test(folge) && /rahmen\(T0, /.test(folge) && (folge.match(/_tatSchreiben\(/g) || []).length === 1);
+     let wurf = "";
+     try {
+         seiteVon("k2-mensch-stadt.js", "mensch.stadt.groesse", "GIBTESNICHT");
+--- a/vision/pruefer/quellen.json
++++ b/vision/pruefer/quellen.json
+@@ -12057,6 +12057,24 @@
+    "liegenGeblieben": [],
+    "stand": "geholt 40 von 40 · gesichtet am Bogen des Satzes (26.11., dritte Welle): 31 tragen das Motiv, 9 fielen (nicht)",
+    "ablage": "2afc/wikimedia-commons/haus-zehn-meter-2"
++  },
++  {
++   "id": "yellowstone-1988",
++   "art": "2afc",
++   "quelle": "Wikimedia Commons",
++   "fuer": [
++    "leben.oeko.sukzession#2"
++   ],
++   "soll": 40,
++   "breite": 1280,
++   "lizenz": "je Datei (gemeinfrei · CC BY · CC BY-SA)",
++   "abfrage": {
++    "art": "liste",
++    "datei": "vision/pruefer/listen/yellowstone-1988.csv"
++   },
++   "dateien": [],
++   "liegenGeblieben": [],
++   "stand": "ungeholt · gesichtet in der Vorschau (360 px) am 28.11., Bild für Bild: von 46 Kandidaten (Titel aus 199 Treffern in Commons und NPGallery) tragen 25 das Motiv — eine Brandfläche im Lodgepole-Wald, die Jahre seit dem Brand am Foto lesbar (wahrheit): 1–2 a 8 · 9–13 a 9 · 18–31 a 8; die Stufe 5 a trägt kein freies Foto. Korpus 25 von 40"
+   }
+  ],
+  "liegenGebliebenQuellen": [
+@@ -12094,7 +12112,7 @@
+    ],
+    "quelle": "NPS, Yellowstone-Feuer 1988, Fotoreihe (gemeinfrei)",
+    "umfang": "≥ 40 Fotos in drei Zeitstufen",
+-   "grund": "nicht geholt: die Zeitstufe je Foto muss von Hand gelesen werden"
++   "grund": "gelesen am 28.11. als Satz yellowstone-1988 (Liste, die Jahre je Foto): 25 von 40, die Stufe 5 a ohne freies Foto"
+   },
+   {
+    "art": "2afc",
+@@ -12297,7 +12315,7 @@
+   }
+  ],
+  "summe": {
+-  "saetze": 29,
++  "saetze": 30,
+   "dateien": 976,
+   "bytes": 269368450,
+   "liegenGeblieben": 83
+@@ -12508,14 +12526,16 @@
+    "id": "leben.oeko.sukzession#2",
+    "satz": "Bildpaar nach 1/5/25 Spieljahren gegen die Yellowstone-1988-Fotoreihe",
+    "a": null,
+-   "fotos": 0,
++   "fotos": 25,
+    "b": false,
+-   "c": "nicht-gelesen",
+-   "station": "k2-leben.js",
+-   "motiv": "Bildpaar nach 1/5/25 Spieljahren",
+-   "saetze": [],
++   "c": "einzelbild",
++   "station": "k2-leben.js:6350 M.auge(\"oeko-sukzession-s2\") am Messort wiese",
++   "motiv": "die Zelle der Tat „brand“ nach 1/5/25 Spieljahren, gerahmt, Ego 1,7 m",
++   "saetze": [
++    "yellowstone-1988"
++   ],
+    "bereitBisAufDenFaecher": false,
+-   "fehlt": "a: keine Schwelle im Satz · b: Yellowstone-1988-Fotoreihe mit Zeitstufe je Foto (plan)"
++   "fehlt": "a: keine Schwelle im Satz · b: 25 von 40 gesichtet (Satz yellowstone-1988), die Stufe 5 a trägt kein freies Foto"
+   },
+   {
+    "id": "leben.evolution.mikroben#1",
+--- /dev/null
++++ b/vision/pruefer/listen/yellowstone-1988.csv
+@@ -0,0 +1,28 @@
++# Yellowstone-Feuer 1988 (und zwei spätere Brände des Parks mit Jahr), Lodgepole-Wald, die Jahre seit dem Brand je Foto (wahrheit)
++# gesichtet am 28.11. in der Vorschau 360 px, Bild für Bild: 25 tragen das Motiv; die Stufe 5 a trägt kein freies Foto
++url;lizenz;wahrheit;beleg
++https://thumb.wikimedia.org/wikipedia/commons/thumb/3/34/Grass_growing_after_fire.jpg/1280px-Grass_growing_after_fire.jpg;gemeinfrei;1;https://commons.wikimedia.org/wiki/File:Grass_growing_after_fire.jpg (Feuer 1988, Foto Asche, erste Triebe (NPS-Reihe 1988, Stufe am Bild gelesen))
++https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8f/Fireweed_after_fire.jpg/1280px-Fireweed_after_fire.jpg;gemeinfrei;1;https://commons.wikimedia.org/wiki/File:Fireweed_after_fire.jpg (Feuer 1988, Foto Weidenröschen zwischen schwarzen Stangen (NPS-Reihe 1988, Stufe am Bild gelesen))
++https://thumb.wikimedia.org/wikipedia/commons/thumb/0/01/Flowers_Yellowstone_1989.jpg/1280px-Flowers_Yellowstone_1989.jpg;gemeinfrei;1;https://commons.wikimedia.org/wiki/File:Flowers_Yellowstone_1989.jpg (Feuer 1988, Foto 1989)
++https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0b/Burnt_over_area_in_center_of_the_park.jpg/1280px-Burnt_over_area_in_center_of_the_park.jpg;CC BY-SA 4.0;2;https://commons.wikimedia.org/wiki/File:Burnt_over_area_in_center_of_the_park.jpg (Feuer 1988, Foto 1990-07-30)
++https://thumb.wikimedia.org/wikipedia/commons/thumb/0/04/Burned_over_1990_Central_plateau.jpg/1280px-Burned_over_1990_Central_plateau.jpg;CC BY-SA 4.0;2;https://commons.wikimedia.org/wiki/File:Burned_over_1990_Central_plateau.jpg (Feuer 1988, Foto 1990-07-30)
++https://thumb.wikimedia.org/wikipedia/commons/thumb/d/da/Burned_over_1990_Central_plateau_%28Pan%29.jpg/1280px-Burned_over_1990_Central_plateau_%28Pan%29.jpg;CC BY-SA 4.0;2;https://commons.wikimedia.org/wiki/File:Burned_over_1990_Central_plateau_(Pan).jpg (Feuer 1988, Foto 1990-07-30)
++https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ac/Burnt_over_area.jpg/1280px-Burnt_over_area.jpg;CC BY-SA 4.0;2;https://commons.wikimedia.org/wiki/File:Burnt_over_area.jpg (Feuer 1988, Foto 1990-07-30)
++https://thumb.wikimedia.org/wikipedia/commons/thumb/3/32/No_Canyon_Rd_-_Burned_area_-_regrouth_from_1988_fire.jpg/1280px-No_Canyon_Rd_-_Burned_area_-_regrouth_from_1988_fire.jpg;CC BY-SA 4.0;2;https://commons.wikimedia.org/wiki/File:No_Canyon_Rd_-_Burned_area_-_regrouth_from_1988_fire.jpg (Feuer 1988, Foto 1990-07-30)
++https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6e/Lodgepole_pine_Yellowstone_1998_near_firehole.jpg/1280px-Lodgepole_pine_Yellowstone_1998_near_firehole.jpg;gemeinfrei;10;https://commons.wikimedia.org/wiki/File:Lodgepole_pine_Yellowstone_1998_near_firehole.jpg (Feuer 1988, Foto 1998-09)
++https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e1/Lodgepole_pine_Yellowstone_1998.jpg/1280px-Lodgepole_pine_Yellowstone_1998.jpg;gemeinfrei;10;https://commons.wikimedia.org/wiki/File:Lodgepole_pine_Yellowstone_1998.jpg (Feuer 1988, Foto 2019-12-21 13:13:03)
++https://upload.wikimedia.org/wikipedia/commons/1/1c/Yellowstone_N.P._1997_79.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original;CC BY-SA 4.0;9;https://commons.wikimedia.org/wiki/File:Yellowstone_N.P._1997_79.jpg (Feuer 1988, Foto 1997-07)
++https://upload.wikimedia.org/wikipedia/commons/4/4e/Yellowstone_N.P._1997_80.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original;CC BY-SA 4.0;9;https://commons.wikimedia.org/wiki/File:Yellowstone_N.P._1997_80.jpg (Feuer 1988, Foto 1997-07)
++https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5d/Regrowth_from_2009_Arnica_Fire_as_seen_today%2C_10_years_later._%2848350383187%29.jpg/1280px-Regrowth_from_2009_Arnica_Fire_as_seen_today%2C_10_years_later._%2848350383187%29.jpg;gemeinfrei;10;https://commons.wikimedia.org/wiki/File:Regrowth_from_2009_Arnica_Fire_as_seen_today%2C_10_years_later._(48350383187).jpg (Arnica-Feuer 2009, Foto 2019)
++https://thumb.wikimedia.org/wikipedia/commons/thumb/8/86/Forest_regrowth_following_a_2007_prescribed_fire_at_Norris_Junction._%280335543a-542a-42a1-a268-5aefc294fcc6%29.jpg/1280px-Forest_regrowth_following_a_2007_prescribed_fire_at_Norris_Junction._%280335543a-542a-42a1-a268-5aefc294fcc6%29.jpg;gemeinfrei;12;https://commons.wikimedia.org/wiki/File:Forest_regrowth_following_a_2007_prescribed_fire_at_Norris_Junction._(0335543a-542a-42a1-a268-5aefc294fcc6).jpg (Brand 2007 (vorgeschrieben), Foto 2019)
++https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a1/Fire_Scar_1989.jpg/1280px-Fire_Scar_1989.jpg;CC BY-SA 4.0;12;https://commons.wikimedia.org/wiki/File:Fire_Scar_1989.jpg (Feuer 1988, Foto 2000-07-30)
++https://thumb.wikimedia.org/wikipedia/commons/thumb/2/22/Gibbon_River_%28Central_Plateau_-_Yellowstone%29.jpg/1280px-Gibbon_River_%28Central_Plateau_-_Yellowstone%29.jpg;CC BY-SA 4.0;12;https://commons.wikimedia.org/wiki/File:Gibbon_River_(Central_Plateau_-_Yellowstone).jpg (Feuer 1988, Foto 2000-07-30)
++https://thumb.wikimedia.org/wikipedia/commons/thumb/3/35/Forest_along_the_Gibbon_River%3B_%280f925e52-cfee-4dbc-abbd-e24e921995ee%29.jpg/1280px-Forest_along_the_Gibbon_River%3B_%280f925e52-cfee-4dbc-abbd-e24e921995ee%29.jpg;gemeinfrei;13;https://commons.wikimedia.org/wiki/File:Forest_along_the_Gibbon_River%3B_(0f925e52-cfee-4dbc-abbd-e24e921995ee).jpg (Feuer 1988, Foto 26 October 2005)
++https://thumb.wikimedia.org/wikipedia/commons/thumb/9/92/Burn_area_in_Yellowstone_National_Park.JPG/1280px-Burn_area_in_Yellowstone_National_Park.JPG;CC BY-SA 3.0;18;https://commons.wikimedia.org/wiki/File:Burn_area_in_Yellowstone_National_Park.JPG (Feuer 1988, Foto 4 June 2006 (accordi)
++https://upload.wikimedia.org/wikipedia/commons/a/a9/Yellowstone_dead_trees.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original;CC BY-SA 3.0;20;https://commons.wikimedia.org/wiki/File:Yellowstone_dead_trees.jpg (Feuer 1988, Foto 2008-07)
++https://upload.wikimedia.org/wikipedia/commons/4/4e/Remains_of_the_great_Yellowstone_forest_fire_of_1988_-_panoramio.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original;CC BY 3.0;21;https://commons.wikimedia.org/wiki/File:Remains_of_the_great_Yellowstone_forest_fire_of_1988_-_panoramio.jpg (Feuer 1988, Foto 12 August 2009)
++https://upload.wikimedia.org/wikipedia/commons/0/0b/Life_is_coming_back_from_Yellowstone_forest_fire_1988_-_panoramio.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original;CC BY 3.0;21;https://commons.wikimedia.org/wiki/File:Life_is_coming_back_from_Yellowstone_forest_fire_1988_-_panoramio.jpg (Feuer 1988, Foto 12 August 2009)
++https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8d/Fire_Damage%2C_Lewis_River%2C_Yellowstone_8-11_%2815247595881%29.jpg/1280px-Fire_Damage%2C_Lewis_River%2C_Yellowstone_8-11_%2815247595881%29.jpg;CC BY-SA 2.0;23;https://commons.wikimedia.org/wiki/File:Fire_Damage%2C_Lewis_River%2C_Yellowstone_8-11_(15247595881).jpg (Feuer 1988, Foto 2011-08-28 09:49:31)
++https://thumb.wikimedia.org/wikipedia/commons/thumb/4/46/Lodgepole_pine_regrowth_after_1988_fire_along_Gibbon_River_%2848793693943%29.jpg/1280px-Lodgepole_pine_regrowth_after_1988_fire_along_Gibbon_River_%2848793693943%29.jpg;gemeinfrei;31;https://commons.wikimedia.org/wiki/File:Lodgepole_pine_regrowth_after_1988_fire_along_Gibbon_River_(48793693943).jpg (Feuer 1988, Foto 2019-08-30 18:56)
++https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5b/Lodgepole_pine_regrowth_after_1988_fire_along_Gibbon_River_%2848794197667%29.jpg/1280px-Lodgepole_pine_regrowth_after_1988_fire_along_Gibbon_River_%2848794197667%29.jpg;gemeinfrei;31;https://commons.wikimedia.org/wiki/File:Lodgepole_pine_regrowth_after_1988_fire_along_Gibbon_River_(48794197667).jpg (Feuer 1988, Foto 2019-08-30 18:56)
++https://thumb.wikimedia.org/wikipedia/commons/thumb/4/49/Lodgepole_pine_forest_along_the_Madison_river_%284baffe1a-666d-462a-b9ed-a2a5e3e0ca1e%29.jpg/1280px-Lodgepole_pine_forest_along_the_Madison_river_%284baffe1a-666d-462a-b9ed-a2a5e3e0ca1e%29.jpg;gemeinfrei;26;https://commons.wikimedia.org/wiki/File:Lodgepole_pine_forest_along_the_Madison_river_(4baffe1a-666d-462a-b9ed-a2a5e3e0ca1e).jpg (Feuer 1988, Foto 12 September 2014)

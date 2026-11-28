@@ -30,3 +30,28 @@ Gemessen (headless, Büschel der Nah-Wiese im Blickkegel ±30°, 1–25 m | 1–
 die Aue des Bachs (−399,9/−847,5) 207 | 0 (die Aue trägt kein Nahfeld-Gras: verworfen). Soll, Richter und Zahl unverändert.
 Geprüft: `node --check` am gepatchten Stand, `git apply --check` an frischem pm-Baum GRÜN. Das Bild selbst ist ungefahren: unter
 swiftshader steht die Welt hier nicht (gpu-process, „DIE WELT STEHT NICHT nach 4300 Takten“) — der Richter ist die GTX 1060.
+
+DRITTER KANDIDAT `sukzession-2-fach.diff` (karte2.leben.oeko.sukzession#2, das Fach nach der Vorlage kunst#1), gegen den pm-Kopf
+bafab955e5ffe3fc1396e4e3aa244bf33077e182 (4 Dateien): vision/pruefer/faecher.cjs (FACH, Selbsttest) · vision/pruefer/listen/yellowstone-1988.csv (neu) ·
+vision/pruefer/quellen.json (Satz, Plan, Front) · meisterkarte-quelle/punkte/stationen/k2-leben.js (der Wortlaut der Pose im Auge S2).
+1. FACH `leben.oeko.sukzession#2`: `folgeGesetz()` liest das Gesetz am Wortlaut der Station, wie `bodenGesetz()` — den Ruf
+   `seite(folge, { orte: 16, abstand: [40, 70, 100, 130] })` (k2-leben.js:6328), die Formel des Orts w · d · x · z (:6289), das
+   Spieljahr `jahrH` (:6271) und die Jahre des Solls S2 „Bildpaar nach 1/5/25 Spieljahren“ (:6391); ändert die Station den
+   Wortlaut, wirft der Fächer beim Namen. Der Rumpf schreibt an DENSELBEN 16 Orten EINE Tat „brand“ wie die Station, je Ort ein Alter
+   des Solls im Wechsel, rückdatiert um Alter × Spieljahr (`_tatSchreiben` mit `h`), und rahmt die Zelle der Tat GANZ (RAHMEN,
+   Höhe 4 m: der Jungwald nach 24 a, Turner u. a. 2016) aus 8 Richtungen, die ersten 3 freien je Ort; Klasse = Alter, 16 je Klasse
+   im Wechsel, Mittag, `wahl: 0`, Motiv AN_DER_POSE und GRÜN. Kein größerer Brand, kein Überflug: die Welt trägt keinen
+   Flächenbrand mit Inseln (das „nicht“ der Station) — das Fach wählt keine bequeme Pose und senkt kein Soll.
+   Gemessen (headless, die Welt dieses Zweigs am Kopf 67f13ff, Rumpf in der Seite): 48 Posen des Gesetzes (1 a 18 · 5 a 15 ·
+   25 a 15), 16 Taten mit dem Alter 1/5/25 a genau, 0 Orte ohne freie Richtung; die Folge an der Pose: 1 a Asche 0,5 · 5 a Busch 1,
+   Wald 0,25 · 25 a Busch 1, Wald 0,5. Selbsttest 17 GRÜN (vorher 16); zwei Mutanten der Station (Soll 1/5/20, Abstand [40, 70])
+   machen die Zeile ROT.
+2. Die Station liest das Urteil des Prüfers: die Zeile der Klasse P steht (auge-klasse.cjs:107, „gegen die Yellowstone-1988-
+   Fotoreihe“) — die Station behauptet kein GRÜN. Geändert ist nur der Wortlaut der Pose im Auge S2 auf die Pose des Fachs.
+3. KORPUS `yellowstone-1988` (Abfrage „liste“ des Holers: url;lizenz;wahrheit;beleg, wahrheit = Jahre seit dem Brand): 199
+   Treffer in Commons und NPGallery, 46 nach Titel, Bild für Bild in der Vorschau gesichtet; 25 tragen das Motiv — 1–2 a 8 ·
+   9–13 a 9 · 18–31 a 8 —, alle von wikimedia.org, Lizenz gemeinfrei · CC BY · CC BY-SA, je Zeile durch `listeLesen` frei.
+   OFFEN: Korpus 25 von 40, die Stufe 5 a trägt kein freies Foto (das nächste: 9 a). Die Fotos liegen nicht im Repo (`hole.cjs --ziel`).
+Geprüft: `git apply --check` an frischen Kopien der pm-Fassungen GRÜN, angewendet byte-gleich; `node --check`; prettier GRÜN.
+Das Bild ist ungefahren: unter swiftshader steht die Welt hier nicht (Werkbank /bild „DIE WELT STEHT NICHT nach 3689 Takten“) —
+der Richter ist die GPU des Fächers.
