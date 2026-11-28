@@ -151,5 +151,8 @@ Seite der Fahrbahn → `wer`).
   `check:statik` GRÜN 596 s · `gate:ci-deckung` GRÜN 25 s · `gate:welt-boot` GRÜN 83 s · `gate:fachwerk-contract` GRÜN 119 s ·
   format · lint GRÜN. merge-tree gegen main 23b593ac, w28-sprache-dialekt-2b und w28-wurf-mit-luft-3 (z812) sauber. Probe-Ruf
   von Hand gegen die Tafel gehalten (`zug.sh` liegt in keinem Zweig), derselbe Ruf wie Kopf 4.
+- Kopf 5 an der Landung geprüft: z812 schrieb `stamm/siedlung-bewohner.js` und das Golden `siedlung.json` neu — der Baum
+  Kopf 5 + main b56b51f0 (merge-tree, 547ab67f) liest `gate:settlement` GRÜN (1 013 s, Selbsttest und Kanal). Gegen main
+  27d2f60e (z813) mischen Kopf 5 und der Zweig sauber; z813 fasst Linse, `DAUER_S`, `check.yml` und `ci-zeiten.json` nicht an.
 
 Karte 2 gebucht 156 von 1 718. Status ZWISCHENSTAND.
