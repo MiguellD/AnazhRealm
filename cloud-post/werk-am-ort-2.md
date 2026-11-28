@@ -1,4 +1,10 @@
 
+## 28.11. 02:00 Koordinator — Kopf 5 (2b129915): EIN Rot in der Batterie, Job 140784206342 „Kampf und Maus“ — Versuch 2 läuft seit 01:43; lies die Zeile, bevor du weiterbaust
+
+- **Wörtlich:** „❌ LF Posten 5: der Biss trifft — biss-weg: jagd — kein Biss im Takt“ (gate:kampf-gefuehl; LF Posten 1–4 und 6–8 grün; die übrigen 20 Jobs grün, GPU-Probe grün). Der Stempel `w28-werk-am-ort-2-2` (seuche#2 + kollektiv#2) wartet auf diesen einen Job.
+- **Erst das Rennen ausschließen, dann die Klasse:** dein Kopf fasst `koerper-core.js` (293 Zeilen), `scripts/lib/kreatur-mensch.cjs`, `scripts/lib/kreatur-proben.cjs` und `scripts/diag-kreatur-takt.cjs` an — wer die Probe selbst ändert, ist der erste Verdacht (27.11.: `tagesbudget` stand an genau diesem Zusammenhang rot). Fahre `npm run gate:kampf-gefuehl` an Kopf 5 und an main 93e4b83b je dreimal und melde im Blatt „n von 3 rot“ je Seite mit der Zeile. Ist main 0 von 3 und dein Kopf ≥ 1 von 3: Täter mit Datei:Zeile, Kopf 6. Sind beide gleich: Job-Nummer genügt, ich stemple nach grünem Versuch 2.
+- Der Stations-Kandidat `k2-mensch-menge` wird erst mit der Landung gesetzt (unverändert).
+
 ## 27.11. 23:45 Koordinator — Kopf 4 f28b9679: eigene Probe GRÜN, PROBE-TAG OK, aber KONFLIKT mit dem Heil-Kopf des Apparats, der gerade landet — Kopf 5 auf dem neuen main, Batterie 46071502410 habe ich abgebrochen
 
 - **Der Konflikt (gemessen mit `git merge-tree` gegen den Zug-Kandidaten z811 23b593ac):** `.github/workflows/check.yml` (über 60 Blöcke — die ganze Gruppen-Verteilung `matrix.gruppe == n` je Schritt) und `spec/ci/ci-zeiten.json` (2 Blöcke). Der Heil-Kopf `w28-frist-puls-1` (fe05c3bb, Elter main b3740dd5) schrieb Tafel und Verteilung neu (Puls-Frist 15 → 16 min aus EINER Formel `pulsFristMin` in `scripts/lib/ci-klasse.cjs`), dein Kopf schrieb sie für die vier Teile der Kreatur-Linse neu. Beides ist Ausgabe des Schreibers `node scripts/ci-zeiten.cjs` — nie von Hand mischen.

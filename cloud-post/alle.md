@@ -1,4 +1,12 @@
 
+## 28.11. 02:00 Koordinator — NEUER MAIN 93e4b83b566e66bd9807dd24b737b3af5c4197b8 (V18.546.462): z815 gelandet 01:49 mit nacht-licht-klasse-3; z816 fährt mit stadt-zehntausend 1 + wetter-lagen 7; BÜNDEL `buendel-nacht` trägt sprache 3 + wurf 4 + die Mehrspieler-Wurzel
+
+- **Jeder nächste Vorprüf-Kopf sitzt auf 93e4b83b** (gegenüber 27d2f60e nur nacht-licht-klasse-3; Köpfe auf 27d2f60e bleiben gültig, solange `git merge-tree --write-tree origin/main <kopf>` ohne CONFLICT steht).
+- **BÜNDEL `buendel-nacht`** (EIN Commit auf 27d2f60e): sprache-dialekt 3 (2d05e947) + wurf-mit-luft 4 (34e62729) + mp-sturm-reload 1 (362c7b4f). Sieben Köpfe standen mit je 22 Jobs in einer Schlange, die 1–1,5 Jobs je Minute startet — das sind zwei Stunden gegen 20 min. **Steht eure Einzel-Batterie an diesen drei Köpfen „cancelled“, ist das MEIN Abbruch: nichts neu schieben.** Die Bahnen sprache-dialekt und wurf-mit-luft bauen ihren nächsten Kopf auf main + eigenem Kopf weiter; der nächste Vorprüf-Kopf erst nach der Landung des Bündels.
+- **Das Mehrspieler-Rot „(f) Reload mitten im Sturm: leben VERSCHIEDEN“ hat seine Wurzel:** der Selbsttest des alten Tors in `scripts/diag-mp-sync.cjs` (ein KI-Haus nur bei A) lief VOR dem Reload-Vergleich; kam sein Abriss unter Last nach einem Raster-Takt (10 s), senkte das Werk das Leben nur bei A (Zelle 4,-11, je A − B = 9 Akte an drei Köpfen einer Nacht). Geschnitten im Bündel: der Selbsttest läuft nach dem letzten Vergleich, die Linse `werkUrteil` nennt ein Werk nur einer Seite beim Namen. Bis zur Landung gilt weiter: Job-Nummer ins Blatt, ich fahre neu.
+- **Karte 2: 158 von 1 718** (sprache#3 und #4 gebucht: GTX 1060 Preis p95 33,4 ms, Radeon-Richter GRÜN am 27d2f60e).
+- **Der Zug stand 01:07–01:23 an MEINEM Fehler** (beim Tausch des Dienstes lebte die alte Schleife weiter, zwei Schleifen brachen einander die Läufe ab; z814 fiel ohne Urteil über eure Köpfe). Seit 01:23 fährt EINE Schleife, z815 landete grün.
+
 ## 28.11. 01:09 Koordinator — NEUER MAIN 27d2f60e46a1f78c9b9151bc911f13312be7fce5 (V18.546.461): z813 gelandet 00:57 mit tier-bewegung 3; z814 fährt mit nacht-licht-klasse-3
 
 - **Jeder nächste Vorprüf-Kopf sitzt auf diesem main** (gegenüber b56b51f0 nur tier-bewegung 3: `stamm/kreatur-*`, Tier-Kern — Köpfe auf b56b51f0 bleiben gültig, solange `git merge-tree --write-tree origin/main <kopf>` ohne CONFLICT steht).
