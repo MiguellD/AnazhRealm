@@ -1,7 +1,7 @@
 {
  "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
  "geraet": "gtx",
- "zeit": "2026-11-28T08:50:31.605Z",
+ "zeit": "2026-11-28T08:57:39.110Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "profiband.K4#1": {
@@ -3345,22 +3345,550 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.mensch.geist.tag#2": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@ 99 s · S2 warf: /eval ohne Antwort binnen 88 s",
+   "exit": 0,
+   "minuten": 1.65,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@ 99 s · S2 warf: /eval ohne Antwort binnen 88 s",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 99.1,
+   "fremd": {
+    "s": 101.7,
+    "takte": 47,
+    "fremdS": 24.33,
+    "kerne": 0.239,
+    "fensterKerne": 0.411,
+    "namen": [
+     [
+      "bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \"",
+      5.91
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.81
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-e80f9c5d-w092741-s x listen/kandidat-gtx-e80f9c5d-w092741-s.t",
+      2.41
+     ]
+    ],
+    "dienerS": 14.5,
+    "diener": [
+     [
+      "System",
+      5.72
+     ],
+     [
+      "WmiPrvSE.exe",
+      4
+     ]
+    ],
+    "geraetS": 42.03,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      29.89
+     ],
+     [
+      "svchost.exe",
+      11.42
+     ],
+     [
+      "SearchIndexer.exe",
+      0.25
+     ]
+    ],
+    "eigenS": 138.97,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-28T08:55:53.466Z",
+   "abdruck": "8014547aa618",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.menge.bild#2": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 114 s von karte2.mensch.menge.bild#2) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 114 s von karte2.mensch.menge.bild#2) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-28T08:57:38.363Z",
+   "abdruck": "b77edce78e9d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "17520@mx05e57c"
+  },
+  "karte2.mensch.menge.dichte#3": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 78 s von karte2.mensch.menge.dichte#3) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 78 s von karte2.mensch.menge.dichte#3) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-28T08:57:38.396Z",
+   "abdruck": "c4e1454a3bb7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "17520@mx05e57c"
+  },
+  "karte2.erleben.kopplung.bild#1": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 279 s von karte2.erleben.kopplung.bild#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 279 s von karte2.erleben.kopplung.bild#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-28T08:57:38.592Z",
+   "abdruck": "77ebc23a50d3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "17520@mx05e57c"
+  },
+  "karte2.mensch.zeit.erleben#1": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 139 s von karte2.mensch.zeit.erleben#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 139 s von karte2.mensch.zeit.erleben#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-28T08:57:38.623Z",
+   "abdruck": "d64b2cbdc16e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "17520@mx05e57c"
+  },
+  "luftwasser.K4#1": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 189 s von luftwasser.K4#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 189 s von luftwasser.K4#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-28T08:57:38.668Z",
+   "abdruck": "a2c1df1d19e4",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "17520@mx05e57c"
+  },
+  "karte2.mensch.sport.koerper#2": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 113 s von karte2.mensch.sport.koerper#2) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 113 s von karte2.mensch.sport.koerper#2) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-28T08:57:38.713Z",
+   "abdruck": "8caf33a05659",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "17520@mx05e57c"
+  },
+  "karte2.erleben.schoepfen.hebel#1": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 93 s von karte2.erleben.schoepfen.hebel#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 93 s von karte2.erleben.schoepfen.hebel#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-28T08:57:38.741Z",
+   "abdruck": "1150c3f8bf1b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "17520@mx05e57c"
+  },
+  "karte2.erleben.klang.getuemmel#1": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 70 s von karte2.erleben.klang.getuemmel#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 70 s von karte2.erleben.klang.getuemmel#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-28T08:57:38.769Z",
+   "abdruck": "241c27709aee",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "17520@mx05e57c"
+  },
+  "karte2.same.physik.koerper#1": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 145 s von karte2.same.physik.koerper#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 145 s von karte2.same.physik.koerper#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-28T08:57:38.806Z",
+   "abdruck": "10e27827b664",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "17520@mx05e57c"
+  },
+  "karte2.same.entfaltung.abwesenheit#1": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 182 s von karte2.same.entfaltung.abwesenheit#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 182 s von karte2.same.entfaltung.abwesenheit#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-28T08:57:38.852Z",
+   "abdruck": "148f77bd11af",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "17520@mx05e57c"
+  },
+  "karte2.mensch.bau.bauen#1": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 185 s von karte2.mensch.bau.bauen#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 185 s von karte2.mensch.bau.bauen#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-28T08:57:38.893Z",
+   "abdruck": "d9207b4f93a6",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "17520@mx05e57c"
+  },
+  "karte2.same.gedaechtnis.schicht#1": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 77 s von karte2.same.gedaechtnis.schicht#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 77 s von karte2.same.gedaechtnis.schicht#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-28T08:57:38.922Z",
+   "abdruck": "2fa7d9947020",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "17520@mx05e57c"
+  },
+  "karte2.planet.kopplung.siedlungslage#1": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 516 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 516 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-28T08:57:39.110Z",
+   "abdruck": "3bfd1426a39e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "17520@mx05e57c"
+  },
+  "karte2.planet.kopplung.siedlungslage#2": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 516 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 516 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-28T08:57:39.110Z",
+   "abdruck": "f3bba189ac74",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "17520@mx05e57c"
+  },
+  "karte2.planet.kopplung.siedlungslage#3": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 516 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 516 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-28T08:57:39.110Z",
+   "abdruck": "8dd1ab2fd102",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "17520@mx05e57c"
+  },
+  "karte2.planet.kopplung.siedlungslage#4": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 516 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 516 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-28T08:57:39.110Z",
+   "abdruck": "869a19c3cfe7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "17520@mx05e57c"
+  },
+  "karte2.planet.kopplung.siedlungslage#5": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 516 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 516 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-28T08:57:39.110Z",
+   "abdruck": "da2c80deb5ff",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "17520@mx05e57c"
+  },
+  "karte2.planet.kopplung.land-meer-luft#1": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 516 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 516 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-28T08:57:39.110Z",
+   "abdruck": "49a8664cddaf",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "17520@mx05e57c"
+  },
+  "karte2.planet.kopplung.land-meer-luft#2": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 516 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 516 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-28T08:57:39.110Z",
+   "abdruck": "6e68727eea48",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "17520@mx05e57c"
+  },
+  "karte2.planet.kopplung.land-meer-luft#5": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 516 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 516 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-28T08:57:39.110Z",
+   "abdruck": "6f30ee59390f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "17520@mx05e57c"
+  },
+  "karte2.planet.kopplung.land-meer-luft#6": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 516 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 516 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-28T08:57:39.110Z",
+   "abdruck": "00157163e9e6",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "17520@mx05e57c"
+  },
+  "karte2.planet.kopplung.bahn-klima#4": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 516 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 516 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-28T08:57:39.110Z",
+   "abdruck": "860f07b97d53",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "17520@mx05e57c"
+  },
+  "karte2.planet.kopplung.wetter-welt#4": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 516 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 516 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-28T08:57:39.110Z",
+   "abdruck": "aefbadc2bb56",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "17520@mx05e57c"
+  },
+  "karte2.planet.kopplung.wetter-welt#5": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 516 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 516 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-28T08:57:39.110Z",
+   "abdruck": "1abca64c6d56",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "17520@mx05e57c"
+  },
+  "karte2.planet.kopplung.wetter-welt#6": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 516 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 516 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-28T08:57:39.110Z",
+   "abdruck": "4b8793909196",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "17520@mx05e57c"
+  },
+  "karte2.planet.kopplung.stadtklima#2": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 516 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 516 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-28T08:57:39.110Z",
+   "abdruck": "e05eb2d85bd0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "17520@mx05e57c"
+  },
+  "karte2.planet.kopplung.kaskade#1": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 516 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 516 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-28T08:57:39.110Z",
+   "abdruck": "1b847b9a070b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "17520@mx05e57c"
+  },
+  "karte2.planet.kopplung.ereignis-spur#1": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 516 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 516 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-28T08:57:39.110Z",
+   "abdruck": "f4d42ed04f5b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "17520@mx05e57c"
+  },
+  "karte2.planet.kopplung.gegenwart#4": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 516 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 516 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-28T08:57:39.110Z",
+   "abdruck": "6d4eb81048be",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "17520@mx05e57c"
+  },
+  "karte2.planet.kopplung.gegenwart#5": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 516 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 516 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-28T08:57:39.110Z",
+   "abdruck": "01d46cd5a845",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "17520@mx05e57c"
   }
  },
  "sitzung": {
-  "start": "2026-11-28T07:55:45.593Z",
-  "ordner": "sitzung-20261128-085545",
+  "start": "2026-11-28T08:28:09.670Z",
+  "ordner": "sitzung-20261128-092809",
   "port": 7804,
-  "warten": 0.04,
-  "bootS": 7.6,
+  "warten": 0.03,
+  "bootS": 7.4,
   "grundstellungS": [
-   4.9,
-   6.6,
-   4.9,
-   0.1,
-   0.1
+   12.1,
+   5.9
   ],
-  "proben": 6,
+  "proben": 10,
   "freigaben": [],
   "geraet": {
    "name": "GTX 1060",
@@ -3368,486 +3896,378 @@
    "preis": true
   },
   "offen": [
-   "karte2.same.entfaltung.schirm#1"
+   "karte2.mensch.menge.bild#2",
+   "karte2.mensch.menge.dichte#3",
+   "karte2.erleben.kopplung.bild#1",
+   "karte2.mensch.zeit.erleben#1",
+   "luftwasser.K4#1",
+   "karte2.mensch.sport.koerper#2",
+   "karte2.erleben.schoepfen.hebel#1",
+   "karte2.erleben.klang.getuemmel#1",
+   "karte2.same.physik.koerper#1",
+   "karte2.same.entfaltung.abwesenheit#1",
+   "karte2.mensch.bau.bauen#1",
+   "karte2.same.gedaechtnis.schicht#1",
+   "karte2.planet.kopplung.siedlungslage#1",
+   "karte2.planet.kopplung.siedlungslage#2",
+   "karte2.planet.kopplung.siedlungslage#3",
+   "karte2.planet.kopplung.siedlungslage#4",
+   "karte2.planet.kopplung.siedlungslage#5",
+   "karte2.planet.kopplung.land-meer-luft#1",
+   "karte2.planet.kopplung.land-meer-luft#2",
+   "karte2.planet.kopplung.land-meer-luft#5",
+   "karte2.planet.kopplung.land-meer-luft#6",
+   "karte2.planet.kopplung.bahn-klima#4",
+   "karte2.planet.kopplung.wetter-welt#4",
+   "karte2.planet.kopplung.wetter-welt#5",
+   "karte2.planet.kopplung.wetter-welt#6",
+   "karte2.planet.kopplung.stadtklima#2",
+   "karte2.planet.kopplung.kaskade#1",
+   "karte2.planet.kopplung.ereignis-spur#1",
+   "karte2.planet.kopplung.gegenwart#4",
+   "karte2.planet.kopplung.gegenwart#5"
   ],
   "orte": [
    {
-    "ort": null,
-    "vor": "karte2.planet.wetter.extreme#2",
-    "s": 28,
-    "takte": 779,
+    "ort": "stadt",
+    "vor": "karte2.mensch.sport.koennen#3",
+    "s": 103.5,
+    "takte": 1549,
+    "chunks": 98,
+    "nach": null
+   },
+   {
+    "ort": "stadt",
+    "vor": "karte2.mensch.sport.medium#1",
+    "s": 20.8,
+    "takte": 401,
+    "chunks": 98,
+    "nach": "der Wanderung von karte2.mensch.sport.koennen#3"
+   },
+   {
+    "ort": "wiese",
+    "vor": "karte2.erleben.bild.auge#1",
+    "s": 21.1,
+    "takte": 626,
+    "chunks": 81,
+    "nach": "der Wanderung von karte2.mensch.sport.medium#1"
+   },
+   {
+    "ort": "stadt-voll",
+    "vor": "karte2.mensch.sport.geistspiel#2",
+    "s": 139.1,
+    "takte": 1512,
     "chunks": 81,
     "nach": null
    },
    {
-    "ort": null,
-    "vor": "karte2.erleben.kopplung.wahrnehmung#2",
-    "s": 24.8,
-    "takte": 754,
+    "ort": "stadt-voll",
+    "vor": "karte2.mensch.menge.seuche#2",
+    "s": 186,
+    "takte": 1483,
     "chunks": 81,
     "nach": "der Tür"
    },
    {
-    "ort": null,
-    "vor": "karte2.leben.wasser.bild#1",
-    "s": 25.7,
-    "takte": 748,
+    "ort": "stadt-voll",
+    "vor": "karte2.mensch.geist.tag#2",
+    "s": 166.3,
+    "takte": 1452,
     "chunks": 81,
     "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "karte2.erleben.spieler.hand#1",
-    "s": 22.9,
-    "takte": 716,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "karte2.same.physik.feuer#2",
-    "s": 16.9,
-    "takte": 644,
-    "chunks": 81,
-    "nach": "der Grundstellung"
-   },
-   {
-    "ort": null,
-    "vor": "karte2.leben.kopplung.stadt-im-netz#2",
-    "s": 17.3,
-    "takte": 636,
-    "chunks": 81,
-    "nach": "der Grundstellung"
    }
   ],
   "wegeTueren": [
    {
-    "vor": "karte2.leben.wasser.bild#1",
-    "wege": "wege +2 [-1.2,-31.2,206.5,0/2] [-27.7,-58.3,231.6,16/91]",
-    "s": 6.6
-   }
-  ],
-  "felder": [
-   {
-    "probe": "karte2.planet.wetter.extreme#2",
-    "weg": [
-     "__rafferEnde",
-     "__rafferKurz",
-     "__weltaktSpionBuch",
-     "__wetterSpionBuch",
-     "__buehneUhr",
-     "__imSchuss",
-     "__nahSpeicher",
-     "__letzteSpiegel",
-     "__letzteTeilung"
-    ]
-   },
-   {
-    "probe": "karte2.erleben.kopplung.wahrnehmung#2",
-    "weg": [
-     "__dorfDerProbe",
-     "__rafferEnde",
-     "__rafferKurz",
-     "__weltaktSpionBuch",
-     "__wetterSpionBuch",
-     "__buehneUhr",
-     "__imSchuss",
-     "__nahSpeicher",
-     "__letzteSpiegel",
-     "__letzteTeilung",
-     "__ortZeit"
-    ]
-   },
-   {
-    "probe": "karte2.leben.wasser.bild#1",
-    "weg": [
-     "__rafferEnde",
-     "__rafferKurz",
-     "__ortZeit",
-     "__weltaktSpionBuch",
-     "__wetterSpionBuch",
-     "__buehneUhr",
-     "__abbruchEpoche"
-    ]
-   },
-   {
-    "probe": "karte2.erleben.spieler.hand#1",
-    "weg": [
-     "__ortZeit",
-     "__weltaktSpionBuch",
-     "__wetterSpionBuch",
-     "__buehneUhr"
-    ]
-   },
-   {
-    "probe": "karte2.same.physik.feuer#2",
-    "weg": [
-     "__ortZeit",
-     "__weltaktSpionBuch",
-     "__wetterSpionBuch",
-     "__buehneUhr"
-    ]
+    "vor": "karte2.mensch.geist.tag#2",
+    "wege": "wege +5 [-119.1,-274.9,279.2,201/278] [425.5,53.4,1072.3,817.4/2666] [660.2,284.5,992.9,577.1/4] …",
+    "s": 5.9
    }
   ],
   "wirt": [
    {
-    "probe": "karte2.planet.wetter.extreme#2",
+    "probe": "karte2.mensch.sport.koennen#3",
     "anders": [
-     "r._bildZeit",
-     "r._wolkenZeit",
-     "r._weltaktGehalten",
-     "r._setWeather",
-     "r.state.weather",
-     "window.__raffer",
-     "window.__rafferRest"
-    ],
-    "wie": {
-     "r._bildZeit": "getauscht: () => S.T → der Wert 12.5",
-     "r._wolkenZeit": "getauscht: () => S.T → der Wert 12.5",
-     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
-     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
-     "r.state.weather": "getauscht: () => wert → der Wert sunny",
-     "window.__raffer": "neu: (soll, schritt, name) => { const t0 = performance.now(); let n = 0; for (; n < s",
-     "window.__rafferRest": "neu: () => window.__rafferEnde - performance.now()"
-    },
-    "haelt": [],
-    "heap": [
-     201.3,
-     216.3
-    ],
-    "ungemessen": null
-   },
-   {
-    "probe": "karte2.erleben.kopplung.wahrnehmung#2",
-    "anders": [
-     "r._bildZeit",
-     "r._wolkenZeit",
-     "r._weltaktGehalten",
-     "r._setWeather",
-     "r.state.weather",
-     "window.__raffer",
-     "window.__rafferRest",
      "window.__ortSchritt"
     ],
     "wie": {
-     "r._bildZeit": "getauscht: () => S.T → der Wert 12.5",
-     "r._wolkenZeit": "getauscht: () => S.T → der Wert 12.5",
-     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
-     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
-     "r.state.weather": "getauscht: () => wert → der Wert sunny",
-     "window.__raffer": "neu: (soll, schritt, name) => { const t0 = performance.now(); let n = 0; for (; n < s",
-     "window.__rafferRest": "neu: () => window.__rafferEnde - performance.now()",
-     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
     },
     "haelt": [],
     "heap": [
-     204.4,
-     331.8
+     378.6,
+     401.6
     ],
     "ungemessen": null
    },
    {
-    "probe": "karte2.leben.wasser.bild#1",
+    "probe": "karte2.mensch.sport.medium#1",
     "anders": [
-     "r._bildZeit",
-     "r._gameLoopTick",
-     "r._wolkenZeit",
-     "r._loopFixedStep",
-     "r._weltaktGehalten",
-     "r._setWeather",
-     "r.state.weather",
-     "window.luma709",
-     "window.__wieseMessen",
-     "window.__wieseUrteil",
-     "window.__weltOrte",
-     "window.__weltOrt",
-     "window.__strecke",
-     "window.__raffer",
-     "window.__rafferRest",
-     "window.__wasserOrte",
-     "window.__wasserLeser",
-     "window.__wasserLeib",
-     "window.__wasserEis",
-     "window.__wasserMutation",
-     "window.__wasserKarte",
-     "window.__wasserLaeufe",
-     "window.__wasserTreibt",
-     "window.__wasserHoehle",
-     "window.__wasserWagen",
-     "window.__wasserSichtNetz",
-     "window.__wasserFlora",
-     "window.__wasserSee",
-     "window.__wasserQuelle",
-     "window.__wasserQuellTeil",
-     "window.__wasserBach",
-     "window.__wasserBank",
-     "window.__wasserFluss",
-     "window.__wasserKroneVon",
-     "window.__wasserUfer",
-     "window.__wasserStrom",
-     "window.__wasserFlussNah",
-     "window.__wasserGraben",
-     "window.__wasserDamm",
-     "window.__wasserUferFarbe",
-     "window.__wasserKoerper",
-     "window.__wasserBild",
-     "window.__wasserSpiegel",
-     "window.__wasserSeeAm",
-     "window.__wasserLicht",
-     "window.__wasserRegen",
      "window.__ortSchritt"
     ],
     "wie": {
-     "r._bildZeit": "getauscht: () => S.T → der Wert 12.5",
-     "r._gameLoopTick": "getauscht: function () { if (performance.now() > f) { window.__probeFrist = true; throw new",
-     "r._wolkenZeit": "getauscht: () => S.T → der Wert 12.5",
-     "r._loopFixedStep": "neu: function () { if (performance.now() > f) { window.__probeFrist = true; throw new",
-     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
-     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
-     "r.state.weather": "getauscht: () => wert → der Wert sunny",
-     "window.luma709": "getauscht: (u, i = 0) => 0.2126 * u[i] + 0.7152 * u[i + 1] + 0.0722 * u[i + 2]",
-     "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
-     "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
-     "window.__weltOrte": "getauscht: function weltOrte(art, opts) { const o = opts || {}; const [mx, mz] = o.mitte ||",
-     "window.__weltOrt": "getauscht: function weltOrt(art, opts) { return window.__weltOrte(art, Object.assign({}, op",
-     "window.__strecke": "getauscht: function strecke(mitte, ringe, stufeMax = Infinity, querMax = Infinity, naechste",
-     "window.__raffer": "neu: (soll, schritt, name) => { const t0 = performance.now(); let n = 0; for (; n < s",
-     "window.__rafferRest": "neu: () => window.__rafferEnde - performance.now()",
-     "window.__wasserOrte": "neu: async function wasserOrte(o = {}) { const G = window.__gelaendeCore; const mitte",
-     "window.__wasserLeser": "neu: async function wasserLeser(o = {}) { if (!st.hydrosphere || !st.hydrosphere.read",
-     "window.__wasserLeib": "neu: function wasserLeib() { const [r, A] = [window.anazhRealm, window.anazhRealm.con",
-     "window.__wasserEis": "neu: async function wasserEis(o = {}) { const A = AnazhRealm; const FUSS = A.PLAYER_F",
-     "window.__wasserMutation": "neu: async function wasserMutation(o = {}) { const A = AnazhRealm; const [RHO, TIEF] ",
-     "window.__wasserKarte": "neu: async function wasserKarte(o) { const [orte, zufall] = [[], window.__phytoCore.m",
-     "window.__wasserLaeufe": "neu: async function wasserLaeufe() { const [G, L] = [window.__gelaendeCore, r._gelaen",
-     "window.__wasserTreibt": "neu: async function wasserTreibt(o) { const [r, A] = [window.anazhRealm, window.anazh",
-     "window.__wasserHoehle": "neu: async function wasserHoehle(o = {}) { const A = AnazhRealm; const cfg = r._voxel",
-     "window.__wasserWagen": "neu: async function wasserWagen(o = {}) { const ziel = o.see || (await window.__wasse",
-     "window.__wasserSichtNetz": "neu: function wasserSichtNetz() { const cfg = r._voxelChunkConfig(0); const span = cf",
-     "window.__wasserFlora": "neu: function wasserFlora(o = {}) { const sicht = o.sicht || window.__wasserSichtNetz",
-     "window.__wasserSee": "neu: async function wasserSee(o = {}) { const f = o.fenster || (await window.__wasser",
-     "window.__wasserQuelle": "neu: async function wasserQuelle(o = {}) { if (!st.hydrosphere || !st.hydrosphere.rea",
-     "window.__wasserQuellTeil": "neu: function wasserQuellTeil(p, n) { const h = (Math.imul(Math.round(p.x * 4), 73856",
-     "window.__wasserBach": "neu: async function wasserBach(o = {}) { const R = wasserRund(2); const bachOrt = Num",
-     "window.__wasserBank": "neu: async function wasserBank(o = {}) { const h = st.hydrosphere; if (!h || !h.ready",
-     "window.__wasserFluss": "neu: function wasserFluss() { const h = st.hydrosphere; if (!h || !h.ready || !Array.",
-     "window.__wasserKroneVon": "neu: function __wasserKroneVon(r, p) { const A = r.constructor; const HC = A.HYDROSPH",
-     "window.__wasserUfer": "neu: async function wasserUfer(o = {}) { const h = st.hydrosphere; if (!h || !h.ready",
-     "window.__wasserStrom": "neu: async function wasserStrom(ort, hoehe) { const zurueck = [leihe(st, { postProces",
-     "window.__wasserFlussNah": "neu: function __wasserFlussNah(r, x, z) { const st = r.state; const fluesse = []; for",
-     "window.__wasserGraben": "neu: async function wasserGraben(o = {}) { const K = AnazhRealm.NAH_WIESE.kachel; con",
-     "window.__wasserDamm": "neu: async function wasserDamm(o = {}) { const f2 = wasserRund(2); const S = (q) => r",
-     "window.__wasserUferFarbe": "neu: async function wasserUferFarbe(o = {}) { const h = st.hydrosphere; if (!h || !h.",
-     "window.__wasserKoerper": "neu: async function wasserKoerper(o = {}) { const A = AnazhRealm; const DT = A.FIXED_",
-     "window.__wasserBild": "neu: async function wasserBild(o = {}) { const T = window.THREE; const renderer = st.",
-     "window.__wasserSpiegel": "neu: async function wasserSpiegel() { const T = window.THREE; const st = r.state; con",
-     "window.__wasserSeeAm": "neu: function __wasserSeeAm(r, ziel) { const st = r.state; const h = r._hydroFor(ziel",
-     "window.__wasserLicht": "neu: async function wasserLicht(o = {}) { if (!st.renderer || st.renderer._isHeadless",
-     "window.__wasserRegen": "neu: async function wasserRegen(o = {}) { const T = window.THREE; const renderer = st",
-     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
     },
     "haelt": [],
     "heap": [
-     203.8,
-     258.6
+     465.8,
+     467.3
     ],
     "ungemessen": null
    },
    {
-    "probe": "karte2.erleben.spieler.hand#1",
+    "probe": "karte2.erleben.bild.auge#1",
     "anders": [
-     "r._bildZeit",
-     "r._wolkenZeit",
-     "r._weltaktGehalten",
-     "r._setWeather",
-     "r.state.weather",
      "window.__wieseMessen",
      "window.__wieseUrteil",
      "window.__ortSchritt"
     ],
     "wie": {
-     "r._bildZeit": "getauscht: () => S.T → der Wert 12.5",
-     "r._wolkenZeit": "getauscht: () => S.T → der Wert 12.5",
-     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
-     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
-     "r.state.weather": "getauscht: () => wert → der Wert sunny",
      "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
      "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
-     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
     },
     "haelt": [],
     "heap": [
-     203.3,
-     241.7
+     418,
+     419.3
     ],
     "ungemessen": null
    },
    {
-    "probe": "karte2.same.physik.feuer#2",
+    "probe": "karte2.mensch.zeit.kausal#3",
     "anders": [
-     "r._bildZeit",
-     "r._wolkenZeit",
-     "r._weltaktGehalten",
-     "r._setWeather",
-     "r.state.weather",
      "window.__wieseMessen",
      "window.__wieseUrteil",
      "window.__ortSchritt"
     ],
     "wie": {
-     "r._bildZeit": "getauscht: () => S.T → der Wert 12.5",
-     "r._wolkenZeit": "getauscht: () => S.T → der Wert 12.5",
-     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
-     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
-     "r.state.weather": "getauscht: () => wert → der Wert sunny",
      "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
      "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
-     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
     },
     "haelt": [],
     "heap": [
-     226.5,
-     245.1
+     411.8,
+     412.5
     ],
     "ungemessen": null
+   },
+   {
+    "probe": "karte2.mensch.zeit.palimpsest#2",
+    "anders": [
+     "window.__wieseMessen",
+     "window.__wieseUrteil",
+     "window.__ortSchritt"
+    ],
+    "wie": {
+     "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
+     "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
+     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+    },
+    "haelt": [],
+    "heap": [
+     412.9,
+     413.2
+    ],
+    "ungemessen": null
+   },
+   {
+    "probe": "karte2.mensch.sport.geistspiel#2",
+    "anders": [
+     "window.__ortSchritt"
+    ],
+    "wie": {
+     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+    },
+    "haelt": [],
+    "heap": [
+     586.9,
+     633.4
+    ],
+    "ungemessen": null
+   },
+   {
+    "probe": "karte2.mensch.macht.grenze#2",
+    "anders": [
+     "window.__ortSchritt"
+    ],
+    "wie": {
+     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+    },
+    "haelt": [],
+    "heap": [
+     573.7,
+     593.1
+    ],
+    "ungemessen": null
+   },
+   {
+    "probe": "karte2.same.preis.speicher#1",
+    "anders": [
+     "window.__wieseMessen",
+     "window.__wieseUrteil",
+     "window.__ortSchritt"
+    ],
+    "wie": {
+     "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
+     "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
+     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+    },
+    "haelt": [],
+    "heap": [
+     578.5,
+     608.5
+    ],
+    "ungemessen": null
+   },
+   {
+    "probe": "karte2.mensch.menge.seuche#2",
+    "anders": [
+     "window.__ortSchritt"
+    ],
+    "wie": {
+     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+    },
+    "haelt": [],
+    "heap": [
+     483.4,
+     527.5
+    ],
+    "ungemessen": null
+   },
+   {
+    "probe": "karte2.mensch.geist.tag#2",
+    "anders": [
+     "window.__ortSchritt"
+    ],
+    "wie": {
+     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+    },
+    "haelt": [],
+    "heap": [
+     485.9,
+     522
+    ],
+    "ungemessen": null
+   }
+  ],
+  "wanderung": [
+   {
+    "probe": "karte2.mensch.sport.koennen#3",
+    "ort": "stadt",
+    "m": 148.88,
+    "dreh": 3.618
+   },
+   {
+    "probe": "karte2.mensch.sport.medium#1",
+    "ort": "stadt",
+    "m": 92.53,
+    "dreh": 2.983
+   },
+   {
+    "probe": "karte2.same.preis.speicher#1",
+    "ort": "stadt-voll",
+    "m": 2081.08,
+    "dreh": 0.342
    }
   ],
   "messHalt": [
    {
-    "probe": "karte2.planet.wetter.extreme#2",
-    "halt": -1000000000,
-    "zurueck": 0
-   },
-   {
-    "probe": "karte2.planet.wetter.extreme#2",
+    "probe": "karte2.mensch.sport.koennen#3",
     "gehalten": [
-     "skala",
-     "spiegel",
      "tiere"
     ],
     "offen": []
    },
    {
-    "probe": "karte2.erleben.kopplung.wahrnehmung#2",
-    "halt": -1000000000,
-    "zurueck": 0
-   },
-   {
-    "probe": "karte2.erleben.kopplung.wahrnehmung#2",
+    "probe": "karte2.mensch.sport.medium#1",
     "gehalten": [
-     "skala",
-     "spiegel",
      "tiere"
     ],
     "offen": []
    },
    {
-    "probe": "karte2.leben.wasser.bild#1",
-    "halt": -1000000000,
-    "zurueck": 0
-   },
-   {
-    "probe": "karte2.leben.wasser.bild#1",
+    "probe": "karte2.erleben.bild.auge#1",
     "gehalten": [
-     "skala"
+     "tiere"
     ],
     "offen": []
    },
    {
-    "probe": "karte2.erleben.spieler.hand#1",
-    "halt": -1000000000,
-    "zurueck": 0
+    "probe": "karte2.mensch.zeit.kausal#3",
+    "gehalten": [
+     "tiere"
+    ],
+    "offen": []
    },
    {
-    "probe": "karte2.same.physik.feuer#2",
-    "halt": -1000000000,
-    "zurueck": 0
-   }
-  ],
-  "anOrt": [
-   {
-    "vor": "karte2.erleben.kopplung.wahrnehmung#2",
-    "anders": [
-     "playerPathBuckets"
+    "probe": "karte2.mensch.zeit.palimpsest#2",
+    "gehalten": [
+     "tiere"
     ],
-    "wie": {
-     "playerPathBuckets": "{\"height\":{\"low\":0,\"mid\":0,\"high\":1},\"distance\":{\"center\":1,\"mid\":0,\"edge\":0},\"w → {\"height\":{\"low\":0,\"mid\":0,\"high\":1},\"distance\":{\"center\":1,\"mid\":0,\"edge\":0},\"w"
-    }
+    "offen": []
    },
    {
-    "vor": "karte2.leben.wasser.bild#1",
-    "anders": [
-     "playerPathBuckets"
+    "probe": "karte2.mensch.sport.geistspiel#2",
+    "gehalten": [
+     "tiere"
     ],
-    "wie": {
-     "playerPathBuckets": "{\"height\":{\"low\":0,\"mid\":0,\"high\":1},\"distance\":{\"center\":1,\"mid\":0,\"edge\":0},\"w → {\"height\":{\"low\":0,\"mid\":0,\"high\":1},\"distance\":{\"center\":1,\"mid\":0,\"edge\":0},\"w"
-    }
-   }
-  ],
-  "felderBlind": [
+    "offen": []
+   },
    {
-    "probe": "karte2.leben.kopplung.stadt-im-netz#2",
-    "wann": "nach",
-    "fehler": "ABSTURZ der Seite: Prozess unbekannt · Abbild C:\\Users\\micha\\AppData\\Local\\Temp\\anazh-absturz\\f7997654-4c58-4783-8201-a7d2ec110d75.dmp"
-   }
-  ],
-  "wirtBlind": [
+    "probe": "karte2.mensch.macht.grenze#2",
+    "gehalten": [
+     "tiere"
+    ],
+    "offen": []
+   },
    {
-    "probe": "karte2.leben.kopplung.stadt-im-netz#2",
-    "wann": "nach",
-    "fehler": "ABSTURZ der Seite: Prozess unbekannt · Abbild C:\\Users\\micha\\AppData\\Local\\Temp\\anazh-absturz\\f7997654-4c58-4783-8201-a7d2ec110d75.dmp"
-   }
-  ],
-  "zeichnerBlind": [
+    "probe": "karte2.same.preis.speicher#1",
+    "gehalten": [
+     "tiere"
+    ],
+    "offen": []
+   },
    {
-    "probe": "karte2.leben.kopplung.stadt-im-netz#2",
-    "wann": "nach",
-    "fehler": "ABSTURZ der Seite: Prozess unbekannt · Abbild C:\\Users\\micha\\AppData\\Local\\Temp\\anazh-absturz\\f7997654-4c58-4783-8201-a7d2ec110d75.dmp"
+    "probe": "karte2.mensch.menge.seuche#2",
+    "gehalten": [
+     "tiere"
+    ],
+    "offen": []
    }
   ],
-  "grund": "die Welt trägt nicht mehr vor karte2.same.entfaltung.schirm#1: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: Prozess unbekannt · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\f7997654-4c58-4783-8201-a7d2ec110d75.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\punkte-gtx\\\\scripts\\\\lib\\\\welt-boot.c — offen: karte2.same.entfaltung.schirm#1",
-  "ciBlicke": 7,
+  "unerklaert": [
+   {
+    "probe": "karte2.same.preis.speicher#1",
+    "wie": "orte +-3,-5 +-4,-4 · wege +5 [-761.7,-1188.2,-537.2,-1145.2/2] [-787,-1208.9,-508.4,-1122.6/94] [-795.5,-1022.9,-645.2,-831.7/2] … (-3,-5, -4,-4, netz:-3,-5, netz:-3,-5|-4,-4)"
+   }
+  ],
+  "ciBlicke": 11,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 6068,
-   "frameP95": 25.07,
-   "taktP95": 19.65,
-   "vramMax": 175.4,
-   "seiten": 4,
+   "bilder": 15910,
+   "frameP95": 41.66,
+   "taktP95": 34.03,
+   "vramMax": 235.7,
+   "seiten": 3,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "karte2.leben.wasser.bild#1",
-     "m": 8978,
+     "probe": "karte2.same.preis.speicher#1",
+     "m": 2135,
      "ringVor": 4,
      "ringMin": -1
-    },
-    {
-     "probe": "karte2.erleben.spieler.hand#1",
-     "m": 1083,
-     "ringVor": 4,
-     "ringMin": -1
-    },
-    {
-     "probe": "karte2.same.physik.feuer#2",
-     "m": 1083,
-     "ringVor": 4,
-     "ringMin": 0
-    },
-    {
-     "probe": "karte2.leben.kopplung.stadt-im-netz#2",
-     "m": 340,
-     "ringVor": 4,
-     "ringMin": 0
     }
    ],
-   "zapfen": 1104,
+   "zapfen": 1392,
    "luecken": 29,
-   "letzteLuecke": "ABSTURZ der Seite: Prozess unbekannt · Abbild C:\\Users\\micha\\AppData\\Local\\Temp\\anazh-absturz\\f7997654-4c58-4783-8201-a7d2ec110d75.dmp"
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
   },
-  "fahrtS": 1364.6,
-  "minuten": 22.91
+  "fahrtS": 1763.4,
+  "grund": "die Fahrt riss 1800 s am Grund-Deckel von karte2.mensch.menge.bild#2, karte2.mensch.menge.dichte#3, karte2.erleben.kopplung.bild#1, karte2.mensch.zeit.erleben#1, luftwasser.K4#1, karte2.mensch.sport.koerper#2, karte2.erleben.schoepfen.hebel#1, karte2.erleben.klang.getuemmel#1, karte2.same.physik.koerper#1, karte2.same.entfaltung.abwesenheit#1, karte2.mensch.bau.bauen#1, karte2.same.gedaechtnis.schicht#1, karte2.planet.kopplung.siedlungslage#1 — offen: karte2.mensch.menge.bild#2, karte2.mensch.menge.dichte#3, karte2.erleben.kopplung.bild#1, karte2.mensch.zeit.erleben#1, luftwasser.K4#1, karte2.mensch.sport.koerper#2, karte2.erleben.schoepfen.hebel#1, karte2.erleben.klang.getuemmel#1, karte2.same.physik.koerper#1, karte2.same.entfaltung.abwesenheit#1, karte2.mensch.bau.bauen#1, karte2.same.gedaechtnis.schicht#1, karte2.planet.kopplung.siedlungslage#1, karte2.planet.kopplung.siedlungslage#2, karte2.planet.kopplung.siedlungslage#3, karte2.planet.kopplung.siedlungslage#4, karte2.planet.kopplung.siedlungslage#5, karte2.planet.kopplung.land-meer-luft#1, karte2.planet.kopplung.land-meer-luft#2, karte2.planet.kopplung.land-meer-luft#5, karte2.planet.kopplung.land-meer-luft#6, karte2.planet.kopplung.bahn-klima#4, karte2.planet.kopplung.wetter-welt#4, karte2.planet.kopplung.wetter-welt#5, karte2.planet.kopplung.wetter-welt#6, karte2.planet.kopplung.stadtklima#2, karte2.planet.kopplung.kaskade#1, karte2.planet.kopplung.ereignis-spur#1, karte2.planet.kopplung.gegenwart#4, karte2.planet.kopplung.gegenwart#5",
+  "minuten": 29.54
  }
 }
