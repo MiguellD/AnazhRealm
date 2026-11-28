@@ -921,6 +921,10 @@ class AnazhRealm_koerper_fahrt {
         }
         const fzgH = this._fahrzeugGesetzFor(entry);
         if (fzgH && fzgH.drive && fzgH.drive.huelle) rhoMittel = this._stoffRho("blech");
+        // DER RUMPF (same.physik.flug#3): das Boot des Kerns ist hohl — es taucht bis zur Wasserlinie seines Gesetzes (`bootFahrt`
+        // linie / anteil: Archimedes über Rumpf und Last), nie als Blech-Hülle (bis hier sank das Holz-Boot am Anleger: floats false)
+        const rumpf = fzgH && fzgH.drive && fzgH.drive.rumpf;
+        if (rumpf) rhoMittel = this._stoff("wasser").rho * rumpf.anteil;
         const floats = Number.isFinite(rhoMittel) && this._eintauchAnteil(rhoMittel) < 1;
         // Emergenz-Koeffizienten aus dem Gesetzbuch (vehicle-core FAHR.hostEmergent); der Leser
         // _fahrGesetz ist FAIL-CLOSED über alle Felder — ein alter Kern bricht laut, kein Literal-Zwilling.
@@ -932,6 +936,7 @@ class AnazhRealm_koerper_fahrt {
             floats,
             // die mittlere Dichte (kg/m³) reist ins Profil: die Wasserlinie (`_fahrzeugGestalt`, Archimedes) liest sie
             dichte: rhoMittel,
+            rumpf: rumpf || null, // der Rumpf im Wasser und sein Segel (vehicle-core `bootFahrt`): der Fahr-Satz fährt ihn
             stoffStand: stand,
             topSpeedMul:
                 1 + Math.min(HE.radCap, radCount * HE.radMul) + (radCount === 0 && beinCount >= 2 ? HE.beinBonus : 0),
@@ -1112,7 +1117,9 @@ class AnazhRealm_koerper_fahrt {
         if (p && p.floats && rel < 1) {
             const fzg = this._fahrzeugGesetzFor(entry);
             const h = fzg && fzg.drive ? fzg.drive.huelle : null;
-            if (h) {
+            if (p.rumpf)
+                linie = p.rumpf.linie * sc; // der Rumpf des Kerns: seine Wasserlinie (Archimedes mit seiner Last)
+            else if (h) {
                 const a1 = (h.noseX - h.tailX) * 2 * h.bw;
                 const a2 = Math.max(0.4, h.cowlX - h.backX) * 2 * h.cw;
                 const v1 = a1 * (h.yBelt - h.yFloor);
@@ -1457,6 +1464,8 @@ class AnazhRealm_koerper_fahrt {
                 spring: prof.spring,
                 // die EINE Masse des Werks (physik K1, `_fahrMasse`): die Trägheit des Wasser-Terms im Kern
                 masseKg: this._fahrMasse(entry, prof.zweispur.mass),
+                // der schwimmende Rumpf (same.physik.flug#3): im Wasser trägt ihn das Wasser, nie ein Reifen
+                rumpf: prof.rumpf || undefined,
             },
             this._rittAufstand(entry)
         );
@@ -1608,19 +1617,30 @@ class AnazhRealm_koerper_fahrt {
         e.wind = this._fahrWind(fz);
         e.boden = this._fahrRad(fz, entry._fahrSatz, false); // das Rad im weichen Boden und seine Spur (fahrzeug-medium)
         vc.fahrKraefte(fz, e, entry._fahrSatz, dt);
+        // DIE STRÖMUNG (same.physik.flug#3): der schwimmende Rumpf fährt relativ zum Wasser, das Wasser trägt ihn mit — dieselbe
+        // Kopplung wie Spieler, geritten Gefährt und Tier (`_stepCharacter` 4b: v_Welt = v_eigen + Strömung, `_waterFlowAt`, EINE
+        // Quelle); der Kern führt das Eigene (sein Widerstand greift relativ zum Wasser). Vorher lag das Boot des Fahrers im Fluss
+        // fest wie auf Grund.
+        const strom = entry._fahrSatz && entry._fahrSatz.rumpf && e.tiefe > 0 ? this._waterFlowAt(fz.x, fz.z) : null;
+        if (strom) {
+            fz.x += strom.x * dt;
+            fz.z += strom.z * dt;
+        }
         entry._rideYaw = fz.yaw + Math.PI / 2;
         const k = huelle ? this._fahrHuelle(entry) : null;
         let gegner = null;
         if (k) {
             const cyW = Math.cos(fz.yaw);
             const syW = Math.sin(fz.yaw);
-            const vxW = fz.vlong * cyW - fz.vlat * syW;
-            const vzW = -fz.vlong * syW - fz.vlat * cyW;
+            const sx = strom ? strom.x : 0;
+            const sz = strom ? strom.z : 0;
+            const vxW = fz.vlong * cyW - fz.vlat * syW + sx;
+            const vzW = -fz.vlong * syW - fz.vlat * cyW + sz;
             const hk = this._fahrHuelleKontakt(entry, k, x0, z0, vxW, vzW, dt, false);
             fz.x = hk.x;
             fz.z = hk.z;
-            fz.vlong = hk.vx * cyW - hk.vz * syW;
-            fz.vlat = -hk.vx * syW - hk.vz * cyW;
+            fz.vlong = (hk.vx - sx) * cyW - (hk.vz - sz) * syW;
+            fz.vlat = -(hk.vx - sx) * syW - (hk.vz - sz) * cyW;
             if (k.schubQuelle.length) gegner = k.schubQuelle.slice();
         }
         entry.position.x = fz.x;

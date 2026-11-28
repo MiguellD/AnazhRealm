@@ -921,17 +921,12 @@ class AnazhRealm_stoff_material {
                     ? this.state.atmosphere.colorVar
                     : 1.0
             ),
-            // Multi-Klassen-Geologie-Regler (render-only; 0 = aus → reiner Biom-Albedo): `geoRock` = Fels/Geröll
-            // an der Steile, `geoMoss` = Moos auf flach+feucht.
+            // Geologie-Regler (render-only; 0 = aus → reiner Biom-Albedo): `geoRock` = Fels/Geröll an der Steile (das Moos
+            // ist Gesetz im Vertex, boden#1 — kein Regler).
             //   anazhRealm.state.atmoUniforms.geoRock.value = 0
             geoRock: TSL.uniform(
                 this.state.atmosphere && Number.isFinite(this.state.atmosphere.geoRock)
                     ? this.state.atmosphere.geoRock
-                    : 1.0
-            ),
-            geoMoss: TSL.uniform(
-                this.state.atmosphere && Number.isFinite(this.state.atmosphere.geoMoss)
-                    ? this.state.atmosphere.geoMoss
                     : 1.0
             ),
             // Cross-LOD-Geomorph-Stärke: wie stark Boundary-Vertices eines feinen Chunks an die grobe Nachbar-
@@ -3453,9 +3448,17 @@ class AnazhRealm_stoff_material {
             // DER SCHUTT liegt, wo das Schicht-Gesetz den Schutthang legt — das Gewicht trägt der Vertex (`aSchutt`, `_felsStoff`
             // aus gelaende-core `hoehe(…, aus).schutt`), nie die Steile der Masche: bis zur Nachbesserung 2 lag er ab 28° auf
             // jedem Hang (der grüne Hügel grau, der 42°-Dorfhang zu 85 % Schutt), und das 28°–34°-Band streifte die 30°-Rampe in
-            // den Reihen des Netzes. Die Ferne trägt das Mittel des Schutts in ihrer Farbe (`_fernSchutt`, dasselbe Gesetz).
-            const _screeW = felsImVertex ? this._bodenStufenKnoten().schutt : _T.float(0);
+            // den Reihen des Netzes. Die Ferne trägt den Schutt in ihrer Farbe (voxel-worker `fernFelsStoff`: gelaende-core
+            // `felsStoffPunkt` mit `fern`, dasselbe Gesetz wie der Vertex der Nähe).
             const _gRock = au && au.geoRock ? au.geoRock : _T.float(1.0);
+            // DER HANG-SCHUTT DER FERNE (boden#1): der Chunk legt den Schutt des Steilen als Flecken, deren Mittel der Anteil IST
+            // (gelaende-core `hangSchutt` im Vertex, `aSchutt`); die Ferne trägt keine Flecken, nur dieses Mittel nach DERSELBEN
+            // Kurve der Steile (`HANG_SCHUTT_ST`, 30° … 50°) über dem Fels — so trägt der Hang hinter dem Ring der Chunks denselben Ton.
+            const _HS = globalThis.__gelaendeCore.HANG_SCHUTT_ST;
+            const _hangFern = felsImVertex
+                ? _T.float(0)
+                : _T.smoothstep(_T.float(_HS[0]), _T.float(_HS[1]), _steep).mul(_T.float(1).sub(_rockW));
+            const _screeW = felsImVertex ? this._bodenStufenKnoten().schutt : _hangFern.mul(G.schutt);
             // DER FELS-STOFF (K17, gelaende-core `FELS`): wo das Netz den Fels trägt (der Chunk-Boden, `felsImVertex`),
             // IST die Vertex-Farbe der Fels — `_felsStoff` hat Pakete, Rinde, Mulden, Flechte und Moos aus dem Gesetz
             // aufgelegt und trägt die Mittel dessen, was die Masche nicht trägt (`felsMittelWerte`); die Ferne (Fern-Ring)
@@ -3494,7 +3497,8 @@ class AnazhRealm_stoff_material {
                 .float(1)
                 .sub(_T.smoothstep(FF.fugeFern[0], FF.fugeFern[1], _camD))
                 .mul(_kanteSicht);
-            const _gate = _rockW.add(_screeW).mul(_gRock);
+            // der Fein-Term läuft nur am Chunk (das Korn der Ferne ist ihr Mittel `schuttMittel`, kein Zweig für den Hang-Schutt der Ferne)
+            const _gate = _rockW.add(felsImVertex ? _screeW : _T.float(0)).mul(_gRock);
             // DIE FELS-FUNKTION (K17-3): das Gesetz rechnet in EINER WGSL-Funktion (`felsFein`), ihre Wiederholungen als Schleifen
             // (gelaende-core `falte`: die neun Zellen des Schutts, die vier Bank-Grenzen) und die Ziehung als EINE Funktion
             // (`felsZufall`) — ausgeschrieben stand jede Ziehung 78-mal im Boden-Programm (96 050 → 149 521 Zeichen WGSL), und
@@ -3526,7 +3530,12 @@ class AnazhRealm_stoff_material {
             // kein eigenes Korn — mit dem Gewicht des Tons (0,85) fehlte dem Hang ein Sechstel seiner Streuung.
             const _kornFern = _T.mix(_T.float(GK.schuttMittel()), _feinV.z, _kornSicht);
             const _kornW = _screeW.div(G.schutt).clamp(0, 1).mul(_gRock);
-            let _out = albedo.mul(_T.mix(_T.float(1), _kornFern, _kornW));
+            // der Schutt des Steilen der Ferne (`_hangFern`): der Ton des Stoffs mit seinem Gewicht und das Mittel seines Korns —
+            // den Schutt des Schicht-Gesetzes, den Fächer und den Anschnitt trägt der Fern-Vertex (`felsStoffPunkt` mit `fern`)
+            const _grund = felsImVertex
+                ? albedo
+                : _T.mix(albedo, _T.vec3(FS.mittel[0], FS.mittel[1], FS.mittel[2]), _screeW.mul(_gRock));
+            let _out = _grund.mul(_T.mix(_T.float(1), _kornFern, _kornW));
             _out = _T.mix(_out, _rockCol, _rockW.mul(_gRock));
             // Moos + Ton/Korn/Kavität aus dem EINEN Substanz-Kern (wie Werke + Rinde); die Geologie-Basis
             // (Fels/Geröll) bleibt terrain-eigen. objectLocal:false (absolute Welt-Höhe). Feucht-/Grün-Treiber
@@ -3563,8 +3572,11 @@ class AnazhRealm_stoff_material {
             const _lum2 = _out.x.mul(0.3).add(_out.y.mul(0.59)).add(_out.z.mul(0.11));
             const _green = _T.smoothstep(_T.float(0.0), _T.float(G.gruenSchwelle), _g2.sub(_rb2));
             const _damp = _T.float(1.0).sub(_T.smoothstep(_T.float(G.mossDampLo), _T.float(G.mossDampHi), _lum2));
-            const _gMoss = au && au.geoMoss ? au.geoMoss : _T.float(1.0);
-            const _mossDrive = _green.mul(_damp).mul(_gMoss).mul(_T.float(G.mossMax));
+            // DAS MOOS IST GESETZ (boden#1): der Vertex trägt es — am Chunk `felsStoff`, im Fern-Ring `felsStoffPunkt` mit `fern`
+            // (gelaende-core `moosDeckung`: Feuchte, Klima, Schatten, Steile; fern das Mittel des Flecks). Der Shader legt kein
+            // zweites: bis zur Naht-Messung trug die Ferne hier einen Zwilling aus Grün × Dunkel (`geoMoss` · `mossMax`), an 13 von
+            // 29 Posen eine Naht des Mooses an der Grenze Chunk ↔ Ring.
+            const _mossDrive = _T.float(0);
             // Feuchte-Glanz: eine nasse, KAHLE Niederung (damp hoch, nicht grün) glänzt (niedrigere Rauheit);
             // Moos bleibt matt. Aus DEMSELBEN Feld, das das Moos treibt.
             // DIE ASCHE IST TROCKENES PULVER (w28-brand-bild, `roughOut.asche` aus `_wegeBodenFarbe`): dunkel und nicht grün las

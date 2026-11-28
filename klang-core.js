@@ -1624,36 +1624,170 @@
         var l = stimmLeib(leib);
         return roehre(l.traktM, stimmForm(vokal, l.mann));
     }
-    // DER LAUT: ruf = { leib, laut, vokal?, saat } → { sr, daten, f0, formanten, traktM, laut } (geeicht auf texturRmsDb).
-    // Quelle: der Rosenberg-Puls (Fluss der Glottis, abgeleitet: die Abstrahlung der Lippen) mit Jitter und Schimmer, Atem im
-    // offenen Spalt; Filter: fuenf Resonatoren in Kaskade (Klatt 1980), ihre Frequenzen gleiten zwischen den Silben (30 ms).
+    // ═══════════════════════════════════════════════════════════════════════
+    //  DIE LAUTUNG DER REDE (sprache#5): bis hier sprach die Menge nur die Kerne ihres Satzes — je Silbe ein Vokal, kein
+    //  Konsonant (im Ohr 0,346 der Laute; der Anteil der Vokal-Zeit %V nahe 1, wo jede gemessene Sprache 0,40–0,54 traegt:
+    //  Ramus, Nespor & Mehler 1999, die Mittel ihrer drei Rhythmus-Klassen bei Dellwo et al., Abb. 1: 41,2 · 44,2 · 53,1 %).
+    //  Nun spricht sie die Silben ihres Satzes (fachwerk `sprachSilben`: An- und Abglied als Laute der Schrift, `SPRACH_LAUTE`):
+    //  DIE DAUER ist das Gesetz von Klatt (1979, ICPhS 9, Symposium 5): je Laut die innere und die kleinste Dauer (Tafel 1),
+    //  DUR = MINDUR + (INHDUR − MINDUR)·PRCNT, PRCNT das Produkt der Regeln 2–11 (Satzende, Wortende, Mehrsilber, Anlaut,
+    //  Betonung, Folge-Konsonant, Cluster, Behauchung); betont ist die erste Silbe des Worts (das Gesetz kennt keinen Wortakzent).
+    //  DIE QUELLE je Art (Klatt 1980, die Kaskade mit parallelem Rausch-Zweig): der Vokal und die Sonoranten die Stimme durch die
+    //  Kaskade (Nasal, Liquid, Gleitlaut leiser, auf der Form ihrer Tafel-Qualitaet); der Frikativ das Rauschen am Gipfel seines
+    //  Orts (Jongman, Wayland & Wong 2000, Tafel 1 und 3: 7 678 · 7 503 · 6 882 · 3 712 Hz, −17 · −18 · −10 · −9,1 dB unter dem
+    //  Vokal; stimmhaft −15,9, stimmlos −11,1 dB, also ±2,4 um den Ort; der Gipfel mit dem Trakt des Leibs: Frauen 6 809, Maenner
+    //  6 066 Hz); der Plosiv sein Verschluss (still, in der vorstimmhaften Reihe der Stimmbalken), sein Knall und der Einsatz der
+    //  Stimme (VOT, Lisker & Abramson 1964: behaucht +60 … +100, kurz verzoegert 0 … +25, vorstimmhaft −125 … −75 ms; vom Ort
+    //  nach hinten steigend); das h und die Behauchung Rauschen durch die Kaskade. Die Pegel des Rauschens messen sich am
+    //  gerechneten Vokal desselben Lauts (RMS), wie Jongman sie mass.
+    //  QUELLE UNGEPRUEFT im Wert: x (velar, nicht in Jongmans Englisch), die Breite der Rausch-Gipfel, Knall und Behauchung
+    //  (Pegel, Lage), die Pegel und Formen der Sonoranten, die Dauern von x · ts · pf (Klatt kennt sie nicht).
+    // prettier-ignore
+    STIMME.dauer = {
+        vokal: { i: [160, 50], I: [130, 40], E: [150, 60], ae: [230, 60], A: [240, 80], O: [240, 80], U: [160, 50], u: [210, 60], V: [140, 50], er: [270, 100] },
+        laut: { p: [85, 50], t: [65, 40], k: [65, 50], b: [80, 50], d: [65, 40], g: [65, 50], f: [120, 60], "θ": [110, 40], s: [125, 50],
+                "ʃ": [125, 50], v: [60, 40], z: [75, 40], h: [80, 20], m: [70, 60], n: [65, 35], "ŋ": [80, 50], l: [80, 40], r: [80, 30],
+                j: [80, 40], w: [80, 60], "tʃ": [130, 90], "dʒ": [100, 70], x: [125, 50], ts: [130, 90], pf: [130, 90] },
+        verschluss: 70 / 130, behauchung: 25
+    };
+    // prettier-ignore
+    STIMME.reibung = { labiodental: [7678, -17], dental: [7503, -18], alveolar: [6882, -10], postalveolar: [3712, -9.1], velar: [2000, -12],
+        stimmeDb: 2.4, sibilant: { alveolar: 1, postalveolar: 1 }, breiteSibilant: 0.25, breite: 0.5, rampeS: 0.01 };
+    // prettier-ignore
+    STIMME.knall = { labial: [1200, 1500], labiodental: [1200, 1500], alveolar: [4000, 2000], postalveolar: [3000, 1500], velar: [2000, 800], db: -6, sek: 0.008 };
+    // prettier-ignore
+    STIMME.einsatz = {
+        behaucht:   { stimmlos: { labial: 60, labiodental: 60, alveolar: 70, postalveolar: 70, velar: 80 }, stimmhaft: { labial: 5, labiodental: 5, alveolar: 10, postalveolar: 10, velar: 20 }, balken: 0 },
+        unbehaucht: { stimmlos: { labial: 5, labiodental: 5, alveolar: 10, postalveolar: 10, velar: 20 }, stimmhaft: { labial: 0, labiodental: 0, alveolar: 0, postalveolar: 0, velar: 0 }, balken: 0.12 }
+    };
+    // die Sonoranten: die Qualitaet der Tafel, deren Form sie tragen, und ihre Stimme (Anteil der des Vokals); h: die Behauchung
+    // prettier-ignore
+    STIMME.sonor = { m: ["u", 0.3], n: ["er", 0.3], "ŋ": ["U", 0.3], l: ["U", 0.5], r: ["er", 0.5], j: ["i", 0.7], w: ["u", 0.7],
+        reibStimme: 0.3, hauchDb: -12 };
+    // DIE DAUERN DER REDE (Klatt 1979): die Lautung (fachwerk `sprachSilben`) → je Silbe ihre Segmente { art, l, ort, stimme, v, ms }
+    // und ihre Dauer; einsatz: die Reihe der Sprache (fachwerk `SPRACHE_GESETZ[..].einsatz`). Ein Laut ohne Zeile bricht laut.
+    function stimmRede(lautung, einsatz) {
+        var D = STIMME.dauer, E = STIMME.einsatz[einsatz];
+        if (!E) throw new Error("klang stimmRede: der Einsatz „" + einsatz + "“ steht nicht in STIMME.einsatz");
+        var flach = [];
+        lautung.forEach(function (s, i) {
+            var v = STIMME.kern[String(s.k).charAt(0)];
+            if (!v) throw new Error("klang stimmRede: der Kern „" + s.k + "“ steht nicht in STIMME.kern");
+            s.an.forEach(function (c) { flach.push({ c: c, s: s, i: i, teil: "an" }); });
+            flach.push({ v: v, s: s, i: i });
+            s.ab.forEach(function (c) { flach.push({ c: c, s: s, i: i, teil: "ab" }); });
+        });
+        var aus = lautung.map(function () { return { segs: [], ms: 0 }; });
+        flach.forEach(function (g, x) {
+            var s = g.s, bet = s.anfang, vor = flach[x - 1], nach = flach[x + 1], P = 1, z, min;
+            if (g.v) {
+                z = D.vokal[g.v];
+                min = z[1];
+                P *= s.satzEnde ? 1.4 : 0.6;                          // Regel 2 und 3: das Satzende dehnt, sonst kuerzt
+                if (!s.ende) P *= 0.85;                               // Regel 4: nicht am Wortende
+                if (s.nWort > 1) P *= 0.8;                            // Regel 5: im Mehrsilber
+                if (!bet) { min /= 2; P *= s.ende ? 0.7 : 0.5; }      // Regel 7: unbetont (in der Wortmitte 0,5)
+                var f = nach && nach.c && nach.s.w === s.w ? nach.c : null, P9 = 1; // Regel 9: der Folge-Konsonant im Wort
+                if (!f && s.ende) P9 = 1.2;
+                else if (f) P9 = f.art === "frikativ" && f.stimme ? 1.6 : f.art === "plosiv" && f.stimme ? 1.2 : f.art === "nasal" && !bet ? 0.85 : f.art === "plosiv" ? 0.7 : 1;
+                P *= s.satzEnde ? P9 : 0.7 + 0.3 * P9;
+                if (nach && nach.v) P *= 1.2;                         // Regel 10: Vokal vor Vokal, nach Vokal
+                if (vor && vor.v) P *= 0.7;
+                var ms = min + (z[0] - min) * P;
+                if (bet && einsatz === "behaucht" && vor && vor.c && vor.c.art === "plosiv" && !vor.c.stimme) ms += D.behauchung; // Regel 11
+                aus[g.i].segs.push({ art: "vokal", v: g.v, ms: ms });
+                aus[g.i].ms += ms;
+                return;
+            }
+            z = D.laut[g.c.l];
+            if (!z) throw new Error("klang stimmRede: der Laut „" + g.c.l + "“ steht nicht in STIMME.dauer.laut");
+            min = z[1];
+            if (s.satzEnde && g.teil === "ab") P *= 1.4;              // Regel 2
+            if (!(s.anfang && g.teil === "an")) P *= 0.85;            // Regel 6: nicht im Anlaut des Worts
+            if (!bet) { min /= 2; P *= g.teil === "an" && (g.c.art === "liquid" || g.c.art === "gleit") && nach && nach.v ? 0.1 : 0.7; } // Regel 7
+            P *= vor && vor.c && nach && nach.c ? 0.5 : (vor && vor.c) || (nach && nach.c) ? 0.7 : 1; // Regel 10: im Cluster
+            var d = min + (z[0] - min) * P;
+            aus[g.i].segs.push({ art: g.c.art, l: g.c.l, ort: g.c.ort, stimme: g.c.stimme, ms: d });
+            aus[g.i].ms += d;
+        });
+        return aus;
+    }
+    // DER LAUT: ruf = { leib, laut, vokal?, saat, rede?, einsatz? } → { sr, daten, f0, formanten, traktM, laut, segmente } (geeicht
+    // auf texturRmsDb). Quelle: der Rosenberg-Puls (Fluss der Glottis, abgeleitet: die Abstrahlung der Lippen) mit Jitter und
+    // Schimmer, Atem im offenen Spalt; Filter: fuenf Resonatoren in Kaskade (Klatt 1980), ihre Frequenzen gleiten zwischen den
+    // Segmenten (30 ms). Die Rede (`rede`: Silben aus `stimmRede`) traegt ihre Konsonanten: das Rauschen der Behauchung durch
+    // dieselbe Kaskade (ein zweiter Zug ihrer Zustaende), das Rauschen der Reibung und des Knalls parallel; ihre Pegel am Vokal.
+    // Der Laut ohne Satz (Gruss, Lachen, ...) traegt Silben aus Vokalen seiner Tafel mit seiner Pause.
     function stimmPuffer(ruf) {
         var S = STIMME, Q = S.quelle, r = ruf || {}, sr = S.sr, rnd = umweltRng((r.saat >>> 0) || 11);
         var leib = stimmLeib(r.leib), Lt = S.laute[r.laut] || S.laute.gruss;
-        // die Rede der Menge (MENGE.rede) bestellt ihre Silben nach der Dauer (`mengeSilben`), sonst traegt der Laut seine Zahl
-        var nS = typeof r.silben === "number" && r.silben >= 1 ? Math.min(MENGE.silbenMax, Math.round(r.silben)) : Lt.silben;
-        // die Kerne des Satzes (sprache#2, fachwerk `sprachKerne`): je Silbe der Vokal ihres Kerns (`STIMME.kern`) — ein Kern ohne Zeile bricht
-        var K = Array.isArray(r.kerne) && r.kerne.length ? r.kerne : null;
-        if (K) nS = Math.min(nS, K.length);
-        var silben = [], t = 0;
-        for (var i = 0; i < nS; i++) {
-            var kv = K && STIMME.kern[String(K[i]).charAt(0)];
-            if (K && !kv) throw new Error("klang stimmPuffer: der Kern „" + K[i] + "“ steht nicht in STIMME.kern");
-            var v = kv || (r.vokal && STIMME_FORM.mann[r.vokal] ? r.vokal : Lt.vokale[Math.floor(rnd() * Lt.vokale.length) % Lt.vokale.length]);
-            var sek = Lt.sek[0] + (Lt.sek[1] - Lt.sek[0]) * rnd();
-            silben.push({ v: v, von: t, bis: t + sek, F: roehre(leib.traktM, stimmForm(v, leib.mann)) });
-            t += sek + Lt.pause;
+        var segs = [], silbeVon = [], silbeBis = [], t = 0, rede = Array.isArray(r.rede) && r.rede.length ? r.rede : null, E = null;
+        if (rede) {
+            E = S.einsatz[r.einsatz];
+            if (!E) throw new Error("klang stimmPuffer: die Rede ohne den Einsatz ihrer Sprache („" + r.einsatz + "“)");
+            rede.forEach(function (sb, i) {
+                silbeVon.push(t);
+                sb.segs.forEach(function (g) { segs.push({ g: g, von: t, bis: (t += g.ms / 1000), silbe: i }); });
+                silbeBis.push(t);
+            });
+        } else {
+            var nS = typeof r.silben === "number" && r.silben >= 1 ? Math.min(MENGE.silbenMax, Math.round(r.silben)) : Lt.silben;
+            for (var i = 0; i < nS; i++) {
+                var v = r.vokal && STIMME_FORM.mann[r.vokal] ? r.vokal : Lt.vokale[Math.floor(rnd() * Lt.vokale.length) % Lt.vokale.length];
+                var sek = Lt.sek[0] + (Lt.sek[1] - Lt.sek[0]) * rnd();
+                segs.push({ g: { art: "vokal", v: v }, von: t, bis: t + sek, silbe: i });
+                t += sek;
+                if (i < nS - 1 && Lt.pause > 0) segs.push({ g: { art: "pause" }, von: t, bis: (t += Lt.pause), silbe: i });
+            }
         }
-        var n = Math.floor((t - Lt.pause + 0.06) * sr), x = new Float32Array(n);
-        var T0 = 1 / leib.f0, ph = 1, amp = 1, f0 = leib.f0, alt = 0;
-        var y1 = [0, 0, 0, 0, 0], y2 = [0, 0, 0, 0, 0], A = [0, 0, 0, 0, 0], B = [0, 0, 0, 0, 0], C = [0, 0, 0, 0, 0];
+        // je Segment: die Formanten (der Vokal und der Sonorant ihre Form, das Hindernis die des naechsten Vokals, sonst des vorigen),
+        // die Stimme (Anteil), der Knall am Ende des Verschlusses, die Reibung, die Behauchung zu Beginn
+        // der Gipfel der Reibung folgt dem Trakt (Jongmans Gipfel sind das Mittel ueber Frauen und Maenner: der mittlere Trakt beider Bezuege)
+        var hz0 = (stimmLeib(S.bezug).traktM + stimmLeib(S.bezugFrau).traktM) / 2 / leib.traktM;
+        var Fq = function (q) { return roehre(leib.traktM, stimmForm(q, leib.mann)); };
+        segs.forEach(function (sg) {
+            var g = sg.g, so = S.sonor[g.l];
+            sg.F = g.art === "vokal" ? Fq(g.v) : so ? Fq(so[0]) : g.art === "pause" ? segs[segs.indexOf(sg) - 1].F : null;
+            sg.stimme = g.art === "vokal" ? 1 : so ? so[1] : g.art === "frikativ" && g.stimme ? S.sonor.reibStimme : 0;
+        });
+        for (var a = segs.length - 1, naechst = null; a >= 0; a--) if (segs[a].F && segs[a].g.art === "vokal") naechst = segs[a].F; else if (!segs[a].F) segs[a].F = naechst;
+        for (a = 0, naechst = null; a < segs.length; a++) if (segs[a].F) naechst = segs[a].F; else segs[a].F = naechst;
+        var fenster = [];
+        if (rede)
+            segs.forEach(function (sg, x) {
+                var g = sg.g, nach = segs[x + 1], s0 = Math.round(sg.von * sr), s1 = Math.round(sg.bis * sr);
+                var reib = function (ort, von) {
+                    var R = S.reibung[ort], hz = Math.min(sr * 0.45, R[0] * hz0);
+                    fenster.push({ zug: "n", a: von, b: s1, hz: hz, bw: hz * (S.reibung.sibilant[ort] ? S.reibung.breiteSibilant : S.reibung.breite), db: R[1] + (g.stimme ? -S.reibung.stimmeDb : S.reibung.stimmeDb), rampe: Math.round(S.reibung.rampeS * sr) });
+                };
+                if (g.art === "frikativ") reib(g.ort, s0);
+                if (g.art === "hauch") fenster.push({ zug: "h", a: s0, b: s1, db: S.sonor.hauchDb, rampe: Math.round(S.reibung.rampeS * sr) });
+                if (g.art === "plosiv" || g.art === "affrikat") {
+                    var ende = g.art === "affrikat" ? s0 + Math.round((s1 - s0) * S.dauer.verschluss) : s1, K = S.knall[g.ort];
+                    if (g.stimme && E.balken > 0) sg.balken = [s0, ende];
+                    var stumm = nach && (nach.g.art === "plosiv" || nach.g.art === "affrikat") && !nach.g.stimme && !g.stimme; // Klatt Regel 4: nicht geloest
+                    if (!stumm) fenster.push({ zug: "n", a: Math.max(s0, ende - Math.round(S.knall.sek * sr)), b: ende, hz: Math.min(sr * 0.45, K[0]), bw: K[1], db: S.knall.db, knall: true });
+                    if (g.art === "affrikat") reib(g.ort === "labial" ? "labiodental" : g.ort, ende);
+                    var vot = E[g.stimme ? "stimmhaft" : "stimmlos"][g.ort];
+                    if (nach && nach.stimme > 0 && vot > 0) {
+                        var n0 = Math.round(nach.von * sr), n1 = Math.min(Math.round(nach.bis * sr), n0 + Math.round((vot / 1000) * sr));
+                        nach.still = n1;
+                        if (vot > 25) fenster.push({ zug: "h", a: n0, b: n1, db: S.sonor.hauchDb, rampe: 0 });
+                    }
+                }
+            });
+        // der Bogen spannt ueber den Laut (der Laut ohne Satz bis hinter seine letzte Pause, wie bis sprache#5)
+        var tBogen = rede ? t : t + Lt.pause, n = Math.floor((t + 0.06) * sr), x = new Float32Array(n), xh = rede ? new Float32Array(n) : null, xn = rede ? new Float32Array(n) : null;
+        var T0 = 1 / leib.f0, ph = 1, amp = 1, f0 = leib.f0, alt = 0, gv = 0;
+        var y1 = [0, 0, 0, 0, 0], y2 = [0, 0, 0, 0, 0], h1 = [0, 0, 0, 0, 0], h2 = [0, 0, 0, 0, 0], A = [0, 0, 0, 0, 0], B = [0, 0, 0, 0, 0], C = [0, 0, 0, 0, 0];
+        var rz = { a: 0, b: 0, c: 0, y1: 0, y2: 0, x1: 0, x2: 0 }, fi = 0, nf = fenster.filter(function (fw) { return fw.zug === "n"; }).sort(function (u, w) { return u.a - w.a; });
         for (var k = 0, si = 0; k < n; k++) {
             var tt = k / sr;
-            while (si < silben.length - 1 && tt >= silben[si + 1].von) si++;
-            var sb = silben[si], u = Math.max(0, Math.min(1, (tt - sb.von) / (sb.bis - sb.von)));
+            while (si < segs.length - 1 && tt >= segs[si + 1].von) si++;
+            var sb = segs[si], u = Math.max(0, Math.min(1, (tt - sb.von) / (sb.bis - sb.von)));
             if (k % 16 === 0) {
-                // die Frequenzen gleiten von der vorigen Silbe (30 ms), dann die Koeffizienten der Resonatoren
-                var vor = si > 0 ? silben[si - 1].F : sb.F, w = Math.min(1, (tt - sb.von) / 0.03);
+                // die Frequenzen gleiten vom vorigen Segment (30 ms), dann die Koeffizienten der Resonatoren
+                var vor = si > 0 ? segs[si - 1].F : sb.F, w = Math.min(1, (tt - sb.von) / 0.03);
                 for (var j = 0; j < 5; j++) {
                     var Fj = Math.min(sr * 0.45, vor[j] + (sb.F[j] - vor[j]) * Math.max(0, w)), e = Math.exp((-Math.PI * S.breite[j]) / sr);
                     C[j] = -e * e;
@@ -1662,7 +1796,8 @@
                 }
             }
             // der Bogen des Lauts (Deklination ueber die Zeit) und die Hebung jeder Silbe
-            var bogen = Lt.f0[0] + (Lt.f0[1] - Lt.f0[0]) * (tt / Math.max(1e-3, t)), heb = 1 + Lt.gipfel * Math.sin(Math.PI * u);
+            var su = rede ? Math.max(0, Math.min(1, (tt - silbeVon[sb.silbe]) / (silbeBis[sb.silbe] - silbeVon[sb.silbe]))) : sb.g.art === "pause" ? 1 : u;
+            var bogen = Lt.f0[0] + (Lt.f0[1] - Lt.f0[0]) * (tt / Math.max(1e-3, tBogen)), heb = 1 + Lt.gipfel * Math.sin(Math.PI * su);
             if (ph >= 1) {
                 ph -= 1;
                 f0 = leib.f0 * bogen * heb * (1 + (rnd() - 0.5) * 2 * Q.jitter);
@@ -1671,21 +1806,76 @@
             }
             var g = ph < Q.offen ? 0.5 * (1 - Math.cos((Math.PI * ph) / Q.offen)) : ph < Q.offen + Q.schliessen ? Math.cos((Math.PI * (ph - Q.offen)) / (2 * Q.schliessen)) : 0;
             ph += 1 / (T0 * sr);
-            var stimmhaft = tt <= sb.bis ? Math.min(1, (tt - sb.von) / 0.02) * Math.min(1, (sb.bis - tt) / 0.04) : 0;
+            // die Stimme: der Vokal ohne Satz steigt in 20 ms und faellt in 40 ms (wie bis sprache#5); die Rede gleitet je Segment
+            // in 10 ms zu ihrem Anteil (der Stimmbalken im vorstimmhaften Verschluss, still im Einsatz nach dem Plosiv)
+            var stimmhaft;
+            if (rede) {
+                var ziel = sb.balken && k >= sb.balken[0] && k < sb.balken[1] ? E.balken : sb.still && k < sb.still ? 0 : sb.stimme;
+                gv += (ziel - gv) * Math.min(1, 1 / (0.01 * sr) * 4);
+                stimmhaft = gv * Math.min(1, tt / 0.02) * Math.min(1, Math.max(0, t - tt) / 0.04);
+            } else stimmhaft = sb.g.art === "vokal" && tt <= sb.bis ? Math.min(1, (tt - sb.von) / 0.02) * Math.min(1, (sb.bis - tt) / 0.04) : 0;
             var hauch = (Lt.hauch * Math.max(0, 1 - u * 3) + Q.hauch) * (0.4 + g);
             var q = (g - alt) * amp * stimmhaft * (1 - Lt.hauch * 0.5) * 40 + (rnd() * 2 - 1) * hauch * stimmhaft;
             alt = g;
+            var qh = xh ? rnd() * 2 - 1 : 0;
             for (j = 0; j < 5; j++) {
                 var yj = A[j] * q + B[j] * y1[j] + C[j] * y2[j];
                 y2[j] = y1[j];
                 y1[j] = yj;
                 q = yj;
+                if (xh) {
+                    var hj = A[j] * qh + B[j] * h1[j] + C[j] * h2[j];
+                    h2[j] = h1[j];
+                    h1[j] = hj;
+                    qh = hj;
+                }
             }
             x[k] = q;
+            if (xh) xh[k] = qh;
+            // der parallele Zweig: ein Resonator am Gipfel des Fensters, das gerade rauscht (die Fenster folgen einander)
+            if (xn) {
+                while (fi < nf.length && k >= nf[fi].b) fi++;
+                var fw = nf[fi];
+                if (fw && k >= fw.a) {
+                    // der Bandpass (Bristow-Johnson, Spitze 0 dB): Nullstellen bei 0 Hz und Nyquist — das Rauschen der Enge traegt
+                    // keinen Grund (ein Resonator mit Gleichanteil 1 rauschte bis 0 Hz)
+                    if (k === fw.a) {
+                        var w0 = (2 * Math.PI * fw.hz) / sr, al = Math.sin(w0) / (2 * (fw.hz / fw.bw)), a0 = 1 + al;
+                        [rz.a, rz.b, rz.c, rz.y1, rz.y2, rz.x1, rz.x2] = [al / a0, (2 * Math.cos(w0)) / a0, -(1 - al) / a0, 0, 0, 0, 0];
+                    }
+                    var xr = rnd() * 2 - 1, yn = rz.a * (xr - rz.x2) + rz.b * rz.y1 + rz.c * rz.y2;
+                    [rz.x2, rz.x1, rz.y2, rz.y1] = [rz.x1, xr, rz.y1, yn];
+                    xn[k] = yn;
+                }
+            }
+        }
+        // DIE PEGEL DES RAUSCHENS am Vokal desselben Lauts (RMS ueber seine Vokale): je Fenster sein Zug auf seinen Abstand, mit Rampe
+        if (rede) {
+            var ev = 0, nv = 0;
+            segs.forEach(function (sg) {
+                if (sg.g.art !== "vokal") return;
+                for (var q2 = Math.round(sg.von * sr), q3 = Math.min(n, Math.round(sg.bis * sr)); q2 < q3; q2++) (ev += x[q2] * x[q2], nv++);
+            });
+            var vRms = nv ? Math.sqrt(ev / nv) : 0;
+            fenster.forEach(function (fw) {
+                var Z = fw.zug === "h" ? xh : xn, b1 = Math.min(n, fw.b), es = 0, m = 0, hull = function (q4) {
+                    if (fw.knall) return Math.exp(-(q4 - fw.a) / (0.25 * (fw.b - fw.a) || 1));
+                    var rp = fw.rampe || 0;
+                    return rp ? Math.min(1, (q4 - fw.a) / rp, (b1 - q4) / rp) : 1;
+                };
+                for (var q5 = fw.a; q5 < b1; q5++) (es += Math.pow(Z[q5] * hull(q5), 2), m++);
+                if (!m || !(es > 0)) return;
+                var gain = (vRms * Math.pow(10, fw.db / 20)) / Math.sqrt(es / m);
+                for (q5 = fw.a; q5 < b1; q5++) x[q5] += Z[q5] * hull(q5) * gain;
+            });
         }
         SYNTHESE.samples += n;
         SYNTHESE.rufe++;
-        return { sr: sr, daten: eiche(x, UMWELT.texturRmsDb), f0: leib.f0, formanten: silben[0].F, traktM: leib.traktM, laut: r.laut || "gruss" };
+        var erster = segs.filter(function (sg) { return sg.g.art === "vokal"; })[0] || segs[0];
+        return {
+            sr: sr, daten: eiche(x, UMWELT.texturRmsDb), f0: leib.f0, formanten: erster.F, traktM: leib.traktM, laut: r.laut || "gruss",
+            segmente: segs.map(function (sg) { return { art: sg.g.art, l: sg.g.l || sg.g.v, von: sg.von, bis: sg.bis }; })
+        };
     }
     // ═══════════════════════════════════════════════════════════════════════
     //  DIE MENGE (markt-klang, erleben.klang.getuemmel#1, rein additiv): der Markt klingt aus seiner MENGE, nie aus einer
@@ -1751,15 +1941,16 @@
         var S = MENGE.stufen;
         return Math.min(S.laut - S.sprech, stufeDb + mengeLombard(lnDbA));
     }
-    // die Silben einer Rede von sek Sekunden (je Silbe ihr mittleres Mass + die Pause des Lauts), 1 … silbenMax
-    function mengeSilben(sek) {
-        var Lt = STIMME.laute[MENGE.laut], je = (Lt.sek[0] + Lt.sek[1]) / 2 + Lt.pause;
-        return Math.max(1, Math.min(MENGE.silbenMax, Math.round(sek / je)));
+    // die Silben des naechsten Teils einer Rede von sek Sekunden (sprache#5): so viele ihrer naechsten Silben (`stimmRede`, je Silbe
+    // ihre Dauer nach Klatt), wie in sek passen — mindestens eine, hoechstens silbenMax
+    function mengeSilben(sek, rede) {
+        var n = 0, t = 0;
+        while (n < rede.length && n < MENGE.silbenMax && (n === 0 || t + rede[n].ms / 1000 <= sek)) t += rede[n++].ms / 1000;
+        return n;
     }
-    // die Sekunden einer gesprochenen Silbenzahl (die Dauer, die der Laut traegt — der Wirt plant den naechsten Teil danach)
-    function mengeSek(silben) {
-        var Lt = STIMME.laute[MENGE.laut];
-        return silben * ((Lt.sek[0] + Lt.sek[1]) / 2 + Lt.pause) - Lt.pause;
+    // die Sekunden eines gesprochenen Teils (die Dauer, die der Laut traegt — der Wirt plant den naechsten Teil danach)
+    function mengeSek(rede) {
+        return rede.reduce(function (s, sb) { return s + sb.ms / 1000; }, 0);
     }
     // die Dauer des naechsten Zustands aus u in (0, 1]: Rede (spricht) oder Pause, exponentiell um ihr Mittel (P.59)
     function mengeDauer(spricht, u) {
@@ -2489,6 +2680,7 @@
         stimmLeib: stimmLeib,
         stimmFormanten: stimmFormanten,
         stimmPuffer: stimmPuffer,
+        stimmRede: stimmRede,
         // markt-klang (rein additiv) — die Menge: Rede und Pause (P.59), Stufen der Stimme, Lombard, die Eichung in dB(A)
         MENGE: MENGE,
         mengeRedet: mengeRedet,

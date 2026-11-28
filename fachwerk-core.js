@@ -4774,31 +4774,43 @@
     //    Lenisierung zwischen Vokalen, Apokope, Hebung, die zweite Lautverschiebung, Rhotazismus, Monophthongierung, Affrizierung vor
     //    i/u, h-Schwund. Die Anteile der Silben (Cluster, Koda, Endung) dreht das Blatt um ±25 %.
     // Leser: `ORTSNAME`, der Wirt (`_bewohnerLauf`: Vor- und Familienname), die Station (der Zweier-Laut-Leser ordnet je Name die Region zu).
+    //  · DIE SCHRIFT UND DER EINSATZ (sprache#5, die Lautung des Satzes `sprachSilben`): `schrift` der Lautwert der Buchstaben, die
+    //    die Familie anders liest als die Tafel `SPRACH_LAUTE` (z als [ts] im Deutschen und Italienischen, w als [v] im Deutschen und
+    //    Nordischen); `einsatz` die Stimmhaftigkeit am Verschluss (Lisker & Abramson 1964, Word 20: die Sprachen mit zwei Plosiv-Reihen
+    //    trennen sie entweder als behaucht gegen kurz verzögert — Englisch — oder als unbehaucht gegen vorstimmhaft — Niederländisch,
+    //    Spanisch); die Zuordnung der Familien folgt ihren Vorbildern (QUELLE UNGEPRUEFT für das Deutsche, Nordische, Japanische und
+    //    Lateinische: dort nicht gemessen). Leser: klang `stimmPuffer` (`STIMME.einsatz`).
     // prettier-ignore
     var SPRACHE_GESETZ = {
       // komplex (12A), groß (1A), 7 Vokale + Zwielaute (2A): Cluster im An- und Auslaut, die Folgesilbe auf e (die Schwa-Silbe)
       mitteleuropa: { anlaut:['b','d','s','h','w','g','m','k','f','l','r','n','t','sch','z','p'], cluster:['br','gr','fr','st','kr','tr','dr','bl','fl','gl','kl','schl','schw','schm','schn','schr','sp'], pCluster:0.25,
         vokale:['e','a','i','o','u','ei','au','ä','ü','ö'], koda:['n','r','l','s','t','ch','nd','rt','ld','st','ng','rg','lf'], pKoda:0.4, pEnde:0.85, doppel:[], neben:'e',
+        schrift:{ z:'ts', w:'v' }, einsatz:'behaucht',
         wandel:['verschiebung','spirans','fortis','apokope','monophthong','diphthong','rhotazismus','hebung','senkung','entrundung','umlaut','schwund','lenis'] },
       // komplex, mittel, 5 Vokale + Zwielaute ia/ua/oa: die Koda auf g/ck/ch, die Folgesilbe auf i
       alpin: { anlaut:['b','g','s','t','d','m','l','r','w','k','n','f','h','z','tsch'], cluster:['gr','br','tr','kr','fl','gl','st','schn','schw','schl'], pCluster:0.2,
         vokale:['a','i','o','u','e','ia','ua','ei','oa'], koda:['g','ch','l','n','r','ck','tz','ss','gg'], pKoda:0.45, pEnde:0.7, doppel:[], neben:'i',
+        schrift:{ z:'ts', w:'v' }, einsatz:'behaucht',
         wandel:['verschiebung','spirans','fortis','monophthong','diphthong','apokope','hebung','senkung','entrundung','umlaut','affrikat','schwund','lenis'] },
       // einfach (12A), mittel (1A), 5 Vokale: offene Silben, das Wort endet auf einem Vokal, der Laut zwischen Vokalen verdoppelt sich
       mediterran: { anlaut:['m','c','s','b','p','t','l','r','g','f','v','d','n','gi','ci'], cluster:['pr','tr','br','gr','fr','cr','st','sc'], pCluster:0.12,
         vokale:['a','o','e','i','u'], koda:['n','l','r','s'], pKoda:0.15, pEnde:0, doppel:['ll','tt','nn','rr','ss','cc'], neben:'',
+        schrift:{ z:'ts' }, einsatz:'unbehaucht',
         wandel:['lenis','rhotazismus','spirans','hebung','senkung','diphthong','schwund','apokope','affrikat'] },
       // komplex, mittel, 9 Vokale (y ø å æ): s-Cluster und j-Cluster im Anlaut, die Koda auf d/nd/rk
       nordisch: { anlaut:['h','s','b','g','v','k','t','f','l','r','m','n','d','j'], cluster:['sk','st','sv','sn','fj','kj','hj','bj','br','dr','fr','gr','kr','tr','bl','fl','gl','kl'], pCluster:0.3,
         vokale:['a','e','i','o','u','y','ø','å','æ'], koda:['d','n','r','k','t','s','nd','rd','rk','ld','ng','rn','lm'], pKoda:0.5, pEnde:0.8, doppel:['nn','ll','kk','tt'], neben:'',
+        schrift:{ w:'v' }, einsatz:'behaucht',
         wandel:['lenis','spirans','apokope','hebung','senkung','monophthong','diphthong','entrundung','umlaut','schwund','fortis'] },
       // einfach (12A): (C)(j)V(N) — die Koda ist nur der Nasal, 5 Vokale
       fernost: { anlaut:['k','t','s','n','m','h','y','r','w','g','z','d','b','p'], cluster:['ky','ry','ny','hy','my','gy'], pCluster:0.1,
         vokale:['a','i','u','o','e'], koda:['n'], pKoda:0.25, pEnde:0.35, doppel:[], neben:'',
+        schrift:{}, einsatz:'unbehaucht',
         wandel:['affrikat','hebung','senkung','lenis','schwund','monophthong','apokope'] },
       // mäßig (12A), 6 Vokale + Zwielaute: die Koda auf s/m/n/r/x, Behauchte im Anlaut
       antik: { anlaut:['c','p','t','m','s','l','d','n','r','v','f','g','qu'], cluster:['pr','tr','cr','pl','cl','br','gr','fl','st','sc','ph','th'], pCluster:0.2,
         vokale:['a','e','i','o','u','ae','au','y'], koda:['s','m','n','r','x','ns','l','t'], pKoda:0.4, pEnde:0.9, doppel:[], neben:'',
+        schrift:{}, einsatz:'unbehaucht',
         wandel:['rhotazismus','monophthong','diphthong','hebung','senkung','lenis','spirans','schwund','apokope','affrikat'] },
     };
     // DER STAMMBAUM UND DIE BEDEUTUNGEN DER URSPRACHE. `bedeutungen`: die Grundliste nach Swadesh (1971, die 100 Bedeutungen, die in jeder
@@ -5078,7 +5090,7 @@
     // Der Rahmen ist ein Verb der Grundliste mit dem, was es trägt (`verben`: wer es tut, woran — ein Hund fliegt nicht, man trinkt
     // Wasser, nie Stein); die Glieder sind Wörter derselben Liste. `anteil` (QUELLE UNGEPRUEFT im Wert): die Hälfte der Nomen trägt
     // ein Adjektiv, ein Achtel der Sätze ist verneint. Leser: der Wirt (`_bewohnerLauf` „rede“), die Rede der Menge (klang.js
-    // `_bewohnerLautTakt`: die Silben-Kerne des Satzes `sprachKerne` sind die Vokale der Stimme), die Station (die Sätze getrennt).
+    // `_bewohnerLautTakt`: die Silben des Satzes `sprachSilben` sind die Laute der Stimme), die Station (die Sätze getrennt).
     // prettier-ignore
     var SATZ_GESETZ = {
       folge: ['SOV', 'SVO', 'VSO', 'VOS', 'OVS', 'OSV'], folgeZahl: [564, 488, 95, 25, 11, 4],
@@ -5111,6 +5123,13 @@
       adjektive: ['groß', 'klein', 'lang', 'rot', 'grün', 'gelb', 'weiß', 'schwarz', 'warm', 'kalt', 'voll', 'neu', 'gut', 'rund', 'trocken'],
       // die Fürwörter tragen kein Adjektiv (*„großer ich“)
       fuerwort: ['ich', 'du', 'wir', 'wer'],
+      // DER SATZ AM AKT (sprache#5 „Satz ↔ Handlung“): wer spricht, spricht von dem, was er tut — je Akt des Tags (koerper
+      // `tagesPlan`, die Tat der Rolle, das Spiel des Abends, der Hieb der Wache) das Verb der Grundliste, das ihm am nächsten liegt;
+      // wer es tut, sind Leute. Ein Akt ohne Zeile bricht laut (`sprachSatz`); ohne Akt spricht der Satz frei.
+      // QUELLE UNGEPRUEFT im Wert: die Zuordnung (die Grundliste nach Swadesh kennt weder arbeiten noch spielen noch kämpfen).
+      handlung: { schlaf: 'schlafen', morgen: 'trinken', mittag: 'essen', abend: 'sitzen', einkauf: 'geben', besuch: 'kommen',
+        streife: 'gehen', arbeit: 'stehen', hilft: 'geben', spiel: 'sehen', zuschauen: 'sehen', wettkampf: 'gehen', zweikampf: 'beißen',
+        brett: 'wissen', jagd: 'töten', fischfang: 'töten', hieb: 'töten' },
     };
     // der Wurf nach den Zahlen der Typologie (Gewicht = Zahl der Sprachen)
     function _zahlZug(A, Z, u) { var H = 0, i; for (i = 0; i < Z.length; i++) H += Z[i]; var a = u * H; for (i = 0; i < A.length; i++) if ((a -= Z[i]) < 0) return A[i]; return A[A.length - 1]; }
@@ -5126,10 +5145,12 @@
         gram: { zeit: _urWort(U, z + "|zeit", 1, true), ort: _urWort(U, z + "|ort", 1, true) } });
       _SATZBAU.set(region, g); return g; }
     // prettier-ignore
-    function sprachSatz(L, saat) {
+    function sprachSatz(L, saat, akt) {
       var G = SATZ_GESETZ, B = _satzBau(L.region), z = "satz|" + saat, u = function (k) { return _sprachU(z, k); };
       var aus = function (liste, k) { var W = []; liste.forEach(function (x) { W = W.concat(G.klassen[x] || [x]); }); return W[Math.floor(u(k) * W.length) % W.length]; };
-      var V = Object.keys(G.verben), verb = V[Math.floor(u("verb") * V.length) % V.length], R = G.verben[verb];
+      var V = Object.keys(G.verben), verb = akt == null ? V[Math.floor(u("verb") * V.length) % V.length] : G.handlung[akt], R = G.verben[verb];
+      if (!R) throw new Error("fachwerk sprachSatz: der Akt „" + akt + "“ trägt kein Verb in SATZ_GESETZ.handlung");
+      if (akt != null) R = [['leute'], R[1]];
       var nominal = function (b, k) { var w = sprachWort(L, b);
         if (G.fuerwort.indexOf(b) >= 0 || !(u(k + "-adj") < G.anteil.adjektiv)) return w;
         var a = sprachWort(L, G.adjektive[Math.floor(u(k + "-adj-zug") * G.adjektive.length) % G.adjektive.length]);
@@ -5145,8 +5166,82 @@
       var glied = { S: S, O: O, V: v }, teile = [], ov = B.folge.indexOf("O") < B.folge.indexOf("V");
       B.folge.split("").forEach(function (c) { if (c === "V" && ort && ov) teile.push(ort); if (glied[c]) teile.push(glied[c]); if (c === "V" && ort && !ov) teile.push(ort); });
       return _gross(teile.join(" ")) + "."; }
-    // die Silben-Kerne eines Satzes (die Vokal-Folgen, `_SILBE`: ein Zwielaut ist EIN Kern) — die Vokale, die die Stimme trägt
-    function sprachKerne(satz) { return String(satz).toLowerCase().match(_SILBE) || []; }
+    // DIE LAUTUNG DES SATZES (sprache#5): bis hier las die Stimme nur die Kerne (die Vokal-Folgen) — im Ohr klangen 0,346 der Laute,
+    // kein Konsonant. Nun ist der Satz eine Folge von SILBEN { an, k, ab }: der Kern `k` (die Vokal-Folge, `_SILBE`: ein Zwielaut ist
+    // EIN Kern — sein erster Buchstabe wählt die Qualität, klang `STIMME.kern`), An- und Abglied als LAUTE der Tafel `SPRACH_LAUTE`
+    // (Art, Ort, Stimme). Die Schrift → Laut: die längste Folge zuerst (tsch, sch, ch, ck, ph, th, qu, ng, tz, pf, x), dann der
+    // Buchstabe; die Familie liest z und w nach ihrer `schrift`. Ein Doppel-Buchstabe ist zwei Laute: die Geminate gehört beiden
+    // Silben (Ende der einen, Anfang der nächsten). DIE GRENZE der Silben: das Prinzip des maximalen Anlauts unter der Sonoritäts-
+    // Folge (Clements 1990; Selkirk 1984): zwischen zwei Kernen gehört dem Anlaut der längste Rest, dessen Laute zum Kern hin an
+    // Sonorität steigen (Plosiv 1 < Frikativ 2 < Nasal 3 < Liquid 4 < Gleitlaut 5), dazu ein s/sch vor dem Plosiv (das s-Cluster,
+    // die Ausnahme jeder Sprache mit st, sp, sk); der Rest ist der Abglied der Silbe davor. Ein Wort ohne Kern hängt am Abglied.
+    // Je Silbe ihr Ort im Wort und im Satz (die Dauer-Regeln der Stimme lesen ihn, Klatt 1979): `w` das Wort, `anfang` / `ende` die
+    // erste / letzte Silbe des Worts, `nWort` seine Silbenzahl, `satzEnde` die letzte des Satzes.
+    // prettier-ignore
+    var SPRACH_LAUTE = {
+      p: ['plosiv', 'labial', 0], b: ['plosiv', 'labial', 1], t: ['plosiv', 'alveolar', 0], d: ['plosiv', 'alveolar', 1],
+      k: ['plosiv', 'velar', 0], g: ['plosiv', 'velar', 1],
+      pf: ['affrikat', 'labiodental', 0], ts: ['affrikat', 'alveolar', 0], 'tʃ': ['affrikat', 'postalveolar', 0], 'dʒ': ['affrikat', 'postalveolar', 1],
+      f: ['frikativ', 'labiodental', 0], v: ['frikativ', 'labiodental', 1], 'θ': ['frikativ', 'dental', 0], s: ['frikativ', 'alveolar', 0],
+      z: ['frikativ', 'alveolar', 1], 'ʃ': ['frikativ', 'postalveolar', 0], x: ['frikativ', 'velar', 0], h: ['hauch', 'glottal', 0],
+      m: ['nasal', 'labial', 1], n: ['nasal', 'alveolar', 1], 'ŋ': ['nasal', 'velar', 1],
+      l: ['liquid', 'alveolar', 1], r: ['liquid', 'uvular', 1], j: ['gleit', 'palatal', 1], w: ['gleit', 'labial', 1]
+    };
+    var _SONOR = { plosiv: 1, affrikat: 1, frikativ: 2, hauch: 2, nasal: 3, liquid: 4, gleit: 5 };
+    var _LAUT = {};
+    Object.keys(SPRACH_LAUTE).forEach(function (l) { var a = SPRACH_LAUTE[l]; _LAUT[l] = Object.freeze({ l: l, art: a[0], ort: a[1], stimme: a[2] }); });
+    // die Schrift: Buchstabenfolge → Laute (die längste zuerst); c und q sind k, x ist k + s, ng vor dem Vokal ŋ + g
+    // prettier-ignore
+    var _SCHRIFT = [['tsch', ['tʃ']], ['sch', ['ʃ']], ['ch', ['x']], ['ck', ['k']], ['ph', ['f']], ['th', ['θ']], ['qu', ['k', 'w']],
+      ['tz', ['ts']], ['pf', ['pf']], ['x', ['k', 's']], ['c', ['k']], ['q', ['k']]];
+    function _schriftLaute(w, G) {
+      var aus = [], i = 0, S = (G && G.schrift) || {};
+      while (i < w.length) {
+        var c = w.charAt(i);
+        if (_V.indexOf(c) >= 0) { var m = w.slice(i).match(_SILBE)[0]; aus.push(m); i += m.length; continue; }
+        if (w.substr(i, 2) === 'ng') { aus.push(_LAUT['ŋ']); if (_V.indexOf(w.charAt(i + 2)) >= 0) aus.push(_LAUT.g); i += 2; continue; }
+        var hit = null;
+        for (var s = 0; s < _SCHRIFT.length && !hit; s++) if (w.substr(i, _SCHRIFT[s][0].length) === _SCHRIFT[s][0]) hit = _SCHRIFT[s];
+        if (hit) { hit[1].forEach(function (l) { aus.push(_LAUT[l]); }); i += hit[0].length; continue; }
+        var l = S[c] || c;
+        if (!_LAUT[l]) throw new Error('fachwerk sprachSilben: der Buchstabe „' + c + '“ hat keinen Laut in SPRACH_LAUTE');
+        aus.push(_LAUT[l]);
+        i++;
+      }
+      return aus;
+    }
+    // der Anlaut aus der Konsonanten-Folge C zwischen zwei Kernen: der längste steigende Rest (+ s/sch vor dem Plosiv)
+    function _anlautAb(C) {
+      var a = C.length - 1;
+      if (a < 0) return 0;
+      while (a > 0 && _SONOR[C[a - 1].art] < _SONOR[C[a].art]) a--;
+      if (a > 0 && (C[a - 1].l === 's' || C[a - 1].l === 'ʃ') && C[a].art === 'plosiv') a--;
+      return a;
+    }
+    function sprachSilben(satz, L) {
+      var G = L && L.gesetz, silben = [], vor = [], wort = 0;
+      String(satz).toLowerCase().split(/[^a-zäöüøåæß]+/).forEach(function (w) {
+        if (!w) return;
+        var teile = _schriftLaute(w.replace(/ß/g, 'ss'), G), C = vor, erste = true, eigene = [];
+        vor = [];
+        teile.forEach(function (t) {
+          if (typeof t !== 'string') { C.push(t); return; }
+          var a = erste ? 0 : _anlautAb(C);
+          if (!erste) eigene[eigene.length - 1].ab = C.slice(0, a);
+          eigene.push({ an: C.slice(a), k: t, ab: [] });
+          C = [];
+          erste = false;
+        });
+        if (eigene.length) eigene[eigene.length - 1].ab = C;
+        else if (silben.length) silben[silben.length - 1].ab = silben[silben.length - 1].ab.concat(C);
+        else vor = C;
+        eigene.forEach(function (e, i) { e.w = wort; e.anfang = i === 0; e.ende = i === eigene.length - 1; e.nWort = eigene.length; e.satzEnde = false; });
+        if (eigene.length) wort++;
+        silben.push.apply(silben, eigene);
+      });
+      if (silben.length) silben[silben.length - 1].satzEnde = true;
+      return silben;
+    }
     // prettier-ignore
     // VERTRAGS-AKT 18.07.: LOD1SKIP ist GESTRICHEN (0 Leser — der tote LOD1F-Zwilling).
     // prettier-ignore
@@ -16447,7 +16542,8 @@
         sprachWort: sprachWort, // das Wort einer Bedeutung (SPRACH_BAUM.bedeutungen) in der Sprache des Orts
         SATZ_GESETZ: SATZ_GESETZ, // die Folge der Glieder je Familie (WALS 81A/87A/143A) und die Rahmen der Verben der Grundliste
         sprachSatz: sprachSatz, // der Satz eines Sprechers in der Sprache des Orts (Leser: der Wirt _bewohnerLauf „rede“)
-        sprachKerne: sprachKerne, // die Silben-Kerne eines Satzes (Leser: die Rede der Menge, klang.js _bewohnerLautTakt)
+        sprachSilben: sprachSilben, // die Lautung eines Satzes: Silben { an, k, ab } (Leser: die Rede der Menge, klang.js _bewohnerLautTakt)
+        SPRACH_LAUTE: SPRACH_LAUTE, // die Laute der Schrift: Art, Ort, Stimme (Leser: klang `stimmPuffer` über die Silben, die Linse diag-klang-zensus)
         lautGesetz: lautGesetz, // ein Lautgesetz „typ:laut“ als Funktion des Worts (LAUTWANDEL)
         wandle: wandle,
         DORF_NORM: DORF_NORM,

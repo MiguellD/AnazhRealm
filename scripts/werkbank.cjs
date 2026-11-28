@@ -95,7 +95,7 @@
 const { fehlerText, statikServer, startePuppeteer, werkbankRuf, werkbankTor, seitenAbbruch, ROOT: root, selbsttestEnde, sleep, hauptLauf, argOpt: opt, pngDatei, WARTEN_SEITE, ausDatei, path, fs, stammLib, jsonLesen, jsonSchreiben, ortZug, halteBis } = require("./lib/welt-boot.cjs");
 const http = require("http");
 const AA = require("./lib/ausgabe-aufnahme.cjs");
-const { AUSGABE_INSTALL, wetterUrteil, buehneSelbsttest } = AA;
+const { AUSGABE_INSTALL, wetterUrteil, buehneSelbsttest, nahFolgtSelbsttest } = AA;
 const LL = require("./lib/licht-linsen.cjs");
 // die Fälle eines Selbsttests [ist, soll] (soll: Wert oder Muster), die nicht treffen — Nässe und Laub-Licht
 const istSoll = (f) => f.filter(([ist, soll]) => (soll instanceof RegExp ? !soll.test(ist) : ist !== soll));
@@ -4574,12 +4574,12 @@ hauptLauf(async () => {
         endeMit(kaputt.length ? `BÜHNE ROT: ${kaputt.join(" · ")}` : "BÜHNE GRÜN — sie misst; das Soll S1–S5 steht oben", !kaputt.length); // prettier-ignore
     } else if (cmd === "lauf") {
         if (SELBST) {
-            selbsttestEnde([...ZL.zweiGipfelSelbsttest(), ...ZL.belegungSelbsttest(), ...buehneSelbsttest()], "die Pass-Teilung trennt zwei Gipfel " +
+            selbsttestEnde([...ZL.zweiGipfelSelbsttest(), ...ZL.belegungSelbsttest(), ...buehneSelbsttest(), ...nahFolgtSelbsttest()], "die Pass-Teilung trennt zwei Gipfel " +
                 "(rein = der untere, anteilOben genau) und lässt einhöckrige Pässe ganz; die Belegung nennt eine Pflicht-Last je " +
                 "Bild beim Klassen-Namen über dem Boden des Geräts (Spiel ohne Last auf einem schnellen und einem langsamen GRÜN, mit 1,0 ms " +
                 "Last auf beiden ROT, mit 0,3 ms GRÜN, ohne Leer-Messung UNGEMESSEN beim Namen) und lässt vertagbare Zeitgeber im " +
                 "Bild-Fenster GRÜN; die Bühne stellt n Tiere im Ring auf Land, " +
-                "füllt nur auf und bricht ohne Platz laut");
+                "füllt nur auf und bricht ohne Platz laut; der Schuss lässt die Leiber am Auge wählen (der Schuss ohne _leiberAmAuge ROT)");
             process.exit(0);
         }
         o = await rufe("/lauf", {
