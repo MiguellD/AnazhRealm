@@ -374,7 +374,7 @@ function klimaGang(FC) {
             d = FC.deckungVon({ stil: st });
         if (g < FC.DECKUNG_GESETZ[d].grad) unter.push(`stil ${st}: Grenze ${g}° unter ${d} ${FC.DECKUNG_GESETZ[d].grad}°`);
     }
-    return { je, aus, r4, unter, sockel: sockelGang(FC), dach: dachGang(FC), regen: regenGang(FC), planet: planetGang(FC), sprache: spracheGang(FC), baum: baumGang(FC), himmel: himmelGang(FC), mundart: mundartGang(FC) };
+    return { je, aus, r4, unter, sockel: sockelGang(FC), dach: dachGang(FC), regen: regenGang(FC), planet: planetGang(FC), sprache: spracheGang(FC), baum: baumGang(FC), himmel: himmelGang(FC), mundart: mundartGang(FC), stufe: stufeGang(FC) };
 }
 function klimaUrteil(K, check) {
     const fremd = Object.entries(K.aus)
@@ -408,6 +408,7 @@ function klimaUrteil(K, check) {
     if (K.baum) baumUrteil(K.baum, check);
     if (K.himmel) himmelUrteil(K.himmel, check);
     if (K.mundart) mundartUrteil(K.mundart, check);
+    if (K.stufe) stufeUrteil(K.stufe, check);
 }
 // R6/R7 (haus-dach): DIE DECKUNG FOLGT DEM ORT, DIE NEIGUNG DER DECKUNG — R6 die Wand: kein Bau trägt eine Deckung unter ihrer
 // Regeldachneigung (Reet 45°, Mönch-Nonne 40°, Biber 30°, Schiefer 26,5°, Schindel 22°, Hohlziegel 16,7°; fachwerk DECKUNG_GESETZ);
@@ -625,7 +626,7 @@ function spracheGang(FC) {
         L = [];
     for (const seed of REGEN_SAATEN) {
         const plan = FC.DORF({ seed, nH: 14, klima: k }),
-            S = FC.spracheVon(plan.region, plan.mundart), // der Plan ohne Ort spricht die Ursprache seiner Familie (sprache#4)
+            S = FC.spracheDesOrts(plan), // der Plan ohne Ort spricht die Ursprache seiner Familie (sprache#4)
             nh = plan.houses.length;
         L.push({ w: plan.name, s: plan.region });
         for (let j = 0; j < 20; j++)
@@ -913,6 +914,104 @@ function mundartUrteil(G, check) {
         G.kl <= 0.2 && G.iso >= 0.7 && G.ueff >= 1000
     );
 }
+// R14 (Karte 2 mensch.kultur.sprache#6): DIE SPRACHE TRÄGT IHRE ZEIT — je Familie ein Gitter von Orten (`mundartVon` auf welt-1),
+// je Ort die Sprache in jedem `STUFE_ZEIT.schritt`-ten Jahr von vor der Wurzel bis zur Gegenwart (fachwerk `spracheVon(region,
+// mundart, jahr)`). Die Wand: vor der Wurzel spricht jeder Ort die Ursprache seiner Familie, in der Gegenwart sein Blatt; die
+// Ursprache ist aus den Töchtern der Gegenwart rekonstruierbar (die vergleichende Methode, schlicht: je Bedeutung
+// die häufigste Form der 32 Blätter, Soll ≥ 0,6); der Ort liest sein Jahr — die Pläne der Epochen (`DORF`, `spracheDesOrts`, das
+// Ende des Schnitts der Chronik) sprechen eine ältere Stufe als die Gegenwart (≥ 90 %). Daneben gemessen, nicht Wand: die
+// Swadesh-Retention je 1 000 Jahre (das Band des Richters 0,70–0,86) und die Zahl der Stufen. Die Täter „die Sprache kennt keine
+// Zeit“ und „der Ort liest sein Jahr nicht“ fallen in R14 beim Namen.
+const STUFE_ZEIT = { saat: "welt-1", orte: 8, schrittM: 3100, schritt: 100, epochen: ["antike", "mittelalter", "fernost", "mediterran", "alpin", "hanse", "barock", "gruenderzeit"] };
+function stufeGang(FC) {
+    if (typeof FC.spracheDesOrts !== "function" || !FC.SPRACH_ZEIT || !FC.ERSATZ) return { fehlt: "der Kern trägt keine Zeit der Sprache (fachwerk spracheDesOrts fehlt): die Silben-Tafel ist zeitlos" };
+    const R6 = Object.keys(FC.SPRACHE_GESETZ),
+        G0 = FC.SPRACH_ZEIT.gegenwart,
+        { orte: N, schrittM: D, schritt } = STUFE_ZEIT,
+        jahre = [];
+    const W0 = G0 - FC.ERSATZ.alter; // das Jahr der Wurzel
+    for (let j = W0 - 200; j <= G0; j += schritt) jahre.push(j);
+    const mehr = (a) => {
+        const c = new Map();
+        for (const x of a) c.set(x, (c.get(x) || 0) + 1);
+        return [...c].sort((p, q) => q[1] - p[1] || (p[0] < q[0] ? -1 : 1))[0][0];
+    };
+    let wurzel = 0,
+        blatt = 0,
+        n = 0;
+    const stufen = new Set(),
+        ret = [];
+    for (const r of R6) {
+        const U = FC.spracheVon(r, null).lex.join(",");
+        for (let k = 0; k < N; k++) {
+            const m = FC.mundartVon(STUFE_ZEIT.saat, (k - N / 2) * D, (k % 3) * D),
+                L = jahre.map((j) => FC.spracheVon(r, m, j));
+            n++;
+            if (L[0].lex.join(",") === U) wurzel++;
+            if (L[L.length - 1].lex.join(",") === FC.spracheVon(r, m).lex.join(",")) blatt++;
+            L.forEach((x) => stufen.add(r + "|" + x.lex.join(",")));
+        }
+    }
+    // die Retention über 1 000 Jahre an den Blättern (jedes Wort trägt die Gesetze seines Wegs): ein Wort bleibt, wenn es aus dem
+    // älteren durch die Gesetze dazwischen folgt (Kognat), sonst ist es ersetzt
+    const tausend = 1000 / schritt;
+    for (const r of R6)
+        for (let b = 0; b < 1 << FC.SPRACH_BAUM.tiefe; b += 4) {
+            const L = jahre.map((j) => FC.spracheVon(r, FC.mundartBlatt(b), j));
+            for (let a = 0; a + tausend < L.length; a += 2) {
+                const [A, B] = [L[a], L[a + tausend]];
+                let k2 = 0;
+                for (let i = 0; i < A.lex.length; i++) {
+                    let w = A.lex[i];
+                    for (let t = A.wandel.length; t < B.wandel.length; t++) w = FC.lautGesetz(B.wandel[t])(w);
+                    if (w === B.lex[i]) k2++;
+                }
+                if (jahre[a] >= W0) ret.push(k2 / A.lex.length);
+            }
+        }
+    // die vergleichende Methode über die 32 Blätter der Gegenwart, je Familie
+    let ganz = 0,
+        nb = 0;
+    for (const r of R6) {
+        const U = FC.spracheVon(r, null).lex,
+            T = Array.from({ length: 1 << FC.SPRACH_BAUM.tiefe }, (_, b) => FC.spracheVon(r, FC.mundartBlatt(b)).lex);
+        for (let i = 0; i < U.length; i++) (nb++, mehr(T.map((l) => l[i])) === U[i] && ganz++);
+    }
+    // der Ort liest sein Jahr: die Pläne der Epochen sprechen eine ältere Stufe als die Gegenwart
+    let alt = 0,
+        plaene = 0;
+    const beispiel = [];
+    STUFE_ZEIT.epochen.forEach((ep, e) => {
+        for (let s = 1; s <= 3; s++) {
+            const p = FC.DORF({ seed: 101 * e + s, nH: 14, epoche: ep, mundart: FC.mundartVon(STUFE_ZEIT.saat, (e - 4) * D, s * D) }),
+                L = FC.spracheDesOrts(p),
+                H = FC.spracheVon(p.region, p.mundart);
+            plaene++;
+            if (L.lex.join(",") !== H.lex.join(",")) alt++;
+            else if (beispiel.length < 2) beispiel.push(`${ep} ${p.schnitt.jahr + p.schnitt.spanne}: ${p.name} spricht die Gegenwart`);
+        }
+    });
+    return {
+        orte: n,
+        von: jahre[0],
+        bis: G0,
+        wurzel,
+        blatt,
+        retention: +(ret.reduce((a, b) => a + b, 0) / ret.length).toFixed(3),
+        stufen: stufen.size,
+        rekonstruiert: +(ganz / nb).toFixed(3),
+        alt,
+        plaene,
+        beispiel,
+    };
+}
+function stufeUrteil(G, check) {
+    if (G.fehlt) return check("R14 die Sprache trägt ihre Zeit", false, G.fehlt);
+    check(
+        `R14 die Sprache trägt ihre Zeit — ${G.orte} Orte von ${G.von} bis ${G.bis}: die Ursprache vor der Wurzel ${G.wurzel}, das Blatt in der Gegenwart ${G.blatt} (Soll alle), die Ursprache rekonstruiert ${G.rekonstruiert} (Soll ≥ 0,6), die Pläne der Epochen in ihrer Stufe ${G.alt} von ${G.plaene} (Soll ≥ 90 %) · gemessen: Swadesh-Retention je 1 000 J ${G.retention} (Richter 0,70–0,86), ${G.stufen} Stufen${G.beispiel.length ? " · " + G.beispiel.join(", ") : ""}`,
+        G.wurzel === G.orte && G.blatt === G.orte && G.rekonstruiert >= 0.6 && G.alt >= 0.9 * G.plaene
+    );
+}
 const KLIMA_TAETER = {
     "der Kern liest das Klima nicht": [
         ["var im = Z.filter(function (z) { return klimaAbstand(z, klima) === 0; });", "var im = Z.slice();"],
@@ -957,6 +1056,10 @@ KLIMA_TAETER["die Trockenheit kennt den Pol nicht"] = [["if (klima.sommer < K.po
 KLIMA_TAETER["die Sprache liest den Raum nicht"] = [["var SPRACH_RAUM = { sigma: 5000, faecher: 0.3 };", "var SPRACH_RAUM = { sigma: 5, faecher: 0 };"]];
 // der Fächer fehlt: jedes Wort eines Tals stammt aus dem Kern-Blatt, die Isoglossen bündeln sich zu einer Linie, U_eff fällt auf die Blätter
 KLIMA_TAETER["die Mundart kennt keinen Fächer"] = [["var SPRACH_RAUM = { sigma: 5000, faecher: 0.3 };", "var SPRACH_RAUM = { sigma: 5000, faecher: 0 };"]];
+// die zeitlose Silben-Tafel (main bis sprache-dialekt 4): jedes Jahr spricht das Blatt der Gegenwart
+KLIMA_TAETER["die Sprache kennt keine Zeit"] = [["var J = jahr == null || jahr >= SPRACH_ZEIT.gegenwart ? null : jahr;", "var J = null;"]];
+// der Ort spricht die Gegenwart, wie alt sein Schnitt auch ist: der Name und die Rede lesen das Jahr des Plans nicht
+KLIMA_TAETER["der Ort liest sein Jahr nicht"] = [["plan.mundart == null ? null : s.jahr + s.spanne", "null"]];
 const KLIMA_SOLL = {
     "die Trockenheit kennt den Pol nicht": "R8",
     "das Dach liest den Himmel nicht": "R12",
@@ -975,6 +1078,8 @@ const KLIMA_SOLL = {
     "der Ort liest die Wortliste nicht": "R11",
     "die Sprache liest den Raum nicht": "R13",
     "die Mundart kennt keinen Fächer": "R13",
+    "die Sprache kennt keine Zeit": "R14",
+    "der Ort liest sein Jahr nicht": "R14",
 };
 
 

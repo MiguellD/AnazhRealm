@@ -4976,18 +4976,20 @@
     // Familie — wie der Plan ohne Klima ohne Ort baut. Ein Same an der Stelle der Mundart ist der Täter von sprache#4 und bricht laut.
     var _MUNDARTEN = new Map();
     // prettier-ignore
-    function spracheVon(region, mundart) {
+    function spracheVon(region, mundart, jahr) {
       var R = SPRACHE_GESETZ[region] ? region : "mitteleuropa", NB = SPRACH_BAUM.bedeutungen.length;
       if (mundart == null) return _urSprache(R);
       if (!(mundart.worte && mundart.worte.length === NB && mundart.kern === (mundart.kern | 0)))
         throw new Error("fachwerk spracheVon: der Ort trägt keine Mundart ({kern, worte}, fachwerk mundartVon), sondern " + JSON.stringify(mundart));
-      var K = _blattSprache(R, mundart.kern), gleich = true;
+      if (jahr != null && !Number.isFinite(jahr)) throw new Error("fachwerk spracheVon: das Jahr " + jahr + " ist keine Zeit");
+      var J = jahr == null || jahr >= SPRACH_ZEIT.gegenwart ? null : jahr;
+      var K = _blattSprache(R, mundart.kern, J), gleich = true;
       for (var i = 0; i < NB && gleich; i++) gleich = mundart.worte[i] === mundart.kern;
       if (gleich) return K;
-      var key = R + "|" + mundart.kern + "|" + Array.prototype.join.call(mundart.worte, ","), m = _MUNDARTEN.get(key);
+      var B = new Map([[mundart.kern, K]]), W = mundart.worte.map(function (b, j) { if (!B.has(b)) B.set(b, _blattSprache(R, b, J)); return B.get(b).lex[j]; }), key = K.stufe + "|" + Array.prototype.join.call(mundart.worte, ",") + (J == null ? "" : "|" + W.join(",")), m = _MUNDARTEN.get(key);
       if (m) return m;
       var L = Object.assign({}, K, { worte: Object.freeze(Array.prototype.slice.call(mundart.worte)) });
-      L.lex = L.worte.map(function (b, j) { return _blattSprache(R, b).lex[j]; });
+      L.lex = W;
       if (_MUNDARTEN.size >= 4096) _MUNDARTEN.delete(_MUNDARTEN.keys().next().value);
       _MUNDARTEN.set(key, Object.freeze(L));
       return L;
@@ -5005,17 +5007,23 @@
       return L;
     }
     // die Sprache eines Blatts des Stammbaums: `zweig` ist der Weg von der Wurzel (Bits), `wandel` die Lautgesetze der Knoten auf dem Weg („typ:laut“)
-    function _blattSprache(R, blatt) {
+    // `jahr` (sprache#6): die STUFE des Blatts in diesem Jahr — nur die Neuerungen, die bis dahin fielen (`_knotenZeit`); ohne Jahr das Blatt
+    // der Gegenwart. Die Stufe trägt ihren Schlüssel (`stufe`: gefallene Gesetze und Ersatz-Muster), zwei Jahre derselben Stufe sind dieselbe Sprache.
+    function _blattSprache(R, blatt, jahr) {
       var T = SPRACH_BAUM.tiefe, key = R + "|" + blatt, m = _SPRACHEN.get(key);
-      if (m) return m;
-      var U = _ursprache(R), G = U.gesetz, saat = "sprache|" + key;
+      if (m && jahr == null) return m;
+      var U = _ursprache(R), G = U.gesetz, saat = "sprache|" + key, zweig = blatt.toString(2).padStart(T, "0"), n = T;
+      if (jahr != null) for (n = 0; n < T && _knotenZeit(R, zweig, n + 1) <= jahr; ) n++;
+      var fiel = jahr == null ? null : U.lex.map(function (w, i) { return _ersatzAb(R, zweig, i, jahr); }), stufe = jahr == null ? key : key + "@" + n + ":" + fiel.join("");
+      if (jahr != null && (m = _SPRACHEN.get(stufe))) return m;
       var dreh = function (p, k) { return p * (0.75 + 0.5 * _sprachU(saat, k)); };
-      var L = { region: R, blatt: blatt, zweig: blatt.toString(2).padStart(T, "0"), wandel: U.knoten[blatt], gesetz: G, ursprache: U,
+      var L = { region: R, blatt: blatt, zweig: zweig, wandel: U.knoten[blatt].slice(0, n), gesetz: G, ursprache: U, stufe: stufe,
         anteil: { cluster: dreh(G.pCluster, "cluster"), koda: dreh(G.pKoda, "koda"), ende: Math.min(1, dreh(G.pEnde, "ende")) } };
-      L.lex = U.lex.map(function (w, i) { return _ocp(L, _lexWort(L, w, i)); });
+      L.lex = U.lex.map(function (w, i) { return _ocp(L, _lexWort(L, w, i, fiel ? fiel[i] : _ersatzAb(R, zweig, i, null))); });
       L.grund = U.grund.map(function (w) { return wandle(L, w); });
       L.haus = wandle(L, U.haus);
-      _SPRACHEN.set(key, Object.freeze(L));
+      if (_SPRACHEN.size >= 8192) _SPRACHEN.delete(_SPRACHEN.keys().next().value);
+      _SPRACHEN.set(stufe, Object.freeze(L));
       return L;
     }
     // die Tochterform eines Worts der Ursprache: die Lautgesetze des Zweigs in der Folge des Wegs, ausnahmslos
@@ -5030,13 +5038,33 @@
     // Bäume der Indogermanistik, Ringe, Warnow & Taylor 2002; Gray & Atkinson 2003). Fest bleiben die Grundwörter der Orte und das
     // Haus: der Name trägt sie, und das Toponym ist die beständigste Schicht der Sprache (es überdauert sogar den Sprachwechsel).
     var ERSATZ = { halten: 0.86, alter: 4000 };
+    // DIE ZEIT DES STAMMBAUMS (sprache#6, „die Ursprache wird hörbar zur Tochter“): das Blatt ist die Sprache der Gegenwart
+    // (`gegenwart`, das Jahr, auf das die Lexikostatistik ihre Alter zählt), die Wurzel spricht `ERSATZ.alter` Jahre davor. Die Kante
+    // zum Knoten t ist ein `tiefe`-tel davon; seine Neuerung — das Lautgesetz, das seine Töchter teilen — fällt in der ersten Hälfte
+    // der Kante (sie muss vor der nächsten Spaltung stehen, sonst teilten die Töchter sie nicht), jeder Ersatz eines Worts an diesem
+    // Knoten danach bis zum Ende der Kante (das neue Wort trägt das Gesetz seines Knotens nicht, `_lexWort` — darum ist das Blatt am
+    // Ende jeder Kante byte-gleich der zeitlosen Tafel). Eine Sprache im Jahr j ist ihr Blatt mit den Neuerungen, die bis j fielen:
+    // die Ursprache vor der ersten, das Blatt nach der letzten, dazwischen jede Stufe (Leser: `spracheVon(region, mundart, jahr)`).
+    var SPRACH_ZEIT = { gegenwart: 2000 };
+    function _knotenZeit(R, zweig, t) {
+      var s = ERSATZ.alter / SPRACH_BAUM.tiefe;
+      return SPRACH_ZEIT.gegenwart - ERSATZ.alter + (t - 1) * s + 0.5 * s * _sprachU("zeit|" + R + "|" + zweig.slice(0, t), "gesetz");
+    }
+    // der Knoten (1 … tiefe), an dem die Bedeutung i auf dem Weg `zweig` bis zum Jahr `jahr` (null: die Gegenwart) zuletzt ersetzt
+    // wurde, 0 ohne Ersatz; fest bleiben die Grundwörter der Orte und das Haus
     // prettier-ignore
-    function _lexWort(L, w, i) {
-      var T = SPRACH_BAUM.tiefe, b = SPRACH_BAUM.bedeutungen[i], ab = 0;
-      if (SPRACH_BAUM.grundwoerter.indexOf(b) < 0 && b !== "haus") {
-        var p = 1 - Math.pow(ERSATZ.halten, ERSATZ.alter / T / 1000);
-        for (var t = 1; t <= T; t++) { var z = "ersatz|" + L.region + "|" + L.zweig.slice(0, t) + "|" + b;
-          if (_sprachU(z, "fall") < p) { ab = t; w = _urWort(L.ursprache, z, SPRACH_BAUM.kurz.indexOf(b) >= 0 || _sprachU(z, "n") < 0.5 ? 1 : 2, true); } } }
+    function _ersatzAb(R, zweig, i, jahr) {
+      var T = SPRACH_BAUM.tiefe, b = SPRACH_BAUM.bedeutungen[i], ab = 0, s = ERSATZ.alter / T;
+      if (SPRACH_BAUM.grundwoerter.indexOf(b) >= 0 || b === "haus") return 0;
+      var p = 1 - Math.pow(ERSATZ.halten, s / 1000);
+      for (var t = 1; t <= T; t++) { var z = "ersatz|" + R + "|" + zweig.slice(0, t) + "|" + b;
+        if (_sprachU(z, "fall") < p) { var a = _knotenZeit(R, zweig, t), e = SPRACH_ZEIT.gegenwart - ERSATZ.alter + t * s;
+          if (jahr == null || a + (e - a) * _sprachU(z, "zeit") <= jahr) ab = t; } }
+      return ab; }
+    // prettier-ignore
+    function _lexWort(L, w, i, ab) {
+      if (ab > 0) { var b = SPRACH_BAUM.bedeutungen[i], z = "ersatz|" + L.region + "|" + L.zweig.slice(0, ab) + "|" + b;
+        w = _urWort(L.ursprache, z, SPRACH_BAUM.kurz.indexOf(b) >= 0 || _sprachU(z, "n") < 0.5 ? 1 : 2, true); }
       return wandle(L, w, ab); }
     // das Wort einer Bedeutung in der Sprache L (die Bedeutung als Wort der Grundliste oder ihr Index)
     function sprachWort(L, b) {
@@ -5078,7 +5106,12 @@
       throw new Error("fachwerk sprachName: unbekannte Art " + art);
     }
     // prettier-ignore
-    function ORTSNAME(region, seed, mundart){ return sprachName(spracheVon(region, mundart), "ort", seed >>> 0); }
+    function ORTSNAME(region, seed, mundart, jahr){ return sprachName(spracheVon(region, mundart, jahr), "ort", seed >>> 0); }
+    // DIE SPRACHE EINES ORTS (sprache#6): seine Familie, seine Mundart und SEIN JAHR — das Ende des Schnitts seiner Chronik (der Plan
+    // `schnitt.jahr + schnitt.spanne`, sein Export `jahr + spanne`, `DP.jahr` schneidet): der Ort spricht die Stufe, die bis dahin
+    // wuchs, und ein Jahreswechsel ist ein Wechsel der Stufe. Leser: der Name des Plans, der Wirt (`_bewohnerLauf` Name und Rede,
+    // klang `_bewohnerLautTakt`), das Werkzeug
+    function spracheDesOrts(plan) { var s = plan.schnitt || plan; return spracheVon(plan.region, plan.mundart, plan.mundart == null ? null : s.jahr + s.spanne); }
     // DER SATZ in der Sprache L (Karte 2 mensch.kultur.sprache#2): ein Bewohner spricht aus den Wörtern SEINER Sprache (`sprachWort`,
     // die Grundliste nach Swadesh: Laute und Silben aus dem Gesetz der Familie, gewandelt nach den Lautgesetzen des Zweigs) in der
     // Folge seiner Familie. Die Folge ist ein Erbe der Ursprache (ein Wurf je Familie, nach dem Rang der Typologie gewogen — Dryer 2013,
@@ -6189,7 +6222,7 @@
     alle.forEach((b,ai)=>{ deck(b); for(const f of za[ai].fr) deck(f.v); }); }
   // DER GEHALTENE HIMMEL HEBT DAS DACH (`himmelNeigung`): nach dem Ort der Himmel, den der Spieler hält — jeder Bau und jede Fassung
   if(DP.himmel!=null){ const hebe=b=>{ b.pitchDeg=himmelNeigung(b, b.pitchDeg, DP.himmel); }; alle.forEach((b,ai)=>{ hebe(b); for(const f of za[ai].fr) hebe(f.v); }); }
-  return {seed:DP.seed||1, name:ORTSNAME(region, DP.seed||1, DP.mundart), mundart:DP.mundart||null, region, groesse, kernel, jahr, spanne, staedtisch, houses, lose, nGestalt:alle.length-nBurg-(herr&&!muenze?1:0), grammatik, zugHandwerk, chronik:C,
+  return {seed:DP.seed||1, name:ORTSNAME(region, DP.seed||1, DP.mundart, T), mundart:DP.mundart||null, region, groesse, kernel, jahr, spanne, staedtisch, houses, lose, nGestalt:alle.length-nBurg-(herr&&!muenze?1:0), grammatik, zugHandwerk, chronik:C,
           schnitt:{jahr:j0, spanne:chronik?T-j0:spanne, groesse:gS, staedtisch:staedtischVon(gS)},
           kleidung:{top:tracht.top, bottom:tracht.bottom, shoes:tracht.shoes, farben:tracht.farben.slice()},
           technik:{stand:stand.slice(), fehlt:Object.keys(TS.fehlt), vorkommen:Object.assign({},TS.vorkommen), epoche:traegt(stand,EPOCHEN[eT].technik)?eT:null},   /*der Stand der Saat (TECHNIK; Leser: der Export, die Station, gate:settlement T)*/
@@ -16506,8 +16539,11 @@
         ORTSNAME: ORTSNAME,
         SPRACHE_GESETZ: SPRACHE_GESETZ, // die Lautgestalt je Kultur-Region (kultur-aus-klima; Leser: ORTSNAME, der Wirt _bewohnerLauf)
         SPRACH_BAUM: SPRACH_BAUM, // der Stammbaum je Familie (Tiefe, Grundwörter der Ursprache)
+        SPRACH_ZEIT: SPRACH_ZEIT, // die Gegenwart des Stammbaums (sprache#6; Leser: spracheVon, die Station)
+        ERSATZ: ERSATZ, // der Ersatz der Grundliste je Jahrtausend und das Alter des Stammbaums (Lees 1953, Swadesh 1955; Leser: gate:settlement R14, die Station)
         LAUTWANDEL: LAUTWANDEL, // die Lautgesetze der Zweige (Campbell 2013; Leser: wandle)
         spracheVon: spracheVon,
+        spracheDesOrts: spracheDesOrts, // die Sprache eines Orts in seinem Jahr (sprache#6; Leser: der Wirt, das Werkzeug)
         mundartVon: mundartVon, // die Mundart eines Orts aus der Senke seines Tals (sprache#4; Leser: der Wirt _mundartAm, die Station)
         mundartBlatt: mundartBlatt, // die Mundart eines Blatts des Stammbaums (Leser: gate:settlement R11, die Station sprache#3)
         SPRACH_RAUM: SPRACH_RAUM, // σ und der Fächer der Mundarten (Burridge 2017)
