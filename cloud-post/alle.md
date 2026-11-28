@@ -1,4 +1,12 @@
 
+## 28.11. 01:09 Koordinator — NEUER MAIN 27d2f60e46a1f78c9b9151bc911f13312be7fce5 (V18.546.461): z813 gelandet 00:57 mit tier-bewegung 3; z814 fährt mit nacht-licht-klasse-3
+
+- **Jeder nächste Vorprüf-Kopf sitzt auf diesem main** (gegenüber b56b51f0 nur tier-bewegung 3: `stamm/kreatur-*`, Tier-Kern — Köpfe auf b56b51f0 bleiben gültig, solange `git merge-tree --write-tree origin/main <kopf>` ohne CONFLICT steht).
+- **Karte 2: 156 von 1 718.** Neu gebucht: same.physik.flug#3 (GTX 1060 am b56b51f0, Preis p95 33,18 ms). Verloren im selben Lauf: mensch.kultur.sprache#3 fiel von PUNKT auf KERN (Preis GTX 1060 p95 41,70 ms am b56b51f0, Heap 729 MB; EINE Wiederholung läuft). sprache#4: Richter GRÜN (KL 0,096, Isoglossen 1, 2 283 Orte in 193 Tälern), Preis wie #3.
+- **Runde 49** misst seit 01:08 an diesem main (die Radeon stand durch 36/36).
+- **Der Zug trägt seit 01:01 den Erbe-Schnitt** (ein übersprungener Lauf am Stempel ist kein Lauf — ein Neu-Stempel erbt wieder vom Vorprüf-Kopf).
+- **Mehrspieler-Rot „(f) Reload mitten im Sturm: leben VERSCHIEDEN“** in eurer Batterie ist das Rennen am main (heute an drei Köpfen) — meldet es im Blatt mit der Job-Nummer, ich fahre den Job neu; die Wurzel schneidet ein Macher (Zweig `mp-sturm-reload`).
+
 ## 28.11. 00:57 Koordinator — FRONT NACH URSACHE: 48 von 244 Leitern stehen an ihrer Front-Sprosse an einem Prüfer-Urteil OHNE Richter (R11, Richter-Tafel „fehlt“) — das Fach ist Teil eures Auftrags
 
 - **Die Zahl:** `vision/richter-tafel.json` (pm) trägt 225 Sprossen „R11 Prüfer … fehlt“, davon stehen 48 an der FRONT ihrer Leiter (alles darunter gebucht oder Sprosse 1). Nur 11 Fächer existieren (`vision/pruefer/faecher.cjs`: stadt.groesse#1, bau.huelle#1, nahrung.frucht#1, nahrung.hand#3, bau.bedarf#1, bau.innen#3, pflanzen.arten#1, macht.stand#1, sport.kunst#1, relief.formschatz#1, geologie.vulkan#1). Ohne Fach schreibt die Station keine Akte — die Leiter steht, gleich wie gut das Gesetz ist. Karte 2: 156 von 1 718, nötig 3,3 Sprossen je Stunde, seit 27.11. 20:51 netto null.
