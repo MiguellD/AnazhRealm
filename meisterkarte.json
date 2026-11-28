@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "e80f9c5d",
-    "zeit": "2026-11-28T09:08:55.307Z",
+    "zeit": "2026-11-28T09:16:45.642Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -1586,7 +1586,7 @@
           "punkte": 0,
           "staffel": "1 = die Dichte der Bestäuber korreliert mit dem Blüten-Anteil am Ort (r ≥ 0,5) · 2 = sie folgen der Pflege-Geste (Feld K5) und der Uhr",
           "messung": "werkbank bild --zeit an der Mess-Wiese mit Klassen-Maske insekt.",
-          "beleg": "Maschine: gehalten: 9 Orte, Blüten-Anteil 0.241–0.829 (364 Blumen in 610 Gliedern), 41 Bestäuber, r 0.8 · der Leser sieht 81 Tiere binnen 300 m (Soll ≥ 6 Orte, Σ ≥ 9, r ≥ 0,5) an d3708675 headless · gehalten: Feld der Mitte 0.658 → 0.821 · Bestäuber der Mitte 5.4/5.557 → 9.314 nach der Geste, Nachbar 5.929/6.543 → 6.457 (Rauschen ±0.614) · Uhr: Mittag 15.771 → Mitternacht 0.171 (Aktivität 0.01) → Mittag 10.786 (Soll: Mitte +≥ max(0,5; 2·Rauschen; 10 %), Nachbar im Rauschen, Nacht ≤ 0,2 × Mittag) an d3708675 headless — offen: luftwasser.K4#1 radeon: Station seit der Messung geändert · luftwasser.K4#1 gtx: Station seit der Messung geändert — zuletzt an e80f9c5d: die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 189 s von luftwasser.K4#1) — offen, UNGEMESSEN",
+          "beleg": "Maschine: gehalten: 9 Orte, Blüten-Anteil 0.241–0.829 (364 Blumen in 610 Gliedern), 41 Bestäuber, r 0.8 · der Leser sieht 81 Tiere binnen 300 m (Soll ≥ 6 Orte, Σ ≥ 9, r ≥ 0,5) an d3708675 headless · gehalten: Feld der Mitte 0.658 → 0.821 · Bestäuber der Mitte 5.4/5.557 → 9.314 nach der Geste, Nachbar 5.929/6.543 → 6.457 (Rauschen ±0.614) · Uhr: Mittag 15.771 → Mitternacht 0.171 (Aktivität 0.01) → Mittag 10.786 (Soll: Mitte +≥ max(0,5; 2·Rauschen; 10 %), Nachbar im Rauschen, Nacht ≤ 0,2 × Mittag) an d3708675 headless — offen: luftwasser.K4#1 radeon: Station seit der Messung geändert · luftwasser.K4#1 gtx: ROT: 5 Orte im Bild, Bestäuber (im Kegel) 8/8/22/4/10 (Pixel 14/5/29/8/9), Blüten (Pixel) 396/190/969/1961/593, r -0.155 (Soll ≥ 0,5) · ROT 5 Bilder (Soll ≥ 6 Orte): ABNAHME ROT [Sicht verdeckt 55.6 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Laub baum_eiche 55.6 % · Vordergrund 62.7 % näher als 5.28 m (der halbe Ziel-Abstand): Laub baum_eiche 55.4 %, Laub grown_busch_hazel_v2 3.1 %, Laub baum_birke 2.6 % · Ziel Blickziel verdeckt von Rinde grown_busch_hazel_v2 in 3.57 m] · beweis · Sicht 55.6 % (Laub baum_eiche 55.6 %) · Ziel Blickziel im Bild VERDECKT 10.55 m · Luma 58.9 σ 31.9 schwarz 0.1 % weiß 0.0 % · Stand 18.546.466 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · ROT-Bild C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\e80f9c5d-gtx\\luftwasser.K4_1-partner-1-rot.png, r -0.155 < 0,5 an e80f9c5d",
           "schlupfloch": "Ein Partikel-Schwarm ohne Feld-Leser: die Korrelation mit Blüten am Ort und die Pflege-Mutation verlangen das Feld.",
           "maschine": true
         },

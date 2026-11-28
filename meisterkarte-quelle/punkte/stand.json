@@ -2109,7 +2109,7 @@
   },
   "luftwasser.K4": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 9 Orte, Blüten-Anteil 0.241–0.829 (364 Blumen in 610 Gliedern), 41 Bestäuber, r 0.8 · der Leser sieht 81 Tiere binnen 300 m (Soll ≥ 6 Orte, Σ ≥ 9, r ≥ 0,5) an d3708675 headless · gehalten: Feld der Mitte 0.658 → 0.821 · Bestäuber der Mitte 5.4/5.557 → 9.314 nach der Geste, Nachbar 5.929/6.543 → 6.457 (Rauschen ±0.614) · Uhr: Mittag 15.771 → Mitternacht 0.171 (Aktivität 0.01) → Mittag 10.786 (Soll: Mitte +≥ max(0,5; 2·Rauschen; 10 %), Nachbar im Rauschen, Nacht ≤ 0,2 × Mittag) an d3708675 headless — offen: luftwasser.K4#1 radeon: Station seit der Messung geändert · luftwasser.K4#1 gtx: Station seit der Messung geändert — zuletzt an e80f9c5d: die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 189 s von luftwasser.K4#1) — offen, UNGEMESSEN",
+   "beleg": "Maschine: gehalten: 9 Orte, Blüten-Anteil 0.241–0.829 (364 Blumen in 610 Gliedern), 41 Bestäuber, r 0.8 · der Leser sieht 81 Tiere binnen 300 m (Soll ≥ 6 Orte, Σ ≥ 9, r ≥ 0,5) an d3708675 headless · gehalten: Feld der Mitte 0.658 → 0.821 · Bestäuber der Mitte 5.4/5.557 → 9.314 nach der Geste, Nachbar 5.929/6.543 → 6.457 (Rauschen ±0.614) · Uhr: Mittag 15.771 → Mitternacht 0.171 (Aktivität 0.01) → Mittag 10.786 (Soll: Mitte +≥ max(0,5; 2·Rauschen; 10 %), Nachbar im Rauschen, Nacht ≤ 0,2 × Mittag) an d3708675 headless — offen: luftwasser.K4#1 radeon: Station seit der Messung geändert · luftwasser.K4#1 gtx: ROT: 5 Orte im Bild, Bestäuber (im Kegel) 8/8/22/4/10 (Pixel 14/5/29/8/9), Blüten (Pixel) 396/190/969/1961/593, r -0.155 (Soll ≥ 0,5) · ROT 5 Bilder (Soll ≥ 6 Orte): ABNAHME ROT [Sicht verdeckt 55.6 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Laub baum_eiche 55.6 % · Vordergrund 62.7 % näher als 5.28 m (der halbe Ziel-Abstand): Laub baum_eiche 55.4 %, Laub grown_busch_hazel_v2 3.1 %, Laub baum_birke 2.6 % · Ziel Blickziel verdeckt von Rinde grown_busch_hazel_v2 in 3.57 m] · beweis · Sicht 55.6 % (Laub baum_eiche 55.6 %) · Ziel Blickziel im Bild VERDECKT 10.55 m · Luma 58.9 σ 31.9 schwarz 0.1 % weiß 0.0 % · Stand 18.546.466 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · ROT-Bild C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\e80f9c5d-gtx\\luftwasser.K4_1-partner-1-rot.png, r -0.155 < 0,5 an e80f9c5d",
    "stationen": [
     {
      "id": "luftwasser.K4#1",
@@ -2133,10 +2133,10 @@
      "id": "luftwasser.K4#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an e80f9c5d: die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 189 s von luftwasser.K4#1) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "5 Orte im Bild, Bestäuber (im Kegel) 8/8/22/4/10 (Pixel 14/5/29/8/9), Blüten (Pixel) 396/190/969/1961/593, r -0.155 (Soll ≥ 0,5) · ROT 5 Bilder (Soll ≥ 6 Orte): ABNAHME ROT [Sicht verdeckt 55.6 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Laub baum_eiche 55.6 % · Vordergrund 62.7 % näher als 5.28 m (der halbe Ziel-Abstand): Laub baum_eiche 55.4 %, Laub grown_busch_hazel_v2 3.1 %, Laub baum_birke 2.6 % · Ziel Blickziel verdeckt von Rinde grown_busch_hazel_v2 in 3.57 m] · beweis · Sicht 55.6 % (Laub baum_eiche 55.6 %) · Ziel Blickziel im Bild VERDECKT 10.55 m · Luma 58.9 σ 31.9 schwarz 0.1 % weiß 0.0 % · Stand 18.546.466 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · ROT-Bild C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\e80f9c5d-gtx\\luftwasser.K4_1-partner-1-rot.png, r -0.155 < 0,5",
+     "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
+     "grund": "ROT: 5 Orte im Bild, Bestäuber (im Kegel) 8/8/22/4/10 (Pixel 14/5/29/8/9), Blüten (Pixel) 396/190/969/1961/593, r -0.155 (Soll ≥ 0,5) · ROT 5 Bilder (Soll ≥ 6 Orte): ABNAHME ROT [Sicht verdeckt 55.6 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Laub baum_eiche 55.6 % · Vordergrund 62.7 % näher als 5.28 m (der halbe Ziel-Abstand): Laub baum_eiche 55.4 %, Laub grown_busch_hazel_v2 3.1 %, Laub baum_birke 2.6 % · Ziel Blickziel verdeckt von Rinde grown_busch_hazel_v2 in 3.57 m] · beweis · Sicht 55.6 % (Laub baum_eiche 55.6 %) · Ziel Blickziel im Bild VERDECKT 10.55 m · Luma 58.9 σ 31.9 schwarz 0.1 % weiß 0.0 % · Stand 18.546.466 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · ROT-Bild C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\e80f9c5d-gtx\\luftwasser.K4_1-partner-1-rot.png, r -0.155 < 0,5",
+     "r6": "konsum"
     },
     {
      "id": "luftwasser.K4#2",
@@ -23402,7 +23402,7 @@
   },
   "karte2.mensch.sport.koerper": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S1 GRÜN · Tempo Gehen (m/s) 1.576 (Soll 1.5 ±0.15) · Tempo Sprint (m/s) 6.281 (Soll 6.8 ±0.68) · Sprunghöhe (m) 0.543 (Soll 0.53 ±0.053) · Umfang 11 (Soll ≥ 11 Verben im Spiel gegen Eichwert (5 des Leibs + 6 Geräte-Verben)) · die Verb-Tafel koerper-core.js:6154 (leibVerben :6180) — Gehen 1.576 · Sprint 6.281 m/s · Sprung 0.543 m (LEIB, Mess-Wiese) · wand 0.6 in 0.54–0.66 ✓ · schwimmen 1.339 in 1.205–1.473 ✓ · schaukeln 2.517 in 2.396–2.648 ✓ · rutschen 3.277 in 2–4 ✓ · klettern 0.376 in 0.3–0.6 ✓ · hangeln 0.265 in 0.2–0 · [linse-gpu] amd/rdna-3 an c540c783 radeon · gehalten: S1 GRÜN · Tempo Gehen (m/s) 1.576 (Soll 1.5 ±0.15) · Tempo Sprint (m/s) 6.281 (Soll 6.8 ±0.68) · Sprunghöhe (m) 0.543 (Soll 0.53 ±0.053) · Umfang 11 (Soll ≥ 11 Verben im Spiel gegen Eichwert (5 des Leibs + 6 Geräte-Verben)) · die Verb-Tafel koerper-core.js:6154 (leibVerben :6180) — Gehen 1.576 · Sprint 6.281 m/s · Sprung 0.543 m (LEIB, Mess-Wiese) · wand 0.6 in 0.54–0.66 ✓ · schwimmen 1.371 in 1.234–1.508 ✓ · schaukeln 2.517 in 2.396–2.648 ✓ · rutschen 3.277 in 2–4 ✓ · klettern 0.376 in 0.3–0.6 ✓ · hangeln 0.229 in 0.2–0 · [linse-gpu] nvidia/pascal an 2d6a0447 gtx — offen: karte2.mensch.sport.koerper#2 radeon: ungemessen (R10) · karte2.mensch.sport.koerper#2 gtx: Station seit der Messung geändert — zuletzt an e80f9c5d: die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 113 s von karte2.mensch.sport.koerper#2) — offen, UNGEMESSEN · karte2.mensch.sport.koerper#3 radeon: ungemessen (R10) · karte2.mensch.sport.koerper#3 gtx: Station seit der Messung geändert · karte2.mensch.sport.koerper#4 radeon: ungemessen (R10) · karte2.mensch.sport.koerper#4 gtx: Station seit der Messung geändert · karte2.mensch.sport.koerper#5 radeon: ungemessen (R10) · karte2.mensch.sport.koerper#5 gtx: Station seit der Messung geändert · karte2.mensch.sport.koerper#6 radeon: ungemessen (R10) · karte2.mensch.sport.koerper#6 gtx: Station seit der Messung geändert · karte2.mensch.sport.koerper#7 radeon: ungemessen (R10) · karte2.mensch.sport.koerper#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: S1 GRÜN · Tempo Gehen (m/s) 1.576 (Soll 1.5 ±0.15) · Tempo Sprint (m/s) 6.281 (Soll 6.8 ±0.68) · Sprunghöhe (m) 0.543 (Soll 0.53 ±0.053) · Umfang 11 (Soll ≥ 11 Verben im Spiel gegen Eichwert (5 des Leibs + 6 Geräte-Verben)) · die Verb-Tafel koerper-core.js:6154 (leibVerben :6180) — Gehen 1.576 · Sprint 6.281 m/s · Sprung 0.543 m (LEIB, Mess-Wiese) · wand 0.6 in 0.54–0.66 ✓ · schwimmen 1.339 in 1.205–1.473 ✓ · schaukeln 2.517 in 2.396–2.648 ✓ · rutschen 3.277 in 2–4 ✓ · klettern 0.376 in 0.3–0.6 ✓ · hangeln 0.265 in 0.2–0 · [linse-gpu] amd/rdna-3 an c540c783 radeon · gehalten: S1 GRÜN · Tempo Gehen (m/s) 1.576 (Soll 1.5 ±0.15) · Tempo Sprint (m/s) 6.281 (Soll 6.8 ±0.68) · Sprunghöhe (m) 0.543 (Soll 0.53 ±0.053) · Umfang 11 (Soll ≥ 11 Verben im Spiel gegen Eichwert (5 des Leibs + 6 Geräte-Verben)) · die Verb-Tafel koerper-core.js:6154 (leibVerben :6180) — Gehen 1.576 · Sprint 6.281 m/s · Sprung 0.543 m (LEIB, Mess-Wiese) · wand 0.6 in 0.54–0.66 ✓ · schwimmen 1.371 in 1.234–1.508 ✓ · schaukeln 2.517 in 2.396–2.648 ✓ · rutschen 3.277 in 2–4 ✓ · klettern 0.376 in 0.3–0.6 ✓ · hangeln 0.229 in 0.2–0 · [linse-gpu] nvidia/pascal an 2d6a0447 gtx — offen: karte2.mensch.sport.koerper#2 radeon: ungemessen (R10) · karte2.mensch.sport.koerper#2 gtx: ROT: S2 ROT an Umfang 0 < 3 Untergründe gemessen (Stufe · Hang · Gerät) — Täter: der Fuß im Stand (koerper-core.js leibPlan, Gang-Gesetz) · Fuß-Gleiten im Stand (cm, größtes) 2.46 (Soll ≤ 2) · Umfang 0 (Soll ≥ 3 Untergründe gemessen (Stufe · Hang · Gerät)) · Fläche gehen {\"tempo\":1.576,\"neig\":0.6,\"phasen\":10,\"gleitenCm\":1.8} · laufen {\"tempo\":6.281,\"neig\":1.4,\"phasen\":6,\"gleitenCm\":0.02} · Hang {\"tempo\":1.576,\"neig\":3.7,\"phasen\":8,\"gleitenCm\":2.46} (steilster im Umkreis 3.9°) · Stufe und Gerät stellt die Probe nicht · [linse-gpu] nvidia/pascal an e80f9c5d · karte2.mensch.sport.koerper#3 radeon: ungemessen (R10) · karte2.mensch.sport.koerper#3 gtx: Station seit der Messung geändert · karte2.mensch.sport.koerper#4 radeon: ungemessen (R10) · karte2.mensch.sport.koerper#4 gtx: Station seit der Messung geändert · karte2.mensch.sport.koerper#5 radeon: ungemessen (R10) · karte2.mensch.sport.koerper#5 gtx: Station seit der Messung geändert · karte2.mensch.sport.koerper#6 radeon: ungemessen (R10) · karte2.mensch.sport.koerper#6 gtx: Station seit der Messung geändert · karte2.mensch.sport.koerper#7 radeon: ungemessen (R10) · karte2.mensch.sport.koerper#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.sport.koerper#1",
@@ -23439,10 +23439,10 @@
      "id": "karte2.mensch.sport.koerper#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an e80f9c5d: die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 113 s von karte2.mensch.sport.koerper#2) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "S2 ROT an Umfang 0 < 3 Untergründe gemessen (Stufe · Hang · Gerät) — Täter: der Fuß im Stand (koerper-core.js leibPlan, Gang-Gesetz) · Fuß-Gleiten im Stand (cm, größtes) 2.46 (Soll ≤ 2) · Umfang 0 (Soll ≥ 3 Untergründe gemessen (Stufe · Hang · Gerät)) · Fläche gehen {\"tempo\":1.576,\"neig\":0.6,\"phasen\":10,\"gleitenCm\":1.8} · laufen {\"tempo\":6.281,\"neig\":1.4,\"phasen\":6,\"gleitenCm\":0.02} · Hang {\"tempo\":1.576,\"neig\":3.7,\"phasen\":8,\"gleitenCm\":2.46} (steilster im Umkreis 3.9°) · Stufe und Gerät stellt die Probe nicht · [linse-gpu] nvidia/pascal",
+     "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
+     "grund": "ROT: S2 ROT an Umfang 0 < 3 Untergründe gemessen (Stufe · Hang · Gerät) — Täter: der Fuß im Stand (koerper-core.js leibPlan, Gang-Gesetz) · Fuß-Gleiten im Stand (cm, größtes) 2.46 (Soll ≤ 2) · Umfang 0 (Soll ≥ 3 Untergründe gemessen (Stufe · Hang · Gerät)) · Fläche gehen {\"tempo\":1.576,\"neig\":0.6,\"phasen\":10,\"gleitenCm\":1.8} · laufen {\"tempo\":6.281,\"neig\":1.4,\"phasen\":6,\"gleitenCm\":0.02} · Hang {\"tempo\":1.576,\"neig\":3.7,\"phasen\":8,\"gleitenCm\":2.46} (steilster im Umkreis 3.9°) · Stufe und Gerät stellt die Probe nicht · [linse-gpu] nvidia/pascal",
+     "r6": "konsum"
     },
     {
      "id": "karte2.mensch.sport.koerper#3",
@@ -37464,7 +37464,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 302,
+  "konsum": 304,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37596,10 +37596,10 @@
    "karte2.same.kopplung.terraform#1 gtx",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3356
+  "ohne": 3354
  },
  "kopfVoll": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
- "zeit": "2026-11-28T09:08:55.307Z",
+ "zeit": "2026-11-28T09:16:45.642Z",
  "vorher": "e80f9c5d",
  "bilanz": {
   "gewinn": [],
