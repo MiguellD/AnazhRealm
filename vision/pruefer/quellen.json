@@ -12207,6 +12207,72 @@
    },
    "dateien": [],
    "stand": "ungeholt — geholt wird am Gerät (`--nur haltung-arbeit`), nie in der Sitzung des Machers · die Kategorie trägt 108 Dateien unmittelbar (Commons categoryinfo 28.11.; 2 Unterkategorien liest der Holer nicht), davon 52 frei vor den Wänden (Trocken-Lauf des Holers 28.11.: Menschen im Akt der Feldarbeit, draußen, Tageslicht, der ganze Leib auf wenigen Metern — die Art der Pose der Station)"
+  },
+  {
+   "id": "kitz",
+   "art": "2afc",
+   "quelle": "Wikimedia Commons",
+   "fuer": [
+    "leben.tiere.lebenszyklus#2"
+   ],
+   "soll": 45,
+   "breite": 1280,
+   "lizenz": "je Datei (gemeinfrei · CC0 · CC BY · CC BY-SA)",
+   "motiv": "das Kitz (Jungtier, gefleckt) in Wiese oder Waldsaum, stehend oder ziehend, oft bei der Mutter — die Klasse Jungtier des Fachs (Third aus 15 m, Tageslicht, Sommer)",
+   "abfrage": {
+    "art": "commons-suche",
+    "suche": "white-tailed deer fawn",
+    "mit": "fawn",
+    "ohne": "map|diagram|drawing|painting|illustration|engraving|wellcome|stamp|museum|taxiderm|mounted|skull|sign|logo|zoo|enclosure|close.?up|portrait|head|face|track|footprint|hunt|dead|carcass|meat|venison|roadkill|statue|sculpture|coat of arms|\\bpet\\b|nursing|sleep|bedded|hiding|curled|newborn|gazelle|te papa|snow|winter|january|february|december|november|frost"
+   },
+   "dateien": [],
+   "liegenGeblieben": [],
+   "stand": "ungeholt — geholt wird am Gerät (`--nur kitz`), nie in der Sitzung des Machers · die Suche trägt 204 freie JPEG ≥ 1 280 px vor dem Wintermonats-Filter (Commons 28.11.) · `hole.cjs --trocken` 28.11.: 45 von 45, liegen geblieben 0 — ungesichtet",
+   "ablage": "2afc/wikimedia-commons/kitz"
+  },
+  {
+   "id": "hirschkuh",
+   "art": "2afc",
+   "quelle": "Wikimedia Commons",
+   "fuer": [
+    "leben.tiere.lebenszyklus#2"
+   ],
+   "soll": 30,
+   "breite": 1280,
+   "lizenz": "je Datei (gemeinfrei · CC0 · CC BY · CC BY-SA)",
+   "motiv": "die Hirschkuh (Alttier des Rotwilds, ohne Geweih) in Wiese oder Park, stehend oder äsend — die Klasse Alttier des Fachs (die Herde des Kitz)",
+   "abfrage": {
+    "art": "commons-suche",
+    "suche": "red deer hind",
+    "mit": "hind|deer",
+    "ohne": "map|diagram|drawing|painting|illustration|engraving|wellcome|stamp|museum|taxiderm|mounted|skull|sign|logo|zoo|enclosure|close.?up|portrait|head|face|track|footprint|hunt|dead|carcass|meat|venison|roadkill|statue|sculpture|coat of arms|\\bpet\\b|nursing|sleep|bedded|hiding|curled|newborn|gazelle|te papa|snow|winter|january|february|december|november|frost|fawn|calf|calves|young|juvenile|twins|antler|velvet|rut|fight|roar"
+   },
+   "dateien": [],
+   "liegenGeblieben": [],
+   "stand": "ungeholt — geholt wird am Gerät (`--nur hirschkuh`), nie in der Sitzung des Machers · die Suche trägt 33 freie JPEG ≥ 1 280 px (Commons 28.11.) · `hole.cjs --trocken` 28.11.: 30 von 30, liegen geblieben 0 — ungesichtet",
+   "ablage": "2afc/wikimedia-commons/hirschkuh"
+  },
+  {
+   "id": "ricke",
+   "art": "2afc",
+   "quelle": "Wikimedia Commons",
+   "fuer": [
+    "leben.tiere.lebenszyklus#2"
+   ],
+   "soll": 25,
+   "breite": 1280,
+   "lizenz": "je Datei (gemeinfrei · CC0 · CC BY · CC BY-SA)",
+   "motiv": "die Weißwedel-Ricke (Alttier, ohne Geweih) in Wiese oder Waldsaum, stehend oder äsend — die Klasse Alttier des Fachs (dieselbe Art wie der Satz kitz)",
+   "abfrage": {
+    "art": "commons-suche",
+    "suche": "white-tailed deer doe",
+    "mit": "doe",
+    "ohne": "map|diagram|drawing|painting|illustration|engraving|wellcome|stamp|museum|taxiderm|mounted|skull|sign|logo|zoo|enclosure|close.?up|portrait|head|face|track|footprint|hunt|dead|carcass|meat|venison|roadkill|statue|sculpture|coat of arms|\\bpet\\b|nursing|sleep|bedded|hiding|curled|newborn|gazelle|te papa|snow|winter|january|february|december|november|frost|fawn|calf|calves|young|juvenile|twins|antler|velvet|rut|fight|roar"
+   },
+   "dateien": [],
+   "liegenGeblieben": [],
+   "stand": "ungeholt — geholt wird am Gerät (`--nur ricke`), nie in der Sitzung des Machers · die Suche trägt 30 freie JPEG ≥ 1 280 px (Commons 28.11.) · `hole.cjs --trocken` 28.11.: 25 von 25, liegen geblieben 0 — ungesichtet",
+   "ablage": "2afc/wikimedia-commons/ricke"
   }
  ],
  "liegenGebliebenQuellen": [

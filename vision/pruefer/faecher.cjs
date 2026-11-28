@@ -421,6 +421,35 @@ const SPROSSEN = {
             ")(r, T, {}); if (!A || A.fehler) return { saat, posen: [], lage: (A && A.fehler) || 'die Seite AUSDRUCK ohne Antwort' };" +
             "return { saat, posen: A.posen.map((p) => ({ pose: p.pose, klasse: p.klasse, uhr: p.uhr, wort: p.wort })), lage: A.lage };",
     },
+    // Kitz oder Hirsch: die Station zählt die Jungtiere des nahen Bestands (k2-leben.js:2828 `istJung`: jünger als der Bruchteil 1/10
+    // SEINES Lebens, leben-core `lebensdauerS(M∞)` über `_bestandErbe(t).tod`, und noch nicht reif) — der Fächer nimmt JEDES Tier des
+    // Bestands am Messort, dessen Leib in der Szene steht (`userData._bestand`); Jungtier nach dem Gesetz der Station, Alttier ab der
+    // Reife (`reif`, das Gesetz der Mutterschaft), dazwischen keine Klasse. Die Pose: Third aus 15 m von der Seite des Spielers, 3 m
+    // über Grund, Blick auf die Mitte der Leib-Box; das Ziel trägt den Namen seiner Klasse — steht kein Leib binnen 1,5 m am Blickziel
+    // oder ist er UNGEZEICHNET, ist die Abnahme ROT und das Bild trägt kein Motiv. Sommer (die Station: „im Frühsommer“), EINE Uhr: Mittag
+    // (das Tageslicht der Station) — der billigste Schuss, den das Gesetz erlaubt: an der wiese 20 je Klasse = 40 Bilder
+    "leben.tiere.lebenszyklus#2": {
+        ort: "wiese",
+        gesetz: "meisterkarte-quelle/punkte/stationen/k2-leben.js:2828",
+        faecher: "jedes Tier des nahen Bestands mit Leib in der Szene am Messort wiese: Jungtier (jünger als 1/10 seiner Lebensdauer und nicht reif) oder Alttier (reif), Third aus 15 m von der Seite des Spielers, 3 m über Grund, Blick auf die Mitte der Leib-Box, Ziel benannt, Klassen im Wechsel, Sommer",
+        ordner: "leben.tiere.lebenszyklus.2-b1",
+        frage: "Ist das Tier in der Bildmitte ein Jungtier oder ein ausgewachsenes Tier?",
+        je: 20,
+        uhren: [0.5],
+        mehr: { saison: "sommer" },
+        wahl: 0,
+        motiv: (a) => AN_DER_POSE(a) && GRUEN(a),
+        rumpf: () =>
+            SAAT +
+            "const pm = r.state.playerMesh.position, H = [], je = { Jungtier: 0, Alttier: 0 }; let mitte = 0, ohneBestand = 0, ohneMass = 0;" +
+            "for (const c of r.state.creatures || []) { const t = c && c.userData && c.userData._bestand; if (!t || !Number.isFinite(t.alterS)) { ohneBestand++; continue; }" +
+            " const E = r._bestandErbe(t), klasse = t.alterS < Math.min(0.1 * E.tod, E.reif) ? 'Jungtier' : t.alterS >= E.reif ? 'Alttier' : null; if (!klasse) { mitte++; continue; }" +
+            " const p = c.position, h = new T.Box3().setFromObject(c).getSize(new T.Vector3()).y; if (!(h > 0)) { ohneMass++; continue; }" +
+            " const y = Math.atan2(pm.x - p.x, pm.z - p.z), ex = p.x + Math.sin(y) * 15, ez = p.z + Math.cos(y) * 15, gy = r.getTerrainHeightAt(p.x, p.z); je[klasse]++;" +
+            " H.push({ d: Math.hypot(p.x - pm.x, p.z - pm.z), klasse, pose: { px: +ex.toFixed(2), py: +(r.getTerrainHeightAt(ex, ez) + 3).toFixed(2), pz: +ez.toFixed(2), lx: +p.x.toFixed(2), ly: +(gy + h / 2).toFixed(2), lz: +p.z.toFixed(2), ziel: klasse }, wort: t.g + ' ' + t.id + ' (Alter ' + Math.round(t.alterS) + ' s, reif ' + Math.round(E.reif) + ' s, Leben ' + Math.round(E.tod) + ' s): ' + klasse + ', Third 15 m, 3 m hoch' }); }" +
+            "H.sort((a, b) => a.d - b.d);" +
+            "return { saat, posen: H, lage: 'Tiere des Bestands mit Leib: Jungtier ' + je.Jungtier + ' · Alttier ' + je.Alttier + ' · dazwischen ' + mitte + ' · ohne Bestand ' + ohneBestand + ' · ohne Leib-Maß ' + ohneMass };",
+    },
     // die Talform an 20 Saaten: die Station rechnet je Saat (Land-Lage der Fibonacci-Kugel) × Stelle 1/4 · 1/2 · 3/4 des größten Laufs
     // den Querschnitt (k2-planet.js:2662 PROFIL_AN, V-Tal b < 1,5 ≤ Trog) und nennt die Pose „Ego 8 m über der Sohle, Blick talauf“
     // (:2706) — der Fächer REIST je Saat an ihre Lage (der Satz des Spielers „reise <Breite> <Länge>“, wie die Werkbank ihre Reise-Orte
@@ -751,6 +780,23 @@ function selbsttest() {
     const kl = Array.from({ length: 30 }, (_, i) => ({ pose: { px: i }, wort: "h" + i, klasse: i < 24 ? "Wohnhaus" : i < 28 ? "Scheune" : "Schmiede", ziel: { art: "eiche", d: 12 } }));
     const w = imWechsel(kl, 3);
     t("die Klassen im Wechsel: höchstens 3 je Klasse, die seltene Klasse vor dem vierten Wohnhaus, die Klasse reist in die Pose", w.length === 8 && w.slice(0, 3).map((x) => x.klasse).join() === "Wohnhaus,Scheune,Schmiede" && w.filter((x) => x.klasse === "Wohnhaus").length === 3 && faechern(w, [0.5], {})[1].klasse === "Scheune" && faechern(w, [0.5], {})[0].ziel.art === "eiche" && !("klasse" in faechern(basis(2), [0.5], {})[0]));
+    // Kitz oder Hirsch: die Klasse des Fächers ist das Jungtier der Station (k2-leben.js `istJung`, jungBruch 0,1) und das reife Tier —
+    // ändert die Station ihr Gesetz, wird dieser Satz ROT, statt still eine andere Klasse zu schießen
+    const LZ = SPROSSEN["leben.tiere.lebenszyklus#2"], lzR = LZ.rumpf(), lzS = fs.readFileSync(path.join(STATIONEN, "k2-leben.js"), "utf8");
+    t(
+        "Kitz oder Hirsch: Jungtier = jünger als 1/10 seines Lebens und nicht reif, wie die Station zählt; Alttier = reif; 20 je Klasse an EINER Uhr (40 Bilder), Sommer, das Ziel benannt",
+        lzR.includes("t.alterS < Math.min(0.1 * E.tod, E.reif) ? 'Jungtier' : t.alterS >= E.reif ? 'Alttier' : null") &&
+            lzS.includes("return t.alterS < Math.min(a.jungBruch * E.tod, E.reif);") &&
+            /const z = await lauf\(probe, \{ jungBruch: 0\.1,/.test(lzS) &&
+            lzR.includes("ziel: klasse") &&
+            LZ.je === 20 &&
+            String(LZ.uhren) === "0.5" &&
+            LZ.mehr.saison === "sommer" &&
+            LZ.wahl === 0 &&
+            !LZ.motiv("ABNAHME ROT [Jungtier fehlt (keine Gestalt binnen 1.5 m)]") &&
+            !LZ.motiv("ABNAHME ROT [Jungtier: deer 4 UNGEZEICHNET]") &&
+            LZ.motiv("ABNAHME GRÜN · Blick-Wahl 1 Pose")
+    );
     const PF = SPROSSEN["leben.pflanzen.arten#1"].motiv;
     t("an der Pose: ein Bild, für das die Werkbank eine andere Kamera wählte (Blick-Wahl ≥ 2 Posen), trägt kein Rahmen-Motiv", AN_DER_POSE("ABNAHME GRÜN · Blick-Wahl 1 Pose") && !AN_DER_POSE("ABNAHME GRÜN · Blick-Wahl 2 Posen") && !AN_DER_POSE("Blick-Wahl 42 Posen") && !PF("ABNAHME GRÜN · Blick-Wahl 37 Posen", { ziel: { art: "eiche", d: 9 } }) && !SPROSSEN["mensch.bau.bedarf#1"].motiv("ABNAHME GRÜN · Blick-Wahl 3 Posen") && SPROSSEN["mensch.bau.bedarf#1"].wahl === 0 && !SPROSSEN["mensch.bau.bedarf#1"].motiv("ABNAHME ROT [Sicht verdeckt 49.5 % (Bau als 1 m): bauSatz 49.5 %] · Ziel Blickziel verdeckt von bauSatz in 1.2 m · Blick-Wahl 1 Pose") && SPROSSEN["mensch.bau.bedarf#1"].motiv("ABNAHME GRÜN · Blick-Wahl 1 Pose") && SPROSSEN["leben.pflanzen.arten#1"].wahl === 0);
     t("das Motiv der Pflanze: ihr eigenes Laub am Ziel trägt, fremdes oder nahes Laub nicht", PF("ABNAHME ROT [Ziel Blickziel verdeckt von Laub fscatter:eiche:L1 in 9.2 m]", { ziel: { art: "eiche", d: 12 } }) && !PF("ABNAHME ROT [Ziel Blickziel verdeckt von Laub fscatter:tanne:L1 in 9.2 m]", { ziel: { art: "eiche", d: 12 } }) && !PF("ABNAHME ROT [Ziel Blickziel verdeckt von Laub fscatter:eiche:L1 in 2.1 m]", { ziel: { art: "eiche", d: 12 } }) && PF("ABNAHME GRÜN", {}));
