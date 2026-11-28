@@ -753,6 +753,56 @@ function fensterLicht(root, { FC, dp = { seed: 5 }, taeter = null, haeuser = Inf
                 if (q.normale[0] * (cx - q.x) + q.normale[2] * (cz - q.z) <= 0) hinten++;
             }
     }
+    // DER SCHUB DER MITTE (nacht-licht-klasse, `_lichtKarteSchub`): die Karte steht um das Auge (`_lichtKarteTakt` über die Wahl
+    // `pool`, ein Boden mit Relief), das Auge rückt 17 m / 9 m — die geschobene Karte ist Zelle für Zelle und Halbwert für Halbwert
+    // die ganz gebaute an derselben Mitte.
+    const LK = { gitter: { image: { data: new Uint16Array(t * 3 * t * 4) }, needsUpdate: false }, mitte: { value: { set() {} } } };
+    r.state.atmoUniforms = { lichtKarte: LK };
+    r.getTerrainHeightAt = (x, z) => 2 * Math.sin(x / 9) + Math.cos(z / 7);
+    const kp = { halter: [], blende: [], alle: pool.alle };
+    const steht = () => {
+        for (let k = 0; k < 40000; k++) {
+            const Z = r._lichtKarteZ;
+            if (Z && Z.g && !Z.bau && !(Z.offen > 0) && !(Z.teil && Z.teil.length) && k > 2) return k;
+            r._lichtKarteTakt(kp, cam);
+        }
+        return -1;
+    };
+    r._lichtKarteZ = null;
+    steht();
+    cam.position.set(mx + 17, 1.7, mz + 9);
+    const tSchub = Date.now();
+    steht();
+    const geschoben = { e: Float64Array.from(r._lichtKarteZ.g.e), a: Uint16Array.from(LK.gitter.image.data), ms: Date.now() - tSchub };
+    r._lichtKarteZ = null;
+    const tGanz = Date.now();
+    steht();
+    const schub = { ungleich: 0, halbUngleich: 0, licht: 0, msSchub: geschoben.ms, msGanz: Date.now() - tGanz };
+    const Ge = r._lichtKarteZ.g.e;
+    for (let i = 0; i < Ge.length; i++) {
+        if (Ge[i] > 0) schub.licht++;
+        if (Math.abs(geschoben.e[i] - Ge[i]) > 1e-9 * (1 + Math.abs(Ge[i]))) schub.ungleich++;
+    }
+    for (let i = 0; i < geschoben.a.length; i++) if (geschoben.a[i] !== LK.gitter.image.data[i]) schub.halbUngleich++;
+    // DER UNTERSCHIED LÄDT HÖCHSTENS `zellenJeBild` (nacht-licht-klasse): auf der stehenden Karte kommt eine Wandlaterne (70 m, ihr
+    // Fleck deckt die ganze Karte) — EIN Takt lädt höchstens `zellenJeBild` Zellen und eine Zeile hoch (`_lichtKarteHalb`); bis hier
+    // schrieb ihr Fleck bis zur Frist und lud jede Zeile in denselben Takt (das Dorf: ein Fleck 21,9 ms). Die Uhr der Linse steht
+    // (`performance.now` 0, stamm.cjs): die Frist bindet hier nie, allein der Rest
+    kp.alle = [...pool.alle, { id: "linse-wandlaterne", quelle: "laterne", L: FC.LICHT_GESETZ.wandlaterne, masse: 1, x: mx + 3, y: 3, z: mz + 3 }];
+    const halbEcht = r._lichtKarteHalb;
+    let hoch = 0;
+    r._lichtKarteHalb = function (G2, g2, [i0, j0, i1, j1]) {
+        hoch += (i1 - i0 + 1) * (j1 - j0 + 1);
+        return halbEcht.apply(this, arguments);
+    };
+    const unterschied = { hoch: 0, darf: K.zellenJeBild + t, takte: 0 };
+    try {
+        r._lichtKarteTakt(kp, cam);
+        unterschied.hoch = hoch;
+        unterschied.takte = steht();
+    } finally {
+        r._lichtKarteHalb = halbEcht;
+    }
     return {
         haeuser: haus.length,
         wach,
@@ -763,6 +813,8 @@ function fensterLicht(root, { FC, dp = { seed: 5 }, taeter = null, haeuser = Inf
         wahlAlle,
         zellen: glas.length ? Math.round(zellen / glas.length) : 0,
         hinten,
+        schub,
+        unterschied,
         fehl,
         rohe,
         ms: Date.now() - t0,
@@ -778,6 +830,14 @@ function fensterUrteil(m) {
     if (!(m.wahlAlle > 0)) fehl.push("die Wahl am Ort trägt kein Glas (`_leuchtWahl` → `pool.alle`)");
     if (m.hinten) fehl.push(`${m.hinten} Zellen hinter der Wand tragen Licht (\`_lichtKarteFleck\`)`);
     if (!(m.zellen > 0)) fehl.push("kein Fleck des Glases in der Karte (`_lichtKarteFleck`)");
+    const S = m.schub;
+    if (!(S && S.licht > 0)) fehl.push("die Karte um das Auge trägt kein Licht — der Schub ungeprüft (`_lichtKarteTakt`)");
+    else if (S.ungleich || S.halbUngleich)
+        fehl.push(`die geschobene Karte ist nicht die ganz gebaute: ${S.ungleich} Zellen, ${S.halbUngleich} Halbwerte (\`_lichtKarteSchub\`)`);
+    const U = m.unterschied;
+    if (!(U && U.hoch > 0)) fehl.push("die Wandlaterne lädt nichts hoch — der Unterschied ungeprüft (`_lichtKarteTakt`)");
+    else if (U.hoch > U.darf)
+        fehl.push(`ein Takt des Unterschieds lädt ${U.hoch} Zellen hoch, erlaubt ${U.darf} (\`_lichtKarteFleck\` ohne Rest)`);
     return fehl;
 }
 // DIE TÄTER DER LINSE (ihr Selbsttest, gate:settlement --selftest): der Zweig des Glases fehlt in den Quellen, das Glas nimmt einen
@@ -786,6 +846,10 @@ const FENSTER_TAETER = {
     "ohne Glas-Zweig": [["_leuchtQuellen", "if (fensterAn)", "if (false)"]],
     "Glas auf dem Platz": [["_leuchtWahl", "if (!s.normale && pool.wahl.push(s)", "if (pool.wahl.push(s)"]],
     "ohne Lambert": [["_lichtKarteFleck", "const N = s.q.normale;", "const N = null;"]],
+    // der Schub trägt die Summe E ohne ihren Schritt (nacht-licht-klasse: `schiebe(g.e)` — der Versatz NaN, das Band leer)
+    "Schub ohne Schritt": [["_lichtKarteSchub", "e: schiebe(g.e, 1),", "e: schiebe(g.e),"]],
+    // der Fleck schreibt bis zur Frist ohne den Rest der Zellen (nacht-licht-klasse: das Dorf lud 19 881 Zellen in einen Takt)
+    "Fleck ohne Rest": [["_lichtKarteFleck", "|| (j - jA) * (i1 - i0 + 1) >= zellen)", "|| false)"]],
 };
 
 module.exports = {

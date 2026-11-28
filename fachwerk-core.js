@@ -5303,7 +5303,7 @@
     // prettier-ignore
     // VERTRAGS-AKT 18.07.: LOD1SKIP ist GESTRICHEN (0 Leser — der tote LOD1F-Zwilling).
     // prettier-ignore
-    const DORF_NORM={ gap:2.5, strasseW:5.0, laneW:3.2, gehweg:1.2, budget:170000, laneiv:17 };   // VERTRAGS-AKT 18.07.: gapStadt gestrichen (0 Leser, matchte kein lebendes Layout-Literal)
+    const DORF_NORM={ gap:2.5, strasseW:5.0, laneW:3.2, gehweg:1.2, budget:170000 };   // VERTRAGS-AKT 18.07.: gapStadt gestrichen; laneiv (13–17 m der Laternen) fiel mit nacht-licht-klasse an LICHT_KLASSE (0 Leser, matchte kein lebendes Layout-Literal)
     // ── SPIEGEL-ZENSUS 17.07. — DAS SIEDLUNGS-EXISTENZ-GESETZ (rein additive
     // DATEN-Zeile): WO/WIEVIEL Doerfer die Welt traegt ist Siedlungs-Wissen
     // (Praezedenzfall: die Wald-Dichte lebt in phyto-core forestStandDensity).
@@ -7952,27 +7952,24 @@
   const laterneQuer=(rd,q,fl)=>{ const lo=wegRand(rd)+LATERNE_FUSS; for(let o=Math.max(lo,rd.w/2+gehwegVon(plan,rd)+0.35); ; o=Math.max(lo,o-0.25)){ const x=q.x+fl*q.nx*o, z=q.z+fl*q.nz*o; if(laterneFrei(x,z)) return {x,z}; if(o<=lo) return null; } };   /*DER STAND QUER ZUR GASSE (K66): vom alten Stand 0,35 m hinter dem Gehweg in 0,25-m-Schritten bis an den Bordstein (der Fuss am Wegrand), nie in die Fahrbahn — bis K66-n4 rueckte er bis rd.w/4 an die Achse, 123/292 Laternen standen im Weg (der Spieler lief gegen den Mast); wo die Wand keinen Stand traegt, sucht der Weg weiter*/
   let R9L=30; for(const rd9 of roads) for(const q9 of rd9.pts){ const d9=Math.hypot(q9.x,q9.z); if(d9>R9L)R9L=d9; }   /*ZEITREISE-Referenz: der ECHTE Stadtradius (Strassen-Max), nicht Mauer-Rw — GEMESSEN 0 Gas*/
   const zeit=plan.schnitt||plan;                                                               /*das Licht gehoert dem Jahr des Schnitts: 1320 brennt keine Gaslaterne*/
-  if(zeit.staedtisch&&zeit.jahr>1850){ for(const rd of roads){ if(rd.gen>=2)continue;
-    for(let u=6, fl=1; u<(rd.len||0)-4; u+=DORF_NORM.laneiv-4+((u*7)%5), fl=-fl){ const q=at(rd,u);   /*laneiv KONSUMIERT: 13..17 byte-gleich (laneiv-4 == 13)*/
-      const lq=laterneQuer(rd,q,fl), lx2=lq?lq.x:0, lz2=lq?lq.z:0;
-      let ok=!!lq;
-      if(!ok) marken.push({x:q.x,z:q.z});   /*WO DIE WAND KEINEN MAST TRAEGT, TRAEGT SIE DAS LICHT (w28-stadt-grammatik): hinter dem Gehweg der Fahrstrasse (`wegRand`) fehlt dem Mast vor der Bauflucht der Abstand zur Wand (LATERNE_WAND) — sein Stand faellt, und bis hier fiel sein Licht mit: die Stadt legte keine Marke (nur das Dorf), `wandLaternen` hing nichts auf. O-Akt gate:settlement „dorf 7 18 gruenderzeit“: 10 brennende Quellen -> 5, in der Gasse 5 sichtbar -> 2 (Soll 4). Jetzt ist der gefallene Stand eine Marke des Lichts: die naechste Hauswand traegt dort die Wandlaterne (LICHT_MARKE_M wie im Dorf), der Takt der Strasse bleibt*/
-      if(ok&&laternen.some(l=>Math.hypot(lx2-l.x,lz2-l.z)<9))ok=false;
-      if(ok){ const dL=Math.min(1, Math.hypot(lx2,lz2)/(R9L*0.80));                          /*LATERNEN-ZEITREISE: jede Laterne liest das JAHR ihres Rings — Gas im Altkern, Elektro am Saum*/
-        const R0=globalThis.__ring; const rj=(R0&&R0.ringe)? (R0.gr0+(plan.jahr-R0.gr0)*Math.pow(dL,0.82)) : plan.jahr;
-        const gasB=(rj<1895) && (plan.jahr<1930 || dL<0.45);                                /*NACHRUEST-WELLE: ab 1930 elektrifiziert die Moderne von AUSSEN herein — der Altkern behaelt sein Gaslicht (Berlin-Wahrheit)*/
-        laternen.push({x:lx2,z:lz2,th:Math.atan2(-fl*q.nz,-fl*q.nx),gas:gasB}); } } } }
-  else { /*DAS DORF-LICHT (K10, Auge 13.10.: das Start-Dorf trug 0 Laternen, die Nacht war ohne ein Licht): jede Laterne vor einer Wand wie in der Stadt (kein Grundriss, 9 m Abstand, nicht am Brunnen) — eine am Platz, eine an jedem Weg-Knoten (Grad ≥ 3), laengs jedes Wegs eine je DORF_LICHT_WEG m*/
-    const DORF_LICHT_WEG=25;
-    const setz=(x,z,th)=>{ if(!laterneFrei(x,z)) return false;
-      if(laternen.some(l=>Math.hypot(x-l.x,z-l.z)<9)||brunnen.some(b2=>Math.hypot(x-b2.x,z-b2.z)<2)) return false; laternen.push({x,z,th,gas:true}); return true; };
-    const amWeg=(rd,u,fl)=>{ const q=at(rd,u), lq=laterneQuer(rd,q,fl); return !!lq&&setz(lq.x, lq.z, Math.atan2(-fl*q.nz,-fl*q.nx)); };
-    if(platz) [[0.25,0],[-0.25,0],[0,0.7],[0,-0.7]].some(([fx,fz])=>setz(platz.cx+fx*platz.ex, platz.cz+fz*platz.ez, 0));
-    const grad=new Array(G.nodes.length).fill(0); for(const rd of roads){ grad[rd.a]++; grad[rd.b]++; }
-    for(const rd of roads){ const L=rd.len||0; for(const [ende,k] of [[0,rd.a],[1,rd.b]]){ if(grad[k]<3) continue; for(let du=2; du<=Math.max(2,Math.min(8,L/2)); du+=1){ const u0=ende?Math.max(0,L-du):Math.min(L,du); if(amWeg(rd,u0,1)||amWeg(rd,u0,-1)) break; } } }   /*der Knoten sucht seinen Stand bis 8 m in den Weg hinein (K66: vor der Wand fand er ihn 2 m vom Knoten selten)*/
-    for(const rd of roads){ const L=rd.len||0; for(let um=0; um<=L; um+=1){ const mq=at(rd,um); marken.push({x:mq.x,z:mq.z}); }   /*DIE MARKE (K66-2 N1): JEDER Meter des Wegs — wandLaternen haengt nach dem Snap eine Laterne an die naechste Hauswand, wo kein Licht in LICHT_MARKE_M brennt (die dichte Gasse: beidseits Wand naeher als LATERNE_WAND, nur der Bordstein frei, und die Luecke zwischen zwei Masten); bis N1 je 25 m eine Marke, zwischen ihnen blieb die Wand der Gasse schwarz (nacht-wand 69 %)*/
-      for(let u=DORF_LICHT_WEG/2, fl=1; u<L; u+=DORF_LICHT_WEG, fl=-fl){
-      for(let du=0; du<=DORF_LICHT_WEG/2-1; du+=1){ if((u+du<L&&(amWeg(rd,u+du,fl)||amWeg(rd,u+du,-fl)))||(du&&u-du>0&&(amWeg(rd,u-du,fl)||amWeg(rd,u-du,-fl)))) break; } } } }
+  const lichtKlasse=zeit.staedtisch?LICHT_KLASSE.stadt:LICHT_KLASSE.dorf, LGl=LICHT_GESETZ.laterne;   /*DIE KLASSE DES ORTS (nacht-licht-klasse, EN 13201-2): die Klasse folgt dem Gebrauch des Wegs, nie dem Jahr — die Stadt P2, das Dorf P5 (`lichtFlaecheM2`); das Jahr waehlt nur Gas oder Strom (`gasAm`). Bis hier lief die Stadt vor 1850 (stadt-voll, „dorf 7 300“: 1238) den Pfad des Dorfs*/
+  for(const rd of roads){ const w=2*wegRand(rd), s=lichtFlaecheM2(LGl,lichtKlasse,LATERNE_FUSS,LATERNE_FUSS+w)/w; rd.licht=s; }   /*DER ABSTAND JE WEG (nacht-licht-klasse): der Mast steht mit dem Fuss am Wegrand, sein Streifen reicht ueber die Breite des Wegs (`wegRand` beidseits, an der Trasse samt Gehweg): s = Φ·U·MF ÷ (Ē·w). Bis hier 13–17 m in der Stadt (nur Trasse und Hauptweg), 25 m im Dorf*/
+  const gasAm=(x,z)=>{ if(!(zeit.staedtisch&&zeit.jahr>1850)) return true; const dL=Math.min(1, Math.hypot(x,z)/(R9L*0.80));   /*LATERNEN-ZEITREISE: jede Laterne liest das JAHR ihres Rings — Gas im Altkern, Elektro am Saum*/
+    const R0=globalThis.__ring; const rj=(R0&&R0.ringe)? (R0.gr0+(plan.jahr-R0.gr0)*Math.pow(dL,0.82)) : plan.jahr;
+    return (rj<1895) && (plan.jahr<1930 || dL<0.45); };                                         /*NACHRUEST-WELLE: ab 1930 elektrifiziert die Moderne von AUSSEN herein — der Altkern behaelt sein Gaslicht (Berlin-Wahrheit)*/
+  const MSl=AUSSTATTUNG.marktstand.tritt, standR=Math.hypot(MSl.ex,MSl.ez)+LATERNE_FUSS;
+  const setz=(x,z,th,frei)=>{ if(!laterneFrei(x,z)) return false;   /*DER STAND (Stadt und Dorf): vor der Wand, neben dem Weg, nicht am Brunnen, nicht im Marktstand, und keine Laterne naeher als die halbe Weite ihres Lichts (`frei`; bis hier 9 m fuer jede)*/
+    if(laternen.some(l=>Math.hypot(x-l.x,z-l.z)<frei)||brunnen.some(b2=>Math.hypot(x-b2.x,z-b2.z)<2)||staende.some(s2=>Math.hypot(x-s2.x,z-s2.z)<standR)) return false; laternen.push({x,z,th,gas:gasAm(x,z)}); return true; };
+  const amWeg=(rd,u,fl)=>{ const q=at(rd,u), lq=laterneQuer(rd,q,fl); return !!lq&&setz(lq.x, lq.z, Math.atan2(-fl*q.nz,-fl*q.nx), rd.licht/2); };
+  if(platz){ const sP=Math.sqrt(lichtFlaecheM2(LGl,lichtKlasse,-Infinity,Infinity)), nx=Math.ceil(2*platz.ex/sP), nz=Math.ceil(2*platz.ez/sP), gx=2*platz.ex/nx, gz=2*platz.ez/nz, rZ=Math.min(gx,gz)/2;   /*DAS RASTER DES PLATZES (nacht-licht-klasse): je Zelle der Flaeche einer Leuchte (U der Ebene, die Haelfte ihres Stroms) EINE Laterne, ihr Stand der freie naechst der Mitte der Zelle — bis hier trug das Dorf eine am Platz, die Stadt keine (stadt-voll 34 × 22 m: Ē 4,2 lx)*/
+    for(let i=0;i<nx;i++) for(let k=0;k<nz;k++){ const x0=platz.cx-platz.ex+gx*(i+0.5), z0=platz.cz-platz.ez+gz*(k+0.5); let ok=false;
+      for(let r=0; !ok&&r<=rZ; r+=0.5) for(let a=0; !ok&&a<(r?8:1); a++) ok=setz(x0+r*Math.cos(a*Math.PI/4), z0+r*Math.sin(a*Math.PI/4), 0, rZ); } }
+  const grad=new Array(G.nodes.length).fill(0); for(const rd of roads){ grad[rd.a]++; grad[rd.b]++; }
+  for(const rd of roads){ const L=rd.len||0; for(const [ende,k] of [[0,rd.a],[1,rd.b]]){ if(grad[k]<3) continue; for(let du=2; du<=Math.max(2,Math.min(8,L/2)); du+=1){ const u0=ende?Math.max(0,L-du):Math.min(L,du); if(amWeg(rd,u0,1)||amWeg(rd,u0,-1)) break; } } }   /*der Knoten sucht seinen Stand bis 8 m in den Weg hinein (K66: vor der Wand fand er ihn 2 m vom Knoten selten)*/
+  for(const rd of roads){ const L=rd.len||0, s=rd.licht;   /*DAS FELD DES WEGS (nacht-licht-klasse): je Abstand s EIN Licht — der Mast in der Mitte seines Felds (die Seiten wechseln, ± bis s ÷ 2 − 1 laengs), und wo keiner steht (die dichte Gasse: beidseits Wand naeher als LATERNE_WAND), EINE Marke in der Mitte des Felds: wandLaternen haengt dort die Laterne an die naechste Hauswand, wo kein Licht naeher als s ÷ 2 brennt (`r`). Bis hier lag jeder Meter als Marke mit 10 m Weite (K66-2 N1), am Plan 7 300 brannte die Gasse in P5 auf 6,2 lx statt 3*/
+    for(let u=s/2, fl=1; u<L; u+=s, fl=-fl){ const mq=at(rd,u); let ok=laternen.some(l=>Math.hypot(l.x-mq.x,l.z-mq.z)<=s/2);   /*das Feld, in dessen Mitte schon ein Licht naeher als s ÷ 2 brennt (der Platz, der Knoten, der kreuzende Weg), traegt kein zweites*/
+      for(let du=0; !ok&&du<=s/2-1; du+=1) ok=(u+du<L&&(amWeg(rd,u+du,fl)||amWeg(rd,u+du,-fl)))||(du>0&&u-du>0&&(amWeg(rd,u-du,fl)||amWeg(rd,u-du,-fl)));
+      if(!ok) marken.push({x:mq.x,z:mq.z,r:s/2}); } }
   const sp=at(roads[0],Math.min(roads[0].len||8,8));
   const nzyk=roads.length-(G.nodes.length+sack-1);                                           // Zyklen = E − V + 1 (zusammenhängend)
   let viertel=null, lage=null;
@@ -7982,7 +7979,7 @@
     plan.houses.forEach((h,i)=>{ const q=pl[i]; if(h.viertel&&q&&q.obb&&Math.abs(q.obb.cz)<5000) (V[h.viertel]=V[h.viertel]||[]).push(q.obb); });
     viertel=Object.keys(V).map(rolle=>{ const L=V[rolle], x=L.reduce((a,o)=>a+o.cx,0)/L.length, z=L.reduce((a,o)=>a+o.cz,0)/L.length;
       return {rolle, x, z, r:L.reduce((a,o)=>Math.max(a,Math.hypot(o.cx-x,o.cz-z)+Math.hypot(o.ex,o.ez)),0), lose:L.length}; }); }
-  return Object.assign({pl, roads:roads.map(rd=>({pts:rd.pts.filter((_,k2)=>k2*DS<=(rd.len||0)+DS), w:rd.w, gen:rd.gen, len:rd.len||0, quer:rd.quer||false, vor:rd.vor||undefined, treppe:rd.treppe||undefined, ring:rd.ring||undefined})),   /*Whitelist +quer — das Flag starb an dieser Kopie (#1-Sonde: 0 Gassen im lay)*/
+  return Object.assign({pl, roads:roads.map(rd=>({pts:rd.pts.filter((_,k2)=>k2*DS<=(rd.len||0)+DS), w:rd.w, gen:rd.gen, len:rd.len||0, licht:rd.licht, quer:rd.quer||false, vor:rd.vor||undefined, treppe:rd.treppe||undefined, ring:rd.ring||undefined})),   /*Whitelist +quer — das Flag starb an dieser Kopie (#1-Sonde: 0 Gassen im lay)*/
           feldwege, platz, brunnen, fences, felder, staende, spawn:{x:sp.x,z:sp.z}, trees, jitAmp, DS, mauer,
           laternen, marken, laterneNeben, wegRand,
           graph:{nV:G.nodes.length+sack, nE:roads.length, zyklen:Math.max(0,nzyk)},
@@ -8834,7 +8831,7 @@
     // (`lichtStaerkeCd`). 2 000 lm: vier Gasglühkörper (Auer) zu je etwa 500 lm, die Aufsatzleuchte auf dem Mast (Band: Marx,
     // Vortrag „Allgemeine Lichttechnik“, mx-electronic MX-IfLi — „Der Lichtstrom eines Gasglühkörpers beträgt etwa 500 lm“, die
     // sechsflammige Leuchte 3 000 lm bei 1,83 kW Gas; Berlins Gasleuchten tragen 4, 6 oder 9 Glühkörper, Senatsverwaltung UVK,
-    // Öffentliche Beleuchtung) → 159,2 cd: unter dem Mast 12,3 lx, längs der Gasse des Dorfs (ein Mast je 25 m, `DORF_LICHT_WEG`)
+    // Öffentliche Beleuchtung) → 159,2 cd: unter dem Mast 12,3 lx, längs der Gasse des Dorfs (bis nacht-licht-klasse ein Mast je 25 m; der Abstand folgt jetzt der Klasse, `LICHT_KLASSE`)
     // im Mittel Ē = 2·cd ÷ (Abstand · Höhe) = 3,5 lx, in der Mitte zwischen zwei Masten 0,52 lx — EN 13201-2:2015 Tab. 3 P5
     // (Ē 3 lx, Emin 0,6 lx; P1–P6: 15 · 10 · 7,5 · 5 · 3 · 2 lx). Bis nacht-gasse-licht trug sie 25,7 cd (ein offener Gas-Brenner,
     // 10–30 cd; 323 lm): 2 lx unter dem Mast, im Dorf Ē 0,57 lx — unter P6, die Gasse am Leser der Nacht (karte2.erleben.bild.nacht#2,
@@ -8904,6 +8901,33 @@
         aus.armM = a;
         return aus;
     })(LICHT_GESETZ.laterne, 2.8, 0.4);
+    // DIE BELEUCHTUNGSKLASSE (nacht-licht-klasse): der Abstand der Laternen FOLGT aus dem Licht, das der Weg tragen soll, nie aus
+    // einer Zahl je Ort. Das Soll ist die mittlere waagrechte Beleuchtungsstärke Ē der Klasse (EN 13201-2:2015 Tab. 3, Fußgänger und
+    // langsamer Verkehr, P1–P6: Ē 15 · 10 · 7,5 · 5 · 3 · 2 lx, dazu E_min 3 · 2 · 1,5 · 1 · 0,6 · 0,4 lx, beides gewartet): Weg und Platz der Stadt P2, der Weg des Dorfs P5. Die Fläche je Leuchte
+    // ist die Lichtstrom-Methode, A = Φ · U · MF ÷ Ē (Φ = `lm`; MF der Wartungsfaktor 0,8 der Planung, CIE 154:2003). U, der Anteil
+    // ihres Stroms auf der Fläche, folgt aus der Leuchte selbst: sie strahlt nach allen Seiten gleich (cd = lm ÷ 4π), auf den Streifen
+    // quer [x1, x2] vor ihrem Fuß fällt in der Höhe h der Keil (atan(x2 ÷ h) − atan(x1 ÷ h)) ÷ 2π, auf die ganze Ebene die Hälfte. Der
+    // Weg der Breite w: Abstand s = A ÷ w; der Platz: das Raster √A. Leser: die Laternen des Plans (Mast, Raster des Platzes, die
+    // Marke der Wandlaterne je Feld s, ihre Weite s ÷ 2) und gate:settlement DORF-LICHT (rechnet s selbst nach). Bis hier stand der Abstand als Zahl je Ort: die Stadt 13–17 m
+    // (`laneiv`) nur an Trasse und Hauptweg, das Dorf 25 m, die Marke der Wand 10 m, der Platz der Stadt ohne eigene Laterne —
+    // am Plan 7 300 Ē 3,6–5,2 lx in den Wegen, 4,2 lx am Platz (P4–P5), die Gasse stadt-voll third 1,73 EV unter dem Band.
+    var LICHT_KLASSE = Object.freeze({
+        P1: Object.freeze({ e: 15, min: 3 }),
+        P2: Object.freeze({ e: 10, min: 2 }),
+        P3: Object.freeze({ e: 7.5, min: 1.5 }),
+        P4: Object.freeze({ e: 5, min: 1 }),
+        P5: Object.freeze({ e: 3, min: 0.6 }),
+        P6: Object.freeze({ e: 2, min: 0.4 }),
+        stadt: "P2",
+        dorf: "P5",
+        wartung: 0.8,
+    });
+    function lichtNutzung(L, x1, x2) {
+        return (Math.atan(x2 / L.hoeheM) - Math.atan(x1 / L.hoeheM)) / (2 * Math.PI);
+    }
+    function lichtFlaecheM2(L, klasse, x1, x2) {
+        return (L.lm * lichtNutzung(L, x1, x2) * LICHT_KLASSE.wartung) / LICHT_KLASSE[klasse].e;
+    }
     // DIE LICHTFARBE einer Farbtemperatur (K11b): der Planck-Ort (Kim, Kang et al. 2002, kubische Näherung 1 667–25 000 K)
     // als Farbort x, y → XYZ (Y = 1) → lineares sRGB (IEC 61966-2-1, Weiß D65), negativ außerhalb des Gamuts geklemmt, auf den
     // hellsten Kanal 1 normiert. Linear — das FARB-GESETZ (das Hex ist eine sRGB-Absicht) gilt so ohne Hex: 1 900 K ist
@@ -8938,11 +8962,13 @@
     // 1 m gilt die Stärke des Datums, weit draußen 1/d²) und dem weichen Saum an der Reichweite R ((1 − (d/R)⁴)², der Saum
     // von r184s Punktlicht). Bis K11b trug die Welt den Legacy-Abfall des r128-Labors (1 − d/R)^abfall: das Feuer trug in
     // 4 m noch 31 % seiner Stärke in 1 m (1/d²: 7 %) — der Boden glühte über mehrere Meter.
+    // Der Abfall 2 (jede Leuchte des Gesetzes) ist die Basis selbst: pow(x, 1) = x exakt (IEEE 754) — die Licht-Karte ruft ihn je
+    // Zelle und Lage (eine Laterne 30 800-mal), und Math.pow war ihr teuerster Schritt.
     function lichtAbfall(L, d) {
         var R = L.reichweiteM, k2 = L.kernM * L.kernM;
         if (!(d < R)) return 0;
-        var q = (d / R) * (d / R), saum = (1 - q * q) * (1 - q * q);
-        return saum * Math.pow((1 + k2) / (d * d + k2), (L.abfall || 0) / 2);
+        var q = (d / R) * (d / R), saum = (1 - q * q) * (1 - q * q), x = (1 + k2) / (d * d + k2);
+        return saum * (L.abfall === 2 ? x : Math.pow(x, (L.abfall || 0) / 2));
     }
     // Das Flackern einer Quelle zur Zeit t (s) mit der Phase `phase`: −1 … 1 aus zwei Sinus in `flacker.hz` (die Flamme atmet
     // in 6–10 Hz; die Schwebung beider bricht die Periode). Ohne `flacker` 0.
@@ -12621,14 +12647,14 @@
     // DIE WANDLATERNE IM DORF (K66-2) — KONSUM BEIDSEITIG wie reihenSnap: buildDorf (Lab) und exportSettlement rufen sie NACH
     // dem Snap (die Wand steht, wo das Haus steht). Zwei Stände der Gestalt wandlaterne (Kopf `armM` vor der Wand des Kerns
     // W × D, nie vor der Traufe der Hülle): (1) die Tür von Gasthaus und Schmiede trägt sie 1,1 m neben der Tür (bis K66-2 ein
-    // Glas-Kopf des Hofs ohne Licht); (2) jede Marke des Dorf-Lichts (jeder Meter Weg, `lay.marken`), deren nächste Laterne weiter
-    // als LICHT_MARKE_M liegt — die dichte Gasse, in der kein Mast vor der Wand und neben dem Weg steht, und die Lücke zwischen
+    // Glas-Kopf des Hofs ohne Licht); (2) jede Marke des Dorf-Lichts (die Mitte jedes Felds ohne Mast, `lay.marken`), deren nächste Laterne weiter
+    // als ihre Weite `r` liegt (die Hälfte des Felds s ihres Wegs aus `LICHT_KLASSE`, nacht-licht-klasse) — die dichte Gasse, in der kein Mast vor der Wand und neben dem Weg steht, und die Lücke zwischen
     // zwei Masten —, trägt sie an der Hauswand, die ihr am nächsten liegt (der Stand ≥ 0,6 m von der Ecke, der Kopf in keiner
     // fremden Hülle); die Marken laufen den Weg entlang, jede neue Laterne deckt die folgenden. Bis K66-2 setzte `laterneNah`
     // die Laterne einer dunklen Marke an irgendeinen freien Stand des Dorfs; bis N1 lag je 25 m eine Marke, zwischen ihnen blieb
-    // die Wand der Gasse schwarz (nacht-wand 69 %). Leser von LICHT_MARKE_M: gate:settlement DORF-LICHT (das Soll je Meter).
+    // die Wand der Gasse schwarz (nacht-wand 69 %); bis nacht-licht-klasse galt für jede Marke 10 m (`LICHT_MARKE_M`). Leser der Weite:
+    // gate:settlement DORF-LICHT (das Soll je Meter, `licht` je Weg des Plans).
     // dorfB: [{p, dims}] · pl: lay.pl · lay: das Layout (laternen wird ERGÄNZT). Rückgabe: die Zahl der Wandlaternen.
-    var LICHT_MARKE_M = 10;
     // DIE GRÜNDUNG IST FLACH (w28-gruendung-flach): der Kopf einer Wandlaterne fragt nur die Grundrisse seiner Zelle des Rasters
     // (`GRUENDUNG_RASTER.wandM`, je Zelle jeder Grundriss, dessen Umkreis ex + ez sie berührt — derselbe Kreis, an dem `fernOBB`
     // vorher jeden fernen verwarf), und ein Stand, der die Marke nicht näher erreichen kann als der beste bisher (seine Wand liegt
@@ -12708,7 +12734,7 @@
             var m = M[mi],
                 d0 = Infinity;
             for (t = 0; t < lay.laternen.length; t++) d0 = Math.min(d0, Math.hypot(lay.laternen[t].x - m.x, lay.laternen[t].z - m.z));
-            if (!(d0 > LICHT_MARKE_M)) continue;
+            if (!(d0 > m.r)) continue;
             var kand = [];
             for (k = 0; k < H.length; k++) {
                 var h = H[k],
@@ -16525,7 +16551,8 @@
         brunnenWeicht: brunnenWeicht,
         mastWeicht: mastWeicht,
         laterneWandM: laterneWandM,
-        LICHT_MARKE_M: LICHT_MARKE_M, // das Soll des Dorf-Lichts je Meter Weg (K66-2 N1; Leser gate:settlement DORF-LICHT)
+        LICHT_KLASSE: LICHT_KLASSE, // die Beleuchtungsklasse je Ort (nacht-licht-klasse; Leser der Plan und gate:settlement DORF-LICHT)
+        lichtFlaecheM2: lichtFlaecheM2, // die Fläche je Leuchte Φ·U·MF ÷ Ē (nacht-licht-klasse)
         brandwand: brandwand,
         LEUTE_GESETZ: LEUTE_GESETZ, // die Leute eines Hauses (Meisterkarte mensch.K1; Leser: der Wirt, gate:kreatur-takt bewohner)
         leuteVon: leuteVon,

@@ -2334,6 +2334,8 @@ hauptLauf(async () => {
             "ohne Glas-Zweig": /Fenster 0 .*: 0 Quellen in `_leuchtQuellen`/,
             "Glas auf dem Platz": /Normale auf einem Platz des Pools \(`_leuchtWahl`\)/,
             "ohne Lambert": /Zellen hinter der Wand tragen Licht \(`_lichtKarteFleck`\)/,
+            "Schub ohne Schritt": /die geschobene Karte ist nicht die ganz gebaute: [1-9]\d* Zellen.*\(`_lichtKarteSchub`\)/,
+            "Fleck ohne Rest": /ein Takt des Unterschieds lädt \d+ Zellen hoch, erlaubt \d+ \(`_lichtKarteFleck` ohne Rest\)/,
         };
         let fensterRohe = null;
         for (const [name, T] of Object.entries(FENSTER_TAETER)) {
@@ -2651,19 +2653,38 @@ hauptLauf(async () => {
             stadt.staedtisch === true && bwSlots >= 1,
             `groesse=${stadt.groesse} · brandwand-Slots=${bwSlots}`
         );
-        // DAS DORF-LICHT: gemessen wird das Licht je METER der Gasse, nie die Zahl der Laternen. Gemessen wird jeder Meter der Weg-Achse, sein Maß der Abstand zur
-        // nächsten Quelle des Plans, die nachts brennt (Mast und Wandlaterne, Zeitplan `nacht` > 0): in der Gasse (eine Kern-Wand
-        // näher als LICHT_MARKE_M − armM, dort trägt die Wand ihr Licht) jeder ≤ LICHT_MARKE_M (das Gesetz des Kerns,
-        // wandLaternen), über alle Meter p90 ≤ 10 m. Je
+        // DAS DORF-LICHT: gemessen wird das Licht je METER der Gasse, nie die Zahl der Laternen. Gemessen wird jeder Meter der Weg-Achse,
+        // sein Maß die waagrechte Beleuchtungsstärke aller Quellen des Plans, die nachts brennen (Mast und Wandlaterne, Zeitplan
+        // `nacht` > 0; E = I · h ÷ (r · (r² + k²)) aus LICHT_GESETZ), gewartet (× MF): in der Gasse (eine Kern-Wand näher als die Wand
+        // des Masts, dort trägt die Wand ihr Licht) jeder ≥ E_min der Klasse des Orts (fachwerk LICHT_KLASSE, EN 13201-2 Tab. 3; die
+        // Stadt P2, das Dorf P5), über alle Meter Ē berichtet. Der Abstand je Weg (`licht`) ist das Gesetz: die Linse rechnet ihn aus
+        // dem Rand des Wegs (`wegRandSoll`) und dem Fuß selbst nach (nacht-licht-klasse; bis dahin galt 10 m für jeden Meter, der
+        // Abstand zur nächsten Quelle, LICHT_MARKE_M). Je
         // Laterne bleibt ihr Stand: der Mast vor der Wand (LATERNE_WAND aus LICHT_GESETZ.laterne, die Wand trägt höchstens das
         // Doppelte der Gasse; K66) und mit dem Fuß neben jedem Weg (der Tritt des Rezepts), die Wandlaterne mit dem Kopf `armM` vor der Wand eines Kerns (W × D der Tür-Zeile, nie vor der Traufe).
         const trittR = FC.PRESETS.laterne.fx.tritt.r;
         const LGd = FC.LICHT_GESETZ.laterne;
         const LWd = FC.LICHT_GESETZ.wandlaterne;
         const wandSoll = Math.sqrt(Math.max(0, (LGd.hoeheM ** 2 + LGd.kernM ** 2) / 2 - LGd.kernM ** 2));
-        const MARKE_SOLL = Number.isFinite(FC.LICHT_MARKE_M) ? FC.LICHT_MARKE_M : 10; // ohne das Gesetz misst sie mit 10 m und fällt
-        const MARKE_P90 = 10;
-        const GASSE_M = MARKE_SOLL - (LWd ? LWd.armM : 0);
+        // der Abstand je Weg nach dem Gesetz der Klasse (s = Φ · U · MF ÷ (Ē · w), der Streifen ab dem Fuß über die Breite): weicht der
+        // Plan ab oder fehlt `licht`, zählt der Weg als ohne Gesetz und das Tor fällt
+        const KL = FC.LICHT_KLASSE;
+        const klasseVon = (pl) => (KL ? KL[pl.staedtisch ? KL.stadt : KL.dorf] : null);
+        const sSoll = (pl, rd) => {
+            const w = 2 * wegRandSoll(pl, rd);
+            return KL ? FC.lichtFlaecheM2(LGd, pl.staedtisch ? KL.stadt : KL.dorf, trittR, trittR + w) / w : NaN;
+        };
+        const lux = (L, x, z) => {
+            let e = 0;
+            for (const l of L) {
+                const G = l.wand ? LWd : LGd;
+                const d2 = (l.x - x) ** 2 + (l.z - z) ** 2;
+                if (d2 > G.reichweiteM ** 2) continue;
+                const r2 = d2 + G.hoeheM ** 2;
+                e += (G.cd * G.hoeheM) / Math.sqrt(r2) / (r2 + G.kernM ** 2);
+            }
+            return e * (KL ? KL.wartung : 1);
+        };
         // der Abstand eines Punkts zur Wand des Kerns eines Slots (die Tür-Zeile W × D um den Slot)
         const kernAbstand = (sl, x, z) => {
             const tu = sl.tuer;
@@ -2734,17 +2755,21 @@ hauptLauf(async () => {
             const ds = [];
             const dunkel = [];
             let gasse = 0;
+            let ohneWeite = 0;
+            const K = klasseVon(pl);
+            const nachts = L.filter(brennt);
             (pl.roads || []).forEach((rd, ri) => {
+                const s = sSoll(pl, rd);
+                if (!(s > 0) || !(Math.abs(rd.licht - s) <= 1e-9 * s)) return void ohneWeite++;
                 for (let u = 0; u <= (rd.len || 0); u += 1) {
                     const m = wegPunkt(rd, u);
-                    let d = Infinity;
-                    for (const l of L) if (brennt(l)) d = Math.min(d, Math.hypot(l.x - m.x, l.z - m.z));
-                    ds.push(d);
+                    const e = lux(nachts, m.x, m.z);
+                    ds.push(e); // die gewartete Beleuchtungsstärke des Meters
                     let w = Infinity;
                     for (const sl of pl.slots || []) w = Math.min(w, kernAbstand(sl, m.x, m.z));
-                    if (!(w <= GASSE_M)) continue;
+                    if (!(w <= wandSoll)) continue;
                     gasse++;
-                    if (!(d <= MARKE_SOLL)) dunkel.push([ri, u, Math.round(d * 10) / 10]);
+                    if (!(e >= K.min)) dunkel.push([ri, u, Math.round(e * 100) / 100, K.min]);
                 }
             });
             let wand = Infinity;
@@ -2775,7 +2800,7 @@ hauptLauf(async () => {
                 if (best <= 0.05) haengt++;
             }
             const ueber = dunkel.length;
-            const weiteste = dunkel.reduce((a, b) => (b[2] > a[2] ? b : a), [null, null, 0]);
+            const weiteste = dunkel.reduce((a, b) => (b[2] < a[2] ? b : a), [null, null, Infinity, 0]);
             return {
                 n: L.length,
                 nWand: waende.length,
@@ -2783,13 +2808,14 @@ hauptLauf(async () => {
                 gasse,
                 ueber,
                 maxD: weiteste[2],
-                wo: weiteste[0] === null ? "-" : `Weg ${weiteste[0]} bei ${weiteste[1]} m`,
+                ohneWeite,
+                wo: weiteste[0] === null ? "-" : `Weg ${weiteste[0]} bei ${weiteste[1]} m, E_min ${weiteste[3]} lx`,
                 wand: Math.round(wand * 100) / 100,
                 weg: Math.round(weg * 100) / 100,
                 wegOk,
                 haengt,
                 haengtOk: haengt === waende.length,
-                ok: ueber === 0 && wandOk && wegOk && haengt === waende.length,
+                ok: ueber === 0 && ohneWeite === 0 && wandOk && wegOk && haengt === waende.length,
             };
         };
         const lichtFehl = [];
@@ -2823,7 +2849,7 @@ hauptLauf(async () => {
                 dunkelAlle += d.ueber;
                 if (!d.ok)
                     lichtFehl.push(
-                        `${seed}/${nH}/${epoche || "-"}: ${d.ueber}/${d.gasse} Meter der Gasse weiter als ${MARKE_SOLL} m von einer brennenden Quelle (der dunkelste ${d.maxD} m, ${d.wo}), der nächste Mast ${d.wand} m vor einer Wand (Soll ≥ ${wandSoll.toFixed(2)} m) und ${d.weg} m neben dem Wegrand (Soll ≥ ${trittR} m), Wandlaternen an der Wand ${d.haengt}/${d.nWand}`
+                        `${seed}/${nH}/${epoche || "-"}: ${d.ueber}/${d.gasse} Meter der Gasse unter E_min ihrer Klasse (der dunkelste ${d.maxD} lx, ${d.wo}), ${d.ohneWeite} Wege ohne den Abstand des Gesetzes, der nächste Mast ${d.wand} m vor einer Wand (Soll ≥ ${wandSoll.toFixed(2)} m) und ${d.weg} m neben dem Wegrand (Soll ≥ ${trittR} m), Wandlaternen an der Wand ${d.haengt}/${d.nWand}`
                     );
             }
         // die Stadt der Moderne (der Zweig der Gas- und Elektro-Laternen, laterneQuer wie im Dorf): kein Fuß im Weg
@@ -2948,14 +2974,14 @@ hauptLauf(async () => {
         // Kranz samt Ausscheren, der freie Fahrer-Stand — samt den Selbst-Tests 15d bis 15g
         verkehrsnetzProben(FC, check, studioKern("koerper-core.js", "__koerperCore"), studioKern("tetrapoda-core.js", "__tetrapodaCore"));
         alleDs.sort(aufsteigend);
-        const mq = (q) => (alleDs.length ? rang(alleDs, q) : Infinity);
-        if (!Number.isFinite(FC.LICHT_MARKE_M)) lichtFehl.push("der Kern trägt kein LICHT_MARKE_M (das Soll je Meter)");
-        if (!(mq(0.9) <= MARKE_P90)) lichtFehl.push(`p90 je Meter ${mq(0.9).toFixed(1)} m (Soll ≤ ${MARKE_P90} m)`);
+        const mq = (q) => (alleDs.length ? rang(alleDs, q) : 0);
+        const eMittel = alleDs.length ? alleDs.reduce((a, b) => a + b, 0) / alleDs.length : 0;
+        if (!FC.LICHT_KLASSE) lichtFehl.push("der Kern trägt keine LICHT_KLASSE (der Abstand je Weg)");
         console.log(
-            `  DORF-LICHT je Meter: dunkle Gasse ${dunkelAlle}/${gasseAlle} Meter weiter als ${MARKE_SOLL} m · alle Meter Median ${mq(0.5).toFixed(1)} m · p90 ${mq(0.9).toFixed(1)} m · max ${(alleDs[alleDs.length - 1] || 0).toFixed(1)} m · Laternen ${lAlle} (Wand ${wandAlle})`
+            `  DORF-LICHT je Meter (gewartet): dunkle Gasse ${dunkelAlle}/${gasseAlle} Meter unter E_min · alle Meter Ē ${eMittel.toFixed(2)} lx · p10 ${mq(0.1).toFixed(2)} · Median ${mq(0.5).toFixed(2)} lx · Laternen ${lAlle} (Wand ${wandAlle})`
         );
         check(
-            `DAS DORF-LICHT je Meter: jeder Meter der Gasse (Kern-Wand ≤ ${GASSE_M.toFixed(1)} m) ≤ ${MARKE_SOLL} m von einer Quelle, die nachts brennt, alle Meter p90 ≤ ${MARKE_P90} m; der Mast vor der Wand und mit dem Fuß neben dem Weg, die Wandlaterne an der Wand (${lichtN} Pläne, ${gasseAlle} Meter Gasse)`,
+            `DAS DORF-LICHT je Meter: jeder Meter der Gasse (Kern-Wand ≤ ${wandSoll.toFixed(2)} m) trägt gewartet ≥ E_min der Klasse seines Orts (EN 13201-2: Stadt P2 2 lx, Dorf P5 0,6 lx) von den Quellen, die nachts brennen, jeder Weg den Abstand des Gesetzes (s = Φ · U · MF ÷ (Ē · w)); der Mast vor der Wand und mit dem Fuß neben dem Weg, die Wandlaterne an der Wand (${lichtN} Pläne, ${gasseAlle} Meter Gasse)`,
             lichtFehl.length === 0,
             lichtFehl.slice(0, 3).join(" · ")
         );
@@ -3038,8 +3064,12 @@ hauptLauf(async () => {
             );
             // DIE DICHTE GASSE: derselbe Plan ohne seine Wandlaternen — die Marken der dichten Gasse sind dunkel; eine
             // Wandlaterne 0,9 m von ihrem Stand weg hängt an keiner Wand
-            const plG = FC.exportSettlement({ seed: 7, nH: 16 });
+            const plG = FC.exportSettlement({ seed: 11, nH: 40 }); // die Stadt (P2) mit 41 m Gasse: ohne ihre Wandlaternen 25 unter E_min — das Dorf 7 16 trägt seit nacht-licht-klasse keinen Meter Gasse
             const ohneWand = dorfLicht(Object.assign({}, plG, { laternen: plG.laternen.filter((l) => !l.wand) }));
+            // DER PLAN OHNE DIE KLASSE (nacht-licht-klasse): seine Wege tragen keinen Abstand — das Tor fällt, nie misst es mit einer
+            // Zahl; und der Plan, dessen Wege einen Abstand neben dem Gesetz tragen (das 1,5-Fache: ein Zwilling der Zahl je Ort)
+            const ohneKlasse = dorfLicht(Object.assign({}, plG, { roads: plG.roads.map((rd) => Object.assign({}, rd, { licht: undefined })) }));
+            const nebenKlasse = dorfLicht(Object.assign({}, plG, { roads: plG.roads.map((rd) => Object.assign({}, rd, { licht: rd.licht * 1.5 })) }));
             const schwebt = dorfLicht(
                 Object.assign({}, plG, {
                     laternen: plG.laternen.map((l) =>
@@ -3049,32 +3079,51 @@ hauptLauf(async () => {
                     ),
                 })
             );
+            // je Bedingung ihr Name: die Röte nennt, WELCHE fällt (bis hier stand nur der Ausdruck aller elf)
+            const gesund = dorfLicht(pl);
+            const gesundG = dorfLicht(plG);
+            const teile = {
+                gesund: gesund.ok,
+                // an der Stadt mit Gasse: ein Plan ohne Meter Gasse bleibt ohne Laternen „ok“ und der Test leer (das Dorf 7 12 auf
+                // Kopf C2, nacht-licht-klasse-3; `gasseMeter` nennt beide)
+                ohneLaternenFaellt: (() => {
+                    const o = dorfLicht(Object.assign({}, plG, { laternen: [] }));
+                    return !o.ok && o.gasse > 0;
+                })(),
+                mastAnDerWandFaellt: !dorfLicht(
+                    Object.assign({}, pl, {
+                        laternen: pl.laternen.concat([
+                            {
+                                x: o0.cx + (o0.ex + 0.45) * Math.cos(o0.phi || 0),
+                                z: o0.cz - (o0.ex + 0.45) * Math.sin(o0.phi || 0),
+                                th: 0,
+                            },
+                        ]),
+                    })
+                ).ok,
+                fahrbahnFaellt: !inDerFahrbahn.ok && !inDerFahrbahn.wegOk,
+                gesundGasse: gesundG.ok,
+                gasseTraegtWand: plG.laternen.some((l) => l.wand),
+                ohneWandDunkel: ohneWand.ueber > 0,
+                ohneKlasseFaellt: !ohneKlasse.ok && ohneKlasse.ohneWeite === plG.roads.length,
+                nebenKlasseFaellt: !nebenKlasse.ok && nebenKlasse.ohneWeite === plG.roads.length,
+                schwebtFaellt: !schwebt.haengtOk,
+            };
+            const faellt = Object.keys(teile).filter((k) => !teile[k]);
             check(
                 "Selbst-Test 15: derselbe Plan ohne Laternen fällt im Dorf-Licht, ein Mast an der Wand (0,45 m wie bis K66) ebenso, einer in der Fahrbahn (rd.w/4 von der Achse wie bis K66-n4) am Weg; die dichte Gasse ohne ihre Wandlaternen an der Marke, eine Wandlaterne 0,9 m vor ihrem Stand an der Wand",
-                dorfLicht(pl).ok &&
-                    !dorfLicht(Object.assign({}, pl, { laternen: [] })).ok &&
-                    !dorfLicht(
-                        Object.assign({}, pl, {
-                            laternen: pl.laternen.concat([
-                                {
-                                    x: o0.cx + (o0.ex + 0.45) * Math.cos(o0.phi || 0),
-                                    z: o0.cz - (o0.ex + 0.45) * Math.sin(o0.phi || 0),
-                                    th: 0,
-                                },
-                            ]),
-                        })
-                    ).ok &&
-                    !inDerFahrbahn.ok &&
-                    !inDerFahrbahn.wegOk &&
-                    dorfLicht(plG).ok &&
-                    plG.laternen.some((l) => l.wand) &&
-                    ohneWand.ueber > 0 &&
-                    !schwebt.haengtOk,
+                faellt.length === 0,
                 JSON.stringify({
+                    faellt,
+                    gesund: gesund.ok ? "ok" : Object.keys(gesund).filter((k) => gesund[k] === false),
+                    gesundGasse: gesundG.ok ? "ok" : Object.keys(gesundG).filter((k) => gesundG[k] === false),
+                    gasseMeter: { dorf: gesund.gasse, stadt: gesundG.gasse },
                     weg: inDerFahrbahn.weg,
                     wegOk: inDerFahrbahn.wegOk,
-                    ohneWand: `${ohneWand.ueber}/${ohneWand.gasse} Meter der Gasse > ${MARKE_SOLL} m, der dunkelste ${ohneWand.maxD} m`,
+                    ohneWand: `${ohneWand.ueber}/${ohneWand.gasse} Meter der Gasse unter E_min, der dunkelste ${ohneWand.maxD} lx`,
                     schwebt: `${schwebt.haengt}/${schwebt.nWand}`,
+                    ohneKlasse: `${ohneKlasse.ohneWeite}/${plG.roads.length} Wege ohne Abstand`,
+                    nebenKlasse: `${nebenKlasse.ohneWeite}/${plG.roads.length} Wege neben dem Gesetz`,
                 })
             );
         }
