@@ -60,6 +60,10 @@ Zeuge 3 ohne Lesung · Richter ROT an drei Saaten („Blickziel verdeckt“ von 
 
 ## Kopf 2 (auf main bbb97563; die Batterie lief am gemischten 9885e7c4, am bbb97563 erneut: Verträge, statik, kampf, welt-boot) — die sechs roten Schritte von Kopf 1, je vorher → nachher (lokal, swiftshader, je mit Selbsttest)
 
+**Front-Sprosse des nächsten Kopfs (Post 04:46):** `karte2.erleben.sinn.entdeckung#1` (Fach in `vision/pruefer/faecher.cjs`, Station liest das
+Prüfer-Urteil, Zeile P in `stationen/auge-klasse.cjs`, Sätze in `vision/pruefer/quellen.json`, Basis punkte-maschine 5e895684), danach
+`karte2.planet.erde.gestalt#1`; `wegfindung#1` bucht, sobald ihre Station an der GPU fährt.
+
 Der Kopf steht im Zweig `landmarken-9-2`: `landmarken-9` trägt Kopf 1 (dd490d1e auf main 948f68ee), ein glatter Commit auf dem
 heutigen main ist dort kein Fast-Forward, und force ist verboten.
 
