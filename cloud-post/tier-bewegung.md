@@ -123,3 +123,22 @@ Generation am Gesetz statt an der Wand-Zeit; muster: dauerS × 9,14 = 54,8 h Wel
   Formel im Kern. Offen: Lauf 4 zahlengleich ROT (das Äsungs-Feld läuft in Welt-Sekunden — das Verhältnis Fraß : Leben ändert sich,
   auch ein Takt als Jahres-Bruchteil hält die Spur nicht: Wolf 24 46 67 102 … gegen 24 44 53 63 …); `--bestand` S1–S15 main ↔ Uhr
   rechnet (main 629 s bis S13, Uhr 38 400 Takte).
+
+## ZWISCHENSTAND 28.11. ~04:55 MEZ — die EINE Uhr SPRENGT die Kreatur-Linse (die Zahl vor dem Vorprüf-Kopf, Post 03:58)
+
+Gleiche Last (zwei `--bestand`-Läufe nebenher), main bbb97563 ↔ Uhr-Kopf d05b4f5; die Proben zählen jetzt in Jahren × TJ (`taktJeJahr`):
+
+| | main (TJ 26,25) | Uhr (TJ 240) |
+|---|---|---|
+| Kreatur-Linse `--proben erbe,muster,gau` | GRÜN in 131 s (erbe 28 · muster 61 · gau 24 s) | erbe reißt die Frist: >1 100 s, `Runtime.callFunctionOn timed out` (EXIT 2) |
+| `--bestand` 8 Saaten × 160 Jahre, ohne Wolf | 182 s | 1 414 s (× 7,8) |
+
+**Die Wurzel:** der Bestands-Takt ist fest 10 s (tetrapoda `BESTAND_GESETZ.taktS`), das Leben ist 9,14-mal länger — jede Probe, die
+Generationen zählt (erbe: z.gen ≥ 10 am Fuchs, muster, gau, Lauf 4, S7), zahlt 9,14-mal mehr Takte. Der Takt der Welt kostet je
+Sekunde gleich (0,24 ms), aber je Generation × 9,14.
+**Der Schnitt an der Wurzel, den ich vorschlage (nicht gebaut — Gesetz eines Studios, dein Wort):** der Bestands-Takt ist ein Bruch des
+Jahrs (Satz 1: TJ fest 26,25 → taktS = jahrS ÷ 26,25 = 91,43 s). Dann kostet jede Generation wie heute, die nahe Welt rechnet ihren
+Bestand 9,14-mal seltener; gemessen trägt Lauf 4 damit NICHT zahlengleich (Wolf 24 46 67 102 117 … gegen 24 44 53 63 87 …), weil das
+Äsungs-Feld in Welt-Sekunden zerfällt (`LIFE_FIELD.decayPerSec` × taktS) — das Feld bräuchte dieselbe Uhr. Ohne den Schnitt bleibt der
+Kopf WIP: die Linse fährt in CI nicht in ihrer Frist (Teil ≤ 1 150 s).
+Daneben baue ich (1) den Stations-Kandidaten „Fenster in Generationen“ (er hängt nicht an der Uhr).
