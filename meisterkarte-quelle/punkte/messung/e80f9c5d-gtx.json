@@ -1,7 +1,7 @@
 {
  "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
  "geraet": "gtx",
- "zeit": "2026-11-28T08:18:36.544Z",
+ "zeit": "2026-11-28T08:19:20.251Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "profiband.K4#1": {
@@ -2590,18 +2590,132 @@
   },
   "karte2.same.entfaltung.schirm#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: Prozess unbekannt · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\f7997654-4c58-4783-8201-a7d2ec110d75.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\punkte-gtx\\\\scripts\\\\lib\\\\welt-boot.c) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: Prozess unbekannt · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\f7997654-4c58-4783-8201-a7d2ec110d75.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\punkte-gtx\\\\scripts\\\\lib\\\\welt-boot.c) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-28T08:18:36.544Z",
+   "zahl": "Deckel 139 s gerissen: Stille seit 15 s nach 397.7 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt, kein Schritt der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT dorf 353.9 s)",
+   "exit": 1,
+   "minuten": 6.63,
+   "grund": "Deckel 139 s gerissen: Stille seit 15 s nach 397.7 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt, kein Schritt der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT dorf 353.9 s)",
+   "s": 398.1,
+   "fremd": {
+    "s": 436.9,
+    "takte": 199,
+    "fremdS": 140.61,
+    "kerne": 0.322,
+    "fensterKerne": 0.903,
+    "namen": [
+     [
+      "bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \"",
+      22.22
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      16.97
+     ],
+     [
+      "Explorer.EXE",
+      15.16
+     ]
+    ],
+    "dienerS": 151.03,
+    "diener": [
+     [
+      "dwm.exe",
+      65.03
+     ],
+     [
+      "System",
+      57.69
+     ]
+    ],
+    "geraetS": 221.41,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      155.48
+     ],
+     [
+      "svchost.exe",
+      58.73
+     ],
+     [
+      "SearchIndexer.exe",
+      3.31
+     ]
+    ],
+    "eigenS": 1420.95,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.858,
+     "nach": 0.231,
+     "station": 1.224
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 119.6,
+     "alle": 272.4,
+     "cpuEin": 125,
+     "tor": {
+      "ruhig": true,
+      "kerne": 2.42,
+      "s": 4,
+      "soll": 3,
+      "reihe": [
+       5.8,
+       4.78,
+       3.5,
+       2.55,
+       3.82,
+       0.92
+      ]
+     },
+     "spanne": [
+      1795853964272,
+      1795853964816
+     ]
+    },
+    "nach": {
+     "ein": 125.8,
+     "alle": 291.9,
+     "cpuEin": 125,
+     "tor": {
+      "ruhig": true,
+      "kerne": 2.8,
+      "s": 30.1,
+      "soll": 3,
+      "reihe": [
+       5.73,
+       3.44,
+       3.13,
+       3.87,
+       2.66,
+       1.78
+      ]
+     },
+     "spanne": [
+      1795854392995,
+      1795854393568
+     ]
+    },
+    "ruhe": {
+     "ein": 89.2,
+     "alle": 220.6,
+     "n": 1198,
+     "von": "2026-11-27"
+    },
+    "f": 1.41,
+    "fEin": 1.41,
+    "fAlle": 1.323,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-28T08:19:20.251Z",
    "abdruck": "0b389cec986f",
    "port": 7804,
    "bahn": "sitzung",
-   "modus": "session",
-   "offen": 2,
-   "fahrt": "5376@mx048h4q"
+   "modus": "session"
   }
  },
  "sitzung": {
@@ -3106,5 +3220,110 @@
   },
   "fahrtS": 1364.6,
   "minuten": 22.91
- }
+ },
+ "fortsetzung": [
+  {
+   "start": "2026-11-28T08:18:40.325Z",
+   "ordner": "sitzung-20261128-091840",
+   "port": 7804,
+   "warten": 0.03,
+   "bootS": 8.2,
+   "grundstellungS": [],
+   "proben": 1,
+   "freigaben": [],
+   "geraet": {
+    "name": "GTX 1060",
+    "adapter": "NVIDIA GeForce GTX 1060",
+    "preis": true
+   },
+   "orte": [
+    {
+     "ort": null,
+     "vor": "karte2.same.entfaltung.schirm#1",
+     "s": 28.3,
+     "takte": 794,
+     "chunks": 81,
+     "nach": null
+    }
+   ],
+   "wegeTueren": [],
+   "felder": [
+    {
+     "probe": "karte2.same.entfaltung.schirm#1",
+     "weg": [
+      "__ortZeit",
+      "__weltaktSpionBuch",
+      "__wetterSpionBuch",
+      "__buehneUhr",
+      "__bandDecke",
+      "__zensusCalls",
+      "__pbiv"
+     ]
+    }
+   ],
+   "wirt": [
+    {
+     "probe": "karte2.same.entfaltung.schirm#1",
+     "anders": [
+      "r._bildZeit",
+      "r._wolkenZeit",
+      "r._weltaktGehalten",
+      "r._setWeather",
+      "r.state.weather",
+      "window.__wieseMessen",
+      "window.__wieseUrteil",
+      "window.__ortSchritt"
+     ],
+     "wie": {
+      "r._bildZeit": "getauscht: () => S.T → der Wert 12.5",
+      "r._wolkenZeit": "getauscht: () => S.T → der Wert 12.5",
+      "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+      "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
+      "r.state.weather": "getauscht: () => wert → der Wert sunny",
+      "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
+      "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
+      "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+     },
+     "haelt": [],
+     "heap": [
+      200.6,
+      502.6
+     ],
+     "ungemessen": null
+    }
+   ],
+   "messHalt": [
+    {
+     "probe": "karte2.same.entfaltung.schirm#1",
+     "halt": -1000000000,
+     "zurueck": 0
+    }
+   ],
+   "ciBlicke": 2,
+   "strom": {
+    "datei": "strom.ndjson",
+    "bilder": 781,
+    "frameP95": 48.51,
+    "taktP95": 35.67,
+    "vramMax": 161,
+    "seiten": 1,
+    "marken": 0,
+    "fehler": 0,
+    "verloren": 0,
+    "ortImDeckel": [
+     {
+      "probe": "karte2.same.entfaltung.schirm#1",
+      "m": 1204,
+      "ringVor": 4,
+      "ringMin": -1
+     }
+    ],
+    "zapfen": 448,
+    "luecken": 1,
+    "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+   },
+   "fahrtS": 474.2,
+   "minuten": 8.03
+  }
+ ]
 }
