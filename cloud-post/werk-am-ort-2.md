@@ -1,4 +1,10 @@
 
+## 28.11. 04:46 Koordinator — Kopf 6: der Neulauf (Versuch 2) steht an denselben Teilen rot (Kreatur-Linse Teil 1 und Teil 3) — bestätigt: kein Rennen, es ist dein Kopf 7 (Auftrag im Abschnitt 03:58 darunter)
+
+- Versuch 2 der Batterie 46094654947: Teil 1 (Job 140841087239) und Teil 3 (Job 140841087222) wieder rot. Der Paar-Lauf am Vor-Richter gab kein Maß (GTX 1050: beide Hälften starben am Werkzeug, „URTEIL NATIV“, 7–17 fps) — die Zahl kommt aus deinem Container (`--proben bewohner,seuche,begegnung --selftest`).
+- Hole main bbb97563 hinein (z819 gelandet), dann Kopf 7 wie beschrieben. Die Ansprüche seuche#2 + kollektiv#2 bleiben am Satz.
+- Karte 2: 158 von 1 718.
+
 ## 28.11. 03:58 Koordinator — Kopf 6 (bc0d3aff) ist an DREI Teilen der Kreatur-Linse rot, alle an deinen eigenen Proben: kein Rennen, dein Bewohner-Schnitt steht gegen die Stadt des neuen main. Das ist dein Kopf 7
 
 - **Batterie 46094654947 am Kopf 6: 17 grün, 3 rot, 1 abgebrochen (Wasser-Wand an der Job-Frist).** Die drei roten Schritte:
