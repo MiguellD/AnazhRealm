@@ -1,0 +1,201 @@
+--- a/meisterkarte-quelle/punkte/stationen/k2-mensch-macht.js
++++ b/meisterkarte-quelle/punkte/stationen/k2-mensch-macht.js
+@@ -469,7 +469,9 @@
+     // ───────────────────────── mensch.macht.stand — Stand, Kaste, Klasse ─────────────────────────
+     // EINE Messung: die Wohnfläche der Wohnbauten der vollen Stadt (Grundriss W × D × Geschosse aus dem Plan, `_ortPlaene`), ihr Gini,
+     // das reichste und das ärmste Haus nebeneinander (das Bildpaar), die Viertel und der Anteil des Wohlstands zwischen ihnen
+-    // (η²), die Stände (Rollen der Wohnbauten) und die Bewohner (`_bewohnerSiedlungen`).
++    // (η²), die Stände (Rollen der Wohnbauten) und die Bewohner (`_bewohnerSiedlungen`). Dazu die GESTALT der Zehntel (S1): je
++    // stehendem Haus seine Geschosse (Plan), seine Höhe (die Blocker der stehenden Gestalt, `topY`, wie der Fächer sie rahmt), sein
++    // Programm (fachwerk `bauProgramm`, `ov.programm`) und der Wohlstand seines Haushalts (`ov.wohl`) — die AUC arm ↔ reich je Größe
+     F.leiter("mensch.macht.stand", {
+         sek: 50,
+         pfad: ["stamm/siedlung-ort.js", "stamm/siedlung-bewohner.js", "fachwerk-core.js"],
+@@ -494,12 +496,31 @@
+                     mass: w.staende + " Stände (Rollen der Wohnbauten: " + w.rollen.join(", ") + ") · " + w.viertel + " Viertel · Wohlstand zwischen den Vierteln η² " + w.eta2 + " · eine Kleidung je Ort (" + w.kleidung + ")",
+                 });
+             });
++            // S1: das Zehntel ist im Bild nur lesbar, wenn das Gesetz es in die GESTALT legt (der Fächer rahmt das ganze Haus,
++            // Höhe × 1,3 — die Fläche selbst sieht kein Auge): je ≥ 10 stehende Häuser beider Zehntel mit Gestalt (die 30 Bilder je Klasse
++            // des Fächers aus ≤ 3 Ansichten je Haus), die AUC arm ↔ reich
++            // der Geschosse und der Höhe ≥ 0,8 (die Wahrscheinlichkeit, dass das höhere/geschossreichere Haus eines Paars das reiche
++            // ist — die Schwelle des Blindurteils), und das Zehntel ist Wohlstand, nicht Haushaltsgröße (AUC `wohl` ≥ 0,8); das Urteil
++            // „arm oder reich?“ (Fächer, ≥ 80 %) fällt am Bild des Prüfers
+             await K.schritt(1, async () => {
++                const G = w.gestalt;
++                const mass =
++                    "Gini der Wohnfläche " + w.gini + " über " + w.wohnbauten + " Wohnbauten; das Paar " + w.paar.reich + " m² (" + w.paar.reichRolle + ") / " + w.paar.arm + " m² (" + w.paar.armRolle + ")" +
++                    " · Gestalt der Zehntel (≤ " + G.lo + " / ≥ " + G.hi + " m², stehend mit Gestalt arm " + G.arm.n + " · reich " + G.reich.n + "): Geschosse " + G.arm.geschosse + " ↔ " + G.reich.geschosse + " (AUC " + G.auc.geschosse + ")" +
++                    " · Höhe " + G.arm.hoehe + " ↔ " + G.reich.hoehe + " m (AUC " + G.auc.hoehe + ") · Programm " + JSON.stringify(G.arm.programm) + " ↔ " + JSON.stringify(G.reich.programm) + " · wohl " + G.arm.wohl + " ↔ " + G.reich.wohl + " (AUC " + G.auc.wohl + ")";
++                H.zeile("S1 " + mass);
++                const fehlt = [
++                    G.arm.n < 10 || G.reich.n < 10 ? "stehend mit Gestalt arm " + G.arm.n + " · reich " + G.reich.n + " < 10 (je 30 Bilder des Fächers aus ≤ 3 Ansichten je Haus)" : null,
++                    !(G.auc.geschosse >= 0.8) ? "Geschosse trennen nicht (AUC " + G.auc.geschosse + " < 0,8)" : null,
++                    !(G.auc.hoehe >= 0.8) ? "die Höhe trennt nicht (AUC " + G.auc.hoehe + " < 0,8)" : null,
++                    !(G.auc.wohl >= 0.8) ? "das Zehntel der Fläche ist nicht der Wohlstand des Haushalts (AUC wohl " + G.auc.wohl + " < 0,8)" : null,
++                ].filter(Boolean);
++                if (fehlt.length) return K.leser(1, { n: Math.min(G.arm.n, G.reich.n), fehlt: "arm und reich stehen nicht in der Gestalt: " + fehlt.join(" · ") + " — " + mass, wo: "fachwerk-core.js bauProgramm (Geschosse aus Haushalt × wohl) · wohnNutzung · ortPlan p.wohl" });
+                 const b = await K.bild(1, w.posePaar);
+                 K.auge(1, {
+                     bild: b.datei,
+                     pose: "stadt-voll: das reichste und das ärmste Wohnhaus binnen " + w.paar.d + " m, die Kamera 30 m quer über ihrer Mitte, 18 m hoch",
+-                    mass: "Gini der Wohnfläche " + w.gini + " über " + w.wohnbauten + " Wohnbauten; das Paar " + w.paar.reich + " m² (" + w.paar.reichRolle + ") / " + w.paar.arm + " m² (" + w.paar.armRolle + ")",
++                    mass,
+                 });
+             });
+         },
+@@ -511,12 +532,22 @@
+                 const WOHN = { wohnhaus: 1, patrizierhaus: 1, wohnturm: 1, pfarrhaus: 1, kontor: 1 };
+                 const haus = [];
+                 const vw = new Map();
++                // die stehende Gestalt je Los (Saat @ Ort, wie der Fächer sie findet): ihre Höhe über dem Fuß aus den Blockern
++                const steht = new Map();
++                for (const e of r.state.architectures || []) if (e && Number.isFinite(e.seed) && e.position) steht.set((e.seed >>> 0) + "@" + Math.round(e.position.x) + "," + Math.round(e.position.z), e);
++                const hoeheVon = (e) => {
++                    let y = -Infinity;
++                    for (const b of (e && e.blockerAABBs) || []) y = Math.max(y, Number.isFinite(b.topY) ? b.topY : b.maxY);
++                    return Number.isFinite(y) ? y - e.position.y : null;
++                };
+                 for (const p of plaene)
+                     for (const s of p.slots) {
+                         if (!WOHN[s.rolle]) continue;
+                         const ov = s.ov || {};
+                         const fl = (ov.W || 2 * ((s.obb && s.obb.ex) || 3)) * (ov.D || 2 * ((s.obb && s.obb.ez) || 3)) * (ov.storeys || 1);
+-                        haus.push({ x: p.ort.x + s.x, z: p.ort.z + s.z, fl, rolle: s.rolle, wohl: Number.isFinite(ov.wohl) ? ov.wohl : 1, viertel: s.viertel || "?" });
++                        const [hx, hz] = [p.ort.x + s.x, p.ort.z + s.z];
++                        const hoehe = hoeheVon(steht.get((s.seed >>> 0) + "@" + Math.round(hx) + "," + Math.round(hz)));
++                        haus.push({ x: hx, z: hz, fl, rolle: s.rolle, wohl: Number.isFinite(ov.wohl) ? ov.wohl : 1, viertel: s.viertel || "?", geschosse: ov.storeys || 1, hoehe, programm: ov.programm || s.rolle });
+                         const v = vw.get(s.viertel || "?") || [];
+                         v.push(Number.isFinite(ov.wohl) ? ov.wohl : 1);
+                         vw.set(s.viertel || "?", v);
+@@ -534,6 +565,18 @@
+                 let paar = null;
+                 for (const a of arm) for (const b of reich) { const d = Math.hypot(a.x - b.x, a.z - b.z); if (d > 4 && (!paar || d < paar.d)) paar = { a, b, d }; }
+                 if (!paar) return { fehler: "kein Paar arm/reich" };
++                // die Gestalt der Zehntel: nur Häuser mit stehender Gestalt (der Fächer rahmt nur sie); AUC = P(reich > arm) eines Paars
++                const [ga, gr] = [arm.filter((h) => h.hoehe != null), reich.filter((h) => h.hoehe != null)];
++                const auc = (k) => {
++                    let s = 0;
++                    for (const a of ga) for (const b of gr) s += b[k] > a[k] ? 1 : b[k] === a[k] ? 0.5 : 0;
++                    return ga.length && gr.length ? +(s / (ga.length * gr.length)).toFixed(3) : null;
++                };
++                const spanne = (L, k) => (L.length ? Math.min(...L.map((h) => h[k])) + "–" + Math.max(...L.map((h) => h[k])) : "-");
++                const mitte = (L, k) => (L.length ? +(L.reduce((s, h) => s + h[k], 0) / L.length).toFixed(2) : null);
++                const prog = (L) => L.reduce((o, h) => ((o[h.programm] = (o[h.programm] || 0) + 1), o), {});
++                const zehntel = (L) => ({ n: L.length, geschosse: spanne(L, "geschosse"), hoehe: mitte(L, "hoehe"), wohl: mitte(L, "wohl"), programm: prog(L) });
++                const gestalt = { lo: Math.round(lo), hi: Math.round(hi), arm: zehntel(ga), reich: zehntel(gr), auc: { geschosse: auc("geschosse"), hoehe: auc("hoehe"), wohl: auc("wohl") } };
+                 const [mx, mz] = [(paar.a.x + paar.b.x) / 2, (paar.a.z + paar.b.z) / 2];
+                 const [ux, uz] = [(paar.b.x - paar.a.x) / paar.d, (paar.b.z - paar.a.z) / paar.d];
+                 const my = r.getTerrainHeightAt(mx, mz);
+@@ -565,6 +608,7 @@
+                 return {
+                     gini: +gini.toFixed(3),
+                     wohnbauten: n,
++                    gestalt,
+                     paar: { d: Math.round(paar.d), arm: Math.round(paar.a.fl), armRolle: paar.a.rolle, reich: Math.round(paar.b.fl), reichRolle: paar.b.rolle },
+                     posePaar,
+                     viertel: vw.size,
+--- a/meisterkarte-quelle/punkte/stationen/k2-mensch-zeit.js
++++ b/meisterkarte-quelle/punkte/stationen/k2-mensch-zeit.js
+@@ -49,6 +49,20 @@
+                 const o = await K.welt("return await (" + H.seite.VIER + ")(r, T, " + JSON.stringify({ jahre: [1300, 1600, 1800, 1950], seed: 7, nH: 12, fristMs }) + ");", fristMs + 15000);
+                 if (!o || o.fehler) throw new Error("die vier Orte: " + ((o && o.fehler) || "ohne Antwort"));
+                 H.zeile("Vier Orte: " + JSON.stringify(o));
++                // S1 IM GESETZ: blind datierbar ist die Folge nur, wenn jedes Jahr seinen EIGENEN Ort stellt (vier verschiedene Gestalten:
++                // Kulturen · Geschosse · Baujahre) und kein Ort ein Haus trägt, das jünger ist als sein Jahr
++                const sig = (q) => JSON.stringify([q.gestalt.kultur, q.gestalt.geschosse, q.gestalt.baujahr]);
++                const verschieden = new Set(o.orte.map(sig)).size;
++                const gleich = o.orte.filter((q, i) => o.orte.findIndex((x) => sig(x) === sig(q)) !== i).map((q) => q.jahr + " ≡ " + o.orte.find((x) => sig(x) === sig(q)).jahr);
++                const juenger = o.orte.filter((q) => q.gestalt.juenger > 0).map((q) => q.jahr + ": " + q.gestalt.juenger + " Häuser jünger (Baujahre " + q.gestalt.baujahr + ")");
++                const gestalt = o.orte.map((q) => q.jahr + " " + q.epoche + " " + q.gestalt.slots + " Lose, Baujahre " + q.gestalt.baujahr + ", " + JSON.stringify(q.gestalt.kultur)).join(" · ");
++                H.zeile("S1 verschiedene Orte " + verschieden + " von " + o.orte.length + " · " + gestalt);
++                if (verschieden < o.orte.length || juenger.length)
++                    return K.leser(1, {
++                        n: verschieden,
++                        fehlt: "das Jahr des Akts stellt nicht seinen Ort: " + [gleich.length ? "gleiche Gestalt " + gleich.join(", ") : null, juenger.length ? "Häuser nach dem Jahr " + juenger.join(", ") : null].filter(Boolean).join(" · ") + " — " + gestalt,
++                        wo: "stamm/siedlung-ort.js:1353 spawnSettlement (das Jahr wählt nur die Epoche, der Export trägt es nicht als Schnitt `jahr`) · fachwerk-core.js:6075 DORF (der Schnitt der Chronik T) · :5673 epocheBei",
++                    });
+                 const s = String(H.AUS);
+                 const basis = s.endsWith(".json") ? s.slice(0, -5) : s;
+                 const bilder = [];
+@@ -142,7 +156,22 @@
+                     if (!res) return { fehler: "der Ort des Jahres " + jahr + " steht nicht (" + orte.length + " Orte stehen; abgesagt an " + (abgesagt.join(" ") || "–") + "; " + Math.round(performance.now() - t0) + " ms)" };
+                     const m = res.mitte;
+                     const y = hoch(m.x, m.z);
+-                    orte.push({ jahr, epoche: ep(jahr), name: res.name, haeuser: res.placed, x: +m.x.toFixed(1), z: +m.z.toFixed(1), pose: { px: +m.x.toFixed(2), py: +(y + 22).toFixed(2), pz: +(m.z + 70).toFixed(2), lx: +m.x.toFixed(2), ly: +(y + 3).toFixed(2), lz: +m.z.toFixed(2) } });
++                    // die Gestalt des Orts (S1): sein Plan (`_ortPlaene`, der nächste an der Mitte binnen 120 m — die Orte stehen ≥ 300 m
++                    // voneinander) — Kulturen, Geschosse, Baujahre und die Häuser, die JÜNGER als sein Jahr sind (ein Bau nach dem Jahr des Akts)
++                    const P = [...(r._ortPlaene || new Map()).values()]
++                        .filter((p) => p && p.ort && Array.isArray(p.slots) && Math.hypot(p.ort.x - m.x, p.ort.z - m.z) < 120)
++                        .sort((a, b) => Math.hypot(a.ort.x - m.x, a.ort.z - m.z) - Math.hypot(b.ort.x - m.x, b.ort.z - m.z))
++                        .slice(0, 1);
++                    const [kultur, geschosse, bj] = [{}, {}, []];
++                    for (const p of P)
++                        for (const s of p.slots) {
++                            const ov = s.ov || {};
++                            kultur[ov.kultur || "?"] = (kultur[ov.kultur || "?"] || 0) + 1;
++                            geschosse[ov.storeys || 1] = (geschosse[ov.storeys || 1] || 0) + 1;
++                            if (Number.isFinite(ov.baujahr)) bj.push(ov.baujahr);
++                        }
++                    const gestalt = { slots: P.reduce((s, p) => s + p.slots.length, 0), kultur, geschosse, baujahr: bj.length ? Math.min(...bj) + "–" + Math.max(...bj) : "-", juenger: bj.filter((b) => b > jahr).length };
++                    orte.push({ jahr, epoche: ep(jahr), name: res.name, haeuser: res.placed, x: +m.x.toFixed(1), z: +m.z.toFixed(1), gestalt, pose: { px: +m.x.toFixed(2), py: +(y + 22).toFixed(2), pz: +(m.z + 70).toFixed(2), lx: +m.x.toFixed(2), ly: +(y + 3).toFixed(2), lz: +m.z.toFixed(2) } });
+                 }
+                 return { orte, abgesagt, ms: Math.round(performance.now() - t0) };
+             },
+--- a/vision/pruefer/faecher.cjs
++++ b/vision/pruefer/faecher.cjs
+@@ -347,12 +347,12 @@
+             "return { saat, posen, lage: L.length + ' Pflanzen binnen 250 m mit Sichthöhe · Bilder je Art ' + JSON.stringify(je) + ' · ohne Sichthöhe ' + JSON.stringify(ohneH) + ' · ohne freien Azimut ' + JSON.stringify(ohneFrei) + ' · Gründe ' + JSON.stringify(gruende) + ' · fov ' + RW.camera.fov };",
+     },
+     // arm/reich: die Station misst die Wohnfläche der Wohnbauten der vollen Stadt (W × D × Geschosse aus dem Plan, k2-mensch-macht.js:
+-    // 511–519) und nennt arm das ärmste, reich das reichste Zehntel (:532–533) — der Fächer nimmt JEDES stehende Wohnhaus beider
++    // 532–550) und nennt arm das ärmste, reich das reichste Zehntel (:563–564) — der Fächer nimmt JEDES stehende Wohnhaus beider
+     // Zehntel, das ganze Haus von der Tür-Seite gerahmt (RAHMEN, wie bau.bedarf#1 — die Fläche liest nur, wer das ganze Haus sieht),
+     // das Zehntel ist die Klasse
+     "mensch.macht.stand#1": {
+         ort: "stadt-voll",
+-        gesetz: "meisterkarte-quelle/punkte/stationen/k2-mensch-macht.js:533",
++        gesetz: "meisterkarte-quelle/punkte/stationen/k2-mensch-macht.js:564",
+         faecher: "jedes stehende Wohnhaus des ärmsten und des reichsten Zehntels, das ganze Haus im Bild (Höhe × 1,3, Blick auf halbe Höhe) von der Tür-Seite, bis 3 freie Ansichten je Haus aus ±30/45/0/60°, erst die erste Ansicht aller Häuser, Klassen im Wechsel, Mittag",
+         ordner: "mensch.macht.stand.1-b2",
+         uhren: [0.5],
+@@ -462,6 +462,31 @@
+             "H.sort((a, b) => a.d - b.d);" +
+             "return { saat, posen: H, lage: 'Tiere des Bestands mit Leib: Jungtier ' + je.Jungtier + ' · Alttier ' + je.Alttier + ' · dazwischen ' + mitte + ' · ohne Bestand ' + ohneBestand + ' · ohne Leib-Maß ' + ohneMass };",
+     },
++    // die Blind-Datierung: die Station stellt je Jahr 1300 · 1600 · 1800 · 1950 einen Ort (Same 7, 12 Häuser) auf das ebenste Land
++    // 500–800 m vor dem Genesis-Ort (k2-mensch-zeit.js:174, `VIER`: der Akt mit Jahr, `spawnSettlement`) und schießt ihn 70 m vor
++    // seiner Mitte, 22 m über ihrem Grund — der Fächer ruft DIESELBE Seiten-Funktion und nimmt jeden Ort aus 8 Richtungen desselben
++    // Kreises (70 m, 22 m über dem Grund der Mitte, Blick auf 3 m über ihr) × Tageszeit; die Klasse ist das Jahr des Akts
++    "mensch.zeit.spanne#1": {
++        ort: "genesis",
++        gesetz: "meisterkarte-quelle/punkte/stationen/k2-mensch-zeit.js:174",
++        faecher: "die vier Orte der Station (1300 · 1600 · 1800 · 1950, Same 7, 12 Häuser) aus 8 Richtungen 70 m vor ihrer Mitte, 22 m über ihrem Grund, Blick auf die Mitte, Klassen im Wechsel × Tageszeit",
++        ordner: "mensch.zeit.spanne.1-b1",
++        uhren: [0.5, 0.4],
++        frage: "Aus welchem Jahr stammt der Ort im Bild — 1300, 1600, 1800 oder 1950?",
++        je: 10,
++        mehr: {},
++        wahl: 0,
++        // der Ort selbst vor dem Blickziel trägt (ein Haus des Orts verdeckt seine Mitte), nie eine verdeckte Sicht oder ein Vordergrund
++        motiv: (a) => AN_DER_POSE(a) && (GRUEN(a) || (/Blickziel verdeckt von (an Punkt \d+ )?bauSatz/.test(a) && !/Sicht verdeckt|Vordergrund/.test(a))),
++        rumpf: () =>
++            SAAT +
++            "const o = await (" + seiteVon("k2-mensch-zeit.js", "mensch.zeit.spanne", "VIER") + ")(r, T, { jahre: [1300, 1600, 1800, 1950], seed: 7, nH: 12, fristMs: 90000 });" +
++            "if (!o || o.fehler) return { saat, posen: [], lage: (o && o.fehler) || 'die vier Orte ohne Antwort' };" +
++            "const posen = [];" +
++            "for (let k = 0; k < 8; k++) for (const q of o.orte) { const a = Math.PI / 2 + (k * Math.PI) / 4, y = q.pose.ly - 3;" +
++            " posen.push({ klasse: String(q.jahr), pose: { px: +(q.x + Math.cos(a) * 70).toFixed(2), py: +(y + 22).toFixed(2), pz: +(q.z + Math.sin(a) * 70).toFixed(2), lx: q.pose.lx, ly: q.pose.ly, lz: q.pose.lz }, wort: q.jahr + ' (' + q.epoche + ', ' + q.haeuser + ' Häuser), ' + k * 45 + ' Grad um die Mitte, 70 m, 22 m über ihrem Grund' }); }" +
++            "return { saat, posen, lage: o.orte.map((q) => q.jahr + ' ' + q.epoche + ' ' + q.haeuser + ' Häuser bei ' + q.x + '/' + q.z).join(' · ') + ' · abgesagt ' + (o.abgesagt.join(' ') || '–') + ' · ' + o.ms + ' ms' };",
++    },
+     // die Talform an 20 Saaten: die Station rechnet je Saat (Land-Lage der Fibonacci-Kugel) × Stelle 1/4 · 1/2 · 3/4 des größten Laufs
+     // den Querschnitt (k2-planet.js:2662 PROFIL_AN, V-Tal b < 1,5 ≤ Trog) und nennt die Pose „Ego 8 m über der Sohle, Blick talauf“
+     // (:2706) — der Fächer REIST je Saat an ihre Lage (der Satz des Spielers „reise <Breite> <Länge>“, wie die Werkbank ihre Reise-Orte
+@@ -841,6 +866,7 @@
+     const AU = seiteVon("k2-mensch-leib.js", "mensch.leib.ausdruck", "AUSDRUCK");
+     t("Akt und Gemüt: die Klasse ist der Name, den der Leib steht (Wahl des Wirts), je Pose ihre Uhr, seitlich, ≥ 20 je Klasse", /_koerperMotionName\(false, \{ haltung: KC\.tagesHaltung\(s\.akt, b\.rolle, b\)/.test(AU) && /basis === "sad" && s\.akt === "abend" \? "Müde"/.test(AU) && /uhr: h \/ 24/.test(AU) && /Math\.cos\(y\) \* 3\.5/.test(AU) && /uhr: p\.uhr/.test(SPROSSEN["mensch.leib.ausdruck#1"].rumpf()) && SPROSSEN["mensch.leib.ausdruck#1"].je >= 20);
+     t("die Felswand liest das Gesetz der Station: FELS_AN wörtlich (Zone und die steilsten Wände), die Klasse aus der Zone des Planet-Fadens, je Lage eine Reise", (() => { try { const g = SPROSSEN["planet.geologie.gebirge#1"].rumpf(); return /const FELS_AN = async \(r, T, a, mit\) =>/.test(g) && /w\.zone === 'kollision' \? 'gefaltet' : w\.zone === 'kraton' \? 'flach'/.test(g) && /reise: 'reise '/.test(g) && SPROSSEN["planet.geologie.gebirge#1"].je >= 20; } catch (e) { return false; } })());
++    t("Blind-Datierung: der Rumpf ruft die Seiten-Funktion VIER der Station, die Klasse ist das Jahr des Akts, ≥ 40 Posen aus 4 Orten × 8 Richtungen", /spawnSettlement/.test(SPROSSEN["mensch.zeit.spanne#1"].rumpf()) && /klasse: String\(q\.jahr\)/.test(SPROSSEN["mensch.zeit.spanne#1"].rumpf()) && 4 * 8 * SPROSSEN["mensch.zeit.spanne#1"].uhren.length >= 40 && SPROSSEN["mensch.zeit.spanne#1"].je * 4 >= 40);
+     t("jede Klassen-Sprosse trägt ihre Frage", Object.values(SPROSSEN).filter((d) => d.je).every((d) => /\?$/.test(d.frage || "")));
+     t("eine feste Uhr (Erntetag) fächert nur über Adressen", faechern(basis(12), [10 / 24], { uhr: 1 }).length === 12 && faechern(basis(12), [10 / 24], {})[0].mehr.uhr === 10 / 24);
+     const png = Buffer.alloc(24);

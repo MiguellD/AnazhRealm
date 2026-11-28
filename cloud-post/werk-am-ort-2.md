@@ -155,4 +155,22 @@ Seite der Fahrbahn → `wer`).
   Kopf 5 + main b56b51f0 (merge-tree, 547ab67f) liest `gate:settlement` GRÜN (1 013 s, Selbsttest und Kanal). Gegen main
   27d2f60e (z813) mischen Kopf 5 und der Zweig sauber; z813 fasst Linse, `DAUER_S`, `check.yml` und `ci-zeiten.json` nicht an.
 
+## SICHERUNG 28.11. (Auftrag 00:57: mensch.macht.stand#1 · mensch.zeit.spanne#1) — Stations-Kandidat im Ordner `werk-am-ort-2-station/`
+
+- **Geschnitten:** `kandidat.diff` (drei Dateien gegen punkte-maschine e3b87d3b) + `BEGRUENDUNG-stand-spanne.txt`.
+  stand#1: S1 misst die Gestalt der Zehntel vor dem Bild (Geschosse, Höhe der stehenden Gestalt, Programm, wohl; AUC ≥ 0,8, sonst
+  Leser). spanne#1: VIER trägt die Gestalt je Ort, S1 verlangt vier verschiedene Orte und kein Haus nach dem Jahr, sonst Leser;
+  NEUES Fach „mensch.zeit.spanne#1“ (Blind-Datierung, 4 Orte × 8 Richtungen × 2 Uhren, Klasse = Jahr des Akts).
+- **Letzte Zahl (headless, Werkbank swiftshader):** stand#1 S1 trennt — Geschosse 2–3 ↔ 4–6 (AUC 1), Höhe 9,11 ↔ 13,71 m (AUC 1),
+  wohl 0,91 ↔ 1,2 (AUC 0,97), arm 19 · reich 33 mit Gestalt; Fächer 110 Posen (arm 21 · reich 89). spanne#1 S1 ROT: 3 von 4 Orten
+  verschieden, Fächer 32 Basis-Posen (8 je Jahr). Fächer-Selbsttest am pm-Kopf: Basis 20 GRÜN · 0 ROT ↔ Kandidat 21 GRÜN · 0 ROT.
+- **Rote Zeilen wörtlich (S1 spanne#1, headless):** „das Jahr des Akts stellt nicht seinen Ort: gleiche Gestalt 1800 ≡ 1600 · Häuser
+  nach dem Jahr 1300: 12 Häuser jünger (Baujahre 1183–1412), 1600: 4 Häuser jünger (Baujahre 1256–1702)“.
+- **Nächster Schritt:** die Wurzel von spanne#1 schneiden — `spawnSettlement` (stamm/siedlung-ort.js:1353) übergibt das Jahr des
+  Akts als Schnitt `jahr` an den Export (gemessen: vier Orte, 0 jüngere Häuser); dabei bricht die Erwartung WW1 in
+  `scripts/diag-settlement.cjs` (Akt 1935 = moderne Stadt mit Turm und tshirt), weil `epocheBei` (fachwerk-core.js:5673) die Epoche
+  liest, deren Spanne bis t ENDETE — das Gesetz des Akts und `epocheBei` gehören in EINEN Schnitt, Richter gate:settlement (WW) und
+  danach der Prüfer. Der Prüfer-Lauf beider Fächer braucht das Gerät (OMEN); Prozent UNGEMESSEN.
+- Kopf 5 (`werk-am-ort-2-kopf5` 2b129915) wartet im Zug; main 27d2f60e mischt sauber. Keine Batterie gestartet.
+
 Karte 2 gebucht 156 von 1 718. Status ZWISCHENSTAND.

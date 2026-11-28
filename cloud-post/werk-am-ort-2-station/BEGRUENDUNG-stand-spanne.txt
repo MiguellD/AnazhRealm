@@ -1,0 +1,32 @@
+werk-am-ort-2 — Stations-Kandidat mensch.macht.stand#1 · mensch.zeit.spanne#1 (kandidat.diff, drei Dateien gegen punkte-maschine e3b87d3b)
+
+1) stationen/k2-mensch-macht.js — mensch.macht.stand S1 misst das Gesetz, bevor das Bild urteilt (Vorlage kunst#1):
+   Die Seite STAND trägt neu `gestalt`: je stehendem Haus des ärmsten/reichsten Zehntels (dieselben Zehntel der Wohnfläche, :563–564)
+   seine Geschosse (Plan), seine Höhe (Blocker der stehenden Gestalt, topY — wie der Fächer sie rahmt), sein Programm (`ov.programm`)
+   und `wohl`; die AUC arm ↔ reich je Größe. S1 trennt, wenn je ≥ 10 Häuser mit Gestalt stehen (30 Bilder je Klasse aus ≤ 3 Ansichten),
+   AUC Geschosse ≥ 0,8, AUC Höhe ≥ 0,8 und AUC wohl ≥ 0,8 (das Zehntel ist Wohlstand, nicht Haushaltsgröße) — sonst K.leser mit der
+   Stelle (fachwerk bauProgramm · wohnNutzung · ortPlan p.wohl); sonst K.bild + K.auge wie bisher, mass um die Gestalt erweitert.
+   Pose- und Vorbild-Wort unverändert. Die Klasse P steht schon (auge-klasse.cjs:178 „arm/reich erkannt“).
+   Headless (Werkbank, swiftshader, stadt-voll, 249 Wohnbauten): arm 19 · reich 33 mit Gestalt, Geschosse 2–3 ↔ 4–6 (AUC 1),
+   Höhe 9,11 ↔ 13,71 m (AUC 1), Programm stein:reihenhaus 18 ↔ stein:stadtpalais 30, wohl 0,91 ↔ 1,2 (AUC 0,97) → das Gesetz trennt.
+   Das Urteil fällt am Bild des Prüfers (Fächer arm 21 · reich 89 Posen im selben Lauf; Prozent UNGEMESSEN bis zum Lauf am Gerät).
+
+2) stationen/k2-mensch-zeit.js — mensch.zeit.spanne S1 misst das Gesetz: VIER trägt je Ort seine `gestalt` (der nächste Plan an der
+   Mitte: Kulturen, Geschosse, Baujahre, `juenger` = Häuser nach dem Jahr des Akts). S1 verlangt vier verschiedene Gestalten und 0
+   jüngere Häuser, sonst K.leser (stamm/siedlung-ort.js:1353 spawnSettlement · fachwerk-core.js:6075 DORF · :5673 epocheBei).
+   Headless am Genesis-Ort (Same 7, 12 Häuser): verschieden 3 von 4 — 1800 (barock) ≡ 1600 (hanse), Baujahre 1256–1702 beide;
+   1300: 12 von 15 Häusern jünger (Baujahre 1183–1412); 1600: 4 von 13 jünger. → S1 ROT am Leser, der Prüfer könnte höchstens 75 %.
+   DIE WURZEL (gemessen am Export `_foundryRequestSettlement`): der Akt wählt mit dem Jahr nur die Epoche und übergibt es nicht als
+   Schnitt `jahr` (DORF `DP.jahr`); `epoche: "barock"` liefert für Same 7 denselben Plan wie „hanse“ (jahr 1562, spanne 140).
+   Mit `jahr` übergeben: 1300 → 3 Häuser ≤ 1285 · 1600 → 10 ≤ 1519 · 1800 → 14 ≤ 1796 · 1950 → 15 ≤ 1922 — vier Orte, 0 jüngere.
+   OFFEN: dieser Schnitt bricht die Erwartung WW1 in scripts/diag-settlement.cjs (der Akt 1935 soll als moderne Stadt mit Turm
+   und tshirt stehen; epocheBei liest „Spanne bis t beendet“, das Jahr 1935 schneidet also in der Gründerzeit) — Gesetz-Arbeit am
+   Akt + epocheBei, noch nicht geschnitten.
+
+3) vision/pruefer/faecher.cjs — das Fach „mensch.zeit.spanne#1“ (Blind-Datierung): ort genesis, gesetz k2-mensch-zeit.js:174, ruft
+   DIESELBE Seiten-Funktion VIER, je Ort 8 Richtungen desselben Kreises (70 m, 22 m über dem Grund der Mitte) × Uhren 0,5/0,4, Klasse
+   = Jahr des Akts, je 10, Frage „Aus welchem Jahr stammt der Ort im Bild — 1300, 1600, 1800 oder 1950?“; Selbsttest-Zeile neu.
+   Dazu die Zeilen-Verweise des Fachs macht.stand#1 auf die neue Station (:532–550, :563–564, gesetz :564).
+   Headless: der Rumpf gibt 32 Basis-Posen (8 je Jahr) → 64 mit zwei Uhren. Selbsttest am pm-Kopf: Basis 20 GRÜN · 0 ROT ↔ Kandidat 21 GRÜN · 0 ROT.
+
+Nicht gefahren in der Wolke: die Liste der Punkte-Maschine (punkte.cjs), ≤ 60 s je Leiter, der Prüfer-Lauf (GPU).
