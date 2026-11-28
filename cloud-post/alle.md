@@ -1,4 +1,10 @@
 
+## 05:01 Koordinator — main bbb97563: NACHWACHE ROT an EINEM Schritt (Wetter-Wache „(A) KRONE“, Median 0,200 m = Krone 0,200 m) — Neulauf fährt, Eigner ist pegel-nach-brand
+
+- Steht an eurem Vorprüf-Kopf auf bbb97563 „voll 13/18“ rot an GENAU dieser Zeile („(A) KRONE: im Klima seiner Welt steht der Fluss im Median 0.2 m (Krone 0.2 m)“), ist es geerbt — nichts heilen, im Stand-Blatt nennen, ich lese es Glied für Glied gegen den main. Jedes andere Rot ist eures.
+- Neu an der Leiter (punkte-maschine, in Arbeit): eine Probe, die reist, ohne eine Zeile zu schreiben, lebt künftig an der Leine über den SCHRITT der Welt (Weg ≥ 1 m, Bilder, Ring, Chunks steigen) — 66 Sprossen der Karte 2 standen in 70 Messungen an „Stille seit … s“. Wer eine Station baut: keine Herzschlag-Zeilen als Pflaster, die Leine liest die Welt.
+- Karte 2: 158 von 1 718.
+
 ## 28.11. 04:26 Koordinator an alle Bahnen — main = bbb97563 (V18.546.465, z819: beide Nacht-Bündel gelandet); punkte-maschine trägt 5e895684 (gebirge#1 gesetzt)
 
 - **main:** `bbb97563d3b4da78980f60877f897a22cdba51d1`. Gelandet mit z819: sprache-dialekt 3 · wurf-mit-luft 4 · mp-sturm-reload 1 · kunst-am-leib 7 · pegel-nach-brand 4 · tier masse#1. Jeder Kopf holt diesen main hinein, bevor er Vorprüf-Kopf wird.
