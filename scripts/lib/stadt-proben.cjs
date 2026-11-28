@@ -246,4 +246,107 @@ function breiteSelbsttest(taeterFaelle, rollen) {
     );
 }
 
-module.exports = { stadtBreite, breiteUrteil, breiteOhne, breiteSelbsttest, BREITE };
+// ══ DER STAND DER STADT (stadt-zehntausend, Leiter mensch.stadt.form#2 · groesse#3/#4): die Stadt des Worts steht als UNION
+// ihrer Kacheln — ein Haus steht, wo an seinem Slot der Bau der Welt mit seinem Samen steht (die Nähe, der volle Bau) ODER seine
+// Hülle an seinem Los im Pool der Ferne (`st.stadtFerne`: der Eintrag der Kachel trägt DENSELBEN Plan, `anH` zeichnet das Haus).
+// Täter-Klasse „die Stadt steht nur in ihrem Kern": eine Kachel, deren Plan die Sitzung kennt (`_bewohnerSiedlungen`), an deren
+// Losen aber nichts steht — weder Bau noch Hülle ihres Plans (bis stadt-zehntausend trug die gemeldete Kachel die Massen des
+// Worts an fremden Losen, Stufe 1). Die Probe treibt den Takt `sek` Sekunden der Wanduhr am Kern und zählt je `jeS`.
+async function stadtStand(o) {
+    await __weltDa(() => r.constructor._siedlungGesetz() && st.playerMesh);
+    const [, seed, nH] = o.wort.split(" ").map(Number);
+    // der Anker der Großstadt ist der des Messorts (die Gründung von stadt-voll, wie die Breite); das Wort ist ihr Umfang
+    const ort = (await (await fetch("spec/profiband/haushalt.json")).json()).messorte.find((q) => q.id === o.ort);
+    const [ax, az] = ort.gruendung.anker;
+    window.__anazhAutoSettlement = true; // der Takt der Orte (die Null-Welt ruht ohne ihn)
+    st.playerMesh.position.set(ax, st.playerMesh.position.y, az);
+    const t0 = performance.now();
+    let treib = true;
+    (async () => {
+        while (treib) {
+            __handTakt();
+            await sleep(4); // der EINE Schlaf der Seite (welt-boot `WARTEN_SEITE`)
+        }
+    })();
+    await r.spawnSettlement({ seed, nH, position: { x: ax, y: 0, z: az } });
+    const stadt = () => r._staedte().find((s) => Math.hypot(s.x - ax, s.z - az) < 400);
+    const zaehle = () => {
+        const s = stadt();
+        if (!s) return null;
+        const [B, F] = [r._bewohnerSiedlungen || new Map(), st.stadtFerne];
+        const jeSame = new Map();
+        for (const e of st.architectures || [])
+            if (e && e.position) jeSame.set(e.seed >>> 0, [...(jeSame.get(e.seed >>> 0) || []), e]);
+        const m = { soll: s.nH, kacheln: 0, mitPlan: 0, wach: 0, plan: 0, haus: 0, huelle: 0, steht: 0, leer: [], ohneOrt: F && F.ohneOrt ? F.ohneOrt.size : -1, offen: 0, flug: !!(F && F.flug) }; // prettier-ignore
+        for (let k = -s.ringe; k <= s.ringe; k++)
+            for (let i = -s.ringe; i <= s.ringe; i++) {
+                const key = !i && !k ? s.key : s.cx + i + "," + (s.cz + k);
+                if (!(i || k) || r._viertelInfo(s.cx + i, s.cz + k)) m.kacheln++;
+                const q = B.get(key);
+                if (!q && (i || k) && r._zellOrtMemo && !r._zellOrtMemo.M.has(key)) m.offen++; // ihr Ort steht noch aus (Wasser bestellt)
+                if (!q || !q.plan || !Array.isArray(q.plan.slots)) continue;
+                m.mitPlan++;
+                if (!q.gemeldet) m.wach++;
+                // der Plan, den die Kachel baut (wie `_stadtFerneTakt`): wach ihr eigener, sonst der Plan v2 ihres Vorrats, sonst
+                // der gemeldete; ihre Hülle steht an SEINEN Losen (Stufe 2 an seinem Ursprung)
+                const w = r._dorfVorraete && r._dorfVorraete.get(key);
+                const P = !q.gemeldet ? q : w && w.da && w.v2 && Array.isArray(w.v2.slots) ? { plan: w.v2, ox: w.x, oz: w.z } : q; // prettier-ignore
+                const e = F && F.je.get(key);
+                const huelle = e && e.los && e.ox === P.ox && e.oz === P.oz && e.anH.length === P.plan.slots.length ? e.anH : null; // prettier-ignore
+                let n = 0;
+                P.plan.slots.forEach((sl, j) => {
+                    m.plan++;
+                    const bau = (jeSame.get(sl.seed >>> 0) || []).some(
+                        (x) => Math.hypot(x.position.x - P.ox - sl.x, x.position.z - P.oz - sl.z) < 1
+                    );
+                    if (bau) m.haus++;
+                    else if (huelle && huelle[j]) m.huelle++;
+                    else return;
+                    n++;
+                });
+                m.steht += n;
+                if (!n) m.leer.push(key);
+            }
+        return m;
+    };
+    // die Messung IST das Fenster der Wanduhr (10⁴ in `sek` s): je `jeS` s eine Zählung, ihre Zahl fest — kein Warten auf einen Bau
+    const reihe = [];
+    for (let i = Math.ceil(o.sek / o.jeS); i > 0; i--) {
+        await sleep(o.jeS * 1e3);
+        const z = zaehle();
+        reihe.push([+((performance.now() - t0) / 1e3).toFixed(1), z ? z.steht : 0]);
+    }
+    treib = false;
+    const m = zaehle() || { fehler: "keine Stadt am Anker" };
+    const zehn = reihe.find(([, n]) => n >= 1e4);
+    return { wort: o.wort, sek: o.sek, sekIst: +((performance.now() - t0) / 1e3).toFixed(1), ...m, zehntausendS: zehn ? zehn[0] : null, reihe, heapMB: Math.round(performance.memory ? performance.memory.usedJSHeapSize / 1048576 : -1) }; // prettier-ignore
+}
+const STAND = { wort: "dorf 7 9310", ort: "stadt-voll", sek: 60, jeS: 5 };
+// DAS URTEIL: jede Kachel mit Plan, an deren Losen nichts steht, beim Namen (leer = GRÜN); eine Stadt ohne Plan jenseits des Kerns
+// ist derselbe Täter (die Ferne bestellte keinen)
+function standUrteil(m) {
+    if (!m || m.fehler) return [`keine Stadt: ${(m && m.fehler) || "kein Befund"}`];
+    const v = [];
+    if (m.leer.length)
+        v.push(`die Stadt steht nur in ihrem Kern: ${m.leer.length} Kacheln mit Plan ohne Bau und Hülle [${m.leer.slice(0, 8).join(" ")}]`); // prettier-ignore
+    if (m.mitPlan <= 9 && m.kacheln > 9) v.push(`die Ferne trägt keinen Plan: ${m.mitPlan} von ${m.kacheln} Kacheln`);
+    // DER UMFANG: das Wort steht ganz (Σ nH seiner Kacheln) — halb gebaut heißt halb, mit Zahl
+    if (!(m.steht >= m.soll)) v.push(`die Stadt steht mit ${m.steht} von ${m.soll} Häusern (${m.mitPlan} von ${m.kacheln} Kacheln mit Plan)`); // prettier-ignore
+    return v;
+}
+function standSelbsttest(taeterFaelle) {
+    const gruen = { soll: 5600, kacheln: 52, mitPlan: 52, wach: 9, plan: 5700, haus: 860, huelle: 4800, steht: 5660, leer: [] }; // prettier-ignore
+    return taeterFaelle(
+        [
+            ["die gemeldete Kachel trägt die Massen des Worts", (z) => (z.leer = ["3,1", "4,1"]), /nur in ihrem Kern: 2 Kacheln .*3,1 4,1/],
+            ["die Ferne bestellt keinen Plan", (z) => (z.mitPlan = 9), /die Ferne trägt keinen Plan: 9 von 52/],
+            ["die Stadt steht halb", (z) => (z.steht = 2800), /steht mit 2800 von 5600 Häusern/],
+            // gemessen headless an main 9a75d61c (dorf 7 9310, 60 s): 2 Kacheln wach, 16 gemeldete ohne Hülle ihres Plans
+            { name: "main vor stadt-zehntausend", z: { soll: 9310, kacheln: 145, mitPlan: 22, wach: 2, plan: 1664, haus: 156, huelle: 55, steht: 211, leer: ["2,-1", "4,-1", "3,0", "2,1"] }, muss: [/nur in ihrem Kern: 4 Kacheln/, /steht mit 211 von 9310/] }, // prettier-ignore
+        ],
+        standUrteil,
+        { gruen }
+    );
+}
+
+module.exports = { stadtBreite, breiteUrteil, breiteOhne, breiteSelbsttest, BREITE, stadtStand, standUrteil, standSelbsttest, STAND }; // prettier-ignore

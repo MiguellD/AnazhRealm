@@ -5318,6 +5318,13 @@
         drehGlieder: 9,
         taktS: 120,
         stau: Object.freeze({ abschnitt: 2, staerke: 0.9, mu: -5, beta: 3, bis: 16 }),
+        block: Object.freeze({
+            start: 0.05,
+            halt: 0.6,
+            bis: 5,
+            trocken: 0.5,
+            waerme: Object.freeze({ kelvin: 8, aufS: 7200, abS: 3600, lagen: 10 }),
+        }),
     });
     function lageGlatt(a, b, v) {
         if (v <= a) return 0;
@@ -5370,14 +5377,19 @@
     // gestaute Phase, `o.kern` das Gewicht des Kerns (glatt über ±`kante`). Die Drehung am Anker (`windRichtung`, `windWeg`
     // geschlossen) läuft an ihrer Uhr weiter und kennt den Stau nicht. Leser: `wetterAt` (Zeile, Front, Druck), `frontVerteilung`;
     // die Linse: gate:wetter-wache (X) STARKREGEN.
+    // der Zufall der Lage n im Strom `strom` der Saat, gleichverteilt in (0, 1): FNV-1a über saat + strom, mit n · φ·2³² gemischt,
+    // der Avalanche von MurmurHash3 (Leser: `lageStauTakte`, `lageBlockLaenge`)
+    function lageZufall(saat, strom, n) {
+        var h = saatFnv(saat + strom) ^ Math.imul(n, 0x9e3779b9);
+        h = Math.imul(h ^ (h >>> 16), 0x85ebca6b);
+        h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35);
+        return (((h ^ (h >>> 16)) >>> 0) + 0.5) / 4294967296;
+    }
     var _stauMerk = { saat: null, n: 0, e: 0 };
     function lageStauTakte(saat, n) {
         if (_stauMerk.saat === saat && _stauMerk.n === n) return _stauMerk.e;
         var S = WETTER_LAGE.stau,
-            h = saatFnv(saat + "-stau") ^ Math.imul(n, 0x9e3779b9);
-        h = Math.imul(h ^ (h >>> 16), 0x85ebca6b);
-        h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35);
-        var u = (((h ^ (h >>> 16)) >>> 0) + 0.5) / 4294967296,
+            u = lageZufall(saat, "-stau", n),
             e = Math.max(0, Math.min(S.bis, Math.floor(S.mu + S.beta * -Math.log(-Math.log(u)))));
         _stauMerk.saat = saat;
         _stauMerk.n = n;
@@ -5402,6 +5414,68 @@
     // die Lage n eines Orts (der Aufzug der `folge` zählt sie: mit ihm beginnt die nächste)
     function lageNummer(zr) {
         return Math.floor(zr - WETTER_LAGE.folge[1][0]);
+    }
+    // DIE BLOCKIERLAGE (planet.wetter.extreme#2): das Hoch, das steht — je Lage n beginnt mit `block.start` ein Block, der die
+    // Zyklonen-Familie um sich lenkt; er hält L_n Lagen (L_n = 1 + ⌊ln u′ / ln `halt`⌋, geometrisch: jede Lage hält er weiter mit
+    // `halt`, höchstens `bis`), u′ = u_n ÷ start aus dem Strom "-block" der Saat (`lageZufall`). In jeder blockierten Lage steht
+    // am Ort das Hoch der `folge` statt Aufzug, Front und Rückseite (kein Stau), ohne die Cumulus-Textur (die Absinkung der
+    // Luftmasse), und die Luft trocknet: die Feuchte fällt auf 1 − `trocken` (die absinkende Luft erwärmt sich, ihr
+    // Sättigungsdruck verdoppelt sich je ~10 K — Clausius-Clapeyron —, die relative Feuchte halbiert sich: kein Nebel im Block).
+    // Band: ein Block ist ein quasi-stationäres Hoch von ≥ 5 Tagen, er hält bis zu einem Monat (Tibaldi & Molteni 1990;
+    // Barriopedro et al. 2006); die Hitzewelle des Sommers hält 4–5 Tage (kurz) bis 12–26 Tage (beständig; ERA5, Weather Clim.
+    // Dyn. 6, 769, 2025), ihr Maß ist die Dauer ≥ 6 Tage (WSDI, Zhang et al. 2011). Ein Block deckt mit Hoch davor bis zu
+    // `bis` · 40 + 17 Takte (7,2 Spieltage). Leser: `wetterAt` (Zeile, Front, Feuchte, Druck), `frontVerteilung`; die Linse:
+    // gate:wetter-wache (H) HITZE.
+    function lageBlockLaenge(saat, n) {
+        var B = WETTER_LAGE.block,
+            u = lageZufall(saat, "-block", n);
+        return u >= B.start ? 0 : Math.min(B.bis, 1 + Math.floor(Math.log(u / B.start) / Math.log(B.halt)));
+    }
+    // ob die Lage n blockiert ist (0 · 1): ein Block, der in einer der `bis` Lagen davor begann, hält noch
+    function lageBlockiert(saat, n) {
+        for (var m = n; m > n - WETTER_LAGE.block.bis; m--) if (lageBlockLaenge(saat, m) > n - m) return 1;
+        return 0;
+    }
+    // DIE WÄRME DES BLOCKS (planet.wetter.extreme#2, K über dem Wetter des Worts): die Luftmasse unter dem Block sammelt Wärme
+    // über Tage — die Advektion, die absinkende Luft, der trocknende Boden, die Restschicht der Nacht trägt sie in den nächsten
+    // Tag (Miralles et al. 2014, Nature Geoscience 7, 345: „progressive accumulation of heat over several days“): W(τ) =
+    // `kelvin` · (1 − e^(−τ / `aufS`)), τ die Zeit seit dem Beginn des Blocks; nach seinem Ende räumt die Front die Luftmasse
+    // aus, W klingt mit e^(−τ′ / `abS`) ab. Gerechnet als Relaxation über die `lagen` Lagen davor (dW/dt = (K·Block − W) / τ, je Lage
+    // geschlossen; was vor ihnen lag, trägt höchstens e^(−lagen · zyklusS / aufS) = 0,13 % von K). Band: die Hitzewelle steht ≥ 5 K über dem Normal (HWDI,
+    // Frich et al. 2002); 2003 trugen Frankreich, die Schweiz, Norditalien und Süddeutschland in allen drei Sommermonaten
+    // Anomalien über 5 K (STARDEX), Auxerre acht Tage in Folge über 40 °C. `aufS` 2 Spieltage, `abS` 1 Spieltag (die Kaltfront
+    // nach dem Block). Leser: gelaende-core `temperaturAus` über die Welt (`_temperaturAt`, `_bewohnerTracht`).
+    var _waermeL = [];
+    function lageWaerme(saat, x, z, t) {
+        var ws = windSaat(saat),
+            zr = lageZr(ws, frontWeg(ws, x, z, t)),
+            L = WETTER_LAGE,
+            B = L.block,
+            W = B.waerme,
+            n = lageNummer(zr),
+            u = zr - L.folge[1][0] - n,
+            m0 = n - W.lagen,
+            l = _waermeL;
+        // die Längen der Blöcke, die in den `lagen` davor (und `bis` dahinter) begannen — EIN Zug durch den Strom
+        for (var m = m0 - B.bis + 1; m <= n; m++) l[m - m0 + B.bis - 1] = lageBlockLaenge(saat, m);
+        var w = 0;
+        for (m = m0; m <= n; m++) {
+            var blockiert = 0;
+            for (var d = 0; d < B.bis && !blockiert; d++) if (l[m - d - m0 + B.bis - 1] > d) blockiert = 1;
+            var dt = (m === n ? u : 1) * L.zyklusS;
+            w = blockiert ? W.kelvin + (w - W.kelvin) * Math.exp(-dt / W.aufS) : w * Math.exp(-dt / W.abS);
+        }
+        return w;
+    }
+    // das Gewicht des Blocks an der Phase zr (0…1), an den Grenzen der Lage glatt (±`kante`) zur Nachbar-Lage
+    function lageBlock(saat, zr) {
+        var n = lageNummer(zr),
+            u = zr - WETTER_LAGE.folge[1][0] - n,
+            k = WETTER_LAGE.kante,
+            b = lageBlockiert(saat, n);
+        if (u < k) b += (lageBlockiert(saat, n - 1) - b) * (1 - lageGlatt(-k, k, u));
+        else if (u > 1 - k) b += (lageBlockiert(saat, n + 1) - b) * lageGlatt(1 - k, 1 + k, u);
+        return b;
     }
     // der Druck der Lage an ihrer Phase (hPa): jeder Anstieg der `folge` hinter dem Tief ist ein Nebentrog, seine Senke liegt
     // `trogVersatz` hinter seinem Beginn (Leser: `wetterAt`)
@@ -5512,6 +5586,16 @@
             }
             for (j = 0; j < tex.length; j++) v[k++] = gE[E[j]] + aE[E[j]] * tex[j];
         }
+        // der Block (`lageBlock`): die Lage n ist blockiert, wenn einer der `bis` Starts davor noch hält — P = 1 − Π (1 − start ·
+        // haltᵈ), d < bis; seine Front ist das Hoch der `folge` ohne Textur (der Anteil P der Proben)
+        var B = WETTER_LAGE.block,
+            frei = 1;
+        for (var d = 0; d < B.bis; d++) frei *= 1 - B.start * Math.pow(B.halt, d);
+        var nB = Math.round(((1 - frei) / frei) * v.length),
+            vb = new Float64Array(v.length + nB);
+        vb.set(v);
+        vb.fill(WETTER_LAGE.folge[0][1], v.length);
+        v = vb;
         v.sort();
         return (_frontV = v);
     }
@@ -5566,15 +5650,24 @@
         _wetterVersatzJe.set(ort, vs);
         return vs;
     }
+    // der Weg der Front am Ort (m längs der Grundrichtung, die Front-Linie quer gebogen, mit `zugMS` windab gezogen) und die Phase
+    // der Lage dort in Zyklen (Leser: `wetterAt`, `lageWaerme`)
+    function frontWeg(w, x, z, t) {
+        var F = WIND_FELD.front,
+            dx = Math.sin(w.t0),
+            dz = Math.cos(w.t0),
+            q = x * dz - z * dx;
+        return x * dx + z * dz - F.zugMS * t + F.biegeM * Math.sin((2 * Math.PI * q) / F.querM + w.biege);
+    }
+    function lageZr(w, s) {
+        return w.lage / (2 * Math.PI) - s / (WIND_FELD.front.zugMS * WETTER_LAGE.zyklusS);
+    }
     function wetterAt(saat, x, z, t, ort) {
         if (!(Number.isFinite(x) && Number.isFinite(z) && Number.isFinite(t)))
             throw new Error("wetterAt: Ort und Zeit sind endlich (" + x + ", " + z + ", " + t + ")");
         var F = WIND_FELD.front;
         var w = windSaat(saat);
-        var dx = Math.sin(w.t0),
-            dz = Math.cos(w.t0);
-        var q = x * dz - z * dx;
-        var s = x * dx + z * dz - F.zugMS * t + F.biegeM * Math.sin((2 * Math.PI * q) / F.querM + w.biege);
+        var s = frontWeg(w, x, z, t);
         var b = 0,
             sw = 0;
         for (var i = 0; i < F.wellen.length; i++) {
@@ -5583,13 +5676,19 @@
         }
         // die Lage am Ort (WETTER_LAGE): ihre Phase ζ längs des Zugs, die Front-Stärke g(ζ) und die Textur der drei Wellen darin
         // — gestaut, wo die Front der Lage steht (`lageStau`)
-        var zr = w.lage / (2 * Math.PI) - s / (F.zugMS * WETTER_LAGE.zyklusS);
+        var zr = lageZr(w, s);
         var st0 = lageStau(zr, lageStauTakte(saat, lageNummer(zr)), _stauAus),
             ze = st0.ze;
         var pr = lageProfil(ze, _lageAus);
         pr.g += st0.kern * (WETTER_LAGE.stau.staerke - pr.g);
+        // der Block (`lageBlock`): das Hoch der `folge` ohne Textur, die Luft trocknet
+        var bl = lageBlock(saat, zr),
+            hoch = WETTER_LAGE.folge[0];
+        pr.g += bl * (hoch[1] - pr.g);
+        pr.a *= 1 - bl;
         var f = pr.g + (pr.a * b) / sw;
-        var feuchte = 0.5 + 0.5 * Math.sin((2 * Math.PI * s) / F.feuchteM + w.feuchte);
+        var feuchte =
+            (0.5 + 0.5 * Math.sin((2 * Math.PI * s) / F.feuchteM + w.feuchte)) * (1 - bl * WETTER_LAGE.block.trocken);
         var st = F.stufen;
         var stSturm = st.sturm,
             stRegen = st.regen,
@@ -5605,7 +5704,15 @@
         else if (f >= stRegen) zeile = "regen";
         else if (f >= st.bewoelkt) zeile = "bewoelkt";
         else if (feuchte >= stNebel) zeile = "nebel";
-        return { zeile: zeile, front: f, feuchte: feuchte, druck: lageDruck(ze), lage: ze };
+        var p = lageDruck(ze);
+        return {
+            zeile: zeile,
+            front: f,
+            feuchte: feuchte,
+            druck: p + bl * (lageDruck(hoch[0]) - p),
+            lage: ze,
+            block: bl,
+        };
     }
     var _lageAus = { g: 0, a: 0 },
         _stauAus = { ze: 0, kern: 0 };
@@ -8780,6 +8887,7 @@
         windGrund: windGrund, // wetter.K1 — die Grundrichtung, mit der die Fronten ziehen
         wetterAt: wetterAt, // wetter.K1 — DAS Wetter am Ort (Saat, Ort, Zeit) → Zeile von WX_GESETZ
         WETTER_LAGE: WETTER_LAGE, // planet.wetter.lagen#2 — der Durchzug: Phase, Front-Stärke, Druck, Drehung
+        lageWaerme: lageWaerme, // planet.wetter.extreme#2 — die Wärme der Luftmasse des Blocks (K) an Ort und Uhr
         WETTER_ORT: WETTER_ORT, // wetter-am-ort — das Maß des Felds am Ort (Kante, Eingriff, Lee, Relief, Profil, Mäander)
         wetterFeldAm: wetterFeldAm, // wetter-am-ort — DAS Feld am Ort {fog, sun, grey, wind, rain} mit Relief und Eingriff
         windWeg: windWeg, // wetter-am-ort — ∫ windRichtung dτ geschlossen (der Zug der Wolken-Schicht)
