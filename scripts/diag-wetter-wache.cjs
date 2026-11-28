@@ -744,11 +744,13 @@ function kammRot(K) {
     return [];
 }
 // ── (A) ABFLUSS NACH BRAND (same.kopplung.stoerung#3, gelaende-core `pegelBrand`): der Pegel liest den verbrannten Anteil seines
-// Einzugsgebiets. Am Bach nächst dem Spieler (8 Punkte, Ebene-1-Glied) ein leichter Regen (die Stärke `rho` über `stundenS`, unter
-// der Krone — dort trägt der Hub den Abfluss), die Tiefe ohne Brand; dann jede 16-m-Zelle ±`brandM` um den Bach eine Tat „brand“
-// (`_tatSchreiben`, das Gedächtnis des Brands): der Regen fließt stärker ab, die Tiefe steigt. GEPFLANZT am lebenden Kern: der
+// Einzugsgebiets. Am Bach nächst dem Spieler (8 Punkte, Ebene-1-Glied) ein Sturm-Regen (die Stärke `rho` über `stundenS` Sekunden
+// des Kalenders: 2 Stunden, 20 mm — unter dem Anfangsverlust der Wiese, CN 58: Ia 36,8 mm; über dem der Brandfläche, CN 95: Ia
+// 2,7 mm, `ABFLUSS_CN`), die Tiefe ohne Brand; dann jede 16-m-Zelle ±`brandM` um den Bach eine Tat „brand“ (`_tatSchreiben`, das
+// Gedächtnis des Brands): der verbrannte Anteil b des Einzugsgebiets fließt ab, die Tiefe steigt. GEPFLANZT am lebenden Kern: der
 // Pegel ohne die Kopplung (`pegelBrand` → null) — dieselbe Messung muss ROT fallen; GEGENLAUF: die Taten zurück, die Tiefe byte-gleich.
-// Am main 7e73426e (vor dem Schnitt) las die Tiefe mit Brand wie ohne (der Abfluss kannte keine Brandfläche). Leser: `brandAbflussRot`.
+// Am main bed6256c (vor dem Anfangsverlust) las die Tiefe im Sturm mit Brand wie ohne (b 0, 0,758 → 0,758 m); am Schnitt b 0,981,
+// 0,558 → 3,280 m — die Aue trägt die Flut. Leser: `brandAbflussRot`.
 async function brandAbflussProbe(a) {
     const K = globalThis.__gelaendeCore;
     const cs = AnazhRealm.LIFE_FIELD.cell;
@@ -790,6 +792,9 @@ async function brandAbflussProbe(a) {
         for (let i = -n; i <= n; i++) for (let j = -n; j <= n; j++) r._tatSchreiben("brand", cx + i * cs, cz + j * cs);
         aus.zellen = (2 * n + 1) ** 2;
         aus.mit = lauf();
+        const br = r._pegelStand && r._pegelStand.brand;
+        aus.b = P.reduce((s, p) => s + ((br && br.get(p.kn)) || 0), 0) / P.length;
+        aus.stufe = K.PEGEL.stufe;
         globalThis.__gelaendeCore = Object.freeze(Object.assign({}, K, { pegelBrand: () => null })); // der Kern ist gefroren: die Hülle tauscht
         aus.gepflanzt = lauf();
         globalThis.__gelaendeCore = K;
@@ -809,29 +814,91 @@ async function brandAbflussProbe(a) {
     }
     return aus;
 }
-// das Band: die Tiefe mit verbranntem Einzugsgebiet ≥ BRAND_ABFLUSS_BAND × ohne (b = 1 trägt den Beiwert 0,56 statt 0,3; unter der
-// Krone hebt das die Tiefe um 13–17 %, Manning q^0,6), der Gegenlauf byte-gleich
-const BRAND_ABFLUSS_BAND = 1.08;
+// das Maß ist das Gesetz, nie ein eigenes Band: trägt die Kopplung am Bach einen verbrannten Anteil b > 0, steigt die Tiefe im Regen um
+// mindestens eine Stufe des Hubs (`PEGEL.stufe`); der Gegenlauf byte-gleich. Das Soll der Karte (Pegel-Spitze ≥ 1,3×) urteilt die
+// Station, nicht diese Linse — sie nennt den Konsum der Kopplung (Typ „eine Kopplung liest ihren Elternknoten nicht“).
 function brandAbflussRot(B) {
     const r3 = (v) => (Number.isFinite(v) ? +v.toFixed(3) : v);
     if (!(B.punkte >= 8 && B.ohne > 0)) return [`(A) BACH: ${B.punkte} Fluss-Punkte, Tiefe ohne Brand ${r3(B.ohne)} — die Probe misst keinen Bach`];
     const v = [];
-    if (!(B.mit >= BRAND_ABFLUSS_BAND * B.ohne))
-        v.push(`(A) BRAND: ${B.zellen} verbrannte Zellen um den Bach — Tiefe im Regen ${r3(B.ohne)} → ${r3(B.mit)} m (×${r3(B.mit / B.ohne)}, Soll ≥ ×${BRAND_ABFLUSS_BAND}): der Abfluss liest den Brand seines Einzugsgebiets nicht (gelaende-core pegelBrand · pegelTafel)`); // prettier-ignore
+    if (!(B.b > 0 && B.mit - B.ohne >= B.stufe - 1e-9))
+        v.push(`(A) BRAND: ${B.zellen} verbrannte Zellen um den Bach, Anteil b ${r3(B.b)} — Tiefe im Regen ${r3(B.ohne)} → ${r3(B.mit)} m (×${r3(B.mit / B.ohne)}, Soll b > 0 und +${B.stufe} m, eine Stufe des Hubs): der Abfluss liest den Brand seines Einzugsgebiets nicht (gelaende-core pegelBrand · pegelTafel)`); // prettier-ignore
     if (B.gegen !== B.ohne)
         v.push(`(A) GEGENLAUF: die Taten zurück — Tiefe ${r3(B.ohne)} → ${r3(B.gegen)} m: der Pegel trägt den Brand über seine Taten hinaus`);
     return v;
 }
 function brandAbflussSelbsttest() {
-    const B = { punkte: 8, zellen: 2601, ohne: 0.548, mit: 0.638, gepflanzt: 0.548, gegen: 0.548 };
+    const B = { punkte: 8, zellen: 2601, b: 0.981, stufe: 0.01, ohne: 0.558, mit: 3.28, gepflanzt: 0.558, gegen: 0.558 };
     const v = brandAbflussRot(B).map((x) => `brand-abfluss: der grüne Befund fällt rot: ${x}`);
     for (const [name, o, klinge] of [
-        ["der Pegel ohne die Kopplung (pegelBrand → null)", { mit: 0.548 }, "BRAND"],
-        ["der Pegel hält den Brand nach den Taten", { gegen: 0.6 }, "GEGENLAUF"],
+        ["der Pegel ohne die Kopplung (pegelBrand → null)", { mit: 0.558 }, "BRAND"],
+        ["die Kopplung findet den Knoten des Bachs nicht (b 0)", { b: 0 }, "BRAND"],
+        ["der Pegel hält den Brand nach den Taten", { gegen: 0.7 }, "GEGENLAUF"],
         ["kein Bach am Spieler", { punkte: 0 }, "BACH"],
     ]) {
         const rot = brandAbflussRot(Object.assign({}, B, o));
         if (!(rot.length === 1 && rot[0].startsWith(`(A) ${klinge}:`))) v.push(`brand-abfluss: der Täter „${name}" fällt nicht genau einmal an (A) ${klinge} rot`);
+    }
+    return v;
+}
+// ── (A) DIE KRONE IM KLIMA (planet.wetter.extreme#1, gelaende-core `laufQ` · `pegelKlima`, die Lage `abflussMittel`): der Fluss
+// steht trocken im Bett, sein Grund trägt den Anteil `bfi` des Mittels, das sein Klima abfließen lässt — das Mittel bleibt unter der Krone, das Bett formt das Hochwasser, das je
+// 1–2 Jahre wiederkehrt (Leopold, Wolman & Miller 1964). Am Ort des Klimas (0, 0) die Züge der Front über das Fenster des Grunds
+// (`LAUF.fenster`) und `zuege` danach, je `schritt` Züge der Lauf des Gesetzes; der Hub an der Zeile ohne Schmelze, höchster über die
+// Lag-Klassen. Das Maß: der Median steht unter der Krone. GEPFLANZT am lebenden Kern: die Lage ohne das Klima des Abflusses
+// (`abflussMittel` 0 — der Grund trägt nur die Spende der Erde statt des Anteils `bfi` am Mittel seines Klimas) muss ROT fallen. Am main 9a75d61c (die
+// stehende Front der Lage, wetter-lagen-3) stand der Hub 100 % der Zeit über der Krone, Median +0,61 m. Leser: `kroneKlimaRot`.
+async function kroneKlimaProbe(a) {
+    const K = globalThis.__gelaendeCore;
+    const [Z, FELD] = [AnazhRealm.WETTER_ZUG_SEK, AnazhRealm.WEATHER_FIELD];
+    const tagS = r._kalender().normS;
+    const L = r._gelaende();
+    const mittel = r._regenMittel();
+    const nT = K.TEMPERATUR.jahrTage;
+    const sch = K.pegelSchmelze(L, Math.floor(st.seasonPhase * nT) / nT, (y, tr) => r._temperaturFeld(y, tr));
+    const iy = Math.max(0, Array.prototype.findIndex.call(sch.a, (v) => v === 0));
+    const y = sch.y0 + iy * K.PEGEL.dy;
+    const fen = Math.ceil((K.LAUF.fenster * tagS) / Z);
+    const S = [];
+    for (let k = 0; k < fen + a.zuege; k++) S.push(k * Z, FELD[r._wetterAmOrt(0, 0, k * Z)].rain);
+    const miss = (Lx) => {
+        const hub = [];
+        let krone = null;
+        for (let i = fen; i < fen + a.zuege; i += a.schritt) {
+            const T = K.pegelTafel(Lx, sch, K.pegelLauf(Lx, S.slice(2 * (i - fen), 2 * (i + 1)), i * Z + Z * 0.99, tagS, mittel, null));
+            let h = 0;
+            if (T) {
+                krone = T.krone;
+                h = -Infinity;
+                for (let j = 0; j < K.LAUF.n; j++) h = Math.max(h, K.pegelHub({ pegel: T }, y, j));
+            }
+            hub.push(h);
+        }
+        const k = krone == null ? NaN : krone;
+        return { n: hub.length, krone: k, hub, anteil: hub.filter((h) => h > k + 1e-6).length / hub.length };
+    };
+    const aus = Object.assign({ abfluss: L.abflussMittel }, miss(L));
+    aus.gepflanzt = miss(Object.create(L, { abflussMittel: { value: 0 } }));
+    return aus;
+}
+function kroneKlimaRot(B) {
+    const r3 = (v) => (Number.isFinite(v) ? +v.toFixed(3) : v);
+    if (!(B.n > 0 && Number.isFinite(B.krone) && Number.isFinite(B.median)))
+        return [`(A) KLIMA: ${B.n} Läufe, Krone ${r3(B.krone)} — die Probe misst den Fluss im Klima nicht`];
+    if (!(B.median < B.krone - 1e-6))
+        return [`(A) KRONE: im Klima seiner Welt steht der Fluss im Median ${r3(B.median)} m (Krone ${r3(B.krone)} m), ${(100 * B.anteil).toFixed(1)} % der Zeit über ihr — gewöhnlicher Regen tritt über das Bett (Soll: Median unter der Krone; gelaende-core laufQ: der Grund trägt das Mittel seines Klimas nicht, abflussMittel ${r3(B.abfluss)})`]; // prettier-ignore
+    return [];
+}
+function kroneKlimaSelbsttest() {
+    const B = { n: 60, krone: 0.2, median: 0.06, anteil: 0.159, abfluss: 0.04 };
+    const v = kroneKlimaRot(B).map((x) => `krone-klima: der grüne Befund fällt rot: ${x}`);
+    for (const [name, o, klinge] of [
+        ["der Hub über der Spende der Erde (abflussMittel 0)", { median: 0.81, anteil: 1, abfluss: 0 }, "KRONE"],
+        ["der Median auf der Krone (das Mittel füllt das Bett)", { median: 0.2, anteil: 0.233, abfluss: 0.04 }, "KRONE"],
+        ["kein Lauf im Klima", { n: 0 }, "KLIMA"],
+    ]) {
+        const rot = kroneKlimaRot(Object.assign({}, B, o));
+        if (!(rot.length === 1 && rot[0].startsWith(`(A) ${klinge}:`))) v.push(`krone-klima: der Täter „${name}" fällt nicht genau einmal an (A) ${klinge} rot`);
     }
     return v;
 }
@@ -1543,7 +1610,7 @@ if (SELBSTTEST) {
     const v = wetterSelbsttest()
         .map((x) => "wetter: " + x)
         .concat(himmelSelbsttest().map((x) => "himmel: " + x))
-        .concat(uhrSelbsttest(), kalenderSelbsttest(), jahrLaubSelbsttest(), brandAbflussSelbsttest());
+        .concat(uhrSelbsttest(), kalenderSelbsttest(), jahrLaubSelbsttest(), brandAbflussSelbsttest(), kroneKlimaSelbsttest());
     const ort = ortSelbsttest();
     v.push(...ort.v);
     const O = ort.O;
@@ -2129,7 +2196,9 @@ hauptLauf(async () => {
     const JL = await page3.evaluate(jahrWinterProbe, { schrittSek: SCHRITT_SEK });
     JL.feld = await page3.evaluate(jahrFeldProbe, { praesenz: JL.praesenz });
     const KAMM = await page3.evaluate(kammProbe);
-    const BRAND = await page3.evaluate(brandAbflussProbe, { rho: 0.004, stundenS: 1800, brandM: 400 });
+    const BRAND = await page3.evaluate(brandAbflussProbe, { rho: 1, stundenS: 300, brandM: 400 });
+    const KRONE = await page3.evaluate(kroneKlimaProbe, { zuege: 600, schritt: 10 });
+    for (const m of [KRONE, KRONE.gepflanzt]) m.median = m.hub.length ? rang(m.hub.slice().sort(aufsteigend)) : NaN; // der EINE Rang der Boot-Lib
     const lab = await browser.newPage();
     await server.zeige(lab, 60000, "worlds/terrain/index.html");
     await lab.waitForFunction("typeof updateWorld === 'function' && typeof camera === 'object' && camera");
@@ -2201,10 +2270,15 @@ hauptLauf(async () => {
     const r3 = (v) => (Number.isFinite(v) ? v.toFixed(3) : v);
     const gepflanztRot = brandAbflussRot(Object.assign({}, BRAND, { mit: BRAND.gepflanzt }));
     console.log(
-        `  Abfluss nach Brand · ${BRAND.punkte} Punkte am Bach, ${BRAND.zellen} verbrannte Zellen: Tiefe im Regen ${r3(BRAND.ohne)} → ${r3(BRAND.mit)} m (×${r3(BRAND.mit / BRAND.ohne)}) · Gegenlauf ${r3(BRAND.gegen)} m · gepflanzt pegelBrand → null: ${r3(BRAND.gepflanzt)} m ${gepflanztRot.length ? "→ ROT an (A) BRAND ✅" : "blieb grün ❌"}`
+        `  Abfluss nach Brand · ${BRAND.punkte} Punkte am Bach, ${BRAND.zellen} verbrannte Zellen, Anteil b ${r3(BRAND.b)}: Tiefe im Regen ${r3(BRAND.ohne)} → ${r3(BRAND.mit)} m (×${r3(BRAND.mit / BRAND.ohne)}) · Gegenlauf ${r3(BRAND.gegen)} m · gepflanzt pegelBrand → null: ${r3(BRAND.gepflanzt)} m ${gepflanztRot.length ? "→ ROT an (A) BRAND ✅" : "blieb grün ❌"}`
     );
-    const rot = [...urteil(S, H), ...kalenderRot(KAL), ...jahrLaubRot(JL), ...kammRot(KAMM), ...brandAbflussRot(BRAND)];
+    const kroneGepflanzt = kroneKlimaRot(Object.assign({}, KRONE, KRONE.gepflanzt, { abfluss: 0 }));
+    console.log(
+        `  Krone im Klima · ${KRONE.n} Läufe am Ort des Klimas, abflussMittel ${r3(KRONE.abfluss)}: Median ${r3(KRONE.median)} m (Krone ${r3(KRONE.krone)} m), über ihr ${(100 * KRONE.anteil).toFixed(1)} % der Zeit · gepflanzt abflussMittel 0: Median ${r3(KRONE.gepflanzt.median)} m, ${(100 * KRONE.gepflanzt.anteil).toFixed(1)} % ${kroneGepflanzt.length ? "→ ROT an (A) KRONE ✅" : "blieb grün ❌"}`
+    );
+    const rot = [...urteil(S, H), ...kalenderRot(KAL), ...jahrLaubRot(JL), ...kammRot(KAMM), ...brandAbflussRot(BRAND), ...kroneKlimaRot(KRONE)];
     if (!gepflanztRot.length) rot.push("(A) GEPFLANZT: der Pegel ohne die Kopplung (pegelBrand → null) fällt am lebenden Kern nicht rot");
+    if (!kroneGepflanzt.length) rot.push("(A) GEPFLANZT: die Lage ohne das Klima des Abflusses (abflussMittel 0) fällt am lebenden Kern nicht rot");
     wandEnde(
         rot,
         "unter der Bühne dreht kein Schreiber das Wetter; frei gehen Uhr und Wetter nach dem Wort des Spielers, die Welt" +
