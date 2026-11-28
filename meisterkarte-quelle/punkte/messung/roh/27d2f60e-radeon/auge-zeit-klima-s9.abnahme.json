@@ -1,0 +1,137 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.461",
+  "sha": "27d2f60e46a1f78c9b9151bc911f13312be7fce5"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 0,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0,
+   "taeter": {},
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 20,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   70.385,
+   92.28,
+   -0.963
+  ],
+  "blick": [
+   0,
+   0,
+   1
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 83.9,
+  "sigma": 39.9,
+  "schwarz": 0.0007,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 20 m · Luma 83.9 σ 39.9 schwarz 0.1 % weiß 0.0 % · Stand 18.546.461 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Inhalt nahWiese 22.5 % (≥ 15.0 %) h 107° Luma 102",
+ "rot": [],
+ "inhalt": {
+  "rot": [],
+  "zeile": "Inhalt nahWiese 22.5 % (≥ 15.0 %) h 107° Luma 102"
+ },
+ "urteil": "GRÜN",
+ "klasse": {
+  "ausdruck": "^nahWiese([-_:].*)?$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 4
+  },
+  "misch": 30244,
+  "kenn": {
+   "n": 8,
+   "tw": 1440,
+   "th": 810,
+   "ms": 1621,
+   "wechsel": 814433
+  },
+  "rinde": null,
+  "toene": [
+   "nahWiese:L1=255/80/80",
+   "nahWiese:L2=80/255/80",
+   "nahWiese:Lf=80/120/255"
+  ],
+  "klassen": {
+   "nahWiese:L1": {
+    "objekte": 2,
+    "pixel": 191560,
+    "farbe": [
+     0.12881,
+     0.13721,
+     0.0129
+    ]
+   },
+   "nahWiese:L2": {
+    "objekte": 2,
+    "pixel": 176586,
+    "farbe": [
+     0.11477,
+     0.12236,
+     0.0109
+    ]
+   },
+   "nahWiese:Lf": {
+    "objekte": 2,
+    "pixel": 98431,
+    "farbe": [
+     0.20176,
+     0.22881,
+     0.02846
+    ]
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\27d2f60e-radeon\\auge-zeit-klima-s9.maske.png"
+ }
+}
