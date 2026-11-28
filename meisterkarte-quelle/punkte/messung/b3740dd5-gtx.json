@@ -1,7 +1,7 @@
 {
  "sha": "b3740dd5566793ae66152d955e5a55d9c272884c",
  "geraet": "gtx",
- "zeit": "2026-11-27T23:53:11.606Z",
+ "zeit": "2026-11-27T23:58:23.079Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "profiband.K4#1": {
@@ -1489,6 +1489,76 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.leben.kopplung.evolution-planet#1": {
+   "gruen": false,
+   "zahl": "S1 anteilImRaum ungemessen gegen Soll ≥ 0,9 ✗ · Bild (Beleg) C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\b3740dd5-gtx\\auge-leben-evo-s1.png · Täter: stamm/kreatur-leben.js _pickFaunaSoulAtPlayer (die Gattung aus der Boden-Klasse)",
+   "exit": 0,
+   "minuten": 4.44,
+   "grund": "ROT: S1 anteilImRaum ungemessen gegen Soll ≥ 0,9 ✗ · Bild (Beleg) C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\b3740dd5-gtx\\auge-leben-evo-s1.png · Täter: stamm/kreatur-leben.js _pickFaunaSoulAtPlayer (die Gattung aus der Boden-Klasse)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k5903d0c08a24",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kff06e4f5a2ae",
+   "s": 266.5,
+   "fremd": {
+    "s": 268.7,
+    "takte": 123,
+    "fremdS": 115.44,
+    "kerne": 0.43,
+    "fensterKerne": 1.031,
+    "namen": [
+     [
+      "bash.exe sk/wacht6.sh",
+      16.13
+     ],
+     [
+      "bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \"",
+      13.59
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      10.34
+     ]
+    ],
+    "dienerS": 71.94,
+    "diener": [
+     [
+      "System",
+      37.25
+     ],
+     [
+      "WmiPrvSE.exe",
+      12.16
+     ]
+    ],
+    "geraetS": 170.34,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      123.03
+     ],
+     [
+      "svchost.exe",
+      43.52
+     ],
+     [
+      "svchost.exe -k UnistackSvcGroup -s WpnUserService",
+      1.44
+     ]
+    ],
+    "eigenS": 518.88,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-27T23:53:53.381Z",
+   "abdruck": "a02b0a823867",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -1510,7 +1580,8 @@
   "k1de5702a2f44": "bVXRjpswEPyXPLb1GTAcxtI9OJerkqqRcp+whjVwIRDZEKpU/fcKcpAAt09ImfWOZ2adv6szxEdI8enDVuVKrL6tfqwsXJBYNBc0Tx92JVZR7HrIhLwVlVK+drDY5Ofa0iJXFFQJ2QlJY2rMi6e4b9PP4ARK0PZNpgdKNb3STSvHepMvL/NjCoVJRWrQOBziIAs4ijmwsSkoJNDofvAnOPAjfHYF7Ytv5H5Dx2pjKQ8tbQ98Kw8+XS+nKyiT6Q1cN4LnUMh2J6V8n+OTHLAmRV7aYb6bhJF2xH3mftFjoCVXwKxA89mE3HV9NZBed9J0cs0addFYOxnGWRJ4XFAazbEp2jzOanI2lcLyE64iL3RBrNvFvdNzQ/QjI1AKuJprngGWKZoJB4fFuhP8D58feoQTGiAlZJ/QyGGhp+7aUEq3Sy5FT7wfMRD3Gfe4O2nszKWXTuBETurQ/5gOKD3GLR4h6dJ4G2e5OU3l0j56DhO/lxRtBgkacqxsPaIZhr6jbhuy29AbF76ed94vN3gIAPwhMJRTuV1oaStdt2CQpOdmCI2PQRgIKXcLcA2n00iLcWBzI23dBf2RhhfpIPAFpd9vC7O89G0tyBXzAsfcxiGLxOvGn4MvBk4EVGpyrQf3VRDr6KuwtljURFVVPXBhjhMHnSTlo+GH3srdg9eb9N3f/5Tp2zQCOyn10uJ+SmXqgbwCxXxf6HTDKeV6js5NTVqIswEeMoXIvsr5FU2BKU7k1K4LXiL6J2dk6w8f3ydBvi5PzLETurSNHZSOwVeB+MKaFs1RQXkc3z+uIhS/pJTrvTxMhXlNu3Xo12ZW/VpYvp3ib+/dGWN6NpXOu9eRZtDYDIr6/nfx7z8=",
   "k4954c30b7147": "bVVdb6MwEPwveWzPNZ/FWOqDUyo10vWU/oQ1rA0NgcgmoeJ0//0ECUmA7qtnPcPsePm7OkC6A41PX7auVnz1sPq1snBCYtGc0Dx92RVfxanroc/Fp+hrK4R47WGpKQ6NpVkBmuxKqDTpsLJH+5QOXQ93mLKQFGQF+R7J0TRYlBeQegYnlJy2b0JvKVW0o0n78jJvLSVmNWlA4djooB8y5HPg0WqQSOCoBrILOAxifHY5HYol4iOh1/pmQmxb2m7Z++wyCVU2Veu6MTxHfLBBfM5VZgVgQ8qisiOvm0WxcviVq/1Y9BhoSQeYl2guTchcN5Cj2HVP1Vsza1Tl0doJGfOz0GOc0niO1WiLNG/IwdQSqwtcxl7kAl8v3daHI1H3ikBKYHLudQ5YaTQTDY6fqt7obza/dAd7NEAqyC/Q2PEjT968oZS+L7WUg/CBYhQe+Mxj7qSxHyo99QZnYlLb4VCPKNWOB+kVosWC1KZ5YfZTu1SAnuPz30uJNocMDdnVtrmifYwCR56DsknoWQtbzztvHzfOEADYXWAoo+J94aWtVdOCQaIPxzE0AYZRyIXYLMAN7PdXWT4Dfz5I2/RBv5fhxSoMA07p4/mhLD/6/CxIh0WJ19ymkR/PLz8Z2BOQ2hRKjZOXYarin4LaYtkQWdfNqMN3nDTktKPV/bD/DGPc3M050Z9BU67bt7nO4cbaNKNICdIPAq50wihlao4uTENaSPMRHvkS0ed9vmbQDk2JGie2KdcFL+O0VWedXb9aosvTV4+TwHaLqXYFltMNiikEMuQ/jKBFs5NQ7a77jckYh7itP4YFfau3V93Hnm6n/JTS03Bu92f8RiRCJExdiA6Y0oOpVdFvQZrD0eZQNrffxL//",
   "k53129a9ca44d": "bVXRbqMwEPyXPF5LDRiKsdQHJ+mpkS6n9BPWsDY0BCIbwimn+/cTJCQBuk9Int0dz6yXv4sjJHvQ+PJlq3LBFz8WzwsLJ3QsmhOaly+74Is48XykXFyCCCFWHSwx+bG2pMglAVlCdkCnMTXmxUvSp6lXcEPJSfsu9I4QRc5k3b69TVMLiWnl1KBwSHSRhgz5FNhYDRIdaFTf7AoOgxhfPU76YGuxXZNbtIkQu5a0O/YxKSahTMdsPS+G14iLdrMS4nPKMs0Ba6fISzv09dIoVi6/99rOcgy0zhkwK9Bck5B5XiAHsstOzk6aSaIqGmtHzRhNQ59xQuIpVqPNk6x2jqaSWF7hMvYjD/hyrrY+No56ZARSApNTrTPAUqMZcXBpojqh/7Bp0T0c0IBTQnaFxi6NfHnXhhDyMedS9MT7FgPxgDKfeaPEzlRy6gROxSh2/aEeUKodDpIbRItZU5tkuTmM5VIB+i7lv+YUbQYpGmdf2fqGphgFrry8hs2aXLiw5TTzfrnBQwBgDwNDGBEfMy1tpeoWDDr62AxDE2AYhVyIzQxcw+Fwo0UZ0KmRtu4G/ZGGH6swDDghT5eHMr/05Vk4Z8wLvM1tEtF4Wvxk4OCA1CZXanBehomKvxvUFovakVVVDzyo6yYhJ5SUj2b/7m3cPPi81p/B9qfQ72P7N2LKu+9QmXogLUHSIOBKrxkhTE3RuamdFpJsgEdUItLv5vuMpkCNIxmV54Gf8n7F3JgGw8fTaIDP84o5dgKXtrGDwgkEMuTfWNKi2Uso97d9x2SM/fgtt2I3FmWlu2dAToyMtVqfhFgJsX3v9+ARE3I0lcq7LUgyaGwGRX3/Bfz7Dw==",
-  "k74d1679d46df": "bVTRbqMwEPyXPF6PGjAUY6kPTtO7Rrqc0k9Yw9rQEIhsCKec7t9P0EAC1E9Int0ZZnb9d3WC5AAaHz9sVa746tvq+8rCGR2L5ozm8cOu+CpOPB8p764Sk59qS4pcEpAlZEd0GlNjXjwmPVQ9gRtKTtpXofeEKHIhm/b5eV5aSEwrpwaFQ6GLNGS44GisBokONKonu4LDIMYnj5P+sI3Ybch42kSIfUvaPXubNZNQplO1nhfDU8RFu30R4n2uMs0Ba6fISzvwemkUK5ffuHaLGgOtcwHMCjTXImSeF8hB7FoI0VszK1RFY+2EjNE09BknJJ5jNdo8yWrnZCqJ5RUuYz/ygK+XbutT46h7RSAlMDn3OgMsNZqJBpcmqjP6D5s3PcARDTglZFdo7NLIlzdvCCFvSy1FL7ynGIQHlPnMmxR2oZJzZ3AqJmffX+oBpdrhIhkhWixIbZLl5ji1SwXou5T/Wkq0GaRonENl6xFNMQpcyXuC7YZ8amHreeXt54YMAYDdDQxhRLwtvLSVqlsw6OhTMwxNgGEUciG2C3ANx+MoizJYLKatu0G/l+HHKgwDTsjD56Isf/pzLZwL5gWOc5tENJ43Pxs4OiC1yZUakpdhouKvBrXFonZkVdWDDuq6ScgJJeV92L/7GLd3OW/0e7D7IfTrNP6tmOvuGSpTD6IlSBoEXOkNI4SpOTo3tdNCkg3wiEpEyrt5m0EvaArUOLFReR74Ke+fmFFpMHw8TAb4skj5kmNncGkbOzicQCBD/kUkLZqDhPIwvndMxtiP33on9lNTXnS3BuTMyNSrzVmIFyF2P/dd4xMm5GQqlXevIMmgsRkU9e3Z//cf"
+  "k74d1679d46df": "bVTRbqMwEPyXPF6PGjAUY6kPTtO7Rrqc0k9Yw9rQEIhsCKec7t9P0EAC1E9Int0ZZnb9d3WC5AAaHz9sVa746tvq+8rCGR2L5ozm8cOu+CpOPB8p764Sk59qS4pcEpAlZEd0GlNjXjwmPVQ9gRtKTtpXofeEKHIhm/b5eV5aSEwrpwaFQ6GLNGS44GisBokONKonu4LDIMYnj5P+sI3Ybch42kSIfUvaPXubNZNQplO1nhfDU8RFu30R4n2uMs0Ba6fISzvwemkUK5ffuHaLGgOtcwHMCjTXImSeF8hB7FoI0VszK1RFY+2EjNE09BknJJ5jNdo8yWrnZCqJ5RUuYz/ygK+XbutT46h7RSAlMDn3OgMsNZqJBpcmqjP6D5s3PcARDTglZFdo7NLIlzdvCCFvSy1FL7ynGIQHlPnMmxR2oZJzZ3AqJmffX+oBpdrhIhkhWixIbZLl5ji1SwXou5T/Wkq0GaRonENl6xFNMQpcyXuC7YZ8amHreeXt54YMAYDdDQxhRLwtvLSVqlsw6OhTMwxNgGEUciG2C3ANx+MoizJYLKatu0G/l+HHKgwDTsjD56Isf/pzLZwL5gWOc5tENJ43Pxs4OiC1yZUakpdhouKvBrXFonZkVdWDDuq6ScgJJeV92L/7GLd3OW/0e7D7IfTrNP6tmOvuGSpTD6IlSBoEXOkNI4SpOTo3tdNCkg3wiEpEyrt5m0EvaArUOLFReR74Ke+fmFFpMHw8TAb4skj5kmNncGkbOzicQCBD/kUkLZqDhPIwvndMxtiP33on9lNTXnS3BuTMyNSrzVmIFyF2P/dd4xMm5GQqlXevIMmgsRkU9e3Z//cf",
+  "k5903d0c08a24": "bVVdc5swEPwvfmyqiM8gNJMHOU4n7jQd5yecxAmIMXgkMB13+t87YIMN5J48Zk+37O6Jv6sjqD2k+Phpq3LFV99W31cWTkgsmhOax0+74qtYuR76vHukTH6sLS1ySUGWkB2QNKbGvHhUPVQ/gRNKTttXke4o1fRMN60Y61U8P8+PKSQmFalB43CIg37IcDGvsSlIJNDofvAVHAYxPrmc9sU24n1Dx2qVELuWtjv2JoTYzg6UUCZT9q4bw1PEL1w/5kyTHLAmRV7aYbabRLF2+G3e+6LHQEvOgFmB5tqEzHUDORBed6M6qWaNumisnQxjfhJ6jFMaz7Ep2lxlNTmaSmJ5hcvYi1zg63aheHpsiL5nBFICk3O9M8AyRTPh4PhKd2L/YfND93BAA6SE7AqNHT/y5E0bSunbkkvRE+9HDMQDn3nMnTR2xtJTJ3AiJrXrH6YDSo9RUyMkXUbOqiw3h6lcOkDP8fmvJUWbQYKG7Ctbj2gfo8CRl6BsN/TCha3nnbeXGzwEAHYXGMqoeFtoaStdt2CQpMdmCE2AYRRyIbYLcA2Hw0jLZ7BYVFt3Qb+n4cU6DANO6cNlWZYvfVkLcsa8wDG3KvJj/rIJ5uCTgQMBmZpc68F9GSodfxXWFouayKqqBy6+46iQ04iW94bveiu3d15vWi/4/UOk6v7PvvTS4n5KZeqBvATpBwHX6YZRyvQcnZuatKCyAR75EtHnXe5m0DOaAlOcyKldF7yE99fNyDYYfjxMgnxeuH3OsRO6tI0dlFYQyJB/YU2LZi+h3I93H5Mx8p9CiPW72E1VeXG7dejXZlbi40UIe5jhL/fdERU9mkrn3e1IM2hsBkV9+zz8+w8="
  },
  "ungemessen": {
   "profiband.K4#2": {
@@ -2403,49 +2474,158 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.leben.kopplung.stadt-im-netz#2": {
+   "gruen": false,
+   "zahl": "der Deckel der Leiter riss nach 47,019 s, ehe fangR der Sprosse stand — kein Urteil, UNGEMESSEN (die Probe sah: S2 der Deckel der Leiter riss nach 47,019 s, ehe fangR der Sprosse stand · der Deckel der Leiter 47 s) · Täter: @@PUNKTE@@ PROBE 261.0 s · Exit 0",
+   "exit": 0,
+   "minuten": 4.44,
+   "grund": "der Deckel der Leiter riss nach 47,019 s, ehe fangR der Sprosse stand — kein Urteil, UNGEMESSEN (die Probe sah: S2 der Deckel der Leiter riss nach 47,019 s, ehe fangR der Sprosse stand · der Deckel der Leiter 47 s) · Täter: @@PUNKTE@@ PROBE 261.0 s · Exit 0",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 266.5,
+   "fremd": {
+    "s": 268.7,
+    "takte": 123,
+    "fremdS": 115.44,
+    "kerne": 0.43,
+    "fensterKerne": 1.031,
+    "namen": [
+     [
+      "bash.exe sk/wacht6.sh",
+      16.13
+     ],
+     [
+      "bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \"",
+      13.59
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      10.34
+     ]
+    ],
+    "dienerS": 71.94,
+    "diener": [
+     [
+      "System",
+      37.25
+     ],
+     [
+      "WmiPrvSE.exe",
+      12.16
+     ]
+    ],
+    "geraetS": 170.34,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      123.03
+     ],
+     [
+      "svchost.exe",
+      43.52
+     ],
+     [
+      "svchost.exe -k UnistackSvcGroup -s WpnUserService",
+      1.44
+     ]
+    ],
+    "eigenS": 518.88,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-27T23:53:53.381Z",
+   "abdruck": "6da080f7de54",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.leben.kopplung.evolution-planet#1",
+   "modus": "session"
+  },
+  "karte2.planet.relief.grossform#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: Prozess unbekannt · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\bdbbda82-721e-4145-8864-2f350e2bc3f5.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\punkte-gtx\\\\scripts\\\\lib\\\\welt-boot.c) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: Prozess unbekannt · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\bdbbda82-721e-4145-8864-2f350e2bc3f5.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\punkte-gtx\\\\scripts\\\\lib\\\\welt-boot.c) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-27T23:58:23.079Z",
+   "abdruck": "562950e4c769",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "12372@mwzmxui2"
   }
  },
  "sitzung": {
-  "start": "2026-11-27T22:55:18.013Z",
-  "ordner": "sitzung-20261127-235518",
+  "start": "2026-11-27T23:51:36.292Z",
+  "ordner": "sitzung-20261128-005136",
   "port": 7804,
-  "warten": 0.02,
-  "bootS": 6.9,
-  "grundstellungS": [],
-  "proben": 1,
+  "warten": 0.03,
+  "bootS": 7,
+  "grundstellungS": [
+   0.2,
+   0.1
+  ],
+  "proben": 3,
   "freigaben": [],
   "geraet": {
    "name": "GTX 1060",
    "adapter": "NVIDIA GeForce GTX 1060",
    "preis": true
   },
+  "offen": [
+   "karte2.planet.relief.grossform#1"
+  ],
   "orte": [
    {
     "ort": null,
-    "vor": "karte2.same.entfaltung.schirm#1",
-    "s": 29.7,
-    "takte": 830,
+    "vor": "karte2.erleben.spieler.hand#1",
+    "s": 30.6,
+    "takte": 881,
     "chunks": 81,
     "nach": null
+   },
+   {
+    "ort": null,
+    "vor": "karte2.same.physik.feuer#2",
+    "s": 17.6,
+    "takte": 650,
+    "chunks": 81,
+    "nach": "der Grundstellung"
+   },
+   {
+    "ort": null,
+    "vor": "karte2.leben.kopplung.evolution-planet#1",
+    "s": 17.6,
+    "takte": 632,
+    "chunks": 81,
+    "nach": "der Grundstellung"
    }
   ],
   "wegeTueren": [],
   "felder": [
    {
-    "probe": "karte2.same.entfaltung.schirm#1",
+    "probe": "karte2.erleben.spieler.hand#1",
     "weg": [
      "__ortZeit",
      "__weltaktSpionBuch",
      "__wetterSpionBuch",
-     "__buehneUhr",
-     "__bandDecke",
-     "__zensusCalls"
+     "__buehneUhr"
+    ]
+   },
+   {
+    "probe": "karte2.same.physik.feuer#2",
+    "weg": [
+     "__ortZeit",
+     "__weltaktSpionBuch",
+     "__wetterSpionBuch",
+     "__buehneUhr"
     ]
    }
   ],
   "wirt": [
    {
-    "probe": "karte2.same.entfaltung.schirm#1",
+    "probe": "karte2.erleben.spieler.hand#1",
     "anders": [
      "r._bildZeit",
      "r._wolkenZeit",
@@ -2468,43 +2648,111 @@
     },
     "haelt": [],
     "heap": [
-     201.1,
-     309.6
+     201.9,
+     242.7
+    ],
+    "ungemessen": null
+   },
+   {
+    "probe": "karte2.same.physik.feuer#2",
+    "anders": [
+     "r._bildZeit",
+     "r._wolkenZeit",
+     "r._weltaktGehalten",
+     "r._setWeather",
+     "r.state.weather",
+     "window.__wieseMessen",
+     "window.__wieseUrteil",
+     "window.__ortSchritt"
+    ],
+    "wie": {
+     "r._bildZeit": "getauscht: () => S.T → der Wert 12.5",
+     "r._wolkenZeit": "getauscht: () => S.T → der Wert 12.5",
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
+     "r.state.weather": "getauscht: () => wert → der Wert sunny",
+     "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
+     "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
+     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+    },
+    "haelt": [],
+    "heap": [
+     226.7,
+     248.3
     ],
     "ungemessen": null
    }
   ],
   "messHalt": [
    {
-    "probe": "karte2.same.entfaltung.schirm#1",
+    "probe": "karte2.erleben.spieler.hand#1",
+    "halt": -1000000000,
+    "zurueck": 0
+   },
+   {
+    "probe": "karte2.same.physik.feuer#2",
     "halt": -1000000000,
     "zurueck": 0
    }
   ],
-  "ciBlicke": 2,
+  "felderBlind": [
+   {
+    "probe": "karte2.leben.kopplung.evolution-planet#1",
+    "wann": "nach",
+    "fehler": "ABSTURZ der Seite: Prozess unbekannt · Abbild C:\\Users\\micha\\AppData\\Local\\Temp\\anazh-absturz\\bdbbda82-721e-4145-8864-2f350e2bc3f5.dmp"
+   }
+  ],
+  "wirtBlind": [
+   {
+    "probe": "karte2.leben.kopplung.evolution-planet#1",
+    "wann": "nach",
+    "fehler": "ABSTURZ der Seite: Prozess unbekannt · Abbild C:\\Users\\micha\\AppData\\Local\\Temp\\anazh-absturz\\bdbbda82-721e-4145-8864-2f350e2bc3f5.dmp"
+   }
+  ],
+  "zeichnerBlind": [
+   {
+    "probe": "karte2.leben.kopplung.evolution-planet#1",
+    "wann": "nach",
+    "fehler": "ABSTURZ der Seite: Prozess unbekannt · Abbild C:\\Users\\micha\\AppData\\Local\\Temp\\anazh-absturz\\bdbbda82-721e-4145-8864-2f350e2bc3f5.dmp"
+   }
+  ],
+  "grund": "die Welt trägt nicht mehr vor karte2.planet.relief.grossform#1: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: Prozess unbekannt · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\bdbbda82-721e-4145-8864-2f350e2bc3f5.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\punkte-gtx\\\\scripts\\\\lib\\\\welt-boot.c — offen: karte2.planet.relief.grossform#1",
+  "ciBlicke": 4,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 394,
-   "frameP95": 33.39,
-   "taktP95": 21.97,
-   "vramMax": 144.8,
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "karte2.same.entfaltung.schirm#1",
+     "probe": "karte2.erleben.spieler.hand#1",
      "m": 1083,
+     "ringVor": 4,
+     "ringMin": -1
+    },
+    {
+     "probe": "karte2.same.physik.feuer#2",
+     "m": 1083,
+     "ringVor": 4,
+     "ringMin": 0
+    },
+    {
+     "probe": "karte2.leben.kopplung.evolution-planet#1",
+     "m": 340,
      "ringVor": 4,
      "ringMin": 0
     }
    ],
-   "zapfen": 176,
-   "luecken": 0,
-   "letzteLuecke": null
+   "zapfen": 186,
+   "luecken": 32,
+   "letzteLuecke": "ABSTURZ der Seite: Prozess unbekannt · Abbild C:\\Users\\micha\\AppData\\Local\\Temp\\anazh-absturz\\bdbbda82-721e-4145-8864-2f350e2bc3f5.dmp"
   },
-  "fahrtS": 183.3,
-  "minuten": 3.23
+  "fahrtS": 400.3,
+  "minuten": 6.84
  }
 }
