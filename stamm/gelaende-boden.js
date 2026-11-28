@@ -895,6 +895,11 @@ class AnazhRealm_gelaende_boden {
             get pegel() {
                 return realm._pegelGilt();
             },
+            // das Klima des Abflusses (`_regenMittel`: das Mittel des abfließenden Regens) — der Lauf des Pegels liest es
+            get abflussMittel() {
+                realm._regenMittel();
+                return realm._regenKlima.abfluss;
+            },
             // die Gezeit des Meers (planet.wasser.gezeiten, `_gezeitGilt`: { stunde, k } zur Welt-Uhr) — der Spiegel des Kerns liest sie
             get gezeit() {
                 return realm._gezeitGilt();

@@ -7102,6 +7102,9 @@
         if (art === "werk") {
             var P = B.herstellung[beruf];
             H.rate = P && P.ware === ware ? P.jeStunde : 0;
+            // (kunst#2) die HAND des Werks: das Können dessen, der darin arbeitet (1 = das Band der Guten) — der Wirt bindet sie an
+            // seinen Lebenslauf (`uebung.handwerk`), wie die Rate; die Kette trägt sie in jedes Stück (`stoffstromFassen`)
+            H.koennen = 1;
             H.fenster = tagesFenster(same, rolle);
         } else if (art === "stand") {
             H.fenster = tagesFenster(same, rolle);
@@ -7274,7 +7277,19 @@
             haldeKg: kg, halde0: kg, luppe: null0(), anbruch: null0(), arbeit: null0(), lager: null0(), haende: 0,
             haendeMax: Math.max(0, haendeMax | 0), erz: 0, eisen: 0, barren: 0, werkzeug: 0,
             kohleJeErz: kohleJeErz, kohleKg: kohle, kohle0: kohle, kohle: 0, reisen: 0, reise: null0(), imOfen: null0(), kalt: 0,
+            // (kunst#2) DIE HAND IM STÜCK: je Ofen das Können des Schmieds jedes Werkzeugs im Lager (der Reihe nach), und das der
+            // Werkzeuge in den Händen (der Reihe der Ausgabe) — die Güte liest es (schmiede `gueteAnteil(…, hand)`)
+            stueck: oefen.map(function () {
+                return [];
+            }),
+            hand: [],
         };
+    }
+    // die Hand des Schmieds am Ofen i zur Stunde des Stücks (`bestandHalter` trägt sie, der Wirt bindet sie): ohne Können bricht es laut
+    function _stueckHand(O, i) {
+        var k = +O.koennen;
+        if (!(k >= 0) || !isFinite(k)) throw new Error("STOFFSTROM: der Ofen " + i + " trägt keine Hand (koennen " + O.koennen + ")");
+        return k;
     }
     // DIE OFENREISEN EINES OFENS über `w` Stunden seiner Arbeit (der Schritt des Rasters): beginnt keine Reise, steht er kalt
     function _ofenreisen(K, i, w, G) {
@@ -7346,6 +7361,7 @@
                             K.anbruch[i] += G.barrenKg;
                         }
                         K.anbruch[i] -= K.werkzeugKg;
+                        K.stueck[i].push(_stueckHand(O, i));
                         K.lager[i]++;
                         K.werkzeug++;
                         K.arbeit[i] -= G.werkzeugStunden;
@@ -7355,6 +7371,7 @@
                     var g = Math.min(K.lager[i], K.haendeMax - K.haende);
                     K.haende += g;
                     K.lager[i] -= g;
+                    Array.prototype.push.apply(K.hand, K.stueck[i].splice(0, g));
                 }
             }
             K.h = t1;

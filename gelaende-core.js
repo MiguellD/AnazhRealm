@@ -694,13 +694,11 @@
     // Wirts, gewogen mit ihrer Asche) fließen über das Netz stromab: jede in den Knoten der Ebene 2, in dessen Zelle sie liegt,
     // dann den Unterliegern nach (`knotenFluss`), an der Mündung ins Glied der Ebene darüber (`aus.von`), bis zur Senke. Jeder
     // Knoten der Ebenen 0 und 1 (sie tragen die Flüsse, `flussLaeufe`) sammelt die Fläche über ihm; b = Fläche / Einzugsgebiet
-    // (`knotenA`), höchstens 1. Der Beiwert des Regens steigt mit b vom Beiwert der Wiese auf den der Brandfläche —
-    // → Map(knotenId → m = 1 + b · (beiwert / wiese − 1)), null ohne Brand im Netz. Gerechnet je Änderung der Taten, nie je Bild.
-    // BAND: SCS-Kurvenzahl der Brandfläche hoher Schwere 95 gegen die unverbrannte 60–64 (USDA BAER, Washington Dam Safety
-    // 2015): ein Regen von 25 mm fließt zu 0,56 ab (CN 95), die Wiese des Pegels führt 0,3 (`PEGEL.regen`) — die Spitze des
-    // verbrannten Einzugsgebiets 1,87-fach. Die Erholung (die Asche der Sukzession, die Uhr des Wirts) liegt nach Moody & Martin
-    // 2001 (Buffalo Creek, Colorado) bei etwa 3 Jahren, nach Morris & Moses 1987 bei 3–5 Jahren.
-    const BRAND_ABFLUSS = Object.freeze({ beiwert: 0.56, wiese: 0.3 });
+    // (`knotenA`), höchstens 1 → Map(knotenId → b), null ohne Brand im Netz. Gerechnet je Änderung der Taten, nie je Bild. Der
+    // Lauf mischt mit b die Faltung der Wiese mit der der Brandfläche (`ABFLUSS_CN`: die Kurvenzahl 95 der Brandfläche hoher
+    // Schwere, USDA BAER, Washington Dam Safety 2015 — ihr Anfangsverlust 2,7 mm gegen 36,8 mm der Wiese: der gewöhnliche Regen,
+    // den die Wiese hält, fließt von der Brandfläche ab). Die Erholung (die Asche der Sukzession, die Uhr des Wirts) liegt nach
+    // Moody & Martin 2001 (Buffalo Creek, Colorado) bei etwa 3 Jahren, nach Morris & Moses 1987 bei 3–5 Jahren.
     function pegelBrand(L, flaechen) {
         const T = L.erbgut && L.erbgut.terme;
         if (!T || !T.length || T[0].art !== "wildnis" || !flaechen || !flaechen.length) return null;
@@ -722,9 +720,8 @@
                 else c = c.k > 0 && c.aus && c.aus.von ? c.aus.von : null;
             }
         }
-        const K = BRAND_ABFLUSS.beiwert / BRAND_ABFLUSS.wiese - 1;
         const aus = new Map();
-        for (const [kn, a] of A) aus.set(knotenId(kn), 1 + K * Math.min(1, a / (knotenA(N, kn) * N.S[kn.k] * N.S[kn.k])));
+        for (const [kn, a] of A) aus.set(knotenId(kn), Math.min(1, a / (knotenA(N, kn) * N.S[kn.k] * N.S[kn.k])));
         return aus.size ? aus : null;
     }
     // Die Sohle eines Knotens: dem Gelände folgen (Ebene k ≥ 1 mit Mindest-Einschnitt), aber nie steiler als das Stream-
@@ -1224,6 +1221,11 @@
     // Das Einzugsgebiet liest nur das Profil der Ebenen 0 und 1 (Aue F, Mäander) — die Ebene 2 fragt es nicht: bis hier zählte
     // jeder Rinnen-Knoten seine Oberlieger rekursiv stromauf für eine Zahl ohne Leser. Dieselbe Höhe bis aufs Bit
     // (GTX 1050, 3 936 Punkte des Feld-Panoramas 8–40 km: 2,84 → 1,69 s; Ring 13 056 Punkte 0,30 → 0,18 s).
+    // DIE AUEN-BREITE F (m, von der Mittellinie zur Kante der Aue) eines Laufs der Ebene k mit dem Einzugsgebiet Am2 (m²), `aue`
+    // der Regler der Landform — EIN Gesetz: das Talprofil (`segmentNeu`) und die Aue des Pegels (`pegelBett`) lesen es.
+    function auenBreite(k, Am2, aue) {
+        return k === 0 ? aue * 30 * Math.pow(Am2 / 1e6, 0.4) : k === 1 ? aue * 16 * Math.pow(Am2 / 1e5, 0.45) : 3;
+    }
     function segment(N, kn) {
         if (kn.seg !== undefined) return kn.seg;
         N.profilBau[kn.k]++;
@@ -1240,7 +1242,7 @@
         const Am2 = kn.k <= 1 ? knotenA(N, kn) * S * S : 0;
         const ex = t.x - kn.x;
         const ez = t.z - kn.z;
-        const F = kn.k === 0 ? P.aue * 30 * Math.pow(Am2 / 1e6, 0.4) : kn.k === 1 ? P.aue * 16 * Math.pow(Am2 / 1e5, 0.45) : 3;
+        const F = auenBreite(kn.k, Am2, P.aue);
         const W = (kn.k === 0 ? 0.36 : kn.k === 1 ? 0.3 : 0.34) * S * (0.85 + 0.3 * zufall(N.sh, kn.i, kn.j, 40 + kn.k));
         const b = kn.k === 0 ? P.talForm + (2 - P.talForm) * gf.trog : kn.k === 1 ? P.talForm + 0.3 : 1.2;
         const stil = kn.k === 0 ? gf.stil : 0;
@@ -1963,8 +1965,10 @@
     // DER HUB: der Ruhe-Spiegel führt den mittleren Abfluss des Klimas (`spende`, 330 mm im Jahr, gemäßigt-kontinental), das Bett
     // formte der bordvolle (Leopold & Wolman 1957): seine Krone liegt Freibord · Tiefe über dem Ruhe-Spiegel (`spiegelFreibord` ·
     // `kanalTiefe` der Hydrosphäre, die Damm-Krone mindestens `dammFreibord`). Im breiten Bett wächst die Tiefe mit dem Abfluss
-    // hoch 3/5 (Manning): Hub = (1 − f)·T·((1 + q/spende)^(3/5) − 1), q der Abfluss über dem Mittel — gedeckelt an der Krone
-    // (darüber trägt die Aue den Überschuss, nicht gerechnet), nach unten am leeren Bett (q = −spende: Hub −(1 − f)·T). Jede
+    // hoch 3/5 (Manning): Hub = (1 − f)·T·((1 + q/spende)^(3/5) − 1), q der Abfluss über dem Mittel, nach unten am leeren Bett
+    // (q = −spende: Hub −(1 − f)·T). ÜBER DER KRONE trägt die Aue (planet.wetter.extreme#1, der gegliederte Querschnitt, Chow 1959
+    // §6-8): Q/spende = (1 + h/tf)^(5/3) − 1 + R·((h − Krone)/tf)^(5/3) — das Bett und die Aue je nach Manning, R das Verhältnis
+    // ihrer Leitfähigkeit je Meter Tiefe (`AUE`, `pegelBett`); der Spiegel steigt über der Krone flacher, nie gedeckelt. Jede
     // Schmelze über 0,6 mm am Tag füllt das Bett bis zur Krone (0,2 m): das Frühjahr hebt See und Fluss bordvoll, solange der
     // Schnee an ihrer Höhe Wasser trägt.
     // DER REGEN UND DIE DÜRRE (wetter.K3, `pegelLauf`): q_j(t) = spende·(B(t) − 1) + `regen`·F_j(t) — eine FUNKTION der Welt-Uhr t
@@ -1973,8 +1977,9 @@
     //   F_j der schnelle Abfluss: die Faltung des Regens mit der Einheits-Ganglinie des Laufs, die Nash-Kaskade aus `LAUF.nash`
     //       gleichen Speichern der Konstante k_j (Gamma, u(s) = s/k²·e^(−s/k), Gipfel bei k nach dem Regen), geschlossen je
     //       linearem Stück (die Summen-Kurve S und ihr Integral R) — ihr Integral ist 1: was als Abfluss fällt (der Regen der
-    //       Stärke 1 mit 10 mm je Stunde, 0,3 davon fließt ab, der Beiwert der Wiese: `regen` m je Tag), fließt GANZ durch den
-    //       Pegel, nur später (die Volumen-Bilanz ist das Gesetz der Faltung). Vor dem ersten Stempel regnete es nicht.
+    //       Stärke 1 mit 10 mm je Stunde, `regen` m je Tag, davon der Anteil der Kurvenzahl am Regen der Strecke, `ABFLUSS_CN`),
+    //       fließt GANZ durch den Pegel, nur später (die Volumen-Bilanz ist das Gesetz der Faltung). Vor dem ersten Stempel
+    //       regnete es nicht.
     //   B der Grund (das Grundwasser, ein linearer Speicher der Rückgangs-Konstante `LAUF.trocken`, Maillet): der Regen der
     //       letzten `LAUF.fenster` Tage gegen das Mittel des Klimas (`mittel`, der Regen der Front im Mittel), davor das Klima
     //       selbst — B = 1, solange die Welt regnet wie ihr Klima; 14 Tage ohne Regen senken ihn auf e^(−14/20) (der Spiegel
@@ -1994,7 +1999,28 @@
     // Hub hängt am Spiegel und am Lauf: ein ebener Abschnitt hebt sich eben, und stromab steigt kein Spiegel durch die Schmelze —
     // der Hub fällt mit der Höhe höchstens 0,2 m je Meter (die Linie der Schmelze rampt über 0,09 K, 0,8 m Höhe). Ohne Stempel
     // (`pegelLauf` null) ist die Tafel die der Schmelze allein, Hub für Hub.
-    const PEGEL = Object.freeze({ spende: 0.0009, unter: 40, ueber: 300, dy: 1, stufe: 0.01, regen: 0.072 });
+    const PEGEL = Object.freeze({ spende: 0.0009, unter: 40, ueber: 300, dy: 1, stufe: 0.01, regen: 0.24, bfi: 0.7 });
+    // DIE KURVENZAHL DES ABFLUSSES (die Eichung, planet.wetter.extreme#1; USDA SCS NEH-4 Kap. 10, TR-55 1986): vom Regen P (mm)
+    // einer Strecke fließt Q = (P − Ia)²/(P − Ia + S) ab, S = 25 400/CN − 254 mm, der Anfangsverlust Ia = `ia`·S; der Anteil des
+    // Regens, der JETZT abfließt, ist dQ/dP = 1 − (S/(P − Ia + S))² (0 bis Ia). Die Wiese CN 58 (TR-55 Tafel 2-2c, Meadow,
+    // Boden B: Ia 36,8 mm — die gewöhnliche Strecke der Front bleibt im Boden, das Bett formt das Hochwasser, das nach Leopold,
+    // Wolman & Miller 1964 je 1–2 Jahre wiederkehrt), die Brandfläche hoher Schwere CN 95 (BAER: Ia 2,7 mm, `pegelBrand`). Die
+    // Strecke ist die nasse Folge der Züge, wie das Wetter sie misst: sie endet mit dem ersten trockenen Stück (mehr als
+    // `trockenH` Stunden ohne Regen; der Zug der Front trägt 0,8 Stunden der Welt-Uhr — eine Pause von Stunden kennt sein Takt
+    // nicht) — und nach `tagH` Stunden: die Kurvenzahl ist auf den Regen EINES Tags geeicht (NEH-4 Kap. 10, „rainfall … for
+    // one day"; Hawkins et al. 2009, Curve Number Hydrology), ein gehaltenes Wort ist je Tag ein neues Ereignis (der gehaltene
+    // Wolken-Regen 0,12 = 28,8 mm je Tag bleibt unter Ia im Boden, statt über 7,8 Tage zu 225 mm EINER Strecke zu wachsen; der
+    // Sturm von 100 mm in 10 Stunden fließt ab wie zuvor); `mm` der Regen der Stärke 1 je Stunde; `schritt` mm je Stück der
+    // Faltung (ein lineares Stück zwischen zwei Knoten wird geteilt, bis der Anteil an seinen Enden dem Regen folgt).
+    const ABFLUSS_CN = Object.freeze({ wiese: 58, brand: 95, ia: 0.2, mm: 10, trockenH: 0, tagH: 24, schritt: 1 });
+    // DIE AUE DES PEGELS: die Rauheit des Betts und der Aue (Chow 1959, Tafel 5-6: Hauptgerinne gerade, rein 0,030; Aue,
+    // Weide mit hohem Gras 0,035) und das Einzugsgebiet `A` (m²) der Ebene `k`, an dem der Kern das Verhältnis R abliest — die
+    // Auen-Breite (`auenBreite`, halb) und die Bett-Breite (`flussBreite`) wachsen fast gleich mit A (A^0,45 · A^0,4 gegen A^0,37):
+    // R = (2F − B)/B · n_Bett/n_Aue ≈ 10,6 (Ebene 1, 1 km²) … 10,8 (Ebene 0, 100 km²). `stufe` (m): über der Krone steht der Hub
+    // in den Stufen der Überflutungs-Karten — ein Fuß ab bankvoll (USGS Flood Inundation Mapping: die Bibliothek je Pegel trägt eine
+    // Karte je 1 ft Stand, z. B. Schoharie Creek 14 … 26 ft): die Flut von 3 m läuft in 10 Stufen ab, nie in 300 (je Stufe baut
+    // die Welt die Chunks ihres Laufs neu, `_pegelTakt`); im Bett bleibt die Stufe des Pegels (`PEGEL.stufe`).
+    const AUE = Object.freeze({ nBett: 0.03, nAue: 0.035, A: 1e6, k: 1, stufe: 0.3048 });
     const LAUF = Object.freeze({
         snyder: 1.125,
         hack: 1.27,
@@ -2013,22 +2039,40 @@
         const t = F.mittel - F.kuehlung + F.jahr.amp * Math.cos(2 * Math.PI * (saison - F.jahr.gipfel) - F.jahr.spaet);
         return SCHMELZE.gradTag * Math.max(0, t);
     }
-    // Das Bett der Hydrosphäre: [die Wassertiefe (1 − f)·T über der Sohle im Mittel, die Krone] (`pegelTafel`, `pegelLauf`).
+    // Das Bett der Hydrosphäre: [die Wassertiefe (1 − f)·T über der Sohle im Mittel, die Krone, das Verhältnis R der Aue, die
+    // Auen-Breite F (m von der Mittellinie)] (`pegelTafel`, `pegelLauf`; F und R aus dem Regler `aue` der Landform, `AUE`) — das
+    // Bild der Flut (`flussAm` jenseits der Krone) liest dasselbe F, mit dem der Abfluss über der Krone rechnet.
     function pegelBett(L) {
         const H = L.hydroGesetz;
         if (!(H && H.kanalTiefe > 0 && H.spiegelFreibord > 0 && H.dammFreibord > 0))
             throw new Error("gelaende-core pegelTafel: das Gesetz der Hydrosphäre fehlt (kanalTiefe, Freibord)");
-        return [(1 - H.spiegelFreibord) * H.kanalTiefe, Math.min(H.spiegelFreibord * H.kanalTiefe, H.dammFreibord)];
+        const B = flussBreite(AUE.A);
+        const F = auenBreite(AUE.k, AUE.A, landformRegler(L).aue);
+        const R = (Math.max(0, 2 * F - B) / B) * (AUE.nBett / AUE.nAue);
+        return [(1 - H.spiegelFreibord) * H.kanalTiefe, Math.min(H.spiegelFreibord * H.kanalTiefe, H.dammFreibord), R, F];
     }
-    // Der Hub des Abflusses q über dem Mittel (Manning, `PEGEL`) im Bett [tf, krone], auf die Stufe gerundet.
-    function pegelHubVon(q, tf, krone) {
+    // Der Hub des Abflusses q über dem Mittel (Manning, `PEGEL`) im Bett [tf, krone] mit der Aue R darüber, auf die Stufe gerundet
+    // (über der Krone die Stufe der Aue, `AUE.stufe`, ab der Krone gezählt).
+    function pegelHubVon(q, tf, krone, R) {
         const P = PEGEL;
         const h = tf * (Math.pow(Math.max(0, 1 + q / P.spende), 0.6) - 1);
-        return Math.round(Math.max(-tf, Math.min(krone, h)) / P.stufe) * P.stufe;
+        if (!(h > krone)) return Math.round(Math.max(-tf, h) / P.stufe) * P.stufe;
+        // über der Krone: die Wurzel von Q(h) = q zwischen der Krone und dem Hub des Betts allein (Q wächst mit h)
+        const Q = q / P.spende;
+        let [lo, hi] = [krone, h];
+        for (let i = 0; i < 48; i++) {
+            const m = 0.5 * (lo + hi);
+            if (Math.pow(1 + m / tf, 1 / 0.6) - 1 + R * Math.pow((m - krone) / tf, 1 / 0.6) > Q) hi = m;
+            else lo = m;
+        }
+        return Math.round((krone + Math.round((lo - krone) / AUE.stufe) * AUE.stufe) / P.stufe) * P.stufe;
     }
-    // Der Abfluss über dem Mittel (m je Tag), der den Hub h trägt — Manning umgekehrt; bis zum leeren Bett (h = −tf: −spende).
+    // Der Abfluss über dem Mittel (m je Tag), der den Hub h trägt — Manning umgekehrt, über der Krone mit der Aue; bis zum leeren
+    // Bett (h = −tf: −spende).
     function pegelAbfluss(L, h) {
-        return PEGEL.spende * (Math.pow(Math.max(0, 1 + h / pegelBett(L)[0]), 1 / 0.6) - 1);
+        const [tf, krone, R] = pegelBett(L);
+        const q = PEGEL.spende * (Math.pow(Math.max(0, 1 + h / tf), 1 / 0.6) - 1);
+        return h > krone ? q + PEGEL.spende * R * Math.pow((h - krone) / tf, 1 / 0.6) : q;
     }
     // DIE LÄNGE NACH HACK (m) des Einzugsgebiets A (m²) und DIE LAG-KLASSE eines Laufs am Pegel (A in m², strecke in m).
     function hackLaenge(A) {
@@ -2052,28 +2096,55 @@
     // 1/`LAUF.zustand` des Regens; b = F_j, a = der obere Speicher S1/k) laufen frei ab (S1·e^(−τ/k), (S2 + S1·τ/k)·e^(−τ/k)), die
     // Stempel beginnen nie vor ihm; liegt er hinter dem Fenster, steht der Grund auf dem Klima wie jeder Stempel dort. Ohne ihn
     // regnete es vor dem ersten Stempel nicht (byte-gleich).
+    // DAS KLIMA DES ABFLUSSES (`L.abflussMittel`, der Wirt `_abflussMittel` aus den Zügen des Klimas, `pegelKlima`): das Mittel F̄
+    // des abfließenden Regens — der Fluss führt im Mittel s + r·F̄ (Spende und der mittlere schnelle Abfluss), der Hub liest den
+    // Abfluss über DIESEM Mittel (`laufQ`). Ohne es bricht der Lauf laut.
     function pegelLauf(L, stempel, jetzt, tagS, mittel, zustand) {
-        const f = laufFalte(stempel, jetzt, tagS, mittel, zustand, false);
+        const klima = L && L.abflussMittel;
+        if (!(Number.isFinite(klima) && klima >= 0))
+            throw new Error("gelaende-core pegelLauf: die Lage trägt das Klima des Abflusses nicht (abflussMittel)");
+        const f = laufFalte(stempel, jetzt, tagS, mittel, zustand, false, ABFLUSS_CN.wiese);
         if (!f) return null;
-        const P = PEGEL;
-        const [tf, krone] = pegelBett(L);
+        // die Faltung der Brandfläche (`pegelBrand` mischt sie je Knoten): derselbe Regen mit ihrer Kurvenzahl, ohne den Zustand
+        // (der Stand trägt die Speicher der Wiese; was vor ihm fiel, trägt die Brandfläche nicht)
+        const fb = stempel && stempel.length >= 2 ? laufFalte(stempel, jetzt, tagS, mittel, null, false, ABFLUSS_CN.brand) : null;
+        const bett = pegelBett(L);
         const q = new Float64Array(LAUF.n);
-        for (let j = 0; j < LAUF.n; j++) q[j] = laufQ(L, tf, krone, f.grund, f.schnell[j], 1);
-        return { q, grund: f.grund, schnell: f.schnell };
+        for (let j = 0; j < LAUF.n; j++) q[j] = laufQ(L, bett, f.grund, f.schnell[j], klima);
+        return { q, grund: f.grund, schnell: f.schnell, brand: fb ? fb.schnell : null, klima };
     }
-    // Der Abfluss q über dem Mittel, der den gerundeten Hub trägt: der Grund und der schnelle Abfluss F, dessen Regen der
-    // Beiwert der Fläche `m`-fach abführt (1: die Wiese; die Brandfläche des Einzugsgebiets hebt ihn, `pegelBrand`).
-    function laufQ(L, tf, krone, grund, F, m) {
+    // Der Abfluss q über dem Grund, der den gerundeten Hub trägt: der Grund B und der schnelle Abfluss F (der abfließende Regen
+    // der Fläche — die Wiese, oder mit `pegelBrand` gemischt die Brandfläche) im Bett `bett` (`pegelBett`), bezogen auf den
+    // BASISABFLUSS g des Flusses: Q/Q_g = B + r·F/g, q = s·(Q/Q_g − 1) — der trockene Fluss (B = 1, F = 0) steht im geschnitzten
+    // Bett (Hub 0), der Regen hebt ihn. g trägt im Klima seiner Welt den Anteil `bfi` des Mittels (der Base-Flow-Index, das
+    // Mittel des Grunds durch das Mittel des Flusses; Beck et al. 2013 über 3 394 Einzugsgebiete: 0,7 hält das Mittel im Bett,
+    // 1/bfi < (1 + Krone/tf)^(5/3)): g = max(s, r·F̄·bfi/(1 − bfi))
+    // — derselbe Regen, der schnell abfließt, speist den Grund; die Erd-Spende s allein trüge im Klima der Welt 8 % des Mittels,
+    // und der Fluss stünde dauernd an der Krone. Ohne schnellen Abfluss im Klima (F̄ = 0) byte-gleich s·(B − 1) + r·F. Die Krone
+    // trägt bankvoll das (1 + Krone/tf)^(5/3)-Fache des Grunds.
+    function laufQ(L, bett, grund, F, klima) {
         const P = PEGEL;
-        const k1 = Math.round(pegelHubVon(P.spende * (grund - 1) + P.regen * m * Math.max(0, F), tf, krone) / P.stufe);
+        const g = Math.max(P.spende, (P.regen * klima * P.bfi) / (1 - P.bfi));
+        const q = (g * (grund - 1) + P.regen * Math.max(0, F)) * (P.spende / g);
+        const k1 = Math.round(pegelHubVon(q, bett[0], bett[1], bett[2]) / P.stufe);
         return k1 ? pegelAbfluss(L, k1 * P.stufe) : 0;
+    }
+    // DAS MITTEL DES ABFLIESSENDEN REGENS über die Knoten `stempel` des Klimas (die Züge der Front, s der Welt-Uhr): das
+    // Zeit-Mittel der Knoten der Kurvenzahl der Wiese (`cnStempel`) — die Kaskade erhält die Masse, F̄ ist je Klasse dasselbe.
+    function pegelKlima(stempel, tagS) {
+        if (!stempel || stempel.length < 4 || !(tagS > 0)) throw new Error("gelaende-core pegelKlima: Stempel oder Spieltag fehlt");
+        const W = cnStempel(stempel, tagS, ABFLUSS_CN.wiese);
+        let I = 0;
+        for (let i = 2; i + 1 < W.length; i += 2) I += ((W[i + 1] + W[i - 1]) / 2) * (W[i] - W[i - 2]);
+        const T = W[W.length - 2] - W[0];
+        return T > 0 ? I / T : 0;
     }
     // DER ZUSTAND DES LAUFS zur Welt-Uhr `jetzt` (speicher.K3): Stempel und Zustand gefaltet in { t, grund, s } — 2 + 2 · LAUF.n
     // Zahlen, nie mehr, wie lange es auch regnete (Gebot 7: der Stand trägt die Speicher, nie die Uhr des Regens). Der Grund auf
     // 1e-6, die Speicher auf 1/`LAUF.zustand` des Regens (ein F von 3,5e-4 trägt eine Stufe des Hubs: der Rest ist ein
     // Fünfunddreißigstel davon und läuft mit den Speichern ab). null ohne Stempel und ohne Zustand.
     function pegelZustand(stempel, jetzt, tagS, mittel, zustand) {
-        const f = laufFalte(stempel, jetzt, tagS, mittel, zustand, true);
+        const f = laufFalte(stempel, jetzt, tagS, mittel, zustand, true, ABFLUSS_CN.wiese);
         if (!f) return null;
         const E = LAUF.zustand;
         const s = new Array(2 * LAUF.n);
@@ -2083,9 +2154,50 @@
         }
         return { t: Math.round(jetzt * 1000) / 1000, grund: Math.round(f.grund * 1e6) / 1e6, s };
     }
-    // DIE FALTUNG (`pegelLauf`, `pegelZustand`): der Grund B und je Klasse F (der Ausfluss der Kaskade), mit `oben` auch der
-    // obere Speicher (die Faltung mit e^(−s/k)/k) — oder null ohne Stempel und ohne Zustand.
-    function laufFalte(stempel0, jetzt, tagS, mittel, zustand, oben) {
+    // DIE STEMPEL DES ABFLIESSENDEN REGENS (`ABFLUSS_CN`): je Knoten die Stärke × der Anteil dQ/dP am Regen der Strecke bis zu
+    // ihm, jedes Stück auf höchstens `schritt` mm geteilt; nach dem ersten trockenen Stück beginnt die Strecke neu.
+    function cnStempel(stempel, tagS, cn) {
+        const C = ABFLUSS_CN;
+        const S = 25400 / cn - 254;
+        const Ia = C.ia * S;
+        const anteil = (P) => (P > Ia ? 1 - (S / (P - Ia + S)) * (S / (P - Ia + S)) : 0);
+        const stS = tagS / 24;
+        const aus = [stempel[0], 0];
+        let P = 0;
+        let trocken = 0;
+        let dauer = 0;
+        for (let i = 2; i + 1 < stempel.length; i += 2) {
+            const [ta, ra, tb, rb] = [stempel[i - 2], stempel[i - 1], stempel[i], stempel[i + 1]];
+            const h = (tb - ta) / stS;
+            if (!(((ra + rb) / 2) * C.mm * h > 0)) {
+                if (h > 0 && (trocken += h) > C.trockenH) [P, dauer] = [0, 0];
+                aus.push(tb, rb * anteil(P));
+                continue;
+            }
+            trocken = 0;
+            // das nasse Stück bis an das Ende des Tags der Strecke (`tagH`), dort beginnt sie neu
+            const R = (t) => ra + ((rb - ra) * (t - ta)) / (tb - ta);
+            for (let a = ta; a < tb; ) {
+                const b = Math.min(tb, a + (C.tagH - dauer) * stS);
+                const [qa, qb, hh] = [R(a), R(b), (b - a) / stS];
+                const n = Math.max(1, Math.min(64, Math.ceil((((qa + qb) / 2) * C.mm * hh) / C.schritt)));
+                let r0 = qa;
+                for (let k = 1; k <= n; k++) {
+                    const r1 = qa + ((qb - qa) * k) / n;
+                    P += ((r0 + r1) / 2) * C.mm * (hh / n);
+                    aus.push(a + ((b - a) * k) / n, r1 * anteil(P));
+                    r0 = r1;
+                }
+                if ((dauer += hh) >= C.tagH - 1e-9) [P, dauer] = [0, 0];
+                a = b;
+            }
+        }
+        return aus;
+    }
+    // DIE FALTUNG (`pegelLauf`, `pegelZustand`): der Grund B (aus dem Regen selbst) und je Klasse F (der Ausfluss der Kaskade,
+    // aus dem abfließenden Regen der Kurvenzahl `cn`, `cnStempel`), mit `oben` auch der obere Speicher (die Faltung mit
+    // e^(−s/k)/k) — oder null ohne Stempel und ohne Zustand.
+    function laufFalte(stempel0, jetzt, tagS, mittel, zustand, oben, cn) {
         const Z = zustand && Number.isFinite(zustand.t) && Array.isArray(zustand.s) ? zustand : null;
         if (!Z && (!stempel0 || stempel0.length < 2)) return null;
         if (!(Number.isFinite(jetzt) && tagS > 0)) throw new Error("gelaende-core pegelLauf: Welt-Uhr oder Spieltag fehlt");
@@ -2117,6 +2229,15 @@
             grund = (Z && ab <= z0 ? Z.grund : 1) * Math.exp(-(t - ab) / kb) + I / mittel;
         }
         const E = LAUF.zustand;
+        // der schnelle Abfluss faltet den abfließenden Regen (die Knoten der Kurvenzahl), der Grund oben den Regen selbst. Das
+        // gehaltene Wort regnet über den letzten Knoten hinaus bis jetzt: die Strecke der Kurvenzahl zählt es (ein Knoten auf
+        // jetzt mit dem Regen des letzten) — ohne ihn blieb P am letzten Knoten stehen, und ein gehaltener Sturm floss nie ab
+        // (gate:wasser-leben P4: 20 min Sturm, Hub 0,01 m); trocken ist das Stück null, der Lauf byte-gleich
+        const tn = stempel[2 * (n - 1)];
+        const W = cnStempel(jetzt > tn ? [...stempel, jetzt, R0(n - 1)] : stempel, tagS, cn);
+        const nW = W.length >> 1;
+        const TW = (i) => W[2 * i] / tagS;
+        const RW = (i) => W[2 * i + 1];
         const schnell = new Float64Array(LAUF.n);
         const hoch = oben ? new Float64Array(LAUF.n) : null;
         for (let j = 0; j < LAUF.n; j++) {
@@ -2124,12 +2245,12 @@
             const S = (s) => (s > 0 ? 1 - Math.exp(-s / k) * (1 + s / k) : 0);
             const Rk = (s) => (s > 0 ? s - 2 * k + Math.exp(-s / k) * (2 * k + s) : 0);
             const alt = t - 12 * k;
-            let F = t > T(n - 1) ? R0(n - 1) * S(t - T(n - 1)) : 0;
-            for (let i = n - 2; i >= 0; i--) {
-                const [a, b] = [T(i), T(i + 1)];
+            let F = t > TW(nW - 1) ? RW(nW - 1) * S(t - TW(nW - 1)) : 0;
+            for (let i = nW - 2; i >= 0; i--) {
+                const [a, b] = [TW(i), TW(i + 1)];
                 if (b < alt) break;
                 if (!(b > a) || a >= t) continue;
-                const [ra, rb] = [R0(i), R0(i + 1)];
+                const [ra, rb] = [RW(i), RW(i + 1)];
                 const m = (rb - ra) / (b - a);
                 F += ra * S(t - a) + m * Rk(t - a) - rb * S(t - b) - m * Rk(t - b);
             }
@@ -2144,12 +2265,12 @@
             // der obere Speicher (S1/k): die Faltung mit e^(−s/k)/k — Sprung H, Rampe HH
             const H = (s) => (s > 0 ? 1 - Math.exp(-s / k) : 0);
             const HH = (s) => (s > 0 ? s - k * (1 - Math.exp(-s / k)) : 0);
-            let A = t > T(n - 1) ? R0(n - 1) * H(t - T(n - 1)) : 0;
-            for (let i = n - 2; i >= 0; i--) {
-                const [a, b] = [T(i), T(i + 1)];
+            let A = t > TW(nW - 1) ? RW(nW - 1) * H(t - TW(nW - 1)) : 0;
+            for (let i = nW - 2; i >= 0; i--) {
+                const [a, b] = [TW(i), TW(i + 1)];
                 if (b < alt) break;
                 if (!(b > a) || a >= t) continue;
-                const [ra, rb] = [R0(i), R0(i + 1)];
+                const [ra, rb] = [RW(i), RW(i + 1)];
                 const m = (rb - ra) / (b - a);
                 A += ra * H(t - a) + m * HH(t - a) - rb * H(t - b) - m * HH(t - b);
             }
@@ -2172,19 +2293,33 @@
         return { y0, a };
     }
     function pegelTafel(L, schmelze, lauf, brand) {
-        const [tf, krone] = pegelBett(L);
+        const bett = pegelBett(L);
+        const [tf, krone, aue, aueF] = bett;
         const q = lauf && lauf.q && lauf.q.some((v) => v !== 0) ? Float64Array.from(lauf.q) : new Float64Array(LAUF.n);
         // die Spende des Orts (Reise, `ortGesetz`): der Abfluss am Ort ist Verhältnis × (Spende + q) − Spende, gerechnet als
         // (a + q)·v + Spende·(v − 1) — in der Heimat (v = 1) genau a + q; die Wüste (v = 0) trägt −Spende: das Bett leer
-        const T = { y0: schmelze.y0, dy: PEGEL.dy, a: schmelze.a, q, tf, krone, verh: ortDer(L).spendeVerh };
-        // DER BRAND IM EINZUGSGEBIET (`pegelBrand`: je Knoten des Netzes der Faktor m des Beiwerts): je verbranntem Knoten die
-        // Reihe seines Abflusses je Klasse, wo sie vom Lauf der Wiese abweicht — der Regen, der nach dem Lauf fiel, fließt
-        // m-fach ab (der Grund bleibt). Ohne Brand trägt die Tafel kein Feld `brand` (byte-gleich).
-        if (brand && brand.size && lauf)
-            for (const [kn, m] of brand) {
+        const T = { y0: schmelze.y0, dy: PEGEL.dy, a: schmelze.a, q, tf, krone, aue, aueF, verh: ortDer(L).spendeVerh };
+        // DER BRAND IM EINZUGSGEBIET (`pegelBrand`: je Knoten des Netzes der verbrannte Anteil b): je verbranntem Knoten die
+        // Reihe seines Abflusses je Klasse, wo sie vom Lauf der Wiese abweicht — der schnelle Abfluss mischt die Faltung der
+        // Wiese (1 − b) mit der der Brandfläche (b, `lauf.brand`); der Grund bleibt. Ohne Brand trägt die Tafel kein Feld `brand`.
+        if (brand && brand.size && lauf && lauf.brand)
+            for (const [kn, b] of brand) {
                 const r = new Float64Array(LAUF.n);
-                for (let j = 0; j < LAUF.n; j++) r[j] = laufQ(L, tf, krone, lauf.grund, lauf.schnell[j], m);
+                for (let j = 0; j < LAUF.n; j++) r[j] = laufQ(L, bett, lauf.grund, (1 - b) * lauf.schnell[j] + b * lauf.brand[j], lauf.klima);
                 if (r.some((v, j) => v !== q[j])) (T.brand || (T.brand = new Map())).set(kn, r);
+            }
+        // DIE FLUT: das Band der Höhen [unten, oben] (m), in dem ein Hub der Tafel über der Krone steht (die Schmelze ist eine
+        // Funktion der Höhe, der Abfluss eine der Klasse und des Brands; der Hub wächst in beiden) — dort tritt das Wasser auf die
+        // Aue (`flussAm` jenseits der Krone, nur an Segmenten, deren Spiegel das Band schneidet); sonst trägt die Tafel kein `flut`
+        let qMax = -Infinity;
+        for (const v of q) if (v > qMax) qMax = v;
+        if (T.brand) for (const r of T.brand.values()) for (const v of r) if (v > qMax) qMax = v;
+        const v = T.verh;
+        for (let i = 0; i < T.a.length; i++)
+            if (pegelHubVon((T.a[i] + qMax) * v + PEGEL.spende * (v - 1), tf, krone, aue) > krone) {
+                const y = T.y0 + i * T.dy;
+                if (!T.flut) T.flut = [i ? y - T.dy : -Infinity, y];
+                T.flut[1] = i === T.a.length - 1 ? Infinity : y + T.dy;
             }
         return T.brand || q.some((v) => v !== 0) || pegelReihe(T, 0).some((h) => h !== 0) ? T : null;
     }
@@ -2200,7 +2335,7 @@
         if (hub) return hub;
         hub = new Float32Array(T.a.length);
         const v = T.verh;
-        for (let i = 0; i < hub.length; i++) hub[i] = pegelHubVon((T.a[i] + q) * v + PEGEL.spende * (v - 1), T.tf, T.krone);
+        for (let i = 0; i < hub.length; i++) hub[i] = pegelHubVon((T.a[i] + q) * v + PEGEL.spende * (v - 1), T.tf, T.krone, T.aue);
         je.set(q, hub);
         return hub;
     }
@@ -8233,9 +8368,18 @@
     // ihren Nachbarn (die Feuchte des Ufers reicht über die 3×3-Buckets, `flussRand`), und jedes Sees binnen zwei Zellen
     // (`wasserSpiegel` dilatiert 3×3) — aufsteigend, leer wo kein Wasser einen Pegel trägt. Leser: die Marke des Chunks im Wirt.
     // `knoten`: je Segment das Paar [Klasse, Knoten] (der Brand des Einzugsgebiets trägt seine eigene Reihe, `pegelBrand`).
+    // `band`: je Klasse (Schlüssel j) und je Paar (Schlüssel „j|Knoten“) die Höhen [unten, oben] (m), an denen das Wasser am
+    // Rechteck seinen Hub liest — der Spiegel jedes Segments (sA, sB), die Höhe jedes Sees (`waterY`): die Marke des Chunks liest
+    // den Hub genau dort, nie über Höhen ohne Wasser (über der Krone steigt jede Reihe der Tafel in eigenen Stufen).
     function pegelKlassen(L, x0, z0, x1, z1) {
         const je = new Set();
         const paare = new Map();
+        const band = new Map();
+        const dehne = (k, a, b) => {
+            const o = band.get(k);
+            if (!o) band.set(k, [Math.min(a, b), Math.max(a, b)]);
+            else [o[0], o[1]] = [Math.min(o[0], a, b), Math.max(o[1], a, b)];
+        };
         const gesehen = new Set();
         for (const [x, z] of [
             [x0, z0],
@@ -8250,16 +8394,24 @@
                 const bs = h.bucketSize;
                 const bd = h.bucketsDim;
                 const { seg, idx, ab } = h.kanal;
-                const i0 = Math.max(0, Math.floor((x0 - h.originX) / bs) - 1);
-                const i1 = Math.min(bd - 1, Math.floor((x1 - h.originX) / bs) + 1);
-                const j0 = Math.max(0, Math.floor((z0 - h.originZ) / bs) - 1);
-                const j1 = Math.min(bd - 1, Math.floor((z1 - h.originZ) / bs) + 1);
+                // … und so viele Ringe, wie die Flut auf der Aue reicht (`auenFlut`: F über Krone + Damm + Böschung hinaus)
+                const H = L.hydroGesetz;
+                const F = auenBreite(AUE.k, AUE.A, landformRegler(L).aue);
+                const nr = Math.max(1, Math.ceil((F - H.dammBreite - H.bankWeite) / bs));
+                const i0 = Math.max(0, Math.floor((x0 - h.originX) / bs) - nr);
+                const i1 = Math.min(bd - 1, Math.floor((x1 - h.originX) / bs) + nr);
+                const j0 = Math.max(0, Math.floor((z0 - h.originZ) / bs) - nr);
+                const j1 = Math.min(bd - 1, Math.floor((z1 - h.originZ) / bs) + nr);
                 for (let bj = j0; bj <= j1; bj++)
                     for (let bi = i0; bi <= i1; bi++)
                         for (let q = ab[bj * bd + bi]; q < ab[bj * bd + bi + 1]; q++) {
                             const o = idx[q] * KANAL_FELDER;
                             je.add(seg[o + 10]);
-                            if (seg[o + 11] === seg[o + 11]) paare.set(seg[o + 10] + "|" + seg[o + 11], [seg[o + 10], seg[o + 11]]);
+                            dehne(seg[o + 10], seg[o + 8], seg[o + 9]);
+                            if (seg[o + 11] === seg[o + 11]) {
+                                paare.set(seg[o + 10] + "|" + seg[o + 11], [seg[o + 10], seg[o + 11]]);
+                                dehne(seg[o + 10] + "|" + seg[o + 11], seg[o + 8], seg[o + 9]);
+                            }
                         }
             }
             const W = h.water;
@@ -8270,10 +8422,14 @@
                 const j0 = Math.max(0, Math.floor((z0 - h.originZ) / c) - 2);
                 const j1 = Math.min(h.dim - 1, Math.floor((z1 - h.originZ) / c) + 2);
                 for (let j = j0; j <= j1; j++)
-                    for (let i = i0; i <= i1; i++) if (W.waterKind[i + j * h.dim] === 2) je.add(W.waterLauf[i + j * h.dim]);
+                    for (let i = i0; i <= i1; i++)
+                        if (W.waterKind[i + j * h.dim] === 2) {
+                            je.add(W.waterLauf[i + j * h.dim]);
+                            dehne(W.waterLauf[i + j * h.dim], W.waterY[i + j * h.dim], W.waterY[i + j * h.dim]);
+                        }
             }
         }
-        return Object.assign([...je].sort((a, b) => a - b), { knoten: [...paare.values()] });
+        return Object.assign([...je].sort((a, b) => a - b), { knoten: [...paare.values()], band });
     }
 
     // DER FLUSS-KANAL an (x, z) → { P, L, k } oder null: P die Höhe des KANALS (Flachboden auf Spiegel − (1 − Freibord) · Tiefe
@@ -8582,6 +8738,83 @@
         return k.edits;
     }
 
+    // DIE FLUT AUF DER AUE (planet.wetter.extreme): jenseits jeder Krone, solange die Tafel eine Flut trägt (`T.flut`: das Band der
+    // Höhen, in dem ein Hub über der Krone steht — die Suche fragt nur Segmente, deren Spiegel es schneidet), das Wasser
+    // des nächsten Segments binnen der Auen-Breite F (`T.aueF`, dieselbe, mit der der Abfluss über der Krone rechnet,
+    // `pegelBett`), wenn sein Hub über der Krone steht: sein Spiegel + Hub, waagrecht quer; wo es steht, entscheidet der Boden
+    // (`atlasSpiegel`: nur über endlichem Boden — centerness 0, keine Strömung). Die Buckets des Kanals reichen die Krone + Damm +
+    // Böschung weit, die Suche nimmt so viele Ringe dazu, wie F darüber hinaus reicht. Ohne Flut null — die Ruhe ist byte-gleich.
+    // das Band der Spiegel je Bucket des Kanals [unten, oben] (m), einmal je Kanal — die Flut auf der Aue fragt nur Buckets, deren
+    // Band das Band der Flut (`T.flut`) schneidet
+    const KANAL_BAND = new WeakMap();
+    function kanalBand(k) {
+        let b = KANAL_BAND.get(k);
+        if (b) return b;
+        const { seg, idx, ab } = k;
+        b = new Float64Array(2 * (ab.length - 1));
+        for (let kb = 0; kb + 1 < ab.length; kb++) {
+            let [u, o] = [Infinity, -Infinity];
+            for (let q = ab[kb]; q < ab[kb + 1]; q++) {
+                const s = idx[q] * KANAL_FELDER;
+                u = Math.min(u, seg[s + 8], seg[s + 9]);
+                o = Math.max(o, seg[s + 8], seg[s + 9]);
+            }
+            [b[2 * kb], b[2 * kb + 1]] = [u, o];
+        }
+        KANAL_BAND.set(k, b);
+        return b;
+    }
+    function auenFlut(L, h, x, z) {
+        if (!h || !h.ready || !h.kanal) return null;
+        const T = L.pegel;
+        if (!T || !T.flut) return null;
+        const [fu, fo] = T.flut;
+        const H = L.hydroGesetz;
+        const F = T.aueF;
+        const bs = h.bucketSize;
+        const bd = h.bucketsDim;
+        const nr = Math.max(0, Math.ceil((F - H.dammBreite - H.bankWeite) / bs));
+        const bi = Math.floor((x - h.originX) / bs);
+        const bj = Math.floor((z - h.originZ) / bs);
+        const { seg, idx, ab } = h.kanal;
+        const band = kanalBand(h.kanal);
+        let best = -1;
+        let bestD = F;
+        let bestT = 0;
+        for (let j = Math.max(0, bj - nr); j <= Math.min(bd - 1, bj + nr); j++)
+            for (let i = Math.max(0, bi - nr); i <= Math.min(bd - 1, bi + nr); i++) {
+                const kb = j * bd + i;
+                if (band[2 * kb + 1] < fu || band[2 * kb] > fo) continue; // leer oder kein Spiegel im Band der Flut
+                for (let q = ab[kb]; q < ab[kb + 1]; q++) {
+                    const o = idx[q] * KANAL_FELDER;
+                    if (Math.max(seg[o + 8], seg[o + 9]) < fu || Math.min(seg[o + 8], seg[o + 9]) > fo) continue;
+                    const ex = seg[o + 2] - seg[o];
+                    const ez = seg[o + 3] - seg[o + 1];
+                    let t = ((x - seg[o]) * ex + (z - seg[o + 1]) * ez) / (ex * ex + ez * ez || 1);
+                    t = t < 0 ? 0 : t > 1 ? 1 : t;
+                    const d = Math.hypot(x - (seg[o] + ex * t), z - (seg[o + 1] + ez * t));
+                    if (d < bestD) [best, bestD, bestT] = [o, d, t];
+                }
+            }
+        if (best < 0) return null;
+        const o = best;
+        const t = bestT;
+        const spiegel = seg[o + 8] + (seg[o + 9] - seg[o + 8]) * t;
+        const hub = pegelHub(L, spiegel, seg[o + 10], seg[o + 11]);
+        if (!(hub > T.krone)) return null;
+        const len = Math.hypot(seg[o + 2] - seg[o], seg[o + 3] - seg[o + 1]) || 1;
+        return {
+            flowX: (seg[o + 2] - seg[o]) / len,
+            flowZ: (seg[o + 3] - seg[o + 1]) / len,
+            depth: seg[o + 6] + (seg[o + 7] - seg[o + 6]) * t,
+            surfaceY: spiegel + hub,
+            centerness: 0,
+            ufer: 0,
+            breite: 2 * (seg[o + 4] + (seg[o + 5] - seg[o + 4]) * t),
+            hub,
+            aue: true,
+        };
+    }
     // DER FLUSS an (x, z) → { flowX, flowZ, depth, surfaceY, centerness, ufer, breite } oder null jenseits jeder Krone: der Spiegel der
     // Segmente (linear zwischen ihren Enden — stromab nie steigend, quer waagrecht), gemittelt zur Krone stetig auslaufend, samt
     // dem Pegel (`pegelHub` am gemittelten Spiegel, je Segment in der Klasse seines Laufs, gleich gemittelt); Lauf, Tiefe und Breite des nächsten Segments; centerness [0, 1] (1 Mittellinie, 0 Kanal-Kante — die Strömung trägt nur im Kanal);
@@ -8590,7 +8823,7 @@
     function flussAm(L, x, z) {
         const h = hydroRegion(L, x, z);
         const kb = flussBucket(h, x, z);
-        if (kb < 0) return null;
+        if (kb < 0) return auenFlut(L, h, x, z);
         const { seg, idx, ab } = h.kanal;
         const sN = L.hydroGesetz.bankNeigung;
         let bestD = Infinity;
@@ -8638,7 +8871,7 @@
                 bestHalfW = halfW;
             }
         }
-        if (bestD === Infinity) return null;
+        if (bestD === Infinity) return auenFlut(L, h, x, z);
         const spiegel = sSumme / gSumme;
         let hub = 0;
         if (gleich) hub = pegelHub(L, spiegel, jEins, knEins);
@@ -9429,13 +9662,16 @@
         SOHLE: SOHLE,
         flussSohle: flussSohle,
         pegelLauf: pegelLauf,
+        pegelKlima: pegelKlima,
         pegelZustand: pegelZustand,
         pegelSchmelze: pegelSchmelze,
         pegelTafel: pegelTafel,
         pegelHub: pegelHub,
         pegelKlassen: pegelKlassen,
         pegelBrand: pegelBrand,
-        BRAND_ABFLUSS: BRAND_ABFLUSS,
+        ABFLUSS_CN: ABFLUSS_CN,
+        AUE: AUE,
+        auenBreite: auenBreite,
         koerperY: koerperY,
         LAVA: LAVA,
         waermeGang: waermeGang,
