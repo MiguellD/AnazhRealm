@@ -1,28 +1,22 @@
-Stations-Kandidat tier-bewegung (karte2.leben.tiere.bewegung#2) — Diff gegen meisterkarte-quelle/punkte/stationen/k2-leben.js am Kopf
-des Zweigs `punkte-maschine` (27.11.). Soll und Richter-Text bleiben wörtlich; geändert ist nur der LESER des Fischs.
+Stations-Kandidat tier-bewegung Kopf 3 (karte2.leben.tiere.bewegung#2) — Diff gegen meisterkarte-quelle/punkte/stationen/k2-leben.js am
+Kopf des Zweigs `punkte-maschine` (geholt 27.11. 20:40 UTC über die rohe Adresse). Soll, Richter-Text und Umfang bleiben wörtlich;
+geändert ist nur der LESER: wie der Kopf der Seite gebaut wird, wo die Massen und der Fisch gemessen werden.
 
-Warum: die Station las den Strouhal nie (k2-leben.js:2269 `nimm(2, { fussfallAbw, massDekaden }, …)` — „strouhal ungemessen“) und
-zählte den Fisch über `s.fischPool.mesh.count` an der Pose des Spielers (kein Bach in Sicht: „gezeichnet 0“). Der Fisch-Teil des
-Umfangs stand als fester Satz im `nimm` — er konnte nie fallen, auch nicht, wenn das Spiel die Körperwelle trägt.
+Warum (der Wurf, beide Vor-Richter GTX 1050 am 27.11.): „/eval: Unexpected identifier 'Object'“ — der Kandidat von Kopf 2 baute
+`"const FISCH_SOLL = " + String(Q.FISCH_SOLL)`; FISCH_SOLL ist ein Objekt, String() schrieb „[object Object]“.
 
 Was der Kandidat tut:
-1. Er holt die EINE Fisch-Probe der Gang-Linse über `H.quelle("scripts/diag-tier-gang.cjs", […, "FISCH_SOLL", "FISCH"])` — dieselbe
-   Quelle wie LAUF/SCHLUPF, nie abgeschrieben. FISCH stellt den Spieler ans Ufer des nächsten fließenden Bachs (jenseits der
-   Flucht), fährt den echten `_fischTakt` 12 s mit dt 1/60 und misst am GEZEICHNETEN Leib (Instanz-Matrizen von `fischPool`):
-   St = f·A/U je stetem Fisch, die Biegung (Kopf- gegen Schwanz-Glied). Er stellt alles zurück (Spieler, Uhr, Karte der Fische, Pool).
-2. `strouhal` = Median der steten Fische (mit ≥ 3 Schlägen); dazu im Zeugen `fisch` { gezeichnet, stet, strouhal, imBand, biegung }.
-3. Der Umfangs-Satz wird aus dem Gemessenen gebaut: „kein Laufvogel“ bleibt (das Spiel trägt keinen), „der Fisch ein starrer Leib …“
-   fällt nur bei Biegung ≥ 0,1 rad, „Massen … Dekaden“ nur bei ≥ 3 Dekaden.
+1. EIN Weg für jedes Feld des Kopfs: `feld(v)` — eine Funktion reist als ihr Text, alles andere als JSON (SCHLUPF, LAUF, kreis, zyklus,
+   gangart, FISCH_SOLL, FISCH, MASSEN). Kein Feld läuft mehr durch String() eines Objekts.
+2. Die Massen aus der EINEN Probe der Gang-Linse (`MASSEN`, scripts/diag-tier-gang.cjs): je Seele der Welt (`CREATURE_SOULS`, Größe 1)
+   und der Fisch (sein Leib ohne Baum, `_fischGesetz` leibV) die EINE Masse `_leibMasse` (Volumen der Gestalt × ρ) — vorher eine
+   eigene Schleife der Station über vier feste Seelen. Ein Leib ohne Masse wirft beim Namen.
+3. Der Fisch über die Probe FISCH (Strouhal am gezeichneten Leib, Biegung) wie im Kandidaten von Kopf 2.
+4. Der Umfangs-Satz aus dem Gemessenen: „kein Laufvogel“ bleibt (keine Seele der Welt ist ein Laufvogel), „der Fisch ein starrer
+   Leib …“ fällt nur bei Biegung ≥ 0,1 rad, „Massen … Dekaden“ nur bei ≥ 3 Dekaden. Zeuge trägt fisch und kg je Leib.
 
-Erwartung am Vorprüf-Kopf (headless gemessen, Null-Renderer, Bach −162/257 am Boot-Ort): 40 Fische gezeichnet, 22 stet, St Median 0,325
-(0,316–0,335, 22 von 22 im Band 0,2–0,4), Biegung 0,42 rad. Die Station bleibt ROT mit „Umfang nicht erzeugbar: kein Laufvogel;
-Massen des Bestands über 1.354 Dekaden“ — der Laufvogel und die 3 Dekaden sind offen (siehe Stand-Blatt), nicht dieses Kopfs.
+Erwartung am Vorprüf-Kopf 3 (headless, Null-Renderer): Massen wesen 93,392 · wolf 63,559 · fuchs 14,782 · baer 334,222 · fisch
+0,244 kg → 3,138 Dekaden (vorher 1,354); Fisch St Median ≈ 0,32 im Band 0,2–0,4, Biegung ≈ 0,42 rad; Fußfall 0 Takt. Die Station
+liest damit ROT mit genau EINEM Rest: „Umfang nicht erzeugbar: kein Laufvogel“.
 
-Messort: die Gang-Probe fährt an der Boot-Pose des Spielers und am nächsten Bach (kein stadt-voll) — der Vor-Richter darf an der
-GTX 1050 oder 1060 fahren.
-
-Wände: `node punkte.cjs liste` nicht gefahren (der Zweig `punkte-maschine` ist in der Wolke nicht ausgecheckt, nur diese Datei per
-roher Adresse); die Leiter fährt FISCH in ≈ 0,5 s zusätzlich (12 s Spielzeit, gemessen 279–458 ms in der Seite); kein Fächern im Kern.
-
-Selbsttest der Probe (gate:tier-gang, 27.11.): mit dem starren Leib gepflanzt (alle Glieder auf der Achse, Gier-Wippe 2,5 Hz · 0,1 rad)
-misst sie Biegung 0 rad → ROT mit „Täter: tetrapoda FISCH_GESETZ / fischLeib (der starre Leib ohne Körperwelle)“; gesund GRÜN.
+Gefahren: siehe Rumpf des Vorprüf-Kopfs (der Wortlaut des Laufs gegen die Seite).
