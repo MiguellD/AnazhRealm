@@ -1,7 +1,7 @@
 {
  "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
  "geraet": "gtx",
- "zeit": "2026-11-28T07:17:02.665Z",
+ "zeit": "2026-11-28T07:21:58.841Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "profiband.K4#1": {
@@ -1339,6 +1339,146 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.leben.oeko.netz#2": {
+   "gruen": false,
+   "zahl": "S2 Umfang nicht erzeugbar: 10¹ Arten in 4 Ebenen — der Bestand trägt 4 Gattungen (deer, fox, wolf, bear) in 2 Ebenen (LEBENSRAUM_GESETZ.gattung, tetrapoda-core.js:2072); im Fächer 9 von 32 Saaten × 100 Spieljahre · Fächer 9/32 Adressen (32 Saaten) in 28775 ms · Leser stamm _kreaturFrass · saaten 9 gegen Soll ≥ 32 ✗ · jahre 100 Spieljahre gegen Soll ≥ 100 Spieljahre ✓ · wiederProzent 0 % gegen Soll ≥ 80 % ✗ · paareJeArt 0,2 gegen Soll 2–10 ✗ · Täter: tetrapoda-core.js LEBENSRAUM_GESETZ.gattung (4 Gattungen) · stamm/kreatur-leben.js _bestandSchritt",
+   "exit": 0,
+   "minuten": 1.83,
+   "grund": "ROT: S2 Umfang nicht erzeugbar: 10¹ Arten in 4 Ebenen — der Bestand trägt 4 Gattungen (deer, fox, wolf, bear) in 2 Ebenen (LEBENSRAUM_GESETZ.gattung, tetrapoda-core.js:2072); im Fächer 9 von 32 Saaten × 100 Spieljahre · Fächer 9/32 Adressen (32 Saaten) in 28775 ms · Leser stamm _kreaturFrass · saaten 9 gegen Soll ≥ 32 ✗ · jahre 100 Spieljahre gegen Soll ≥ 100 Spieljahre ✓ · wiederProzent 0 % gegen Soll ≥ 80 % ✗ · paareJeArt 0,2 gegen Soll 2–10 ✗ · Täter: tetrapoda-core.js LEBENSRAUM_GESETZ.gattung (4 Gattungen) · stamm/kreatur-leben.js _bestandSchritt",
+   "gpu": "nvidia/pascal",
+   "konsum": "k17accbde8185",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0ac82d40df13",
+   "s": 109.4,
+   "fremd": {
+    "s": 112.5,
+    "takte": 52,
+    "fremdS": 38.33,
+    "kerne": 0.341,
+    "fensterKerne": 0.649,
+    "namen": [
+     [
+      "bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \"",
+      6.53
+     ],
+     [
+      "Explorer.EXE",
+      4.75
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      4.56
+     ]
+    ],
+    "dienerS": 20.02,
+    "diener": [
+     [
+      "System",
+      9.91
+     ],
+     [
+      "WmiPrvSE.exe",
+      4.41
+     ]
+    ],
+    "geraetS": 50.56,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      35.55
+     ],
+     [
+      "svchost.exe",
+      13.13
+     ],
+     [
+      "SearchIndexer.exe",
+      0.75
+     ]
+    ],
+    "eigenS": 154.34,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-28T07:18:47.689Z",
+   "abdruck": "34e9a4bf8007",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.leben.evolution.fremde-physik#1": {
+   "gruen": false,
+   "zahl": "S1 Umfang nicht erzeugbar: keine Saat trägt ihr g: die Schwere setzt das Gesetz der Welt (state.gravity), der Faden baut jeden Planeten mit PLANET_ERDE (voxel-worker.js:1429; planet-core.js:319 g der Saat ungelesen) — 1 Saat je g; das Quer-Maß des Leibs unter g × 0.3 / 1 / 3: 0.0058 / 0 · saatenJeG 1 gegen Soll ≥ 50 ✗ · steigung 0,26 gegen Soll 0,75–1 ✗ · gMin 0,3 gegen Soll ≤ 0,3 ✓ · gMax 3 gegen Soll ≥ 3 ✓ · Täter: stamm/koerper-leib.js _buildCreatureGroup (der Guss liest keine Schwere)",
+   "exit": 0,
+   "minuten": 2.52,
+   "grund": "ROT: S1 Umfang nicht erzeugbar: keine Saat trägt ihr g: die Schwere setzt das Gesetz der Welt (state.gravity), der Faden baut jeden Planeten mit PLANET_ERDE (voxel-worker.js:1429; planet-core.js:319 g der Saat ungelesen) — 1 Saat je g; das Quer-Maß des Leibs unter g × 0.3 / 1 / 3: 0.0058 / 0 · saatenJeG 1 gegen Soll ≥ 50 ✗ · steigung 0,26 gegen Soll 0,75–1 ✗ · gMin 0,3 gegen Soll ≤ 0,3 ✓ · gMax 3 gegen Soll ≥ 3 ✓ · Täter: stamm/koerper-leib.js _buildCreatureGroup (der Guss liest keine Schwere)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k87759bdab25e",
+   "konsumN": 32,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0ac82d40df13",
+   "s": 151.1,
+   "fremd": {
+    "s": 155.3,
+    "takte": 72,
+    "fremdS": 51.94,
+    "kerne": 0.334,
+    "fensterKerne": 0.779,
+    "namen": [
+     [
+      "bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \"",
+      8.89
+     ],
+     [
+      "Explorer.EXE",
+      8.33
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      5.98
+     ]
+    ],
+    "dienerS": 27.14,
+    "diener": [
+     [
+      "System",
+      13.23
+     ],
+     [
+      "WmiPrvSE.exe",
+      6.39
+     ]
+    ],
+    "geraetS": 69.73,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      50.61
+     ],
+     [
+      "svchost.exe",
+      15.44
+     ],
+     [
+      "SearchProtocolHost.exe",
+      1.48
+     ]
+    ],
+    "eigenS": 209.09,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-28T07:21:58.841Z",
+   "abdruck": "ad1cff8a47da",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -1355,7 +1495,9 @@
   "k0ac82d40df13": "lZXBcpswEIbfxcemZMFAEJrJQTaZxu24TfsGK1gBNgaPBKHjTt+9g22wgVy6Jx/+1f58+0v+szhivMeUHnemKhd88WnxeWHwnSxD+p30484s+CKMnSW5XFwKhBBfOlms82NtoMgloCwxO5DV6Jry4jE+t6kntH3JoX0R6RuAghNErRhqLZ6fp8cUkpLKqlFRf4hNrs+IT4WNSVGShY06D76KZeA5LOZwLhaJbQTXSgGYEJsIVrCDyWESy2Ts3HFCfAq4aDdCiJ9Tl0mOVFtFXpp+rpMEobJ5Pwza7axHY2udkLKC9LWJmON4sje76pB0mCaNqmiMGQ1jbuIvGQcIp9qUTB5ntXXUlaSyZxIuAwf5qp3RTo+Npe4doZTI5JR1hlSmpEcebDdWTw6H32x66B4PpNEqMbtKQ9sNlvLGBgBe516Ks/HziN6457Ilc0aN3VIvgBMxqrd+yZdSQ8ziQZLO42biLNeHMS7l0dJ2pwxMhglpa1+ZelC6FHi2vNyKTQQXH2w17bx9WL8/RGR3YQEG4nXG0VSqblGTlR6bPjAe+YHPRTpLl6nxcBhsuQznH1B3Ib+3sQyV73sc4OGKdIbnciWsE+UFDZmNAzfk68ibit81HiyUqc6V6jcv/ViFHwW1paK2ZFXVvRfXtmOfgwvl/bK/t2ItxPbuyYiKX15dfH14Ga//m/j60YRK18PLgNL1PK7aiAEwNVXnurZajLNeHriSaAbxRLqglEYYlePgMuHQ3pImIq//8TAK72m25VNOHeDSNKYnHKMn/Us6rinejJPbkt5LLPfDVcTE9bkQUSq24u2Oyg8hdkfViv+odN0NOlIMR12pvHsZIcPGZFjUt7+Iv/8A",
   "k5f79337e840d": "bVXRbptAEPwXPzYlCxyE46Q8nEPUWmoq5xP2YA+IMVh3YCpX/ffK2DgGsi8IefZmmNk9/10dMN1hTo8ftqlXYvVt9X1l8UiOJXMk8/hhV2IVp55PTMhLgZTy5QxLTXloLVSlAlQ1FntyOtNSWT2mQ5t+QjdUAvpXmW8BNJwg6Z+f562VoqxxWtQ0NrrEQk5iDuxsjooc7PRAdgWrKPB4KmAonsi3BK6VD++bBNbwAbPDFNbZVK3nxfgUCdlvXqR8n6vMSqTWqcrajrxeFsXaFSMZ9G+LHoO9c0IqKjLXJuKeF6hR7PphywdrZo266qydkHGWhT4XAPEcm5Mt06J1DqZRVI+exH7koVgv3c4PnaPvFaFSyNXc6wKpzslMNLgs1U+egD98fugO92TQqbG4QmOXRb769AYAfi61VIPwgWIUHjDuc2/SeA4RjmeDMzmp7RjypXQ//pDeILlckNq0KM1+apcOyHeZ+LWUaAvMyDi7xrY3NKMocNVlGzYJXLTw9bzz8+PGDBGR3w0McJA/F17aRrc9GnLyQzcOTUBhFAopNwtwi/v9TRbjyOZB2vY86Pcy/FiHYSAAHi6Lsvzoy1o4Jyorus1tGrF4fvjR4N5BlZtS6zF5FaY6/mpQe6paRzVNO+pgrpuGAhjU92H/HmLc3OWc5O9BW63712n8GznXPTA0pr3dDKhYEAidJxyA6zm6NK3TY1qM8IgpIibO8zaDnshUlNPERu156GcCen3RfeJSbqPrVaAfJgN8WqR8KulscG07OzqcYqBC8UUkPZmdwnp3W0PMWDiM3/pNbieevL405zWAI4epV8lxeL792F69S6RMuL4SHSiFg2l0eb4VocDOFli1n38J//4D",
   "k694ab3fe9f4f": "tVZdj5s6EP0veWzLms9gLPXBCZE2vV0p+3gfxzAGNgQi2yxXqfrfKyAkAbZSdaXOG9IZz8yZcyb5sTpDcoQMn950Xa3Y6tPqy0rDO1oa1Tuqpze9YqsocVz0GB+CcM63HSxRxdlokhaQWUeFYBpllSiwekr6tFSshYwY+RvR7rpWXvkYMd/y3Yb/ri0DR3PtSmIUgM02Gect//r1IaMsBAFRQX5Cq1EGi3JMWYMdCNYVzQ6ESHIhcXsrzXcfPFMKTGvLgMTxERu9gCKbAxudgUALGtkXvoJF6Ds0uVJHY/4Sj4Nn/fc+JhvyRvryr4vqAqp0OoHjRLAOGW/32y5hhk8LQGOVRaXH+k4aRtK+r659WeQoaK0LYF6iuiYhdRxfjE1vut46umaJsmy0nhSjXhq4lBESzbEZ6iLJjXVW9V1WInJDB9imXcydnRtLPnYEQgAVc85zwCpDNenB9hK5dhj5j84fPcIJFVgV5FdoZHuhKyayfl72MirvhJVO8pv2AP3/4wgqf/P8hJmIekGyZvxPYzv52vxxXrdYvvt31lLZr6ondWzI96hLndm8NCbvnaTS6YuHUd5DyJvBkoeiC5p1khfqNKVB+ujaHvu+XIrOIUVlHWttbmgPQ98WA2n7eLDUgW7mmffhRtUCAH2wCKGEPy/Uo2tpWlBoZedmtImPQRgwzvcLsIHT6daWR8H7cJcZX7hRm87yj+25kQwCnxHyeTgdSzKGA2FdsCjx5uAk9CK2jf05+F3ByQKRqULKUW0iSPrzvrBti6WxRF2PJ9f1bDsJOqqqRyEc+hXvHyaLs1fflJvhuN/jH/4slzP3VWplbjcThOf7TLYx/cAwbaGM1UKSj/DQE4ge6/Q4g15QlZjhhE7pOOCmjLRy6P1COT+E1+MoP08Eflmo4FJgR3SlGz0ynYAvAvbBalpURwHV8XaYIPUC9q0z6As/THjZbbPOJr2dZtGbW58G/J7HnMdUXgudMSFnVcui+50gOTQ6h9JM/gEMkAalaDCvsNOXKeoKqzvq5y8=",
-  "k77dbb0388e94": "bVVdb6MwEPwveeydaz6LsdQHp0RqTlcp/QlrWAMJAWRDOOV0//0ECTRA9w1p1juemTV/NzXEJ0jx+WiqcsM3T5ufGwMXJAb1BfXz0Wz4JoxtB10uPkVfVAjx1sNindeNoUkOKTkVUKbkiqVpzXM8dD09YIpcUpAlZGckrW4wL+4g9QKWLzntdiI9UKrolUadmGonXl+XxxQSk4o0oHA8xELXZ8iXwNakIJFAq4bBd7AMPJvFnA7FIvER0Xulw/c+olt6pOJD0KxbTZdQJvMb2HYILwEX3V4I8bnEJzlgQ4q8NON8OwlCZfFxKO0+Vj0aOnIFzArU9yZktu3JkfS2l6aXa9GoitaY2TDmJr7DOKXhEpuiyeOsIbWuJJajNqET2MC363undUvUIyOQEphcap4BlinqGQfLjdWLzekftjz0BGfUQErI7tDQcgNHfmlDKX1fcykG4sOIkbjnMofZs8beTHrpBU7ErA6j2bdSU9ziCZKuY2fiLNfnuVzKQ8dy+e81RZNBgpqcKtNMaBcDz5J8GLCP6I0L2y47vy43eggA7CEwlFHxvtLSVKrpQCNJ63YMjYd+4HMh9itwA+fzRMtl4C6NNE0f9EcaTqh83+OU/rgtzPrSt7UgV8wLnHIbB27I3yKxBF80nAnIVOdKje5LP1bhd2HtsGiIrKpm5OJaVuz3kpSPhh8GK/cPXkfpp9cU2243j8A+6r6bUOlmeiVAup7HVRoxSplaonPdkA7ibIQHrkR0eZ+5BfSKusAUZ1Iq2wYn4bRTN95XJsQhuD8H6scsxNeV09cci/lLizF40uff2NKhPkkoT9MqQuL6/JcQYvshDjNNdse6X4VhZRY1rIQ53/B7EQkRMdXd3roaY1rrSuX9y0gzaE0GRfP1O/n3Hw=="
+  "k77dbb0388e94": "bVVdb6MwEPwveeydaz6LsdQHp0RqTlcp/QlrWAMJAWRDOOV0//0ECTRA9w1p1juemTV/NzXEJ0jx+WiqcsM3T5ufGwMXJAb1BfXz0Wz4JoxtB10uPkVfVAjx1sNindeNoUkOKTkVUKbkiqVpzXM8dD09YIpcUpAlZGckrW4wL+4g9QKWLzntdiI9UKrolUadmGonXl+XxxQSk4o0oHA8xELXZ8iXwNakIJFAq4bBd7AMPJvFnA7FIvER0Xulw/c+olt6pOJD0KxbTZdQJvMb2HYILwEX3V4I8bnEJzlgQ4q8NON8OwlCZfFxKO0+Vj0aOnIFzArU9yZktu3JkfS2l6aXa9GoitaY2TDmJr7DOKXhEpuiyeOsIbWuJJajNqET2MC363undUvUIyOQEphcap4BlinqGQfLjdWLzekftjz0BGfUQErI7tDQcgNHfmlDKX1fcykG4sOIkbjnMofZs8beTHrpBU7ErA6j2bdSU9ziCZKuY2fiLNfnuVzKQ8dy+e81RZNBgpqcKtNMaBcDz5J8GLCP6I0L2y47vy43eggA7CEwlFHxvtLSVKrpQCNJ63YMjYd+4HMh9itwA+fzRMtl4C6NNE0f9EcaTqh83+OU/rgtzPrSt7UgV8wLnHIbB27I3yKxBF80nAnIVOdKje5LP1bhd2HtsGiIrKpm5OJaVuz3kpSPhh8GK/cPXkfpp9cU2243j8A+6r6bUOlmeiVAup7HVRoxSplaonPdkA7ibIQHrkR0eZ+5BfSKusAUZ1Iq2wYn4bRTN95XJsQhuD8H6scsxNeV09cci/lLizF40uff2NKhPkkoT9MqQuL6/JcQYvshDjNNdse6X4VhZRY1rIQ53/B7EQkRMdXd3roaY1rrSuX9y0gzaE0GRfP1O/n3Hw==",
+  "k17accbde8185": "bVXRbqMwEPyXPF6PLgQoxlIfnBKpOV2l9BPWsAYSApFNwimn+/cTEGiA7hvSrHc8M2v+rs4YHzGl54OpyhVf/Vj9XBm8kmVIX0k/H8yKr8LYWZPLRV8ghHhrYbHOz7WBIpeAssTsRNZF15QXz3HXpl7Q9iWHZivSPYCCG0SNGGsrXl/nxxSSksqqUdFwiE2uz4jPgReToiQLL6obfAfLwHNYzKErFomPCO6Vdt+7CDZwAPEhIGsW0yWWyfQGjhPiS8BFsxNCfM7xSY5UW0VemmG+kwShsvkwFJqPRY/GxrohZQXpexMxx/HkQHrTStPKNWtUxcWYyTDmJv6acYBwjk3J5HFWW2ddSSoHbcJ14CDfLO+dni+WemSEUiKTc80zpDIlPeFgu7F6cTj8YfNDj3gijVaJ2R0a2m6wll/aAMD7kkvREe9GDMQ9l62ZM2lszYRrK3AiJrUfzO5LjXGLR0i6jJ2Js1yfpnIpj9a2y38vKZoME9LWsTL1iHYp8GzZb8gugp4L28w7vy43eIiI7CEwwEC8L7Q0laob1GSl58sQGo/8wOdC7BbgGk+nkZbL0J0baeo26I801qHyfY8DPPULs7x0vxbWjfKCxtzGgRvyt8ibg68aTxbKVOdKDe5LP1bhd2FtqKgtWVX1wMW17dhvJSkfDd93Vu4evI7ST68uNs12GoHdRqilxd2UStfjS4HS9Tyu0ogBMDVH57q2GoyzAR64ksjl7X7OoDfSBaU0kVM5Dq4TDo3quR+YEPvg/iSop0mQbwu3bzm1QpfmYgalY/Skz7+xpiF9lFgex3XExPX5LyHE5kPsJ7ps39J2HWAPi+rWwpx6/E5EQkRMNf17d6YYzrpSefs6QoYXk2FRf/0u/v0H",
+  "k87759bdab25e": "tVXBjpswEP2XHNuyhhiCsdSDEyI1VVdKjz2OzRjYEIhsWKpU/fcKCNkArVRV6tyQ3ozfvHkz/FhdQJ0gxacXW5Urvnq3+rCy8IqORfOK5unFrvgqUt4aKRdDECHEroMpk19qS5IcUudkEOrGOAVKLJ9Un5bIjdQRJ/8j2p7KVzFGLHZivxUPtIpcEpAlZGd0GlNjXtxo6Q24geSk3Yv0SIgmVxK390JiLz5+nJcpJCaVU4PGsYiLNGDI58DGpiDRgUb3D9/AMvQ9pm5CsFg8x2Mbaf99iMmWvBDxLEjWLl6XUCbTDjwvgk3IRXvoNJjjkxywdoq8tOP7XhJG2n0bRPu8yDHQOlfArEBzS0Lmeb4cSW87aTq5Zom6aKydPMZoEqwZJySaY1O0ucpq52KqN5PIaB16wLfLvtNL4+hHRiAlMDnXPAMsUzQTDi5VeuNx8p3Ni57gjAacErIbNHJpuJYTk35achntfcbSqjFVI6D/L/5mxz+UnygTMRqoDRd/G7vJ1/av84b4NqNU9KPqRR0J+ZStmTfrl8XktbNUMi13HO09hL4vmLpD0uWiWZXl5jyVQfu4din/shyKzSBB45wqW9/RFEPflYNoh5gMXNh2nvnW3OhaAGAPK0IYEZ8W7rGVrlsw6KSXZlwTH4Mw4EIcFuAazuc7LcqA/naWqVhso627lX+kt450EPickPfD6ViKMRwI54p5gfcNViGN+C725+BXA2cHZGpyrUe3yUD1x3qxti0WtSOrqh65UNdVQSdV+WiEYz/iw0NncfrVr4ttu582fNgKvRx9/0pl6vvNBEl9n+s0ZoQwPUfnpnZaUNkID6lEpLzz4wx6RVNgihM5tefBOuGk1QP3FybEMbwdR/1+YvDrwgXXHDuhS9vYUWkFvgz4b0bTojlJKE/3wwQJDfjnbkGfxXGiy36XdmtCjsuD0fvEngf8QcRCxEy3w+W/oCIXU+m8+0+QDBqbQVG//c9//gI="
  },
  "ungemessen": {
   "karte2.planet.kosmos.himmelsmechanik#1": {
@@ -1486,36 +1628,6 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
-  },
-  "karte2.leben.oeko.netz#2": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-28T07:02:55.888Z",
-   "abdruck": "34e9a4bf8007",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session",
-   "offen": 2,
-   "fahrt": "19196@mx023iwx"
-  },
-  "karte2.leben.evolution.fremde-physik#1": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-28T07:02:55.934Z",
-   "abdruck": "ad1cff8a47da",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session",
-   "offen": 2,
-   "fahrt": "19196@mx023iwx"
   }
  },
  "sitzung": {
