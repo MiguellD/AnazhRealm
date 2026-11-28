@@ -1,7 +1,7 @@
 {
  "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
  "geraet": "gtx",
- "zeit": "2026-11-28T10:35:35.067Z",
+ "zeit": "2026-11-28T10:37:26.436Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "profiband.K4#1": {
@@ -3085,6 +3085,76 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.mensch.menge.dichte#3": {
+   "gruen": false,
+   "zahl": "S3 ROT an Umfang 60 < 1000 Gehende gemessen — Täter: größte Dichte 0.71 P je m²: die Stadt füllt nicht jede Klasse bis 4 P je m² · größte Abweichung v gegen Weidmann 0.146 (Soll ≤ 0.15) · Anteil gemessener Dichte-Klassen 0,5–4 P je m² 0.2 (Soll ≥ 1) · Umfang 60 (Soll ≥ 1000 Gehende gemessen) · 1088 Proben je Gehendem und s, größte Dichte 0.71 P je m², die Klassen [{\"von\":0.5,\"bis\":1,\"n\":27,\"rho\":0.57,\"v\":1.09,\"weidmann\":1.27,\"ab\":0.146}] · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.86,
+   "grund": "ROT: S3 ROT an Umfang 60 < 1000 Gehende gemessen — Täter: größte Dichte 0.71 P je m²: die Stadt füllt nicht jede Klasse bis 4 P je m² · größte Abweichung v gegen Weidmann 0.146 (Soll ≤ 0.15) · Anteil gemessener Dichte-Klassen 0,5–4 P je m² 0.2 (Soll ≥ 1) · Umfang 60 (Soll ≥ 1000 Gehende gemessen) · 1088 Proben je Gehendem und s, größte Dichte 0.71 P je m², die Klassen [{\"von\":0.5,\"bis\":1,\"n\":27,\"rho\":0.57,\"v\":1.09,\"weidmann\":1.27,\"ab\":0.146}] · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k4dcf9cce28b8",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0ac82d40df13",
+   "s": 51.1,
+   "fremd": {
+    "s": 54.3,
+    "takte": 25,
+    "fremdS": 25.19,
+    "kerne": 0.464,
+    "fensterKerne": 0.732,
+    "namen": [
+     [
+      "Explorer.EXE",
+      3.52
+     ],
+     [
+      "bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \"",
+      3.2
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      1.88
+     ]
+    ],
+    "dienerS": 11.75,
+    "diener": [
+     [
+      "System",
+      5.05
+     ],
+     [
+      "dwm.exe",
+      3.39
+     ]
+    ],
+    "geraetS": 27.48,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      18.05
+     ],
+     [
+      "svchost.exe",
+      7.59
+     ],
+     [
+      "SearchProtocolHost.exe",
+      0.8
+     ]
+    ],
+    "eigenS": 87.56,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-28T10:37:26.436Z",
+   "abdruck": "c4e1454a3bb7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -4117,21 +4187,6 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
-  },
-  "karte2.mensch.menge.dichte#3": {
-   "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 78 s von karte2.mensch.menge.dichte#3) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 78 s von karte2.mensch.menge.dichte#3) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-28T08:57:38.396Z",
-   "abdruck": "c4e1454a3bb7",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1,
-   "fahrt": "17520@mx05e57c"
   },
   "karte2.erleben.schoepfen.hebel#1": {
    "gruen": false,
