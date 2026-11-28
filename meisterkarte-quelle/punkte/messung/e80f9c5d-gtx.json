@@ -1,7 +1,7 @@
 {
  "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
  "geraet": "gtx",
- "zeit": "2026-11-28T10:37:26.436Z",
+ "zeit": "2026-11-28T10:51:43.819Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "profiband.K4#1": {
@@ -3152,6 +3152,76 @@
    },
    "zeit": "2026-11-28T10:37:26.436Z",
    "abdruck": "c4e1454a3bb7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.netz.stoffwechsel#1": {
+   "gruen": false,
+   "zahl": "S1 ROT: fehlender Leser: die Laterne brennt ohne Leitung: keine Trennung, von der ein Licht abhinge (1228 Laternen in der Szene, 0 Leitungen) (stamm/siedlung-ort.js:562) · gemessen 1228 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.23,
+   "grund": "ROT: S1 ROT: fehlender Leser: die Laterne brennt ohne Leitung: keine Trennung, von der ein Licht abhinge (1228 Laternen in der Szene, 0 Leitungen) (stamm/siedlung-ort.js:562) · gemessen 1228 · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k037717809c18",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0ac82d40df13",
+   "s": 12.9,
+   "fremd": {
+    "s": 17.4,
+    "takte": 8,
+    "fremdS": 4.55,
+    "kerne": 0.261,
+    "fensterKerne": 0.238,
+    "namen": [
+     [
+      "sh.exe n0611/kandidat.sh gtx-e80f9c5d-w114753-s x listen/kandidat-gtx-e80f9c5d-w114753-s.t",
+      0.81
+     ],
+     [
+      "bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \"",
+      0.75
+     ],
+     [
+      "Explorer.EXE",
+      0.72
+     ]
+    ],
+    "dienerS": 3.38,
+    "diener": [
+     [
+      "System",
+      1.41
+     ],
+     [
+      "dwm.exe",
+      1.06
+     ]
+    ],
+    "geraetS": 7.73,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      5.14
+     ],
+     [
+      "svchost.exe",
+      2.3
+     ],
+     [
+      "SearchIndexer.exe",
+      0.16
+     ]
+    ],
+    "eigenS": 46.91,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-28T10:51:43.819Z",
+   "abdruck": "7172cf5c24fe",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
