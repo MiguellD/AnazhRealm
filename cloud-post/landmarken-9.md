@@ -60,6 +60,9 @@ Zeuge 3 ohne Lesung · Richter ROT an drei Saaten („Blickziel verdeckt“ von 
 
 ## Kopf 2 (auf main 9885e7c4) — die sechs roten Schritte von Kopf 1, je vorher → nachher (lokal, swiftshader, je mit Selbsttest)
 
+Der Kopf steht im Zweig `landmarken-9-2`: `landmarken-9` trägt Kopf 1 (dd490d1e auf main 948f68ee), ein glatter Commit auf dem
+heutigen main ist dort kein Fast-Forward, und force ist verboten.
+
 Die gemeinsame Wurzel: Kopf 2 stellt den Spieler an den Stand der Landmarke (34/−34 statt der Plan-Mitte 0/0). Jede Linse, deren Probe
 vom Start aus zählt, stand auf dem Glück des alten Orts — die Klasse fällt je Linse an ihrer Wahl, nie an einer gesenkten Schwelle.
 
@@ -85,8 +88,8 @@ Faden der Ankunft an der teuersten Saat 5 305 → 2 752 ms; die Saaten fahren ge
 
 | Tor | Baum | Urteil | Zeit |
 |---|---|---|---|
-| check:statik | main b56b51f0 gemischt / 9885e7c4 gemischt | GRÜN / s. unten | 581 s |
-| gate:daten-contract · gate:fachwerk-contract · gate:asset-contract · gate:welt-boot | b56b51f0 gemischt | GRÜN | 1 · 117 · 277 · 82 s |
+| check:statik | b56b51f0 gemischt · 9885e7c4 gemischt | GRÜN · GRÜN | 581 · 597 s |
+| gate:daten-contract · gate:fachwerk-contract · gate:asset-contract · gate:welt-boot | 9885e7c4 gemischt | GRÜN | 1 · 118 · 269 · 82 s |
 | Kreatur-Linse 1/3 · 2/3 · 3/3 (Stoppuhr, je ≤ 1 150 s) | b56b51f0 gemischt | GRÜN | 976 · 885 · 708 s |
 | herde · lebensraum · querhang · begegnung | 9885e7c4 gemischt | GRÜN, 23 Täter | 32 · 19 · 14 · 57 s |
 | gate:kampf-gefuehl ×3 | 9885e7c4 gemischt | GRÜN 3 von 3 | 80 · 80 · 79 s |
