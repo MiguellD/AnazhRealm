@@ -2969,3 +2969,4 @@ omen-gtx-gtx-b3740dd5-w005026-1-b3740dd5 ROT 0 GRÜN / 1 ROT / 3 UNGEMESSEN · R
 omen-gtx-gtx-b3740dd5-w010726-1-b3740dd5 UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · UNGEMESSEN karte2.planet.relief.grossform#1 ‖ karte2.planet.relief.grossform#1 UNGEMESSEN roh: Deckel 355 s gerissen: Stille seit 354.8 s nach 355 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) (punkte-maschine 33f365e2 messung/b3740dd5-gtx.json)
 2026-11-28 01:23 landung Runde 49 am 27d2f60e: misst 31 von 231 Stationen (vorn; 0 tragen an diesem Kopf schon einen Eintrag), rohe Zahl je Zeile
 2026-11-28 01:27 RUNDE 49 ALARM radeon: ohne Fortschritt seit 16 min (weicht, 0/31, Station -, Kopf 27d2f60e) — gesehen von radeon (radeon-dienst)
+2026-11-28 01:40 RUNDE 49 ALARM gtx: ohne Fortschritt seit 17 min (laeuft, 0/231, Station -, Kopf 27d2f60e) — gesehen von gtx (landung-dienst)
