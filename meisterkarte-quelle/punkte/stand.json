@@ -7476,7 +7476,7 @@
   },
   "karte2.erleben.schoepfen.hebel": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.schoepfen.hebel#1 radeon: ungemessen (R10) · karte2.erleben.schoepfen.hebel#1 gtx: Station seit der Messung geändert — zuletzt an e80f9c5d: die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 93 s von karte2.erleben.schoepfen.hebel#1) — offen, UNGEMESSEN · karte2.erleben.schoepfen.hebel#2 radeon: ungemessen (R10) · karte2.erleben.schoepfen.hebel#2 gtx: ungemessen (R10) · karte2.erleben.schoepfen.hebel#3 radeon: ungemessen (R10) · karte2.erleben.schoepfen.hebel#3 gtx: Station seit der Messung geändert · karte2.erleben.schoepfen.hebel#4 radeon: ungemessen (R10) · karte2.erleben.schoepfen.hebel#4 gtx: ungemessen (R10) · karte2.erleben.schoepfen.hebel#5 radeon: ungemessen (R10) · karte2.erleben.schoepfen.hebel#5 gtx: ungemessen (R10) · karte2.erleben.schoepfen.hebel#6 radeon: ungemessen (R10) · karte2.erleben.schoepfen.hebel#6 gtx: Station seit der Messung geändert · karte2.erleben.schoepfen.hebel#7 radeon: ungemessen (R10) · karte2.erleben.schoepfen.hebel#7 gtx: Station seit der Messung geändert · karte2.erleben.schoepfen.hebel#8 radeon: ungemessen (R10) · karte2.erleben.schoepfen.hebel#8 gtx: Station seit der Messung geändert · karte2.erleben.schoepfen.hebel#9 radeon: ungemessen (R10) · karte2.erleben.schoepfen.hebel#9 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.schoepfen.hebel#1 radeon: ungemessen (R10) · karte2.erleben.schoepfen.hebel#1 gtx: ROT: S1 · ROT ❌ wille_bild_s 25,153 (Soll ≤ 1) · ✅ eingaben 2 (Soll ≤ 3) — Täter: Wille → Bild 25.153 s, 2 Eingaben · wille_bild_s 25,153 statt ≤ 1 an e80f9c5d · karte2.erleben.schoepfen.hebel#2 radeon: ungemessen (R10) · karte2.erleben.schoepfen.hebel#2 gtx: ungemessen (R10) · karte2.erleben.schoepfen.hebel#3 radeon: ungemessen (R10) · karte2.erleben.schoepfen.hebel#3 gtx: Station seit der Messung geändert · karte2.erleben.schoepfen.hebel#4 radeon: ungemessen (R10) · karte2.erleben.schoepfen.hebel#4 gtx: ungemessen (R10) · karte2.erleben.schoepfen.hebel#5 radeon: ungemessen (R10) · karte2.erleben.schoepfen.hebel#5 gtx: ungemessen (R10) · karte2.erleben.schoepfen.hebel#6 radeon: ungemessen (R10) · karte2.erleben.schoepfen.hebel#6 gtx: Station seit der Messung geändert · karte2.erleben.schoepfen.hebel#7 radeon: ungemessen (R10) · karte2.erleben.schoepfen.hebel#7 gtx: Station seit der Messung geändert · karte2.erleben.schoepfen.hebel#8 radeon: ungemessen (R10) · karte2.erleben.schoepfen.hebel#8 gtx: Station seit der Messung geändert · karte2.erleben.schoepfen.hebel#9 radeon: ungemessen (R10) · karte2.erleben.schoepfen.hebel#9 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.erleben.schoepfen.hebel#1",
@@ -7492,10 +7492,10 @@
      "id": "karte2.erleben.schoepfen.hebel#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an e80f9c5d: die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 93 s von karte2.erleben.schoepfen.hebel#1) — offen, UNGEMESSEN",
-     "ungemessen": true,
+     "zahl": "S1 · ROT ❌ wille_bild_s 25,153 (Soll ≤ 1) · ✅ eingaben 2 (Soll ≤ 3) — Täter: Wille → Bild 25.153 s, 2 Eingaben · wille_bild_s 25,153 statt ≤ 1",
+     "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
+     "grund": "ROT: S1 · ROT ❌ wille_bild_s 25,153 (Soll ≤ 1) · ✅ eingaben 2 (Soll ≤ 3) — Täter: Wille → Bild 25.153 s, 2 Eingaben · wille_bild_s 25,153 statt ≤ 1",
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -37461,7 +37461,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 310,
+  "konsum": 311,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37593,10 +37593,10 @@
    "karte2.same.kopplung.terraform#1 gtx",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3348
+  "ohne": 3347
  },
  "kopfVoll": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
- "zeit": "2026-11-28T11:25:49.395Z",
+ "zeit": "2026-11-28T11:32:32.891Z",
  "vorher": "e80f9c5d",
  "bilanz": {
   "gewinn": [],
