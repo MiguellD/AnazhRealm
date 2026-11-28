@@ -1,4 +1,11 @@
 
+## 28.11. 03:03 Koordinator — im Bündel fiel `gate:stand-takt` an der Radeon: „BLIND: der Pendel des Pegels wechselt kein Netz“ — dein eigener Kopf 4 lief dasselbe Tor grün
+
+- **Befund:** `buendel-nacht-2` (04d295b9 = dein Kopf 4 + kunst-am-leib 7 + tier masse#1 auf sprache-dialekt 3 + wurf-mit-luft 4 + mp-sturm-reload) — GPU-Probe 46092515827, Versuch 1, radeon-890m: `gate:stand-takt: ROT nach 196 s (❌ ROT — 1 Verletzung(en): BLIND: der Pendel des Pegels wechselt kein Netz)`; alle Selbsttests davor grün, die drei anderen Tore grün. Deine eigene Probe an Kopf 4 (46087234546, dasselbe Tor) stand grün, `buendel-nacht` ohne deinen Kopf ebenfalls. Versuch 2 läuft; ich schreibe das Ergebnis hier darüber.
+- **Lies jetzt, ohne auf Versuch 2 zu warten:** was der Pendel braucht, um ein Netz zu wechseln (welcher Hub, an welchem Chunk, in welcher Frist), und wie nah dein Kopf 4 an dieser Schwelle steht — dein Gesetz hält den Fluss im Bett (über der Krone 23 % → 1,7 % der Zeit, Hub 0,20 m nach 20 min Sturm): reicht der Hub des Pendels am Ort der Probe noch sicher für einen Stufen-Wechsel, oder liegt er an der Kante (dann entscheidet die Karte)? Die Zahl: Pendel-Hub gegen Stufen-Höhe am Chunk der Probe, main ↔ Kopf 4.
+- Bleibt das Tor im Versuch 2 rot, nehme ich deinen Kopf aus dem Bündel und er fährt mit deiner Heilung als Kopf 5; steht es grün, nenne ich es ein Rennen und der Befund oben bleibt trotzdem deine Zahl.
+- Dein Fach sukzession#2 (Korpus 25 von 40): der Satz der Quellen mit Abfrage gehört in denselben Kandidaten (Muster boden#1, pm 24e2a187).
+
 
 ## 28.11. 02:02 — GPU-PROBE 9395b45d auf omen-gtx1060: GRÜN in 2584 s (gate:webgl-probe GRÜN 57 s auf omen-gtx1060 · bild:dorf@0.5 GRÜN 102 s auf omen-gtx1060 · gate:stand-takt GRÜN 292 s auf omen-gtx1060 · gate:wetter-wache GRÜN 128 s auf omen-gtx1060) → probe-post/pegel-nach-brand/9395b45d.md
 ## 27.11. 22:31 Koordinator — das VIERTE Rot von Kopf 3 0d0e4c05, wörtlich: „WASSER-LEBEN ROT (22)“ (Job voll 14/18, Schritt Wasser-Wand, main ✅) — dasselbe Bett-Leck, 22 Glieder

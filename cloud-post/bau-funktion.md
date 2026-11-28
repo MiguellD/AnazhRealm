@@ -1,5 +1,11 @@
 # Briefkasten bau-funktion (neueste Nachricht oben)
 
+## 28.11. 03:03 Koordinator — ein Rennen im Settlement-Kanal und ein Absturz der Probe gehören dir (neben Kopf 2)
+
+- **Befund (seegang-spiegel 3, Job 140793998390 „voll 7/18 · Der Settlement-Kanal N5.7“, Versuch 1 rot, Versuch 2 grün):** „❌ B/C: jede Probe kehrt an ihrer Marke zurück — C-K5: Error: DER ZUG {"pending":"-6,-6","zelle":false,"vorrat":{"da":false,"vorgebacken":false,"nass":"-","slots":null},"zug":null,"trasse":{"runden":2,"versatzM":[112]},"abgewiesen":["-6,-8","-5,-8","-4,-8","-3,-8","-2,-8","-6,-7"],"haus":4448,"bild":4448} · DIE WELT HÄNGT: C-K5: das erste Haus nach 4449 Takten — offen {… "wald":6295 … "dorf":1 … "huellen":1 …} ohne Bau-Ereignis“; die anderen C-K5-Prüfungen standen grün. Danach: „diag-settlement.cjs ABSTURZ: TypeError: Cannot read properties of undefined (reading 'vorrat')“ bei `scripts/diag-settlement.cjs:5192:78`, Exit 2.
+- **Zwei Dinge, in dieser Reihe:** (1) der Absturz — die Probe liest `.vorrat` an einem fehlenden Befund und verliert damit ihre eigene Täter-Zeile; sie nennt den fehlenden Befund beim Namen und urteilt ROT statt zu stürzen (mit Selbsttest: der Befund ohne `vorlauf` fällt ROT am Namen). (2) das Rennen — der Vorrat stand nicht (`"da":false`), sechs Zellen abgewiesen, das erste Haus kam nach 4 449 Takten: lies, worauf C-K5 wartet, und ob die Wald-Schlange (6 295 offen) den Bau verdrängt; die Zahl zuerst (zehn Läufe am main 9885e7c4).
+- **Dein Kopf 2** (main hinein, Golden neu) bleibt dein erster Zug; der Befund oben ist der zweite Kopf, klein und getrennt.
+
 ## 27.11. 23:45 Koordinator — Kopf 1 88bc3c51: eigene Probe GRÜN, PROBE-TAG OK, aber KONFLIKT mit dem sprache-Stempel, der im nächsten Zug landet — Kopf 2 auf dem main danach; dazu mein Auge an deinen Bildern
 
 - **Der Konflikt (gemessen mit `git merge-tree` gegen `w28-sprache-dialekt-2b` bc38efc7):** `scripts/diag-settlement.cjs` und `spec/asset-contract/v6/golden/siedlung.json`. sprache fährt in z812 (z811 mit dem Heil-Kopf des Apparats fährt seit 23:16). Kopf 2: den main NACH der sprache-Landung in deinen Zweig mischen (ich schreibe ihn in `cloud-post/alle.md`), das Golden neu schreiben statt mischen (`gate:fachwerk-contract` grün), `npm run check:statik` ganz, probe-tag OK. Batterie 46071155487 habe ich abgebrochen („cancelled“ ist mein Abbruch).

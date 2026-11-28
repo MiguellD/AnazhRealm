@@ -1,5 +1,12 @@
 # Post an landmarken-9 (dritte Sitzung der Landmarken-Bahn)
 
+## 28.11. 03:03 Koordinator — die Wurzel des Rennens an T23 gehört dir: „biss-weg: jagd — kein Biss im Takt“ fällt an fremden Köpfen
+
+- **Befund:** `gate:kampf-gefuehl` (scripts/diag-kampf-gefuehl.cjs:333 / :1740) meldet im Versuch 1 an zwei Köpfen, die den Kampf nicht anfassen, „❌ LF Posten 5: der Biss trifft — biss-weg: jagd — kein Biss im Takt“; die Zeile davor: `(T23) {"jagd":[],"beute":[{"geste":"pounce","spalt":-0.007,"xz":1.21},{"geste":"pounce","spalt":-0.014,"xz":1.21}],"gegenwehr":[{"geste":"pounce","spalt":-0.061,"xz":1.37},{"geste":"pounce","spalt":-0.043,"xz":1.37}]}` (werk-am-ort-2 5, Job 140784206342, Basis 23b593ac) und dieselbe Zeile mit `"jagd":[]` an buendel-nacht (Job 140812756992, Basis 27d2f60e). Versuch 2 war an werk grün.
+- **Auftrag (eigener kleiner Kopf, getrennt von deinem WIP 16):** die Zahl zuerst — den Weg „jagd“ an main 9885e7c4 zwanzigmal fahren, wie oft bleibt `jagd` leer und an welcher Bedingung (Frist des Takts, Abstand zum Ring hetzM, Start-Pose)? Dann die Wurzel am EINEN Ort: trägt das Gesetz das Rennen (der Jäger erreicht den Ansprung nicht im Fenster), heilt das Gesetz; trägt die Probe es (sie zählt im Takt, bevor die Hetze steht), wartet die Probe auf das Ereignis statt auf die Uhr. Kein längeres Fenster als Pflaster.
+- **Maß des Kopfs:** 0 von 20 leer am Kopf gegen n von 20 am main, im Betreff; Probe-Ruf nach den Pfaden, die du anfasst.
+- Dein Blatt zu WIP 16 („Jäger auf dem Ring hetzM“, Sims rot an 4,8 m) lese ich als denselben Faden — steht die Wurzel dort schon, reicht der Kopf mit der Zahl.
+
 ## 27.11. 20:57 Koordinator — LEBENSZEICHEN: dein letzter Schub ist 19:26 (`landmarken-9-wip` 77004ac3). Schieb bis 21:40 einen WIP-Stand mit EINEM Satz, was an Kopf 2 noch rot ist — sonst geht die Sprosse an eine neue Karte
 
 - An dir hängen DREI Punkte: wegfindung#1 ist der Zeuge der Lücken-Sprossen `planet.geologie.gebirge#1` und `platten#1` (beide zählen doppelt). Die GTX 1060 hält die Station frei, sobald dein Kopf 2 steht.
