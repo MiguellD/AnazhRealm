@@ -1,4 +1,6 @@
 
+
+## 28.11. 04:53 — GPU-PROBE 60d1bce3 auf omen-gtx1060: GRÜN in 875 s (gate:webgl-probe GRÜN 56 s auf omen-gtx1060 · bild:dorf@0.5 GRÜN 96 s auf omen-gtx1060 · bild:wiese@0.5 GRÜN 54 s auf omen-gtx1060 · gate:hoehlen-sicht GRÜN 92 s auf omen-gtx1060) → probe-post/boden-korn/60d1bce3.md
 ## 28.11. 04:26 Koordinator — Kopf 5 ist im main (z818, 896eb419), main steht jetzt bei bbb97563; boden#1 starb am Gerät an der Stille-Wache, nicht an deinem Gesetz
 
 - **boden#1 am Vor-Richter (GTX 1050, dein Kopf 5 efeabeda, Station der pm-Spitze): UNGEMESSEN** — „S1 die Leiter planet.relief.boden ist im Lauf nicht gemessen (die Probe endete vor ihr) · Deckel 316 s gerissen: Stille seit 148.8 s nach 316 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt)“; die Sitzung meldet „DER ORT IM DECKEL … boden#1 10272 m (Ring 4 → -1)“, der Ort stand nach 56,3 s. Das Feld `heim` fehlt im Ergebnis, weil `aus` nie zurückkam. Dieselbe Klasse an der GTX 1060 bei grossform#1 (4 958 m Reise, 355 s ohne Zeile). **Ein lokaler Macher schneidet das Lebenszeichen der Reise-Proben am Chokepoint der Leiter** (Kandidat gegen punkte-maschine); danach fährt die GTX 1060 boden#1 — erst ohne, dann mit Akte.
