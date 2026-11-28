@@ -1,0 +1,56 @@
+diff --git a/vision/pruefer/faecher.cjs b/vision/pruefer/faecher.cjs
+index 9b4d3fe3d..8d17b5a4d 100644
+--- a/vision/pruefer/faecher.cjs
++++ b/vision/pruefer/faecher.cjs
+@@ -380,6 +380,27 @@ const SPROSSEN = {
+             "H.sort((a, b) => a.d - b.d);" +
+             "return { saat, posen: H, lage: 'im Akt einer Kunst um 10 Uhr draußen: Meister ' + je.Meister + ' · Anfänger ' + je['Anfänger'] + ' · dazwischen ' + mitte + ' · drinnen ' + drinnen };",
+     },
++    // Akt und Gemüt am Leib zur Stunde des Feierabends: die Station rechnet je Bewohner sein Soll zu 17:15–18:00 und den Namen, den
++    // sein Leib dann steht (k2-mensch-leib.js AUSDRUCK — pwalk am Werk = Arbeit, sad im Abend = Müde, fear = Furcht); die Pose steht
++    // 3,5 m seitlich (die Beuge im Profil), jede zu IHRER Uhr — beide Klassen unter demselben Licht des Abends
++    "mensch.leib.ausdruck#1": {
++        ort: "stadt-voll",
++        gesetz: "meisterkarte-quelle/punkte/stationen/k2-mensch-leib.js:422",
++        faecher: "jeder Bewohner der vollen Stadt zur Stunde des Feierabends (17:15, 17:30, 17:45, 18:00) draußen im Akt, dessen Leib Arbeit, Müde oder Furcht steht, 3,5 m seitlich quer zu seinem Blick, Augenhöhe 1,2 m, Blick auf 1 m, Klassen im Wechsel, je Pose ihre Uhr",
++        ordner: "mensch.leib.ausdruck.1-b1",
++        uhren: [17.25 / 24],
++        frage: "Was zeigt die Haltung des Menschen in der Bildmitte: arbeitet er, ist er müde vom Tag, oder fürchtet er sich?",
++        je: 22,
++        mehr: {},
++        wahl: 0,
++        motiv: (a) => AN_DER_POSE(a) && GRUEN(a),
++        rumpf: () =>
++            SAAT +
++            "const A = await (" +
++            seiteVon("k2-mensch-leib.js", "mensch.leib.ausdruck", "AUSDRUCK") +
++            ")(r, T, {}); if (!A || A.fehler) return { saat, posen: [], lage: (A && A.fehler) || 'die Seite AUSDRUCK ohne Antwort' };" +
++            "return { saat, posen: A.posen.map((p) => ({ pose: p.pose, klasse: p.klasse, uhr: p.uhr, wort: p.wort })), lage: A.lage };",
++    },
+     // die Talform an 20 Saaten: die Station rechnet je Saat (Land-Lage der Fibonacci-Kugel) × Stelle 1/4 · 1/2 · 3/4 des größten Laufs
+     // den Querschnitt (k2-planet.js:2662 PROFIL_AN, V-Tal b < 1,5 ≤ Trog) und nennt die Pose „Ego 8 m über der Sohle, Blick talauf“
+     // (:2706) — der Fächer REIST je Saat an ihre Lage (der Satz des Spielers „reise <Breite> <Länge>“, wie die Werkbank ihre Reise-Orte
+@@ -426,7 +447,11 @@ const SPROSSEN = {
+ function faechern(basis, uhren, mehr) {
+     const aus = [];
+     // die KLASSE (ordnen × klasse): die Wahrheit des Gesetzes an der Adresse reist mit der Pose in die Akte — nie von Hand gesetzt
+-    for (const u of uhren) basis.forEach((b, i) => aus.push(Object.assign({ basis: i, pose: b.pose, wort: b.wort, mehr: Object.assign({}, mehr, { uhr: u }) }, b.klasse != null ? { klasse: b.klasse } : {}, b.ziel ? { ziel: b.ziel } : {}, b.reise ? { reise: b.reise } : {})));
++    // DIE UHR DER POSE: trägt eine Pose ihre eigene Uhr (die Klasse gilt nur zu ihr: der Akt zur Stunde, mensch.leib.ausdruck#1),
++    // schießt der Fächer sie EINMAL zu dieser Uhr, nie über die Uhren des Fächers
++    const zu = (b, i, u) => aus.push(Object.assign({ basis: i, pose: b.pose, wort: b.wort, mehr: Object.assign({}, mehr, { uhr: u }) }, b.klasse != null ? { klasse: b.klasse } : {}, b.ziel ? { ziel: b.ziel } : {}, b.reise ? { reise: b.reise } : {})); // prettier-ignore
++    for (const u of uhren) basis.forEach((b, i) => b.uhr == null && zu(b, i, u));
++    basis.forEach((b, i) => b.uhr != null && zu(b, i, b.uhr));
+     return aus;
+ }
+ // DIE KLASSEN IM WECHSEL: je Klasse die Adressen nach Abstand, dann Runde um Runde eine je Klasse (höchstens `je` je Klasse) — der
+@@ -683,6 +708,10 @@ function selbsttest() {
+     t("an der Pose: ein Bild, für das die Werkbank eine andere Kamera wählte (Blick-Wahl ≥ 2 Posen), trägt kein Rahmen-Motiv", AN_DER_POSE("ABNAHME GRÜN · Blick-Wahl 1 Pose") && !AN_DER_POSE("ABNAHME GRÜN · Blick-Wahl 2 Posen") && !AN_DER_POSE("Blick-Wahl 42 Posen") && !PF("ABNAHME GRÜN · Blick-Wahl 37 Posen", { ziel: { art: "eiche", d: 9 } }) && !SPROSSEN["mensch.bau.bedarf#1"].motiv("ABNAHME GRÜN · Blick-Wahl 3 Posen") && SPROSSEN["mensch.bau.bedarf#1"].wahl === 0 && !SPROSSEN["mensch.bau.bedarf#1"].motiv("ABNAHME ROT [Sicht verdeckt 49.5 % (Bau als 1 m): bauSatz 49.5 %] · Ziel Blickziel verdeckt von bauSatz in 1.2 m · Blick-Wahl 1 Pose") && SPROSSEN["mensch.bau.bedarf#1"].motiv("ABNAHME GRÜN · Blick-Wahl 1 Pose") && SPROSSEN["leben.pflanzen.arten#1"].wahl === 0);
+     t("das Motiv der Pflanze: ihr eigenes Laub am Ziel trägt, fremdes oder nahes Laub nicht", PF("ABNAHME ROT [Ziel Blickziel verdeckt von Laub fscatter:eiche:L1 in 9.2 m]", { ziel: { art: "eiche", d: 12 } }) && !PF("ABNAHME ROT [Ziel Blickziel verdeckt von Laub fscatter:tanne:L1 in 9.2 m]", { ziel: { art: "eiche", d: 12 } }) && !PF("ABNAHME ROT [Ziel Blickziel verdeckt von Laub fscatter:eiche:L1 in 2.1 m]", { ziel: { art: "eiche", d: 12 } }) && PF("ABNAHME GRÜN", {}));
+     t("Meister oder Anfänger: die Klasse ist das Können des Lebenslaufs an den Schwellen des Gesetzes (≥ 1 / < 0,5), ≥ 20 je Klasse im Wechsel", /klasse = k >= 1 \? 'Meister' : k < 0\.5 \? 'Anfänger' : null/.test(SPROSSEN["mensch.sport.kunst#1"].rumpf()) && SPROSSEN["mensch.sport.kunst#1"].je >= 20 && imWechsel([{ klasse: "Meister" }, { klasse: "Meister" }, { klasse: "Anfänger" }], 22).map((x) => x.klasse).join() === "Meister,Anfänger,Meister");
++    const ub = faechern([{ pose: { px: 1 }, klasse: "Arbeit", uhr: 0.72 }, { pose: { px: 2 } }], [0.5, 0.6], {});
++    t("eine Pose mit eigener Uhr schießt EINMAL zu ihr, die anderen über die Uhren des Fächers", ub.length === 3 && ub.filter((x) => x.basis === 0).length === 1 && ub.find((x) => x.basis === 0).mehr.uhr === 0.72 && ub.find((x) => x.basis === 0).klasse === "Arbeit" && ub.filter((x) => x.basis === 1).map((x) => x.mehr.uhr).join() === "0.5,0.6");
++    const AU = seiteVon("k2-mensch-leib.js", "mensch.leib.ausdruck", "AUSDRUCK");
++    t("Akt und Gemüt: die Klasse ist der Name, den der Leib steht (Wahl des Wirts), je Pose ihre Uhr, seitlich, ≥ 20 je Klasse", /_koerperMotionName\(false, \{ haltung: KC\.tagesHaltung\(s\.akt, b\.rolle, b\)/.test(AU) && /basis === "sad" && s\.akt === "abend" \? "Müde"/.test(AU) && /uhr: h \/ 24/.test(AU) && /Math\.cos\(y\) \* 3\.5/.test(AU) && /uhr: p\.uhr/.test(SPROSSEN["mensch.leib.ausdruck#1"].rumpf()) && SPROSSEN["mensch.leib.ausdruck#1"].je >= 20);
+     t("jede Klassen-Sprosse trägt ihre Frage", Object.values(SPROSSEN).filter((d) => d.je).every((d) => /\?$/.test(d.frage || "")));
+     t("eine feste Uhr (Erntetag) fächert nur über Adressen", faechern(basis(12), [10 / 24], { uhr: 1 }).length === 12 && faechern(basis(12), [10 / 24], {})[0].mehr.uhr === 10 / 24);
+     const png = Buffer.alloc(24);

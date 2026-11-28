@@ -45,3 +45,25 @@ Kandidat 2 unverändert und dazu:
 Ehrlich offen: stadt-voll trägt keine Schmiede (Bericht stoffstrom-kette), ein Dorf eine — an einem Ort mit EINEM Schmied streut
 die Güte nicht, R² 0. Den Messort mit ≥ 2 Händen (mehrere Dörfer im Ring) wählt der Koordinator. Die Güte des Stücks in der Hand
 eines Bewohners liest heute nur der Zensus: kein Bewohner schlägt mit seinem Werkzeug (Schaden, Abbau, Verschleiß offen).
+
+═══ Kandidat ausdruck#1 (Post 00:57: das Fach des Prüfers für karte2.mensch.leib.ausdruck#1) — gegen punkte-maschine 4a2784e8 ═══
+- ausdruck-1-station.diff (meisterkarte-quelle/punkte/stationen/k2-mensch-leib.js): neue Seiten-Funktion AUSDRUCK — je Bewohner
+  sein Soll zu 17:15 · 17:30 · 17:45 · 18:00 (`_bewohnerSoll(b, h)`) und der Name, den sein Leib dann steht: dieselbe Wahl wie der
+  Wirt (`_koerperMotionName(false, { haltung: tagesHaltung(akt, rolle, b), sorrow, chaos })`, die Furcht aus
+  `_kreaturFurchtErinnert`). Klasse = dieser Name: pwalk im Akt arbeit/hilft = Arbeit, sad im Abend = Müde, fear = Furcht.
+  Die Stunde des Feierabends trägt beide Klassen unter DEMSELBEN Licht (Schmied bis 18, Händler bis 18,5, Kirche bis 19 am Werk;
+  wer bis 17 arbeitet, ist im Abend) — die Uhr verrät die Klasse nicht. Pose SEITLICH: 3,5 m quer zum Blick, Augenhöhe 1,2 m,
+  Blick auf 1 m (die Beuge liest sich im Profil; kunst#1 zeigte von vorn nur die Höhe des Kopfs). S1: < 2 Klassen → K.leser
+  (koerper TAGES_GESETZ.haltung); sonst Bild an der ersten Pose zu ihrer Uhr → K.auge mit der Zahl je Klasse und den Winkeln der
+  Profile (Rumpf/Leib/Kopf/Ellbogen in Grad). sprossen[1].auge.pose neu; umfang, Richter-Text, vorbild unverändert.
+- ausdruck-1-faecher.diff (vision/pruefer/faecher.cjs): `faechern` — eine Pose mit eigener Uhr schießt EINMAL zu ihr (die Klasse
+  gilt nur zu ihrer Stunde); Fach "mensch.leib.ausdruck#1" (ort stadt-voll, gesetz k2-mensch-leib.js:422, je 22, Frage „Was zeigt
+  die Haltung des Menschen in der Bildmitte: arbeitet er, ist er müde vom Tag, oder fürchtet er sich?“) — der Rumpf ruft AUSDRUCK
+  über `seiteVon`, nie eine Abschrift. Zwei neue Selbsttests (17 GRÜN · 0 ROT); Mutante „sad ohne Abend = Müde“ → ROT.
+- Die Klassen-Zeile steht schon: stationen/auge-klasse.cjs `"mensch.leib.ausdruck#1": [P, "Prüfer errät Akt/Gemüt"]`.
+  Register-Liste (`liste`) am pm-Baum mit dem Kandidaten: Exit 0 · 1976 Stationen · Fehler 0.
+- Headless (Sonde: je Rolle 40 Bewohner, Bindung wie gate:mensch-zuege, `tagesPlan` + `tagesHaltung` zu den vier Stunden,
+  draußen): Arbeit 718 · Müde 518 (Kirche, Händler, Gasthaus, Schmied am Werk; Kaufhaus, Kontor, Kind, Jäger, Fischer im Abend).
+Ehrlich offen: (1) Furcht trägt nur, wer die Tat des Spielers sah — in der Sitzung des Fächers 0, das Blatt hat zwei Klassen.
+(2) Das Gesetz ist schwach: pwalk beugt den Rumpf 2,9°, sad senkt den Kopf 10° (MOTION) — ob der Prüfer ≥ 60 % trifft, sagt
+seine Zahl; liegt sie darunter, ist die Beuge am Werk und die Müdigkeit des Abends (Winkel mit Quelle) die nächste Arbeit.
