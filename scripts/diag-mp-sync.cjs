@@ -40,6 +40,10 @@
 //                 Selbsttest: eine falsch gemerkte Klasse); eine Region über einer Hydro-Kachel, die noch nicht da ist, rechnet
 //                 nicht und merkt nichts (`_bestandBereit`, Selbsttest: das alte Merkbuch). Fällt (f), nennt der BEFUND den Grund
 //                 beim Namen (`lebenBefund`: Moment, Klasse, Bestand, Akte, Folge, Zellen; `pegelBefund`: die Sekunde der Tafel).
+//                 DAS GEDÄCHTNIS DER WERKE (mp-sturm-reload): die Taten bauen/abriss je Seite gleich (`werkUrteil`) — ein Werk nur einer
+//                 Seite senkt das Leben jedes Takts zwischen Bau und Abriss nur dort. Der Selbsttest von (i) (das alte Tor: ein Werk nur
+//                 bei A) lief vor dem Reload und machte „Reload mitten im Sturm: leben VERSCHIEDEN“, sooft ein Takt im Fenster lag; er
+//                 läuft nach dem letzten Vergleich des Lebens und ist zugleich der Selbsttest der Werk-Linse.
 //   (g) STILLE (mp-leitung): ein stiller Partner ist nicht weg. A schweigt 15 s (die Pumpe ruht, der Loop steht wie in einem
 //                 verborgenen Tab), B tickt weiter; zurück ist A, wenn B's Ghost den ersten Anker von A nach der Stille rechnet
 //                 (geurteilt an diesem Ereignis, oder sofort, wenn die Leitung nicht mehr offen steht), und (e) Leib rechnet den
@@ -209,7 +213,13 @@ function abdruck(bauten, nahe) {
         hydro: [...(st.hydroTiles || new Map()).keys()].sort().join(" "),
         pegelSek: r._pegelSek,
     };
-    return { takt: st.faunaLifecycle.feldLetzt, edits, bauten: B.sort(), boden, zug: r._wetterZug, wetter, wer: st.weather + " von " + st.wetterSchreiber, leben, pegel: r._pegelGilt(), brand: [...(st.brandFeld || [])], befund };
+    // (f) DAS GEDÄCHTNIS DER WERKE (mp-sturm-reload): jede Tat „bauen“/„abriss“ mit Kennung und Stempel — was `_werkStoerungAt` jedem
+    // Takt des Bestands liest, dessen Uhr zwischen beiden liegt; ein Werk nur einer Seite senkt dort das Leben nur auf ihr
+    const werke = ((st.worldMeta && st.worldMeta.taten) || [])
+        .filter((a) => a && (a.tat === "bauen" || a.tat === "abriss"))
+        .map((a) => a.tat + " " + a.id + " @" + a.stempel)
+        .sort();
+    return { takt: st.faunaLifecycle.feldLetzt, edits, bauten: B.sort(), boden, zug: r._wetterZug, wetter, wer: st.weather + " von " + st.wetterSchreiber, leben, werke, pegel: r._pegelGilt(), brand: [...(st.brandFeld || [])], befund };
 }
 // (f) DER SPION DER FOLGE (Seite, vor ihrem ersten Skript, über jeden Reload — auch unter dem Ladeschirm, ehe die Probe sich
 // einhängt): jeder Akt, der wirkt (`_feldAktWirkt`), gegen die Folge des Felds gelesen — `ueberholt`: ein Takt einer nahen Region
@@ -286,10 +296,26 @@ function pegelBefund(A, B) {
             : " — nicht derselbe Moment (die Probe las zwei Sekunden)")
     );
 }
+// (f) DAS URTEIL DER WERKE (Node, aus `werke` zweier Abdrücke): [gleich, Satz] — je Seite die Werk-Taten, die nur sie trägt, beim Namen
+function werkUrteil(A, B) {
+    const [wa, wb] = [new Set(A.werke), new Set(B.werke)];
+    const [nurA, nurB] = [A.werke.filter((x) => !wb.has(x)), B.werke.filter((x) => !wa.has(x))];
+    const ok = !nurA.length && !nurB.length;
+    return [
+        ok,
+        `${A.werke.length} Werk-Taten bei A, ${B.werke.length} bei B` +
+            (nurA.length || nurB.length
+                ? ` · nur A ${nurA.length} (${nurA.slice(0, 2).join(" ; ")}) · nur B ${nurB.length} (${nurB.slice(0, 2).join(" ; ")})` +
+                  " — Täter: ein Werk, das nur eine Seite trägt (sein Programm reiste nicht, `_tatReist`): jeder Takt zwischen Bau und Abriss liest es nur dort (`_werkStoerungAt`)"
+                : "")
+    ];
+}
 function lebenBefund(A, B) {
     const [a, b] = [A.befund, B.befund];
     const teile = [];
     if (A.takt !== B.takt) teile.push(`MOMENT verschieden (feldLetzt A ${A.takt} · B ${B.takt})`);
+    const [wGleich, wSatz] = werkUrteil(A, B);
+    if (!wGleich && (A.werke.length || B.werke.length)) teile.push(`WERKE ${wSatz}`);
     const kl = klasseUrteil(A, B);
     if (kl.rot) teile.push(`KLASSE ${kl.satz}`);
     const bB = new Map(b.bestand.map((x) => [x[0], x]));
@@ -1020,6 +1046,10 @@ hauptLauf(async () => {
                     (gl("leben") ? "" : ` — BEFUND: ${lebenBefund(A, B)}`) +
                     (gl("pegel") ? "" : ` — PEGEL: ${pegelBefund(A, B)}`)
             );
+            // (f) DAS GEDÄCHTNIS DER WERKE IST AUF BEIDEN SEITEN DASSELBE (mp-sturm-reload): ein Werk, das nur eine Seite trägt, senkt das
+            // Leben jedes Takts zwischen seinem Bau und seinem Abriss nur dort (`_werkStoerungAt`) — „leben VERSCHIEDEN, nur Betrag“, wenn
+            // ein Takt im Fenster lag, sonst still. Das Urteil liest die Ursache, nicht den Zufall des Rasters.
+            check(`(f) ${wann}: das Gedächtnis der Werke (Taten bauen/abriss, die der Takt liest) gleich auf beiden Seiten`, ...werkUrteil(A, B));
             // (f) DIE GEMERKTE BODEN-KLASSE IST DIE FRISCHE (w28-mp-boden): der Bestand merkt die Klasse je Zelle EINMAL
             // (`_bestandFeld`) — gemerkt vor einem fertigen Eingang (die Hydro-Kachel des Orts, der Erdbau), trägt die Seite sie für
             // immer anders als der Mitspieler und als ihr eigener Reload. Gelesen an jeder Zelle der nahen Regionen auf A und B.
@@ -1261,11 +1291,17 @@ hauptLauf(async () => {
                 r.dslRun(regel, { source: "llm:grok" });
                 const marke = bau("human", 1);
                 if (alt) delete r._tatReist;
-                return { ki, marke, H, regelA: st.worldRules.some((x) => r._regelHash(x) === H) };
+                const T = r.constructor._bestandGesetz().B.taktS;
+                return { ki, marke, H, regelA: st.worldRules.some((x) => r._regelHash(x) === H), takt: (Math.floor(st.spielZeit / T) + 1) * T };
             }, altesTor);
             await waitFor(pageB, (w) => st.architectures.filter((e) => e.werk).length >= w, "B trägt die Marke von A", wB + 1);
-            // das alte Tor hinterlässt bei A ein Werk, das B nie sah: A reißt es ab (der Abdruck des Reloads bleibt gleich)
-            if (altesTor) await pageA.evaluate((ki) => ki.forEach((id) => r.dslRun(["remove_architecture", id], { source: "human" })), a.ki);
+            // das alte Tor hinterlässt bei A ein Werk, das B nie sah: A reißt es ab, NACHDEM seine Folge den nächsten Takt des Rasters
+            // rechnete — das Werk lag über einem Takt, und das Leben von A trägt es (dieselbe Wunde wie in CI: der Abriss kam unter Last
+            // nach einem Takt; geurteilt wird danach nichts mehr, das das Leben beider Seiten vergleicht, außer der Werk-Linse)
+            if (altesTor) {
+                await waitFor(pageA, (z) => st.faunaLifecycle.feldLetzt >= z, "A rechnet den Takt über dem Werk", a.takt);
+                await pageA.evaluate((ki) => ki.forEach((id) => r.dslRun(["remove_architecture", id], { source: "human" })), a.ki);
+            }
             const b = await pageB.evaluate(
                 (ki, H) => ({
                     ki: ki.filter((id) => st.architectures.some((e) => String(e.id) === id)).length,
@@ -1284,12 +1320,9 @@ hauptLauf(async () => {
                 (ki.b.ki < ki.a.ki.length ? " — Täter _tatReist: das Tor liest nur \"human\"" : "") +
                 (ki.b.regel ? " — Täter _tatReist: das Gesetz der KI reist" : "")
         );
-        const alt = await kiTat(true);
-        check(
-            "(i) Selbsttest: das alte Tor (nur \"human\") hält die Tat der KI zurück → B trägt sie nicht",
-            alt.a.ki.length === 1 && alt.b.ki === 0,
-            `Werke der KI bei B ${alt.b.ki}/${alt.a.ki.length}`
-        );
+        // der Selbsttest von (i) (das alte Tor) läuft NACH dem letzten Vergleich der Teil-Simulationen (nach dem Reload): sein Werk
+        // trägt nur A, und jeder Takt unter ihm senkte das Leben nur bei A — vorher lag er hier, und „(f) Reload mitten im Sturm:
+        // leben VERSCHIEDEN, nur Betrag“ fiel, sooft der Abriss unter Last nach einem Takt des Rasters kam (CI 140758214042 u. a.)
 
         // ── (h) DAS GESETZ DES SPIELERS: A schreibt es im Gespräch, B trägt es, beide würfeln gleich, die Wirkung steht bei beiden ──
         await pageB.evaluate(() => (st.dsl.nextRuleId += 3)); // B's Nexus erprobte drei Regeln mehr
@@ -1373,6 +1406,24 @@ hauptLauf(async () => {
             R ? satz(rg) : "B stand nach dem Reload nicht mit dem Bau"
         );
         if (R) teilSim("Reload mitten im Sturm", jetztA, R);
+        // (i) Selbsttest — erst hier, nach dem letzten Vergleich des Lebens (sein Werk lebt nur bei A, siehe oben)
+        const alt = await kiTat(true);
+        check(
+            "(i) Selbsttest: das alte Tor (nur \"human\") hält die Tat der KI zurück → B trägt sie nicht",
+            alt.a.ki.length === 1 && alt.b.ki === 0,
+            `Werke der KI bei B ${alt.b.ki}/${alt.a.ki.length}`
+        );
+        // (f) Selbsttest der Werk-Linse: das Werk des alten Tors (nur bei A, über einem Takt des Rasters gebaut und abgerissen) macht
+        // das Gedächtnis der Werke ROT beim Namen — und das Leben, wie es in CI fiel
+        if (R) {
+            const [wA, wB] = await moment(g.a);
+            const [wGleich, wSatz] = werkUrteil(wA, wB);
+            check(
+                "(f) Selbsttest: ein Werk nur bei A (das alte Tor der Tat) macht das Gedächtnis der Werke ROT beim Namen",
+                !wGleich && /Täter/.test(wSatz),
+                `${wSatz} · leben ${gleichIn(wA, wB)("leben") ? "gleich" : "VERSCHIEDEN — " + lebenBefund(wA, wB).slice(0, 400)}` + (wGleich ? " — GRÜN, die Linse ist blind" : "")
+            );
+        }
         // der Selbsttest: B wendet jede Akt-Nachricht doppelt an und nimmt den Samen des Baus um eins verschoben — die Edits UND die
         // Bauten des Abdrucks fallen ROT (die Probe sieht beide); (f) B nimmt keine Uhr mehr, A springt in den Zug vor einem Sturm
         // drei Züge voraus — nie in den von B, der Zug ROT. Bis ci-wackler-zensus einen voraus: lag der Sturm im nächsten Zug, landete

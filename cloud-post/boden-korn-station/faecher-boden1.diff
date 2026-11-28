@@ -1,0 +1,70 @@
+--- a/vision/pruefer/faecher.cjs
++++ b/vision/pruefer/faecher.cjs
+@@ -123,6 +123,24 @@
+     return { profil, punkt: fang("const lagePunkt = (k) =>", "\n", a), orte: fang("for (let k0 = 0; orte.length < 50 && k0 < 2000;", "\n", a) };
+ }
+ 
++// DAS BODEN-GESETZ DER STATION (k2-planet.js, Leiter planet.relief.boden S1, im Rumpf der Planet-Probe, kein `seite`-Export): am
++// Wortlaut aus der Station gefasst — der Boden am Punkt (`BODEN_AN`: Hang, Schutt, Fels/Stoff, Feuchte, Moos, Klasse), die Zufallsposen
++// der Saat 12345 (±1 500 m, 3 × 3 Punkte à 10 m; der Fächer nimmt den MITTELPUNKT jeder Pose und reicht den Strom der Saat bis 100
++// Posen, die Station misst die ersten 30) und die Pose der Sprosse (`HANG_BLICK`: Ego 1,7 m, Blick auf den nächsten Hang). Ändert
++// die Station den Wortlaut, wirft der Fächer
++function bodenGesetz() {
++    const t = fs.readFileSync(path.join(STATIONEN, "k2-planet.js"), "utf8");
++    const fn = (name) => {
++        const a = t.indexOf("const " + name + " = ");
++        const e = a < 0 ? -1 : t.indexOf("\n                };\n", a);
++        if (a < 0 || e < 0) throw new Error("Gesetz fehlt: k2-planet.js trägt " + name + " im Boden nicht mehr");
++        return t.slice(a + ("const " + name + " = ").length, e + 18).trim();
++    };
++    const s = t.indexOf("let sz = 12345;"), g = t.indexOf("for (let p = 0; p < (Number(u1.posen) || 30); p++)", s);
++    if (s < 0 || g < 0) throw new Error("Gesetz fehlt: k2-planet.js trägt die Zufallsposen der Saat 12345 (sz, ORTE) im Boden nicht mehr");
++    return { an: fn("BODEN_AN"), blick: fn("HANG_BLICK"), posen: t.slice(s, t.indexOf("\n", g)).replace("(Number(u1.posen) || 30)", "N") };
++}
++
+ // JE SPROSSE: der Messort, die Zeile des Gesetzes, der Rumpf in der Seite (r = Welt, T = THREE) → { saat, posen: [{ pose, wort }], lage }
+ const SPROSSEN = {
+     // der Ortsrand: die Station nimmt von 8 Richtungen die mit den meisten Häusern im Kegel der Kamera (k2-mensch-stadt.js:224–236,
+@@ -404,6 +422,33 @@
+             );
+         },
+     },
++    // der Boden am Hang: die Station misst 30 Zufallsposen der Saat 12345 (Schutt am Steilen, Moos im Feuchten, k2-planet.js BODEN_AN)
++    // und schießt EIN Bild „Ego an der Wiese, Blick auf den nächsten Hang“ (HANG_BLICK) — der Fächer stellt das Ego an den Mittelpunkt
++    // jeder der ersten 100 Posen desselben Stroms und blickt mit DERSELBEN Formel auf ihren nächsten Hang; die Klasse (Schutt · Moos ·
++    // Fels · Erde) sagt BODEN_AN am Blickziel und reist in die Akte (der Anteil je Klasse gegen den Foto-Korpus). Die Frage ist die
++    // der Eichung 2AFC × paar (paare.cjs FRAGE)
++    "planet.relief.boden#1": {
++        ort: "wiese",
++        gesetz: "meisterkarte-quelle/punkte/stationen/k2-planet.js:2951",
++        faecher: "die ersten 100 Zufallsposen der Saat 12345 (±1 500 m), Ego 1,7 m am Mittelpunkt, Blick 0,5 m über den nächsten Hang (≥ 20° im ersten Ring bis 400 m, sonst der steilste ≥ 10°)",
++        ordner: "planet.relief.boden.1-b1",
++        uhren: [0.5],
++        mehr: {},
++        wahl: 0,
++        motiv: (a) => AN_DER_POSE(a) && GRUEN(a),
++        rumpf: () => {
++            const G = bodenGesetz();
++            return (
++                SAAT +
++                "const N = 100, BODEN_AN = " + G.an + ", HANG_BLICK = " + G.blick + ";" + G.posen +
++                "const posen = [], je = {}; let ohne = 0;" +
++                "for (let p = 0; p < N; p++) { const m = ORTE[p * 9 + 4], b = HANG_BLICK(r, m[0], m[1]); if (!b) { ohne++; continue; }" +
++                " const w = await BODEN_AN(r, T, { ort: [b.ort[0], b.ort[1], p] }, {}), klasse = w.schutt > 0.5 ? 'Schutt' : w.moos ? 'Moos' : w.stoff > 0.5 ? 'Fels' : 'Erde'; je[klasse] = (je[klasse] || 0) + 1;" +
++                " posen.push({ d: b.d, klasse, pose: b.pose, wort: 'Pose ' + p + ' (' + m[0] + '/' + m[1] + '): Ego 1,7 m, Blick auf den nächsten Hang ' + b.d + ' m (' + w.hang + '°, Schutt ' + w.schutt + ', Stoff ' + w.stoff + ', Feuchte ' + w.feucht + ', Moos ' + w.moos + ', ' + w.klasse + ')' }); }" +
++                "return { saat, posen, lage: N + ' Zufallsposen der Saat 12345, ' + posen.length + ' mit Hang ≥ 10° in 400 m (' + JSON.stringify(je) + '), ohne Hang ' + ohne };"
++            );
++        },
++    },
+     // die Glut: die Station setzt ihre Lava-Tat selbst und schießt am Spawn (k2-planet.js:1228); das Gesetz der Welt stellt keinen
+     // Vulkan (kein Schlüssel am Planet-Faden, kein Leser eines Ausbruchs) — Adressen der Glut sind nur die Lava-Zellen, die die Welt trägt
+     "planet.geologie.vulkan#1": {
+@@ -699,6 +744,8 @@
+         rumpf = "FEHLER " + e.message;
+     }
+     t("die Rümpfe tragen die Seiten-Funktionen der Stationen und sind gültiger Text" + (rumpf.startsWith("FEHLER") ? " — " + rumpf : ""), !rumpf.startsWith("FEHLER") && /_bewohnerSiedlungen/.test(rumpf) && /aus\.alle/.test(rumpf) && /i < 16/.test(rumpf));
++    const boden = rumpf.startsWith("FEHLER") ? "" : SPROSSEN["planet.relief.boden#1"].rumpf();
++    t("der Boden am Hang liest das Gesetz der Station: BODEN_AN, HANG_BLICK und den Strom der Saat 12345 (100 Posen), nie eine eigene Formel", /BODEN_AN = async \(r, T, a, mit\) =>/.test(boden) && /HANG_BLICK = \(r, x, z\) =>/.test(boden) && /let sz = 12345;/.test(boden) && /p < N; p\+\+/.test(boden) && !/u1\.posen/.test(boden));
+     let wurf = "";
+     try {
+         seiteVon("k2-mensch-stadt.js", "mensch.stadt.groesse", "GIBTESNICHT");

@@ -1,4 +1,68 @@
-# Stand-Blatt kunst-am-leib (Bahn der Welle 27.11., Sprosse `karte2.mensch.sport.kunst#1`) — ZWISCHENSTAND
+# Stand-Blatt kunst-am-leib (Bahn der Welle 27.11., Sprosse `karte2.mensch.sport.kunst#1`, dann `#2`) — ZWISCHENSTAND
+
+## Wartezimmer nach Kopf 3 (033ff310 auf main b3740dd5)
+
+- Kopf 3 geschoben (Post 18:10 trägt er: das Standbild 20 von 20 Phasen je Kunst nach Takayasu 2019); die GPU-Probe läuft, dann setzt
+  der Koordinator Kandidat 2 und fährt das Blatt an der OMEN.
+- Post an alle 20:57 — „ohne Auftrag?“: kunst#1 wartet nur auf den Koordinator → **ohne Auftrag seit 20:03 (Uhr der Wolke)**; ich nehme
+  die nächste rote Sprosse MEINER Leiter: `karte2.mensch.sport.kunst#2` „die Güte des Werks liest die Hand“ (R² Werk-Güte ↔
+  Können-Profil ≥ 0,7 an 10 Werkstücken; Täter am main: schmiede-core `gueteFaktor` liest Rezept und Prägung, nie die Hand —
+  schmiede-core.js:4430). WIP über dem Vorprüf-Kopf, nie ein Rebase unter ihm (Post 19:50). Die Kreatur-Regel (Stoppuhr je Teil)
+  trifft diese Bahn nicht: sie lässt keine Kreatur-Linse wachsen.
+- GPU-Probe Kopf 3 (033ff310, radeon-890m, 21:10, Lauf 46060329667): GRÜN, probeUrteil GRÜN — gate:stand-takt 218 s ·
+  gate:mensch-zuege 34 s · bild:dorf@0.5 86 s (ABNAHME GRÜN, Inhalt bauSatz 17,0 %) · gate:webgl-probe 56 s. Kopf 3 wartet auf den
+  Koordinator (Kandidat 2 setzen, Blatt an der OMEN).
+
+## kunst#2 — das Werkstück trägt die Hand: Kopf 5 fc0958fb auf main b3740dd5 (trägt Kopf 4 adc95977 des Koordinators)
+
+- **Kopf 7 auf main b56b51f0 (Post 00:27, z811 + z812 darin):** der Zweig über adc95977 mischt den main zweimal (23b593ac, dann
+  b56b51f0 — Konflikte nur in Linse und Blatt: der Selbsttest-Satz 73 ↔ 75, die Vereinigung trägt beide). Am Baum des Kopfs:
+  check:statik GANZ 512 s · format:check · gate:daten-contract · gate:welt-boot · gate:fachwerk-contract · gate:asset-contract ·
+  gate:koerper-kern 75/75 (HAND 12 Stücke 6/6, Güte 0,8643 ↔ 0,9191, R² 1,000) — alle Exit 0; Kreatur mit Stoppuhr 859 · 757 ·
+  667 s, je SELBST-TEST GRÜN. merge-tree Exit 0 gegen main 27d2f60e (z813), w28-tier-bewegung-3, w28-sprache-dialekt-2b,
+  w28-wurf-mit-luft-3, sprache-dialekt, werk-am-ort-2-kopf5; gegen `werk-am-ort-2` Exit 1 nur in `.github/workflows/check.yml` und `spec/ci/ci-zeiten.json` —
+  dieser Zweig mischt schon mit main selbst nicht (Exit 1 ohne meinen Kopf), meine Dateien sind frei.
+- **Post 00:57 gelesen:** nach Kopf 7 die Fächer `mensch.leib.verschieden#1` · `mensch.leib.tracht#1` · `mensch.leib.ausdruck#1`
+  (Vorlage kunst#1: Fach, Station liest das Prüfer-Urteil, Klassen-Zeile P — die drei Zeilen stehen schon in der Klassen-Datei).
+
+- **Post 23:45:** Kopf 6 a1a2cff6 mischt nicht mit dem Stempel `w28-kunst-am-leib-4` (Kopf 4 adc95977): mein flacher Kopf stammt nicht
+  von adc95977 ab, beide schreiben dieselben Zeilen der Linse und des Blatts über b3740dd5 — Batterie abgebrochen (nicht neu
+  anstoßen). Kopf 7 kommt auf dem neuen main (z811: frist-puls-1 + kunst-am-leib-4): der Zweig mit der Geschichte über adc95977
+  (`kunst-am-leib-wip6`) mischt den neuen main, die Linse ist die Vereinigung beider Stände, dann check:statik GANZ, format:check,
+  gate:daten-contract, gate:welt-boot, merge-tree gegen main und jeden Stempel vor dem Zug, PROBE-TAG.
+- GPU-Proben Kopf 5: fc0958fb omen-gtx1060 GRÜN 2341 s (pruefbuehne-licht 59 · weltbild-frost:echt 163 · studio-begehen 261 ·
+  stand-takt 271 · webgl-probe 56 s), 07746140 radeon-890m GRÜN 880 s — probeUrteil je GRÜN.
+
+- **Kopf 6 a1a2cff6 (Post 22:38: Kopf 5 ROT an Prettier, eigenes Rot; geschoben, PROBE-TAG OK, merge-tree Exit 0 gegen main, werk-am-ort-2, sprache-dialekt):** `stamm/siedlung-bewohner.js` ab Zeile 1744 — meine Zeile `guete:` im
+  Zensus, `npx prettier --write` ändert nur sie (3 Zeilen). Warum lokal grün: `check:statik` trägt kein `format:check` — Prettier
+  steht nur im Puls; ich fahre `npm run format:check` ab hier vor jedem Schub (Exit 0, 113 Teile). check:statik GANZ Exit 0
+  (zuerst ROT an der ZITAT-WAND: mein Blatt nannte eine Datei der Punkte-Maschine beim Namen — umformuliert). Die Klassen-Zeile
+  steht nun auch als dritter Diff neben dem Kandidaten 2: `cloud-post/kunst-am-leib-station/auge-klasse.diff` (byte-gleich `auge-klasse-3.diff`).
+  kunst#2 trägt kein auge, also keine Klasse. Die Probe-Liste ohne Leerzeichen nach den Kommas (Regel 22:11).
+
+- Post 21:27 (Kopf 4 adc95977 heilt den Daten-Vertrag v7, kein eigener Kopf 4) und 21:41 (die Klassen-Zeile gehört in jeden
+  Kandidaten) gelesen: kunst#2 steht auf adc95977, Kandidat 3 trägt `auge-klasse-3.diff`, am Baum von punkte-maschine die Register-Liste (`liste`) Exit 0.
+- Vor dem Schub am Baum des Kopfs: check:statik · gate:welt-boot · gate:daten-contract (koerper 94d4f918958c byte-treu) ·
+  gate:fachwerk-contract · gate:asset-contract · gate:koerper-kern (75/75) · gate:betriebsgesetz — alle Exit 0; Kreatur-Linse mit
+  Stoppuhr 1010 · 808 · 663 s, je SELBST-TEST GRÜN (54 Täter); merge-tree Exit 0 gegen main, werk-am-ort-2 173e764b und
+  sprache-dialekt 3c73df4a (beide fassen stamm/siedlung-bewohner.js an). PROBE-TAG OK; die Probe-Liste trägt, was der Zug für
+  stamm/siedlung-bewohner.js verlangt (pruefbuehne-licht, weltbild-frost:echt, studio-begehen) und gate:stand-takt.
+
+- **Geschnitten (EIN Chokepoint je Gesetz, additiv):** schmiede `gueteAnteil(rezeptId, ov, hand)` — die EINE Güte eines
+  Schmiede-Geräts mal 1 − `handFehler(hand)`; das Band: der Fehler fällt wie 1/Können (das Potenzgesetz der Übung, Newell &
+  Rosenbloom 1981, ANGENOMMEN: Fehler wie Zeit), `HAND.gut` 0,052 am Band der Guten — Birkmeyer et al. 2013 (N Engl J Med
+  369:1434: unterstes ↔ oberstes Quartil des Könnens 14,5 % ↔ 5,2 % Komplikationen; 14,5 % trifft k 0,36). Ohne Hand byte-gleich
+  (23 Rezepte, 0 Abweichungen in gueteAnteil und gueteFaktor). koerper `bestandHalter` trägt die Hand des Werks (`koennen`),
+  `stoffstromFassen` schreibt sie in jedes Stück (`K.stueck` je Ofen → `K.hand` in der Reihe der Ausgabe), ohne Hand bricht es laut.
+  Der Wirt bindet die Hand an den Lebenslauf (`_bestandAnlegen`: `koennen` = uebung.handwerk, die Rate liest sie — EINE Naht),
+  gibt sie mit dem Werkzeug (`b.werkzeugHand`), der Zensus trägt je Stück Hand und Güte (`stuecke`).
+- **Gemessen:** Linse gate:koerper-kern D11 (Familie Stoffstrom): vorher (Kerne von main) ROT „0 Stücke in 12 Händen“, nachher 12
+  Stücke (Lehrling 0,55: 6 · Meister 1,4: 6), Güte 0,8643 ↔ 0,9191, R² Güte ↔ Hand 1,000; Selbsttest 75 von 75 (zwei neue Täter:
+  „die Güte ohne die Hand“, „das Stück vergisst seinen Schmied“). Station-Kandidat 3 (k2-mensch-sport-3.diff, BEGRUENDUNG.txt):
+  headless 12 Stücke R² 1,000; eine Hand R² 0 (ROT, Täter genannt); an main leser.
+- **Ehrlich offen:** stadt-voll trägt keine Schmiede, ein Dorf EINE — der Messort mit ≥ 2 Händen ist Wahl des Koordinators. Die
+  Güte in der Hand eines Bewohners liest heute nur der Zensus (kein Bewohner schlägt mit seinem Werkzeug); das Schmieden des Spielers
+  liest keine Hand.
 
 ## Wartezimmer (27.11., nach Kopf 2)
 

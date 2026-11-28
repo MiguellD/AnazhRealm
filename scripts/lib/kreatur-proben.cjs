@@ -1861,15 +1861,9 @@ async function kreaturProben(r, T, opts) {
                         // der Ziegel (Leib oder Feld, `_kzLeib`), der Tier-Satz (`nahLeiber`), der Blick des Bilds (`_ruheImBild`) —
                         // bis hier galt am Auge N die Wahl von H (die Flucht jenseits ANALOG_NAH_M von H stand als Kapseln vor N).
                         // S1 (≥ 200 px, Kopf unten) zählt N: die Stufe je Tier, wie sie zeichnet; danach wählt H wieder.
-                        const stufenAm = () => {
-                            const au = r._lodAuge();
-                            r._tickKreaturZiegel(au, r._feldGrenzen(false));
-                            r._tickTierSatz(au);
-                            r._ruheImBild();
-                            // die Sicht der Leiber (`_leibSicht`, im Spiel derselbe Takt in `updateCreatures`): ein Leib, der
-                            // eben aus dem Feld kam, zeichnet erst mit ihr — sonst stand am Bild N die schwindende Kapsel allein
-                            for (const c of r.state.creatures) if (c && c.userData) r._leibSicht(c, r.isInFrustum(c), au);
-                        };
+                        // (die EINE Wahl am Auge: `_leiberAmAuge`, Ziegel · Satz · Blick des Bilds · Sicht je Leib — derselbe Ruf
+                        // wie jeder Schuss der Aufnahme, `__nahFolgt`; ein Leib, der eben aus dem Feld kam, zeichnet erst mit der Sicht)
+                        const stufenAm = () => r._leiberAmAuge();
                         const lp = leit.position;
                         const [ex, ez] = [H.x - lp.x, H.z - lp.z];
                         const el = Math.hypot(ex, ez) || 1;

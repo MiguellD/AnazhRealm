@@ -87,7 +87,8 @@ class AnazhRealm_wasser_hydro {
     // je Sekunde der Welt-Uhr (`_pegelUhr`: der Bach fällt nach dem Regen, die Dürre senkt ihn, auch wenn das Wetter ruht).
     // DER BRAND IM EINZUGSGEBIET (same.kopplung.stoerung#3, gelaende-core `pegelBrand`): jede Tat „brand“ (das Gedächtnis des
     // Brands, es reist im Stand) ist eine verbrannte Zelle des Lebens, gewogen mit ihrer Asche (`_sukzession`: dieselbe Uhr, mit der
-    // Gras, Busch und Wald zurückkehren) — der Kern führt sie stromab durch das Netz, der Regen ihrer Flüsse fließt stärker ab.
+    // Gras, Busch und Wald zurückkehren) — der Kern führt sie stromab durch das Netz (je Knoten der verbrannte Anteil b), der
+    // Regen der Brandfläche fließt nach ihrem kleinen Anfangsverlust ab (CN 95 gegen die Wiese CN 58, `ABFLUSS_CN`).
     // Neu gerechnet, wenn sich die Taten oder eine Stufe ihrer Asche ändern, nie je Bild.
     _pegelTafel() {
         const K = globalThis.__gelaendeCore;
@@ -319,15 +320,22 @@ class AnazhRealm_wasser_hydro {
 
     // DAS MITTEL DES KLIMAS (wetter.K3, der Grund des Pegels): der Regen der Front (`_wetterAmOrt`, das Wort der Welt über ihre
     // Wetter-Tafel, sein Feld `WEATHER_FIELD`) über `REGEN_KLIMA_ZUEGE` Züge der Welt-Uhr — eine Zahl je Welt (Saat und Gesetz).
+    // Aus denselben Zügen das Mittel des abfließenden Regens (`abfluss`, gelaende-core `pegelKlima`): der Fluss führt im Mittel,
+    // was sein Klima abfließen lässt — die Lage trägt es (`abflussMittel`), der Lauf bezieht den Hub darauf.
     _regenMittel() {
         const wm = this.state.worldMeta || null;
         const c = this._regenKlima;
         if (c && c.wm === wm) return c.mittel;
         let s = 0;
-        const N = AnazhRealm.REGEN_KLIMA_ZUEGE;
-        for (let k = 0; k < N; k++)
-            s += AnazhRealm.WEATHER_FIELD[this._wetterAmOrt(0, 0, k * AnazhRealm.WETTER_ZUG_SEK)].rain;
-        this._regenKlima = { wm, mittel: s / N };
+        const [N, Z] = [AnazhRealm.REGEN_KLIMA_ZUEGE, AnazhRealm.WETTER_ZUG_SEK];
+        const S = [];
+        for (let k = 0; k < N; k++) {
+            const r = AnazhRealm.WEATHER_FIELD[this._wetterAmOrt(0, 0, k * Z)].rain;
+            s += r;
+            S.push(k * Z, r, (k + 1) * Z, r);
+        }
+        const abfluss = globalThis.__gelaendeCore.pegelKlima(S, this._kalender().normS);
+        this._regenKlima = { wm, mittel: s / N, abfluss };
         return s / N;
     }
 
@@ -341,9 +349,10 @@ class AnazhRealm_wasser_hydro {
     }
 
     // Die Marke des Pegels am Chunk (cx, cz) — sein Platten-Schlüssel und die Probe seines Auftrags: der Hub der Tafel T in jeder
-    // Lag-Klasse, deren Wasser den Chunk erreicht (gelaende-core `pegelKlassen`, je Chunk und Region gemerkt), über den Höhen, die
-    // sein Wasser tragen kann (die Makro-Höhe seiner Mitte ± PEGEL_RAND_M); "" wo nichts steigt oder fällt und wo kein Lauf und kein
-    // See den Chunk erreicht (der Schlüssel bleibt).
+    // Lag-Klasse, deren Wasser den Chunk erreicht (gelaende-core `pegelKlassen`, je Chunk und Region gemerkt), über den Höhen, an
+    // denen sein Wasser den Hub liest (`band` der Klassen: die Spiegel seiner Segmente, die Höhen seiner Seen — über der Krone steigt
+    // jede Reihe der Tafel in eigenen Stufen, eine Marke über Höhen ohne Wasser fiele mit jeder); "" wo nichts steigt oder fällt und
+    // wo kein Lauf und kein See den Chunk erreicht (der Schlüssel bleibt).
     // DIE GEZEIT TRÄGT DIESELBE MARKE (planet.wasser.gezeiten): ein Chunk am Meer trägt die Stufe des Meers (`g` + k), ein Chunk
     // im Watt, sobald die Flut seine niedrigste Schwelle erreicht — der Platten-Schlüssel hält je Stufe die Bytes ihres Spiegels,
     // ein Auftrag, unter dem die Stufe wechselte, verfällt, und der Takt baut genau die Chunks, deren Stufe wechselt.
@@ -428,11 +437,10 @@ class AnazhRealm_wasser_hydro {
     }
     _pegelMarkeVon(T, cx, cz) {
         if (!T) return "";
-        // DIE MERKER TRAGEN DEN STAND DES ERDBAUS (w28-mp-boden): die Höhe der Chunk-Mitte liest das Gelände SAMT Erdbau der Orte
-        // (`_terrainMacroSurfaceY`) — legt ein Ort seinen Erdbau, fallen Marke und Ort (bis dahin hielt die Seite, die vorher
-        // fragte, die alte Höhe, bis ihre Hydro-Region wechselte)
+        // DIE MERKER TRAGEN DEN STAND DES ERDBAUS (w28-mp-boden): legt ein Ort seinen Erdbau, fallen Marke und Ort (die Region
+        // seines Bodens baut neu)
         const erd = this._erdbauStand | 0;
-        if (this._pegelMarkenErd !== erd) [this._pegelMarken, this._pegelMarkenErd] = [null, erd];
+        if (this._pegelMarkenErd !== erd) [this._pegelMarken, this._pegelAue, this._pegelMarkenErd] = [null, null, erd];
         if (!this._pegelMarken) this._pegelMarken = new WeakMap();
         let je = this._pegelMarken.get(T);
         if (!je) this._pegelMarken.set(T, (je = new Map()));
@@ -450,31 +458,43 @@ class AnazhRealm_wasser_hydro {
         ].map(([x, z]) => K.hydroRegion(L, x, z));
         if (!this._pegelOrte) this._pegelOrte = new Map();
         let o = this._pegelOrte.get(key);
-        if (!o || o.erd !== erd || o.reg.some((h, i) => h !== reg[i])) {
-            const y = this._terrainMacroSurfaceY((cx + 0.5) * span, (cz + 0.5) * span, false);
-            this._pegelOrte.set(key, (o = { reg, erd, y, klassen: K.pegelKlassen(L, x0, z0, x1, z1) }));
-        }
-        const R = AnazhRealm.PEGEL_RAND_M;
+        if (!o || o.erd !== erd || o.reg.some((h, i) => h !== reg[i]))
+            this._pegelOrte.set(key, (o = { reg, erd, klassen: K.pegelKlassen(L, x0, z0, x1, z1) }));
+        // die Reihen der Tafel, zwischen denen der Hub am Band [unten, oben] liest (`pegelHub` mischt die zwei Nachbarn)
         const n = T.a.length;
-        const i0 = Math.max(0, Math.floor((o.y - R - T.y0) / T.dy));
-        const i1 = Math.min(n - 1, Math.ceil((o.y + R - T.y0) / T.dy));
+        const reihen = (b) => [
+            Math.max(0, Math.min(n - 1, Math.floor((b[0] - T.y0) / T.dy))),
+            Math.max(0, Math.min(n - 1, Math.ceil((b[1] - T.y0) / T.dy))),
+        ];
         const P = { pegel: T };
-        let h = 0;
-        for (const j of o.klassen)
+        let [h, aue] = [0, false];
+        for (const j of o.klassen) {
+            const [i0, i1] = reihen(o.klassen.band.get(j));
             for (let i = i0; i <= i1; i++) {
                 const v = K.pegelHub(P, T.y0 + i * T.dy, j);
                 if (v !== 0) h = (Math.imul(h ^ (i + 512 * j), 31) + Math.round(v * 100)) | 0;
+                if (v > T.krone) aue = true;
             }
+        }
         // der Brand im Einzugsgebiet (`pegelBrand`): ein Segment, dessen Knoten brennt, trägt seine eigene Reihe
         if (T.brand)
             for (const [j, kn] of o.klassen.knoten)
-                if (T.brand.has(kn))
+                if (T.brand.has(kn)) {
+                    const [i0, i1] = reihen(o.klassen.band.get(j + "|" + kn));
                     for (let i = i0; i <= i1; i++) {
                         const v = K.pegelHub(P, T.y0 + i * T.dy, j, kn);
                         h = (Math.imul(h ^ (i + 512 * j + 7), 31) + Math.round(v * 100)) | 0;
+                        if (v > T.krone) aue = true;
                     }
+                }
         const marke = h ? (h >>> 0).toString(36) : "";
         je.set(key, marke);
+        // die Flut erreicht den Chunk (ein Hub an seinem Wasser über der Krone): auch der trockene baut neu (`_pegelTakt`)
+        if (aue) {
+            if (!this._pegelAue) this._pegelAue = new WeakMap();
+            if (!this._pegelAue.has(T)) this._pegelAue.set(T, new Set());
+            this._pegelAue.get(T).add(key);
+        }
         return marke;
     }
 
@@ -512,8 +532,10 @@ class AnazhRealm_wasser_hydro {
             const w = e.waterCells;
             if (!w || !w.length) return false;
             if (e._nass === undefined) e._nass = w.includes(WATER);
-            if (!e._nass) return false;
-            return this._pegelMarkeVon(alt, cx, cz) !== this._pegelMarkeVon(neu, cx, cz);
+            const wechselt = this._pegelMarkeVon(alt, cx, cz) !== this._pegelMarkeVon(neu, cx, cz);
+            // die Flut tritt auf die Aue (`auenFlut`): den trockenen Chunk baut sie neu, wo ein Hub an seinem Wasser über der Krone steht
+            const flut = (T) => !!(T && T.flut && this._pegelAue && this._pegelAue.get(T)?.has(key));
+            return wechselt && (e._nass || flut(alt) || flut(neu));
         };
         if (st.voxelChunks && st.voxelChunks.size) {
             if (!st.dirtyVoxelChunks) st.dirtyVoxelChunks = new Set();
@@ -1199,8 +1221,9 @@ class AnazhRealm_wasser_hydro {
             const [ax, az] = [x0 + ux * (d - A.landM), z0 + uz * (d - A.landM)];
             const F = this._anlegerStreich(ax, az, ux, uz);
             const hs = VC.bootWelle(F);
-            const ov = { welle: hs, last: A.last };
-            const R = VC.bootRumpf(ov);
+            const ov0 = { welle: hs, last: A.last };
+            const R = VC.bootRumpf(ov0);
+            const ov = F >= A.segelL * R.L ? Object.assign({ segel: 1 }, ov0) : ov0; // das Segel auf weitem Wasser
             const traegt = (x, z) => {
                 const q = saeule(x, z);
                 return q && q.s - q.g >= R.Tleer + R.kiel + A.luftM ? q : null;
@@ -1326,9 +1349,6 @@ _stammZonen(AnazhRealm, [AnazhRealm_wasser_hydro]);
 AnazhRealm._flussTiefe = function (p) {
     return globalThis.__gelaendeCore.flussTiefe(AnazhRealm.HYDROSPHERE, p);
 };
-// DER RAND DER PEGEL-MARKE (`_pegelMarke`): so weit über und unter der Makro-Höhe seiner Mitte kann das Wasser eines Chunks stehen
-// (die Kante von 43,2 m an einem Hang, ein See über seinem Becken).
-AnazhRealm.PEGEL_RAND_M = 40;
 // DAS KLIMA DES REGENS (`_regenMittel`): so viele Züge der Front mittelt die Welt (die Wellen der Front kehren in 230–2 800 s der
 // Welt-Uhr wieder, 2 000 Züge sind 67 Stunden).
 AnazhRealm.REGEN_KLIMA_ZUEGE = 2000;
@@ -1336,8 +1356,11 @@ AnazhRealm.REGEN_KLIMA_ZUEGE = 2000;
 // vehicle-core `boot`), die Suche nach dem Ufer (16 Richtungen, je 3 m bis 200 m vom Ort, der Steg liegt 1 m auf dem Ufer und
 // reicht höchstens 6 Felder hinaus), die Streichlänge (7 Strahlen im Fächer ±30°, je 50 m bis 10 km), die Luft unter dem Kiel
 // (0,15 m), der Fender zwischen Steg und Boot (0,25 m), die Last des Boots (zwei Sitzende, 160 kg) und die Schwelle, ab der das
-// Boot dem Spiegel folgt (5 mm — die Stufe des Pegels ist 1 cm, gelaende-core `PEGEL.stufe`).
+// Boot dem Spiegel folgt (5 mm — die Stufe des Pegels ist 1 cm, gelaende-core `PEGEL.stufe`). DAS SEGEL (same.physik.flug#3): reicht
+// die Streichlänge vor dem Steg `segelL` Bootslängen weit (Raum zum Kreuzen: je Schlag ein Vielfaches der Länge, ANNAHME), trägt das
+// Boot Mast, Spritsegel und Seitenschwerter (vehicle-core `bootSegel`) — auf dem Teich bleibt es das Ruderboot.
 AnazhRealm.ANLEGER = Object.freeze({
+    segelL: 20,
     steg: "steg_stegfeld",
     boot: "fahrzeug_boot",
     richtungen: 16,

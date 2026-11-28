@@ -25,7 +25,7 @@ const {
     fehlerStapel,
     taeterFaelle,
 } = require("./lib/welt-boot.cjs");
-const { stadtBreite, breiteUrteil, breiteOhne, breiteSelbsttest, BREITE } = require("./lib/stadt-proben.cjs");
+const { stadtBreite, breiteUrteil, breiteOhne, breiteSelbsttest, BREITE, stadtStand, standUrteil, standSelbsttest, STAND } = require("./lib/stadt-proben.cjs"); // prettier-ignore
 const { verkehrsnetzProben } = require("./lib/verkehrsnetz-proben.cjs");
 const { losProben, huelleProben, wurfProben, brandwandProben, kernMutante, kernAusText } = require("./lib/los-proben.cjs");
 const {
@@ -53,6 +53,14 @@ const {
 // (`_bewohnerSiedlungen`) mit Plan, Name und Region. Rückgabe: die fehlenden beim Namen (leer: GRÜN).
 const nachbarLuecke = (n) =>
     !n || !Array.isArray(n.gesetz) ? ["kein Zensus der Nachbarn"] : n.gesetz.filter((k) => !n.register.some((e) => e.k === k && e.name && e.region)); // prettier-ignore
+// C-K5 DER FEHLENDE LAUF BEIM NAMEN (stadt-zehntausend): ein Lauf der Probe, der nicht zurückkehrte (die Marke brach: der Zug hing,
+// `bruch` trägt seinen Zustand „DER ZUG {…}") oder ohne erstes Haus endete (`lauf` → null), fehlt im Urteil — es nennt ihn samt dem
+// Zug, statt an seinem Feld abzustürzen. Bis hier fiel das Urteil nach dem ROT an `k5.strecke13.vorrat` (TypeError, CI 140623402917).
+// Rückgabe: null (alle da) oder der Satz der Lücke.
+const k5Luecke = (k5, namen, bruch) => {
+    const fehlt = namen.filter((k) => !(k5 && k5[k]));
+    return fehlt.length ? `es fehlt der Lauf ${fehlt.join(", ")} — ${bruch || "er endete ohne erstes Haus"}` : null;
+};
 const goldenDir = path.join(root, "spec/asset-contract/v6/golden");
 const goldenFile = path.join(goldenDir, "siedlung.json");
 // das Golden der Lose (los-huelle, `huelleProben`): je Fall je Haus eine Zeile [Same, x, z, phi, Hülle]
@@ -1862,6 +1870,13 @@ hauptLauf(async () => {
         check("Selbst-Test 11o: jeder Nachbar mit Name und Region → GRÜN", nachbarLuecke(voll).length === 0);
         const ohneName = { gesetz: ["3,2"], register: [{ k: "3,2", name: null, region: "nordisch" }] };
         check("Selbst-Test 11p: ein Nachbar ohne Namen ist ROT", nachbarLuecke(ohneName).join() === "3,2");
+        // C-K5: der Zug, der hing — das Urteil nennt den fehlenden Lauf samt dem Zug, nie ein TypeError
+        const zugHing = 'C-K5: Error: DER ZUG {"pending":"-6,-6"}';
+        check(
+            "Selbst-Test 11q: ein C-K5-Lauf, der nicht zurückkehrte, steht beim Namen samt Zug",
+            k5Luecke({ teleport300: {} }, ["teleport300", "strecke13"], zugHing) === `es fehlt der Lauf strecke13 — ${zugHing}` &&
+                k5Luecke({ strecke13: {} }, ["strecke13"], zugHing) === null
+        );
         // das L-Haus: der Grund unter der leeren Ecke der obb (x > 0, z < 0) liegt 1 m tiefer — unter den Wänden (`grund.boxen`)
         // steht es eben (Sockel 0), die obb allein läse die Ecke als Sockel 1
         // das Grund-Datum des Kerns (`grundVon`, keine Hüllen-Zeile): seine Boxen im Rahmen des Hauses
@@ -2279,6 +2294,7 @@ hauptLauf(async () => {
         // fallen beim Namen
         check("Selbst-Test C2", !dorfZugAmOrt({ still: 1 }) && dorfZugAmOrt({ ohne: 1, still: 1 }));
         errs.push(...breiteSelbsttest(taeterFaelle, breiteRollen)); // die Breite der Stadt: der grüne Gang und seine Täter
+        errs.push(...standSelbsttest(taeterFaelle)); // der Stand der Stadt: die Kachel mit Plan, an deren Losen nichts steht
         huelleProben(FC, check, { kernText: kernText(), golden: loseGolden, taeter: true }); // die Hülle vor dem Schnitt fällt beim Namen
         wurfProben(check, { kernText: kernText(), taeter: true }); // der EINE Strom der Lose (vor Welle SAMEN) fällt beim Los
         brandwandProben(FC, check, { kernText: kernText(), taeter: true }); // die Brandwand an dims (vor los-huelle-2) fällt beim Namen
@@ -2314,6 +2330,8 @@ hauptLauf(async () => {
             "ohne Glas-Zweig": /Fenster 0 .*: 0 Quellen in `_leuchtQuellen`/,
             "Glas auf dem Platz": /Normale auf einem Platz des Pools \(`_leuchtWahl`\)/,
             "ohne Lambert": /Zellen hinter der Wand tragen Licht \(`_lichtKarteFleck`\)/,
+            "Schub ohne Schritt": /die geschobene Karte ist nicht die ganz gebaute: [1-9]\d* Zellen.*\(`_lichtKarteSchub`\)/,
+            "Fleck ohne Rest": /ein Takt des Unterschieds lädt \d+ Zellen hoch, erlaubt \d+ \(`_lichtKarteFleck` ohne Rest\)/,
         };
         let fensterRohe = null;
         for (const [name, T] of Object.entries(FENSTER_TAETER)) {
@@ -2331,6 +2349,21 @@ hauptLauf(async () => {
     }
     // ===== DIE BREITE DER STADT (siedlung, Staffel Breite): die Stadt des Messorts steht in der Welt, der Gang durch jede Gasse
     // zählt, was steht und im Bild ist (lib/stadt-proben.cjs) =====
+    // `--stadt [--wort "dorf 7 9310"] [--sek 60]` allein: DER STAND DER STADT — die Union ihrer Kacheln, Bau oder Hülle ihres Plans
+    // (lib/stadt-proben.cjs `stadtStand`, die Zeile `STAND {…}`)
+    if (process.argv.includes("--stadt")) {
+        const arg = (n, d) => (process.argv.includes(n) ? process.argv[process.argv.indexOf(n) + 1] : d);
+        const o = { ...STAND, wort: arg("--wort", STAND.wort), sek: Number(arg("--sek", STAND.sek)) };
+        const server = statikServer();
+        const { browser, page } = await nullWelt(server, { port: Number(process.env.SETTLEMENT_PORT || 4436), frist: 900000 }); // prettier-ignore
+        const m = await page.evaluate(stadtStand, o);
+        await browser.close();
+        server.close();
+        const v = standUrteil(m);
+        check(`STAND (mensch.stadt.form#2) die Stadt „${o.wort}" steht als Union ihrer Kacheln nach ${o.sek} s`, !v.length, v.join(" · ")); // prettier-ignore
+        console.log(`STAND ${JSON.stringify(m)}`);
+        process.exit(errs.length ? 1 : 0);
+    }
     if (process.argv.includes("--breite")) {
         const ort = process.argv.includes("--ort") ? process.argv[process.argv.indexOf("--ort") + 1] : BREITE.ort;
         const server = statikServer();
@@ -2606,19 +2639,38 @@ hauptLauf(async () => {
             stadt.staedtisch === true && bwSlots >= 1,
             `groesse=${stadt.groesse} · brandwand-Slots=${bwSlots}`
         );
-        // DAS DORF-LICHT: gemessen wird das Licht je METER der Gasse, nie die Zahl der Laternen. Gemessen wird jeder Meter der Weg-Achse, sein Maß der Abstand zur
-        // nächsten Quelle des Plans, die nachts brennt (Mast und Wandlaterne, Zeitplan `nacht` > 0): in der Gasse (eine Kern-Wand
-        // näher als LICHT_MARKE_M − armM, dort trägt die Wand ihr Licht) jeder ≤ LICHT_MARKE_M (das Gesetz des Kerns,
-        // wandLaternen), über alle Meter p90 ≤ 10 m. Je
+        // DAS DORF-LICHT: gemessen wird das Licht je METER der Gasse, nie die Zahl der Laternen. Gemessen wird jeder Meter der Weg-Achse,
+        // sein Maß die waagrechte Beleuchtungsstärke aller Quellen des Plans, die nachts brennen (Mast und Wandlaterne, Zeitplan
+        // `nacht` > 0; E = I · h ÷ (r · (r² + k²)) aus LICHT_GESETZ), gewartet (× MF): in der Gasse (eine Kern-Wand näher als die Wand
+        // des Masts, dort trägt die Wand ihr Licht) jeder ≥ E_min der Klasse des Orts (fachwerk LICHT_KLASSE, EN 13201-2 Tab. 3; die
+        // Stadt P2, das Dorf P5), über alle Meter Ē berichtet. Der Abstand je Weg (`licht`) ist das Gesetz: die Linse rechnet ihn aus
+        // dem Rand des Wegs (`wegRandSoll`) und dem Fuß selbst nach (nacht-licht-klasse; bis dahin galt 10 m für jeden Meter, der
+        // Abstand zur nächsten Quelle, LICHT_MARKE_M). Je
         // Laterne bleibt ihr Stand: der Mast vor der Wand (LATERNE_WAND aus LICHT_GESETZ.laterne, die Wand trägt höchstens das
         // Doppelte der Gasse; K66) und mit dem Fuß neben jedem Weg (der Tritt des Rezepts), die Wandlaterne mit dem Kopf `armM` vor der Wand eines Kerns (W × D der Tür-Zeile, nie vor der Traufe).
         const trittR = FC.PRESETS.laterne.fx.tritt.r;
         const LGd = FC.LICHT_GESETZ.laterne;
         const LWd = FC.LICHT_GESETZ.wandlaterne;
         const wandSoll = Math.sqrt(Math.max(0, (LGd.hoeheM ** 2 + LGd.kernM ** 2) / 2 - LGd.kernM ** 2));
-        const MARKE_SOLL = Number.isFinite(FC.LICHT_MARKE_M) ? FC.LICHT_MARKE_M : 10; // ohne das Gesetz misst sie mit 10 m und fällt
-        const MARKE_P90 = 10;
-        const GASSE_M = MARKE_SOLL - (LWd ? LWd.armM : 0);
+        // der Abstand je Weg nach dem Gesetz der Klasse (s = Φ · U · MF ÷ (Ē · w), der Streifen ab dem Fuß über die Breite): weicht der
+        // Plan ab oder fehlt `licht`, zählt der Weg als ohne Gesetz und das Tor fällt
+        const KL = FC.LICHT_KLASSE;
+        const klasseVon = (pl) => (KL ? KL[pl.staedtisch ? KL.stadt : KL.dorf] : null);
+        const sSoll = (pl, rd) => {
+            const w = 2 * wegRandSoll(pl, rd);
+            return KL ? FC.lichtFlaecheM2(LGd, pl.staedtisch ? KL.stadt : KL.dorf, trittR, trittR + w) / w : NaN;
+        };
+        const lux = (L, x, z) => {
+            let e = 0;
+            for (const l of L) {
+                const G = l.wand ? LWd : LGd;
+                const d2 = (l.x - x) ** 2 + (l.z - z) ** 2;
+                if (d2 > G.reichweiteM ** 2) continue;
+                const r2 = d2 + G.hoeheM ** 2;
+                e += (G.cd * G.hoeheM) / Math.sqrt(r2) / (r2 + G.kernM ** 2);
+            }
+            return e * (KL ? KL.wartung : 1);
+        };
         // der Abstand eines Punkts zur Wand des Kerns eines Slots (die Tür-Zeile W × D um den Slot)
         const kernAbstand = (sl, x, z) => {
             const tu = sl.tuer;
@@ -2689,17 +2741,21 @@ hauptLauf(async () => {
             const ds = [];
             const dunkel = [];
             let gasse = 0;
+            let ohneWeite = 0;
+            const K = klasseVon(pl);
+            const nachts = L.filter(brennt);
             (pl.roads || []).forEach((rd, ri) => {
+                const s = sSoll(pl, rd);
+                if (!(s > 0) || !(Math.abs(rd.licht - s) <= 1e-9 * s)) return void ohneWeite++;
                 for (let u = 0; u <= (rd.len || 0); u += 1) {
                     const m = wegPunkt(rd, u);
-                    let d = Infinity;
-                    for (const l of L) if (brennt(l)) d = Math.min(d, Math.hypot(l.x - m.x, l.z - m.z));
-                    ds.push(d);
+                    const e = lux(nachts, m.x, m.z);
+                    ds.push(e); // die gewartete Beleuchtungsstärke des Meters
                     let w = Infinity;
                     for (const sl of pl.slots || []) w = Math.min(w, kernAbstand(sl, m.x, m.z));
-                    if (!(w <= GASSE_M)) continue;
+                    if (!(w <= wandSoll)) continue;
                     gasse++;
-                    if (!(d <= MARKE_SOLL)) dunkel.push([ri, u, Math.round(d * 10) / 10]);
+                    if (!(e >= K.min)) dunkel.push([ri, u, Math.round(e * 100) / 100, K.min]);
                 }
             });
             let wand = Infinity;
@@ -2730,7 +2786,7 @@ hauptLauf(async () => {
                 if (best <= 0.05) haengt++;
             }
             const ueber = dunkel.length;
-            const weiteste = dunkel.reduce((a, b) => (b[2] > a[2] ? b : a), [null, null, 0]);
+            const weiteste = dunkel.reduce((a, b) => (b[2] < a[2] ? b : a), [null, null, Infinity, 0]);
             return {
                 n: L.length,
                 nWand: waende.length,
@@ -2738,13 +2794,14 @@ hauptLauf(async () => {
                 gasse,
                 ueber,
                 maxD: weiteste[2],
-                wo: weiteste[0] === null ? "-" : `Weg ${weiteste[0]} bei ${weiteste[1]} m`,
+                ohneWeite,
+                wo: weiteste[0] === null ? "-" : `Weg ${weiteste[0]} bei ${weiteste[1]} m, E_min ${weiteste[3]} lx`,
                 wand: Math.round(wand * 100) / 100,
                 weg: Math.round(weg * 100) / 100,
                 wegOk,
                 haengt,
                 haengtOk: haengt === waende.length,
-                ok: ueber === 0 && wandOk && wegOk && haengt === waende.length,
+                ok: ueber === 0 && ohneWeite === 0 && wandOk && wegOk && haengt === waende.length,
             };
         };
         const lichtFehl = [];
@@ -2778,7 +2835,7 @@ hauptLauf(async () => {
                 dunkelAlle += d.ueber;
                 if (!d.ok)
                     lichtFehl.push(
-                        `${seed}/${nH}/${epoche || "-"}: ${d.ueber}/${d.gasse} Meter der Gasse weiter als ${MARKE_SOLL} m von einer brennenden Quelle (der dunkelste ${d.maxD} m, ${d.wo}), der nächste Mast ${d.wand} m vor einer Wand (Soll ≥ ${wandSoll.toFixed(2)} m) und ${d.weg} m neben dem Wegrand (Soll ≥ ${trittR} m), Wandlaternen an der Wand ${d.haengt}/${d.nWand}`
+                        `${seed}/${nH}/${epoche || "-"}: ${d.ueber}/${d.gasse} Meter der Gasse unter E_min ihrer Klasse (der dunkelste ${d.maxD} lx, ${d.wo}), ${d.ohneWeite} Wege ohne den Abstand des Gesetzes, der nächste Mast ${d.wand} m vor einer Wand (Soll ≥ ${wandSoll.toFixed(2)} m) und ${d.weg} m neben dem Wegrand (Soll ≥ ${trittR} m), Wandlaternen an der Wand ${d.haengt}/${d.nWand}`
                     );
             }
         // die Stadt der Moderne (der Zweig der Gas- und Elektro-Laternen, laterneQuer wie im Dorf): kein Fuß im Weg
@@ -2903,14 +2960,14 @@ hauptLauf(async () => {
         // Kranz samt Ausscheren, der freie Fahrer-Stand — samt den Selbst-Tests 15d bis 15g
         verkehrsnetzProben(FC, check, studioKern("koerper-core.js", "__koerperCore"), studioKern("tetrapoda-core.js", "__tetrapodaCore"));
         alleDs.sort(aufsteigend);
-        const mq = (q) => (alleDs.length ? rang(alleDs, q) : Infinity);
-        if (!Number.isFinite(FC.LICHT_MARKE_M)) lichtFehl.push("der Kern trägt kein LICHT_MARKE_M (das Soll je Meter)");
-        if (!(mq(0.9) <= MARKE_P90)) lichtFehl.push(`p90 je Meter ${mq(0.9).toFixed(1)} m (Soll ≤ ${MARKE_P90} m)`);
+        const mq = (q) => (alleDs.length ? rang(alleDs, q) : 0);
+        const eMittel = alleDs.length ? alleDs.reduce((a, b) => a + b, 0) / alleDs.length : 0;
+        if (!FC.LICHT_KLASSE) lichtFehl.push("der Kern trägt keine LICHT_KLASSE (der Abstand je Weg)");
         console.log(
-            `  DORF-LICHT je Meter: dunkle Gasse ${dunkelAlle}/${gasseAlle} Meter weiter als ${MARKE_SOLL} m · alle Meter Median ${mq(0.5).toFixed(1)} m · p90 ${mq(0.9).toFixed(1)} m · max ${(alleDs[alleDs.length - 1] || 0).toFixed(1)} m · Laternen ${lAlle} (Wand ${wandAlle})`
+            `  DORF-LICHT je Meter (gewartet): dunkle Gasse ${dunkelAlle}/${gasseAlle} Meter unter E_min · alle Meter Ē ${eMittel.toFixed(2)} lx · p10 ${mq(0.1).toFixed(2)} · Median ${mq(0.5).toFixed(2)} lx · Laternen ${lAlle} (Wand ${wandAlle})`
         );
         check(
-            `DAS DORF-LICHT je Meter: jeder Meter der Gasse (Kern-Wand ≤ ${GASSE_M.toFixed(1)} m) ≤ ${MARKE_SOLL} m von einer Quelle, die nachts brennt, alle Meter p90 ≤ ${MARKE_P90} m; der Mast vor der Wand und mit dem Fuß neben dem Weg, die Wandlaterne an der Wand (${lichtN} Pläne, ${gasseAlle} Meter Gasse)`,
+            `DAS DORF-LICHT je Meter: jeder Meter der Gasse (Kern-Wand ≤ ${wandSoll.toFixed(2)} m) trägt gewartet ≥ E_min der Klasse seines Orts (EN 13201-2: Stadt P2 2 lx, Dorf P5 0,6 lx) von den Quellen, die nachts brennen, jeder Weg den Abstand des Gesetzes (s = Φ · U · MF ÷ (Ē · w)); der Mast vor der Wand und mit dem Fuß neben dem Weg, die Wandlaterne an der Wand (${lichtN} Pläne, ${gasseAlle} Meter Gasse)`,
             lichtFehl.length === 0,
             lichtFehl.slice(0, 3).join(" · ")
         );
@@ -2993,8 +3050,12 @@ hauptLauf(async () => {
             );
             // DIE DICHTE GASSE: derselbe Plan ohne seine Wandlaternen — die Marken der dichten Gasse sind dunkel; eine
             // Wandlaterne 0,9 m von ihrem Stand weg hängt an keiner Wand
-            const plG = FC.exportSettlement({ seed: 7, nH: 16 });
+            const plG = FC.exportSettlement({ seed: 11, nH: 40 }); // die Stadt (P2) mit 41 m Gasse: ohne ihre Wandlaternen 25 unter E_min — das Dorf 7 16 trägt seit nacht-licht-klasse keinen Meter Gasse
             const ohneWand = dorfLicht(Object.assign({}, plG, { laternen: plG.laternen.filter((l) => !l.wand) }));
+            // DER PLAN OHNE DIE KLASSE (nacht-licht-klasse): seine Wege tragen keinen Abstand — das Tor fällt, nie misst es mit einer
+            // Zahl; und der Plan, dessen Wege einen Abstand neben dem Gesetz tragen (das 1,5-Fache: ein Zwilling der Zahl je Ort)
+            const ohneKlasse = dorfLicht(Object.assign({}, plG, { roads: plG.roads.map((rd) => Object.assign({}, rd, { licht: undefined })) }));
+            const nebenKlasse = dorfLicht(Object.assign({}, plG, { roads: plG.roads.map((rd) => Object.assign({}, rd, { licht: rd.licht * 1.5 })) }));
             const schwebt = dorfLicht(
                 Object.assign({}, plG, {
                     laternen: plG.laternen.map((l) =>
@@ -3004,32 +3065,51 @@ hauptLauf(async () => {
                     ),
                 })
             );
+            // je Bedingung ihr Name: die Röte nennt, WELCHE fällt (bis hier stand nur der Ausdruck aller elf)
+            const gesund = dorfLicht(pl);
+            const gesundG = dorfLicht(plG);
+            const teile = {
+                gesund: gesund.ok,
+                // an der Stadt mit Gasse: ein Plan ohne Meter Gasse bleibt ohne Laternen „ok“ und der Test leer (das Dorf 7 12 auf
+                // Kopf C2, nacht-licht-klasse-3; `gasseMeter` nennt beide)
+                ohneLaternenFaellt: (() => {
+                    const o = dorfLicht(Object.assign({}, plG, { laternen: [] }));
+                    return !o.ok && o.gasse > 0;
+                })(),
+                mastAnDerWandFaellt: !dorfLicht(
+                    Object.assign({}, pl, {
+                        laternen: pl.laternen.concat([
+                            {
+                                x: o0.cx + (o0.ex + 0.45) * Math.cos(o0.phi || 0),
+                                z: o0.cz - (o0.ex + 0.45) * Math.sin(o0.phi || 0),
+                                th: 0,
+                            },
+                        ]),
+                    })
+                ).ok,
+                fahrbahnFaellt: !inDerFahrbahn.ok && !inDerFahrbahn.wegOk,
+                gesundGasse: gesundG.ok,
+                gasseTraegtWand: plG.laternen.some((l) => l.wand),
+                ohneWandDunkel: ohneWand.ueber > 0,
+                ohneKlasseFaellt: !ohneKlasse.ok && ohneKlasse.ohneWeite === plG.roads.length,
+                nebenKlasseFaellt: !nebenKlasse.ok && nebenKlasse.ohneWeite === plG.roads.length,
+                schwebtFaellt: !schwebt.haengtOk,
+            };
+            const faellt = Object.keys(teile).filter((k) => !teile[k]);
             check(
                 "Selbst-Test 15: derselbe Plan ohne Laternen fällt im Dorf-Licht, ein Mast an der Wand (0,45 m wie bis K66) ebenso, einer in der Fahrbahn (rd.w/4 von der Achse wie bis K66-n4) am Weg; die dichte Gasse ohne ihre Wandlaternen an der Marke, eine Wandlaterne 0,9 m vor ihrem Stand an der Wand",
-                dorfLicht(pl).ok &&
-                    !dorfLicht(Object.assign({}, pl, { laternen: [] })).ok &&
-                    !dorfLicht(
-                        Object.assign({}, pl, {
-                            laternen: pl.laternen.concat([
-                                {
-                                    x: o0.cx + (o0.ex + 0.45) * Math.cos(o0.phi || 0),
-                                    z: o0.cz - (o0.ex + 0.45) * Math.sin(o0.phi || 0),
-                                    th: 0,
-                                },
-                            ]),
-                        })
-                    ).ok &&
-                    !inDerFahrbahn.ok &&
-                    !inDerFahrbahn.wegOk &&
-                    dorfLicht(plG).ok &&
-                    plG.laternen.some((l) => l.wand) &&
-                    ohneWand.ueber > 0 &&
-                    !schwebt.haengtOk,
+                faellt.length === 0,
                 JSON.stringify({
+                    faellt,
+                    gesund: gesund.ok ? "ok" : Object.keys(gesund).filter((k) => gesund[k] === false),
+                    gesundGasse: gesundG.ok ? "ok" : Object.keys(gesundG).filter((k) => gesundG[k] === false),
+                    gasseMeter: { dorf: gesund.gasse, stadt: gesundG.gasse },
                     weg: inDerFahrbahn.weg,
                     wegOk: inDerFahrbahn.wegOk,
-                    ohneWand: `${ohneWand.ueber}/${ohneWand.gasse} Meter der Gasse > ${MARKE_SOLL} m, der dunkelste ${ohneWand.maxD} m`,
+                    ohneWand: `${ohneWand.ueber}/${ohneWand.gasse} Meter der Gasse unter E_min, der dunkelste ${ohneWand.maxD} lx`,
                     schwebt: `${schwebt.haengt}/${schwebt.nWand}`,
+                    ohneKlasse: `${ohneKlasse.ohneWeite}/${plG.roads.length} Wege ohne Abstand`,
+                    nebenKlasse: `${nebenKlasse.ohneWeite}/${plG.roads.length} Wege neben dem Gesetz`,
                 })
             );
         }
@@ -3818,6 +3898,15 @@ hauptLauf(async () => {
                 // HÄNGT die Welt vor dem ersten Haus, nennt die Meldung den Zug beim Namen: die Zelle im Export, der Vorrat (sein
                 // Wasser-Urteil), der Zug (Gang, Reihe), die Trasse und die abgewiesenen Zellen — bis samen-ein-baum nannte sie nur
                 // das Offene der Welt (wald 4476, 3635 Takte), nie, wo der Dorf-Zug stand
+                // DER EXPORT IM FLUG (stadt-zehntausend): das Rennen am main (pending „-6,-6", Trasse in Runde 2, 4299–4363 Takte,
+                // an sechs Köpfen rot, lokal 0 von 3) nennt, worauf der Export der Zelle wartet — die bestellten Hydro-Kacheln
+                // ohne Kachel (der Export wartet auf JEDE, `_foundryRequestSettlement`), die Schlange und die Arbeit der Foundry
+                const flug = () => {
+                    const f = r._foundry, T = st.hydroTiles;
+                    const hydro = [...(r._hydroBestellt || new Map())].filter(([k]) => !(T && T.has(k))).map(([k, e]) => k + (e.gepostet ? "" : "!"));
+                    const warte = f && f.warte ? f.warte.map((a) => a.praefix + Math.round(performance.now() - a.t)) : null;
+                    return { hydro, warte: warte && warte.slice(0, 8), warteN: warte && warte.length, foundry: f && f.pending ? [...f.pending.keys()].slice(0, 4) : null };
+                };
                 const zugZustand = () => {
                     const q = r._autoSettlementQueue, v = r._dorfVorraete && r._dorfVorraete.get(key);
                     return JSON.stringify({
@@ -3829,7 +3918,8 @@ hauptLauf(async () => {
                         abgewiesen: [...(r._autoSettlementRejected || [])].slice(0, 6),
                         haus,
                         bild,
-                    }).slice(0, 700);
+                        flug: flug(),
+                    }).slice(0, 1000);
                 };
                 try {
                     for (
@@ -5206,6 +5296,8 @@ hauptLauf(async () => {
     // das erste Haus steht im zweiten Takt nach dem Erwachen: der erste legt den Grund (der Gang zuerst), der nächste hebt
     const soll = 2;
     const je = (n, f) => n.every((k) => k5[k] && f(k5[k]));
+    // ein Lauf, der fehlt, steht beim Namen samt dem Zug (`k5Luecke`) — das Urteil liest nie das Feld eines fehlenden Laufs
+    const luecke = (n, sonst = k5) => k5Luecke(k5, n, out.bruch) || sonst;
     // DAS ERSTE HAUS IM BILD (sk5-haus): nH 12 und 300 heben das nächste Haus nach dem Vorlauf, seine Stufen bestellt vor ihm, und
     // es steht in der Stufe seines Abstands ≤ `soll` Takte nach dem Erwachen, auch hinter vollem Fit-Takt — nie als Hülle, solange
     // ein Haus der Mesh-Zone vorn im Schirm liegt (das ferne vor dem nahen, beim Namen)
@@ -5217,24 +5309,24 @@ hauptLauf(async () => {
     check(
         `C-K5: DAS ERSTE HAUS IM BILD — nH 12 und 300 ≤ ${soll} Takte nach dem Erwachen, das nahe zuerst, vorgebacken`,
         je(["vorlauf12", "vorlauf300"], (w) => w.vorrat && w.erstes && w.bild <= soll && !fernVorNah(w)),
-        k5
+        luecke(["vorlauf12", "vorlauf300"])
     );
     check(
         "C-K5 Selbsttest: ein fernes Haus vor dem nahen ist ROT beim Namen",
         !!fernVorNah(k5.fern300),
-        fernVorNah(k5.fern300) || k5
+        fernVorNah(k5.fern300) || luecke(["fern300"])
     );
     check(
         // der Export nach dem Erwachen (Teleport) und die Schichten vor dem ersten Haus (alt)
         "C-K5 Selbsttest: Teleport und alt fallen ROT",
-        je(["teleport300", "alt300"], (w) => w.haus > soll) && !k5.strecke13.vorrat,
-        k5
+        je(["teleport300", "alt300"], (w) => w.haus > soll) && je(["strecke13"], (w) => !w.vorrat),
+        luecke(["teleport300", "alt300", "strecke13"])
     );
     check(
         // Teleport, Start-Dorf; die Pläne im Haupt-Thread und im Ort-Faden
         "C-K5 OHNE VORLAUF: Pläne bis zum ersten Haus nH 300 / nH 12 ≤ 1,2",
         je(["teleport12", "teleport300"], () => k5.teleport300.plaene / k5.teleport12.plaene <= 1.2),
-        k5
+        luecke(["teleport12", "teleport300"])
     );
     check(
         // 40 m voraus, 11 m bei 70°, 15 m daneben
