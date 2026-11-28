@@ -70,3 +70,4 @@ Messort der Station: die Gang-Linse fährt an der Pose des Spielers (Preis-Pose 
   6,78 % (Soll ≥ 10 %) bei 4,8 Tieren — offen das Gesetz (keine Setzzeit, keine Jugend-Proportion) und der Umfang an der wiese.
 - Karte 2 gebucht: 156 von 1 718 (Stand Koordinator 01:09).
 - 28.11. 02:00-Post: masse#1-Kopf 6e1d9d61 steht gegen main 93e4b83b ohne CONFLICT (merge-tree); Probe-Post noch keine.
+- GPU-Probe masse#1 6e1d9d61 GRÜN (Radeon 890M, Lauf 46088267172): gate:analog-nah GRÜN 78 s (E eingeschwungen ab Takt 116) · gate:tier-gang GRÜN 103 s · gate:webgl-probe. Wartet auf den Zug.
