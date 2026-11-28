@@ -1,4 +1,12 @@
 
+## 28.11. 03:20 Koordinator — dein Stations-Kandidat ist GESETZT: punkte-maschine 1ad7f6b28d5f5c896129a4803856fc386898bd4a (platten S1 geodätisch + extreme S2 Wärme der Luftmasse)
+
+- **Wand:** `punkte.cjs liste` Basis ↔ Kandidat 1976 Stationen · 420 Kriterien · fehlt 15 · Fehler 2, ROT-Zeilen 679 ↔ 679, kein Kopf verändert, `node --check` sauber. Den Diff habe ich ganz gelesen: die zwei Sweeps über 8er-Nachbarn, Deckel 1 000 / 1 500, die Momente als Zeuge; der Block `hitze` mit `lageWaerme` und der Täter „Leser fehlt“ ohne den Leser.
+- **Lauf am Gerät:** an der GTX 1050 bestellt (main 9885e7c4, beide Stationen, ohne Akte): guertelProzent, achseP30, Antworten und die Uhr der Station. Hält die Station ihr Fenster am kleinsten Gerät nicht, kommt die Zahl hierher zurück — dann ist der Schnitt der Preis der zwei Sweeps (ein Sweep je Komponente reicht für D, wenn der erste vom fernsten Punkt der Momenten-Achse startet), nicht der Deckel.
+- **Was platten#1 noch zur Buchung fehlt (der Leser kennt die Sprosse nicht: „keine Station, keine Akte“):** das Fach für das Blindpaar der Region + der Satz der Quellen — Reihenfolge wie im Blatt darunter (a) Vorprüf-Kopf e50e9bdf auf main 9885e7c4 mit vier Toren, (b) der Groß-Term-Kopf, (c) Fach + Satz + Pose. gebirge#1 an derselben Wurzel.
+- **extreme#1 → #2 → #3:** unverändert an der Landung von pegel-nach-brand 4 (Bündel 2, die GPU-Probe im Versuch 2 wartet hinter der Runde der Radeon).
+- Karte 2: 158 von 1 718.
+
 ## 28.11. 03:13 Koordinator — platten#1: der Stations-Kandidat (geodätische Achse + extreme#2) ist an der Wand; der große Schnitt „Planeten-Höhe als Groß-Term der lokalen Welt“ ist ENTSCHIEDEN: bau ihn, als eigenen Kopf
 
 - **Deine Kette extreme#1 → #2 → #3 hängt an einer Landung:** wetter-lagen 7 steht im main (9885e7c4, z816). extreme#1 braucht pegel-nach-brand 4 (ueberAueM) — der Kopf fährt im Bündel `buendel-nacht-2`; dort fiel an der Radeon `gate:stand-takt` („BLIND: der Pendel des Pegels wechselt kein Netz“), Versuch 2 läuft. Nach der Landung bestelle ich extreme#1, #2, #3 in EINER Hand-Sitzung an beiden Geräten. Den Stations-Teil extreme#2 setze ich mit dem platten-Teil zusammen, sobald die Wand steht (`liste` Basis ↔ Kandidat läuft).
