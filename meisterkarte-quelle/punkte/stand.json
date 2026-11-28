@@ -10086,7 +10086,7 @@
   },
   "karte2.erleben.spieler.hand": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.hand#1 radeon: ungemessen (R10) — zuletzt an e80f9c5d: die Fahrt riss 1800 s (vor karte2.mensch.fahrzeug.lenker#1) — offen, UNGEMESSEN · karte2.erleben.spieler.hand#1 gtx: ungemessen (R10) — zuletzt an e80f9c5d: die Fahrt riss 1800 s (der Rest 78 s unter dem Grund-Deckel 193 s von karte2.erleben.spieler.hand#1) — offen, UNGEMESSEN · karte2.erleben.spieler.hand#2 radeon: ungemessen (R10) · karte2.erleben.spieler.hand#2 gtx: ungemessen (R10) · karte2.erleben.spieler.hand#3 radeon: ungemessen (R10) · karte2.erleben.spieler.hand#3 gtx: Station seit der Messung geändert · karte2.erleben.spieler.hand#4 radeon: ungemessen (R10) · karte2.erleben.spieler.hand#4 gtx: ungemessen (R10) · karte2.erleben.spieler.hand#5 radeon: ungemessen (R10) · karte2.erleben.spieler.hand#5 gtx: Station seit der Messung geändert · karte2.erleben.spieler.hand#6 radeon: ungemessen (R10) · karte2.erleben.spieler.hand#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.hand#1 radeon: ungemessen (R10) — zuletzt an e80f9c5d: die Fahrt riss 1800 s (vor karte2.mensch.fahrzeug.lenker#1) — offen, UNGEMESSEN · karte2.erleben.spieler.hand#1 gtx: ungemessen (R10) — zuletzt an e80f9c5d: Last: Referenz f 1,503 (Faden 1,503 · alle Kerne 1,155; vor 134,1/254,8 ms, nach 88,5/231,2 ms, Ruhe 89,2/220,6 ms seit 2026-11-27) · fremd: Explorer.EXE 1,9 CPU-s · bash.exe -c echo \\ [linse-gpu] rdn · karte2.erleben.spieler.hand#2 radeon: ungemessen (R10) · karte2.erleben.spieler.hand#2 gtx: ungemessen (R10) · karte2.erleben.spieler.hand#3 radeon: ungemessen (R10) · karte2.erleben.spieler.hand#3 gtx: Station seit der Messung geändert · karte2.erleben.spieler.hand#4 radeon: ungemessen (R10) · karte2.erleben.spieler.hand#4 gtx: ungemessen (R10) · karte2.erleben.spieler.hand#5 radeon: ungemessen (R10) · karte2.erleben.spieler.hand#5 gtx: Station seit der Messung geändert · karte2.erleben.spieler.hand#6 radeon: ungemessen (R10) · karte2.erleben.spieler.hand#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.erleben.spieler.hand#1",
@@ -10104,7 +10104,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an e80f9c5d: die Fahrt riss 1800 s (der Rest 78 s unter dem Grund-Deckel 193 s von karte2.erleben.spieler.hand#1) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an e80f9c5d: Last: Referenz f 1,503 (Faden 1,503 · alle Kerne 1,155; vor 134,1/254,8 ms, nach 88,5/231,2 ms, Ruhe 89,2/220,6 ms seit 2026-11-27) · fremd: Explorer.EXE 1,9 CPU-s · bash.exe -c echo \\ [linse-gpu] rdn",
      "ungemessen": true,
      "beide": true
     },
@@ -14986,7 +14986,7 @@
   },
   "karte2.leben.wasser.bild": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.wasser.bild#1 radeon: ungemessen (R10) — zuletzt an e80f9c5d: die Fahrt riss 1800 s (vor karte2.mensch.fahrzeug.lenker#1) — offen, UNGEMESSEN · karte2.leben.wasser.bild#1 gtx: ungemessen (R10) — zuletzt an e80f9c5d: die Fahrt riss 1800 s (der Rest 78 s unter dem Grund-Deckel 387 s von karte2.leben.wasser.bild#1) — offen, UNGEMESSEN · karte2.leben.wasser.bild#2 radeon: ungemessen (R10) · karte2.leben.wasser.bild#2 gtx: ungemessen (R10) · karte2.leben.wasser.bild#3 radeon: ungemessen (R10) · karte2.leben.wasser.bild#3 gtx: ungemessen (R10) · karte2.leben.wasser.bild#4 radeon: ungemessen (R10) · karte2.leben.wasser.bild#4 gtx: ungemessen (R10) · karte2.leben.wasser.bild#5 radeon: ungemessen (R10) · karte2.leben.wasser.bild#5 gtx: ungemessen (R10) · karte2.leben.wasser.bild#6 radeon: ungemessen (R10) · karte2.leben.wasser.bild#6 gtx: ungemessen (R10) · karte2.leben.wasser.bild#7 radeon: ungemessen (R10) · karte2.leben.wasser.bild#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.leben.wasser.bild#1 radeon: ungemessen (R10) — zuletzt an e80f9c5d: die Fahrt riss 1800 s (vor karte2.mensch.fahrzeug.lenker#1) — offen, UNGEMESSEN · karte2.leben.wasser.bild#1 gtx: ungemessen (R10) — zuletzt an e80f9c5d: Deckel 387 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT leben.wasser.bild 82.3 s) · karte2.leben.wasser.bild#2 radeon: ungemessen (R10) · karte2.leben.wasser.bild#2 gtx: ungemessen (R10) · karte2.leben.wasser.bild#3 radeon: ungemessen (R10) · karte2.leben.wasser.bild#3 gtx: ungemessen (R10) · karte2.leben.wasser.bild#4 radeon: ungemessen (R10) · karte2.leben.wasser.bild#4 gtx: ungemessen (R10) · karte2.leben.wasser.bild#5 radeon: ungemessen (R10) · karte2.leben.wasser.bild#5 gtx: ungemessen (R10) · karte2.leben.wasser.bild#6 radeon: ungemessen (R10) · karte2.leben.wasser.bild#6 gtx: ungemessen (R10) · karte2.leben.wasser.bild#7 radeon: ungemessen (R10) · karte2.leben.wasser.bild#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.wasser.bild#1",
@@ -15004,7 +15004,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an e80f9c5d: die Fahrt riss 1800 s (der Rest 78 s unter dem Grund-Deckel 387 s von karte2.leben.wasser.bild#1) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an e80f9c5d: Deckel 387 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT leben.wasser.bild 82.3 s)",
      "ungemessen": true,
      "beide": true
     },
@@ -35439,7 +35439,7 @@
   },
   "karte2.same.physik.feuer": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.physik.feuer#1 radeon: ungemessen (R10) · karte2.same.physik.feuer#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +21) · karte2.same.physik.feuer#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/stamm.cjs +14) — zuletzt an e80f9c5d: die Fahrt riss 1800 s (vor karte2.mensch.fahrzeug.lenker#1) — offen, UNGEMESSEN · karte2.same.physik.feuer#2 gtx: ungemessen (R10) — zuletzt an e80f9c5d: die Fahrt riss 1800 s (der Rest 78 s unter dem Grund-Deckel 93 s von karte2.same.physik.feuer#2) — offen, UNGEMESSEN · karte2.same.physik.feuer#3 radeon: ungemessen (R10) · karte2.same.physik.feuer#3 gtx: Station seit der Messung geändert · karte2.same.physik.feuer#4 radeon: ungemessen (R10) · karte2.same.physik.feuer#4 gtx: Station seit der Messung geändert · karte2.same.physik.feuer#5 radeon: ungemessen (R10) · karte2.same.physik.feuer#5 gtx: Station seit der Messung geändert · karte2.same.physik.feuer#6 radeon: ungemessen (R10) · karte2.same.physik.feuer#6 gtx: Station seit der Messung geändert · karte2.same.physik.feuer#7 radeon: ungemessen (R10) · karte2.same.physik.feuer#7 gtx: Station seit der Messung geändert · karte2.same.physik.feuer#8 radeon: ungemessen (R10) · karte2.same.physik.feuer#8 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.same.physik.feuer#1 radeon: ungemessen (R10) · karte2.same.physik.feuer#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +21) · karte2.same.physik.feuer#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/stamm.cjs +14) — zuletzt an e80f9c5d: die Fahrt riss 1800 s (vor karte2.mensch.fahrzeug.lenker#1) — offen, UNGEMESSEN · karte2.same.physik.feuer#2 gtx: ungemessen (R10) — zuletzt an e80f9c5d: Last: Referenz f 1,298 (Faden 1,222 · alle Kerne 1,298; vor 109/232 ms, nach 104,3/286,3 ms, Ruhe 89,2/220,6 ms seit 2026-11-27) · fremd: bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\";  · karte2.same.physik.feuer#3 radeon: ungemessen (R10) · karte2.same.physik.feuer#3 gtx: Station seit der Messung geändert · karte2.same.physik.feuer#4 radeon: ungemessen (R10) · karte2.same.physik.feuer#4 gtx: Station seit der Messung geändert · karte2.same.physik.feuer#5 radeon: ungemessen (R10) · karte2.same.physik.feuer#5 gtx: Station seit der Messung geändert · karte2.same.physik.feuer#6 radeon: ungemessen (R10) · karte2.same.physik.feuer#6 gtx: Station seit der Messung geändert · karte2.same.physik.feuer#7 radeon: ungemessen (R10) · karte2.same.physik.feuer#7 gtx: Station seit der Messung geändert · karte2.same.physik.feuer#8 radeon: ungemessen (R10) · karte2.same.physik.feuer#8 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.physik.feuer#1",
@@ -35478,7 +35478,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an e80f9c5d: die Fahrt riss 1800 s (der Rest 78 s unter dem Grund-Deckel 93 s von karte2.same.physik.feuer#2) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an e80f9c5d: Last: Referenz f 1,298 (Faden 1,222 · alle Kerne 1,298; vor 109/232 ms, nach 104,3/286,3 ms, Ruhe 89,2/220,6 ms seit 2026-11-27) · fremd: bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; ",
      "ungemessen": true
     },
     {
@@ -37603,7 +37603,7 @@
   "ohne": 3366
  },
  "kopfVoll": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
- "zeit": "2026-11-28T08:10:12.436Z",
+ "zeit": "2026-11-28T08:17:27.914Z",
  "vorher": "e80f9c5d",
  "bilanz": {
   "gewinn": [],
