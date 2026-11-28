@@ -1,7 +1,7 @@
 {
  "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
  "geraet": "gtx",
- "zeit": "2026-11-28T08:00:06.109Z",
+ "zeit": "2026-11-28T08:04:31.181Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "profiband.K4#1": {
@@ -2170,18 +2170,66 @@
   },
   "karte2.leben.wasser.bild#1": {
    "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (der Rest 78 s unter dem Grund-Deckel 387 s von karte2.leben.wasser.bild#1) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (der Rest 78 s unter dem Grund-Deckel 387 s von karte2.leben.wasser.bild#1) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-28T07:55:10.669Z",
+   "zahl": "Deckel 387 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT leben.wasser.bild 82.3 s)",
+   "exit": 1,
+   "minuten": 6.45,
+   "grund": "Deckel 387 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT leben.wasser.bild 82.3 s)",
+   "s": 387.2,
+   "fremd": {
+    "s": 388.9,
+    "takte": 178,
+    "fremdS": 109.66,
+    "kerne": 0.282,
+    "fensterKerne": 0.572,
+    "namen": [
+     [
+      "bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \"",
+      20.55
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      16.08
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-e80f9c5d-w071931 x listen/kandidat-gtx-e80f9c5d-w071931.txt",
+      11.13
+     ]
+    ],
+    "dienerS": 94.77,
+    "diener": [
+     [
+      "dwm.exe",
+      35.39
+     ],
+     [
+      "System",
+      34.48
+     ]
+    ],
+    "geraetS": 182.19,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      130.92
+     ],
+     [
+      "svchost.exe",
+      45.34
+     ],
+     [
+      "SearchIndexer.exe",
+      2.66
+     ]
+    ],
+    "eigenS": 1161.92,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-28T08:04:31.181Z",
    "abdruck": "67a516002422",
    "port": 7804,
    "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1,
-   "fahrt": "12780@mx036p22"
+   "modus": "session"
   },
   "karte2.erleben.spieler.hand#1": {
    "gruen": false,
