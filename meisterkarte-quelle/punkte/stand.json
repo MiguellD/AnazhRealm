@@ -3020,7 +3020,7 @@
   },
   "profiband.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Gehen 63 Bilder · max 75.35 ms · 68.25 % > 33 ms · Fahrt 47 Bilder · max 125.6 ms · 95.74 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 68.25 % > 33 ms | Fahrt: 4 Bild(er) > 100 ms (max 125.6), 95.74 % > 33 ms an 27d2f60e radeon — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an 27d2f60e: Last: Referenz f 1,331 (Faden 1,331 · alle Kerne 1,147; vor 111,1/297,2 ms, nach 105,8/278,1 ms, Ruhe 83,5/259,2 ms seit 2026-11-16) · fremd: bash.exe scratchpad/wache-0331.sh 27,9 CPU-s · bash.exe we · profiband.K4#2 gtx: ROT: Gehen 83 Bilder · max 108.35 ms · 15.66 % > 33 ms · Fahrt 49 Bilder · max 141.61 ms · 79.59 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 1 Bild(er) > 100 ms (max 108.35), 15.66 % > 33 ms | Fahrt: 4 Bild(er) > 100 ms (max 141.61), 79.59 % > 33 ms an e80f9c5d",
+   "beleg": "Maschine: gehalten: Gehen 63 Bilder · max 75.35 ms · 68.25 % > 33 ms · Fahrt 47 Bilder · max 125.6 ms · 95.74 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 68.25 % > 33 ms | Fahrt: 4 Bild(er) > 100 ms (max 125.6), 95.74 % > 33 ms an 27d2f60e radeon · Gehen 80 Bilder · max 100 ms · 20.00 % > 33 ms · Fahrt 51 Bilder · max 108.34 ms · 88.24 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 20.00 % > 33 ms | Fahrt: 3 Bild(er) > 100 ms (max 108.34), 88.24 % > 33 ms an e80f9c5d gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an 27d2f60e: Last: Referenz f 1,331 (Faden 1,331 · alle Kerne 1,147; vor 111,1/297,2 ms, nach 105,8/278,1 ms, Ruhe 83,5/259,2 ms seit 2026-11-16) · fremd: bash.exe scratchpad/wache-0331.sh 27,9 CPU-s · bash.exe we · profiband.K4#2 gtx: ROT: Gehen 80 Bilder · max 100 ms · 20.00 % > 33 ms · Fahrt 51 Bilder · max 108.34 ms · 88.24 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 20.00 % > 33 ms | Fahrt: 3 Bild(er) > 100 ms (max 108.34), 88.24 % > 33 ms an e80f9c5d",
    "stationen": [
     {
      "id": "profiband.K4#1",
@@ -3035,10 +3035,10 @@
     {
      "id": "profiband.K4#1",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": "Gehen 83 Bilder · max 108.35 ms · 15.66 % > 33 ms · Fahrt 49 Bilder · max 141.61 ms · 79.59 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 1 Bild(er) > 100 ms (max 108.35), 15.66 % > 33 ms | Fahrt: 4 Bild(er) > 100 ms (max 141.61), 79.59 % > 33 ms",
+     "gruen": true,
+     "zahl": "Gehen 80 Bilder · max 100 ms · 20.00 % > 33 ms · Fahrt 51 Bilder · max 108.34 ms · 88.24 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 20.00 % > 33 ms | Fahrt: 3 Bild(er) > 100 ms (max 108.34), 88.24 % > 33 ms",
      "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
-     "grund": "ROT: Gehen 83 Bilder · max 108.35 ms · 15.66 % > 33 ms · Fahrt 49 Bilder · max 141.61 ms · 79.59 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 1 Bild(er) > 100 ms (max 108.35), 15.66 % > 33 ms | Fahrt: 4 Bild(er) > 100 ms (max 141.61), 79.59 % > 33 ms",
+     "grund": null,
      "r6": "konsum"
     },
     {
@@ -3054,9 +3054,9 @@
      "id": "profiband.K4#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": "Gehen 83 Bilder · max 108.35 ms · 15.66 % > 33 ms · Fahrt 49 Bilder · max 141.61 ms · 79.59 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 1 Bild(er) > 100 ms (max 108.35), 15.66 % > 33 ms | Fahrt: 4 Bild(er) > 100 ms (max 141.61), 79.59 % > 33 ms",
+     "zahl": "Gehen 80 Bilder · max 100 ms · 20.00 % > 33 ms · Fahrt 51 Bilder · max 108.34 ms · 88.24 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 20.00 % > 33 ms | Fahrt: 3 Bild(er) > 100 ms (max 108.34), 88.24 % > 33 ms",
      "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
-     "grund": "ROT: Gehen 83 Bilder · max 108.35 ms · 15.66 % > 33 ms · Fahrt 49 Bilder · max 141.61 ms · 79.59 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 1 Bild(er) > 100 ms (max 108.35), 15.66 % > 33 ms | Fahrt: 4 Bild(er) > 100 ms (max 141.61), 79.59 % > 33 ms",
+     "grund": "ROT: Gehen 80 Bilder · max 100 ms · 20.00 % > 33 ms · Fahrt 51 Bilder · max 108.34 ms · 88.24 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 20.00 % > 33 ms | Fahrt: 3 Bild(er) > 100 ms (max 108.34), 88.24 % > 33 ms",
      "r6": "konsum"
     }
    ]
@@ -14433,7 +14433,7 @@
   },
   "karte2.leben.tiere.masse": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.tiere.masse#1 radeon: Konsum seit der Messung geändert (R6: gelaende-core.js, phyto-core.js, scripts/diag-kreatur-leben.cjs +44) — zuletzt an 54b89949: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, ...rest) { const ) — kein Urteil, UNGEMESSEN (d · karte2.leben.tiere.masse#1 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, phyto-core.js, scripts/diag-kreatur-leben.cjs +59) — zuletzt an e80f9c5d: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\ · karte2.leben.tiere.masse#2 radeon: ungemessen (R10) · karte2.leben.tiere.masse#2 gtx: ungemessen (R10) · karte2.leben.tiere.masse#3 radeon: ungemessen (R10) · karte2.leben.tiere.masse#3 gtx: ungemessen (R10) · karte2.leben.tiere.masse#4 radeon: ungemessen (R10) · karte2.leben.tiere.masse#4 gtx: ungemessen (R10) · karte2.leben.tiere.masse#5 radeon: ungemessen (R10) · karte2.leben.tiere.masse#5 gtx: ungemessen (R10) · karte2.leben.tiere.masse#6 radeon: ungemessen (R10) · karte2.leben.tiere.masse#6 gtx: ungemessen (R10) · karte2.leben.tiere.masse#7 radeon: ungemessen (R10) · karte2.leben.tiere.masse#7 gtx: ungemessen (R10) · karte2.leben.tiere.masse#8 radeon: ungemessen (R10) · karte2.leben.tiere.masse#8 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.leben.tiere.masse#1 radeon: Konsum seit der Messung geändert (R6: gelaende-core.js, phyto-core.js, scripts/diag-kreatur-leben.cjs +44) — zuletzt an 54b89949: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, ...rest) { const ) — kein Urteil, UNGEMESSEN (d · karte2.leben.tiere.masse#1 gtx: ROT: (a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.998 über 570 Takte, letzter Flüchter 0.32 s (4 aus zweiter Hand), Fluchtweg 31 m, ID 600 s hält (Flucht 5 / 4 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 11.1 m: 46.5 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (256 px) · 49.8 m 5/5 fliehen, 5 sichtbar, 2 Fleck(en) (476 px) · 54.6 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (231 px) · Glieder im Pulk je Schuss 5/5/5 (Umfang ≥ 10) · [linse-gpu] nvidia/pascal an e80f9c5d · karte2.leben.tiere.masse#2 radeon: ungemessen (R10) · karte2.leben.tiere.masse#2 gtx: ungemessen (R10) · karte2.leben.tiere.masse#3 radeon: ungemessen (R10) · karte2.leben.tiere.masse#3 gtx: ungemessen (R10) · karte2.leben.tiere.masse#4 radeon: ungemessen (R10) · karte2.leben.tiere.masse#4 gtx: ungemessen (R10) · karte2.leben.tiere.masse#5 radeon: ungemessen (R10) · karte2.leben.tiere.masse#5 gtx: ungemessen (R10) · karte2.leben.tiere.masse#6 radeon: ungemessen (R10) · karte2.leben.tiere.masse#6 gtx: ungemessen (R10) · karte2.leben.tiere.masse#7 radeon: ungemessen (R10) · karte2.leben.tiere.masse#7 gtx: ungemessen (R10) · karte2.leben.tiere.masse#8 radeon: ungemessen (R10) · karte2.leben.tiere.masse#8 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.tiere.masse#1",
@@ -14450,10 +14450,9 @@
      "id": "karte2.leben.tiere.masse#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, phyto-core.js, scripts/diag-kreatur-leben.cjs +59) — zuletzt an e80f9c5d: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\",
-     "ungemessen": true,
+     "zahl": "(a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.998 über 570 Takte, letzter Flüchter 0.32 s (4 aus zweiter Hand), Fluchtweg 31 m, ID 600 s hält (Flucht 5 / 4 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 11.1 m: 46.5 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (256 px) · 49.8 m 5/5 fliehen, 5 sichtbar, 2 Fleck(en) (476 px) · 54.6 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (231 px) · Glieder im Pulk je Schuss 5/5/5 (Umfang ≥ 10) · [linse-gpu] nvidia/pascal",
+     "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
+     "grund": "ROT: (a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.998 über 570 Takte, letzter Flüchter 0.32 s (4 aus zweiter Hand), Fluchtweg 31 m, ID 600 s hält (Flucht 5 / 4 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 11.1 m: 46.5 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (256 px) · 49.8 m 5/5 fliehen, 5 sichtbar, 2 Fleck(en) (476 px) · 54.6 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (231 px) · Glieder im Pulk je Schuss 5/5/5 (Umfang ≥ 10) · [linse-gpu] nvidia/pascal",
      "r6": "konsum",
      "beide": true
     },
@@ -36651,7 +36650,7 @@
   },
   "karte2.same.preis.ausdauer": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.preis.ausdauer#1 radeon: Station seit der Messung geändert — zuletzt an 27d2f60e: die Dauer misst nie über ein Neuladen: die Seite lud vor dem Grund neu (profiband.K4#1: Last: Referenz f 1,331 (Faden 1,331 · alle Kerne 1,147; vor 111,1/297,2 ms, nach 105,8/278,1 ms, Ruhe 83,5/259,2 · karte2.same.preis.ausdauer#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, klang-core.js +33) — zuletzt an e80f9c5d: kein Anfang in dieser Sitzung (profiband.K4#1 fuhr in einer früheren Sitzung dieses Laufs) — offen, UNGEMESSEN · karte2.same.preis.ausdauer#2 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#2 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#3 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#3 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#4 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#4 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#5 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#5 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#6 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.same.preis.ausdauer#1 radeon: Station seit der Messung geändert — zuletzt an 27d2f60e: die Dauer misst nie über ein Neuladen: die Seite lud vor dem Grund neu (profiband.K4#1: Last: Referenz f 1,331 (Faden 1,331 · alle Kerne 1,147; vor 111,1/297,2 ms, nach 105,8/278,1 ms, Ruhe 83,5/259,2 · karte2.same.preis.ausdauer#1 gtx: ROT: Spielgang 1.32 min in 1 Seite(n), davon die Station 0 s in 0 Fenster(n) auf der Bahn (die Sitzung trug 63.5 s, Ziel 70 s, Deckel 93 s) · nach dem Collector 235 → 328.6 MB: 70.9 MB/min (Soll ≤ 50) · Heap-Kurve 21 Punkte über 1.09 min, 250.6 → 379.4 MB (max 399.2), roh 105.52 MB/min (der Takt des Collectors, kein Urteil) · [linse-gpu] nvidia/pascal — ROT 1: Heap nach dem Collector 235 → 328.6 MB: 70.9 MB/min > 50 · ROT trotz Last: Referenz f 1,391 (Faden 1,391 · alle Kerne 1,2; vor 89,6/218,1 ms, nach 124,1/264,9 ms, Ruhe 89,2/220,7 ms seit 2026-11-27) · fremd: LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 1,5 CPU-s · Explorer.EXE 1,3 CPU-s · bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \" 1,3 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 11,2 CPU-s · svchost.exe 4,3 CPU-s · SearchIndexer.exe 0,3 CPU-s — auch entlastet: Heap nach dem Collector MB/min roh 70,9 (fest), Schwelle ≤ 50 an e80f9c5d · karte2.same.preis.ausdauer#2 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#2 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#3 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#3 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#4 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#4 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#5 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#5 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#6 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.preis.ausdauer#1",
@@ -36667,10 +36666,9 @@
      "id": "karte2.same.preis.ausdauer#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, klang-core.js +33) — zuletzt an e80f9c5d: kein Anfang in dieser Sitzung (profiband.K4#1 fuhr in einer früheren Sitzung dieses Laufs) — offen, UNGEMESSEN",
-     "ungemessen": true,
+     "zahl": "Spielgang 1.32 min in 1 Seite(n), davon die Station 0 s in 0 Fenster(n) auf der Bahn (die Sitzung trug 63.5 s, Ziel 70 s, Deckel 93 s) · nach dem Collector 235 → 328.6 MB: 70.9 MB/min (Soll ≤ 50) · Heap-Kurve 21 Punkte über 1.09 min, 250.6 → 379.4 MB (max 399.2), roh 105.52 MB/min (der Takt des Collectors, kein Urteil) · [linse-gpu] nvidia/pascal — ROT 1: Heap nach dem Collector 235 → 328.6 MB: 70.9 MB/min > 50",
+     "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
+     "grund": "ROT: Spielgang 1.32 min in 1 Seite(n), davon die Station 0 s in 0 Fenster(n) auf der Bahn (die Sitzung trug 63.5 s, Ziel 70 s, Deckel 93 s) · nach dem Collector 235 → 328.6 MB: 70.9 MB/min (Soll ≤ 50) · Heap-Kurve 21 Punkte über 1.09 min, 250.6 → 379.4 MB (max 399.2), roh 105.52 MB/min (der Takt des Collectors, kein Urteil) · [linse-gpu] nvidia/pascal — ROT 1: Heap nach dem Collector 235 → 328.6 MB: 70.9 MB/min > 50 · ROT trotz Last: Referenz f 1,391 (Faden 1,391 · alle Kerne 1,2; vor 89,6/218,1 ms, nach 124,1/264,9 ms, Ruhe 89,2/220,7 ms seit 2026-11-27) · fremd: LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 1,5 CPU-s · Explorer.EXE 1,3 CPU-s · bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \" 1,3 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 11,2 CPU-s · svchost.exe 4,3 CPU-s · SearchIndexer.exe 0,3 CPU-s — auch entlastet: Heap nach dem Collector MB/min roh 70,9 (fest), Schwelle ≤ 50",
      "r6": "konsum",
      "beide": true
     },
@@ -37615,7 +37613,7 @@
   "ohne": 3373
  },
  "kopfVoll": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
- "zeit": "2026-11-28T06:59:30.061Z",
+ "zeit": "2026-11-28T07:08:19.949Z",
  "vorher": "e80f9c5d",
  "bilanz": {
   "gewinn": [],
