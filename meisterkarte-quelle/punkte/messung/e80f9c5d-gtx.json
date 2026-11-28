@@ -1,7 +1,7 @@
 {
  "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
  "geraet": "gtx",
- "zeit": "2026-11-28T08:19:20.251Z",
+ "zeit": "2026-11-28T08:32:11.435Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "profiband.K4#1": {
@@ -1823,6 +1823,146 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.mensch.sport.koennen#3": {
+   "gruen": false,
+   "zahl": "S3 ROT: fehlender Leser: kein Wettkampf, kein Bestwert (477 Bewohner, 134 im Sport-Akt) (koerper-core.js:5126) · gemessen 134 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.38,
+   "grund": "ROT: S3 ROT: fehlender Leser: kein Wettkampf, kein Bestwert (477 Bewohner, 134 im Sport-Akt) (koerper-core.js:5126) · gemessen 134 · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k037717809c18",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kd484c41761a8",
+   "s": 21.9,
+   "fremd": {
+    "s": 23.8,
+    "takte": 11,
+    "fremdS": 5.48,
+    "kerne": 0.23,
+    "fensterKerne": 0.252,
+    "namen": [
+     [
+      "bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \"",
+      1.63
+     ],
+     [
+      "Explorer.EXE",
+      0.81
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-e80f9c5d-w092741-s x listen/kandidat-gtx-e80f9c5d-w092741-s.t",
+      0.8
+     ]
+    ],
+    "dienerS": 4.8,
+    "diener": [
+     [
+      "System",
+      1.84
+     ],
+     [
+      "dwm.exe",
+      1.59
+     ]
+    ],
+    "geraetS": 8.53,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      6.63
+     ],
+     [
+      "svchost.exe",
+      1.66
+     ],
+     [
+      "SearchIndexer.exe",
+      0.13
+     ]
+    ],
+    "eigenS": 58.06,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-28T08:30:10.990Z",
+   "abdruck": "29da5e92df07",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.sport.medium#1": {
+   "gruen": false,
+   "zahl": "S1 ROT: fehlender Leser: kein Ski, keine Kante, kein Schwung auf Schnee: der Leib kennt 11 Verben (Gehen, Sprint, Sprung, Rutsch, Klettern + schaukeln, rutschen, klettern, hangeln, balancieren, wippen) (koerper-core.js:5789) · gemessen 0 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.38,
+   "grund": "ROT: S1 ROT: fehlender Leser: kein Ski, keine Kante, kein Schwung auf Schnee: der Leib kennt 11 Verben (Gehen, Sprint, Sprung, Rutsch, Klettern + schaukeln, rutschen, klettern, hangeln, balancieren, wippen) (koerper-core.js:5789) · gemessen 0 · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k4dcf9cce28b8",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kd484c41761a8",
+   "s": 22.5,
+   "fremd": {
+    "s": 26.2,
+    "takte": 12,
+    "fremdS": 10.3,
+    "kerne": 0.393,
+    "fensterKerne": 0.573,
+    "namen": [
+     [
+      "Explorer.EXE",
+      1.44
+     ],
+     [
+      "bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \"",
+      1.22
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      0.92
+     ]
+    ],
+    "dienerS": 5.33,
+    "diener": [
+     [
+      "System",
+      2.03
+     ],
+     [
+      "dwm.exe",
+      1.66
+     ]
+    ],
+    "geraetS": 18.17,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      10.16
+     ],
+     [
+      "svchost.exe",
+      7.45
+     ],
+     [
+      "SearchIndexer.exe",
+      0.25
+     ]
+    ],
+    "eigenS": 62.53,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-28T08:32:11.435Z",
+   "abdruck": "053687b5ed92",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -1846,7 +1986,8 @@
   "kdca828eaf65e": "bVVdb5tAEPwvfmxLls9wnJSHc0gVV7WU/IQ92ANiDNYdmMpV/3sFNsRA9glZs7dzM7Pnv5sTJgfM6OHD1NWGb75tfmwMnskypM+kHz7Mhm+ixHHJ4+JaIIR47mGJLk6NgbKQgLLC/EhWqxsqyodkaFOPaAeSQ/cisjcABReIOzHVi3h6Wh5TSkprq0FF4yE2eQEjvgS2JkNJFrZqGHwDy9B3WMJhKBaLfQy3ygCYELsYtvAB/e95t5ousUrnN3CcCB9DLrqdEOJ9iU8LpMYqi8qM8500jJTNx6HQ7Vc9GjvrgpSXpG9NxBzHlyPpbS9NL9eiUZWtMbNhzEsDl3GAaInNyBRJ3lgnXUuqRm0iN3SQb9f3zk6tpe4ZoZTI5FLzHKnKSM842F6iHh0Of9jy0AMeSaNVYX6DRrYXuvJTGwB4XXMpB+LDiJG47zGXObPG3lw49wKnYlZvo9nXUlPckgmSrWNnkrzQx7lcyifX9vjvNUWTY0raOtSmmdAehb4trxuyi+HKhW2XnZ+XGz1ERHYXGGAgXldamlo1HWqyslM7hsanIAy4ELsVuMHjcaLlMfSWRpqmD/o9DTdSQeBzgO/XhVlf+roW1oWKkqbcJqEX8efYX4LPGo8WykwXSo3uyyBR0Vdh7ahsLFnXzcjFs+0k6CWp7g1/G6zc3XkdZ+/+/qfIXuYR2Amh1hYPU2rdTC8FSs/3ucpiBsDUEl3oxuowyUd46Eki76ucX0iXlNFMTuU46KYcuuSOrT9+fJ8F+bI+saBe6Mq0ZlQ6QV8G/AtrOtIHidVhWkdMvYD/EkJs9+JtLsxzdl2HWMCihrUw7HWOv753J0rgpGtV9K8j5NiaHMvm8+/i338=",
   "k269cf9a53ff2": "bVXRbqMwEPyXPF6PGjAUY6kPTonUnK5S+glrWAMJAWRDOOV0/36CBBqg+0Y06x3PzDp/NzXEJ0jx+WiqcsM3PzY/NwYuaBnUF9TPR7PhmzB2XKRcfIq+iBDirYfFOq8bQ4pcEpAlZGe0Wt1gXjzHQ5t6AduXnHQ7kR4IUeRKok5MtROvr8tjColJZTWgcDzERuoz5Etga1KQaEGrhsF3sAw8h8WcDMUi8RGRe6XD9z4iW3Ik/e9Zt5ouoUzmN3CcEF4CLrq9EOJziU9ywMYq8tKM850kCJXNx6Gk+1j1aOisK2BWoL43IXMcT46kt700vVyLRlW0xsyGMZr4LuOEhEtsiiaPs8aqdSWxHLUJ3cABvl3fO61bSz0yAimByaXmGWCZop5xsGmsXhxO/rDloSc4owarhOwODW0auPJLG0LI+5pLMRAfRozEPcpc5swaezPJpRc4EbM6jGbfSk1xiydIuo6dibNcn+dyKQ9dm/Lfa4omgwS1dapMM6EpBp4t+TBgH5EbF7Zddn5dbvQQANhDYAgj4n2lpalU04FGK63bMTQe+oHPhdivwA2czxMtyoAujTRNH/RHGm6ofN/jhDzdFmZ96dtaWFfMC5xyGwc05G+RtwRfNJwtkKnOlRrdl36swu/C2mHRWLKqmpELte3Y7yUpHw0/DFbuH7yO0k+vKbbdbh6BvRBqbfEwpdLN9FKApJ7HVRoxQphaonPdWB3E2QgPqESkvM/dAnpFXWCKMzmV44CbcNKpG/cjE+IQ3J8E9TQL8nXl9jXHXujStGZUOgZP+vwbazrUJwnlaVpHSKjPfwkhth/iMNNld6z7dRjWZlHDWpinw12/SIiIqe723tUYk1pXKu9fR5JBazIomq+/i3//AQ==",
   "ka76da3232e68": "bVXRbqMwEPyXPF6PLsRQjKU+OKVSI11P6SesYQ00BCKbhFNO9+8nIKQBum+IWXY8M2v+ro6Y7DGjx09bVyux+rH6ubJ4JseSOZN5/LQrsYoSb01MyKFASvnSwRJTHBsLZaEAVYX5gZyTaagoH5O+TT+hGygB7avMdgAaLhC3z8/z1lJRWjsNahobXWIBJzEHnmyGihw86X7YFaxC3+OJgL54LN9juFbWP29j2MAnzD6msEqnbD0vwqdQyHb7IuXHnGVaIDVOWVR2nOulYaRdMQ6D9n3RY7B1Lkh5SebaRNzzfDWS3XRydtLMGnV5snYyjLM0WHMBEM2xGdkiyRvnaGpF1ahJtA49FJul2tnx5Oh7RqgUcjXXOkeqMjITDi5L9JMn4A+ff3SPBzLoVJhfoZHLwrX60gYA3pZcyp54P2Ik7jO+5t6ksTMRzp3AqZzUbjR5KN2OL5IbJJOLoTbJC3OYyqV9WrtM/FpStDmmZJx9bZsbmlHou2rYhm0MAxe+mXd+HW70EBH5XWCAg3xbaGlr3bRoyMmOpzE0PgVhIKTcLsANHg43Wowjmxtpmy7o9zTWkQ4CXwA8DIuyPPSwFs6FipJuuU1CFomXWM7BZ4MHB1VmCq1H91WQ6Oi7sLZUNo6q62bkwlw3CQQwqO4N/91bub3zOs4+/KbctK/TCGzj9rsJtWlutwMq5vtCZzEH4HqOLkzjtJjkIzxkioiJLnMz6IVMSRlNpNSeh+tUQKsH3hcu5S68Xgf6YRLiy8LpS0GdyJU92VHlBH0ViG9sacnsFVb72ypiyoI+gpt3uZto8vp57FahX5lZSfkipT0Mkd3KWMqY63a4646UwNHUuuhuRsjxZHMsm6/fwr//",
-  "ke258df5aae54": "bVXBcpswFPwXH9uSBwiC0EwOckgnnqk7ySc8wRMQY/BI2HTc6b93wMYxEB24sE+77K7E39UB0x3m9PBhm3olVt9WP1YWT+RYMicyDx92JVZx6vnERP8qNeWhtVCVClDVWOzJOZqWyuohHaD6Ed1QCeheZP4GoOEMSff0NB+tFGWN06KmcdAlFnJacBxtjoocPOqB7ApWUeDxVMCweCK3CVxXDsCl3CSwhg+YbaawzqZqPS/Gx0jIbvMs5ftcZVYitU5V1nbk9bIo1q4YyaDbLmYMds4ZqajIXIeIe16gRrFrKeVgzWxQV0drJ2ScZaHPBUA8x+Zky7RonYNpFNWjJ7EfeSjWS7fzw9HR94pQKeRq7nWBVOdkJhpclupHT8AfPt90h3sy6NRYXKGxyyJffXoDAK9LLdUgfKAYhQeM+9ybDPahwqk3OJOT9TaGfFm6G1+kN0guF6Q2LUqzn9qlA/JdJn4tJdoCMzLOrrHtDc0oClwlBoJNAhctfD2f/Py4MUNE5HeFAQ7ydeGlbXTboSEnPxzH0gQURqGQcrMAt7jf32QxjouDadu+6Pcy/FiHYSAAvl8OyvKjL8fCOVNZ0a23acTi+eYng3sHVW5KrcfkVZjq+KuidlS1jmqadtTBXDcNBTCo78P+PcS4ucs5yd+D7U+Zv0zj36zlVwyNaW83AyoWBELnCQfgeo4uTet0mBYjPGKKiIm+bzPomUxFOU1s1J6Hfiagu7Yt6VsQXa8C/X1S4PMi5XNJvcG1PdrR4RQDFYovIunI7BTWu9sxxIyFQ/3WW/k2NeU5748BnKb8AHCS8llKux/xyeVxITpQCgfT6LK/FaHAoy2waj9/A//+Aw=="
+  "ke258df5aae54": "bVXBcpswFPwXH9uSBwiC0EwOckgnnqk7ySc8wRMQY/BI2HTc6b93wMYxEB24sE+77K7E39UB0x3m9PBhm3olVt9WP1YWT+RYMicyDx92JVZx6vnERP8qNeWhtVCVClDVWOzJOZqWyuohHaD6Ed1QCeheZP4GoOEMSff0NB+tFGWN06KmcdAlFnJacBxtjoocPOqB7ApWUeDxVMCweCK3CVxXDsCl3CSwhg+YbaawzqZqPS/Gx0jIbvMs5ftcZVYitU5V1nbk9bIo1q4YyaDbLmYMds4ZqajIXIeIe16gRrFrKeVgzWxQV0drJ2ScZaHPBUA8x+Zky7RonYNpFNWjJ7EfeSjWS7fzw9HR94pQKeRq7nWBVOdkJhpclupHT8AfPt90h3sy6NRYXKGxyyJffXoDAK9LLdUgfKAYhQeM+9ybDPahwqk3OJOT9TaGfFm6G1+kN0guF6Q2LUqzn9qlA/JdJn4tJdoCMzLOrrHtDc0oClwlBoJNAhctfD2f/Py4MUNE5HeFAQ7ydeGlbXTboSEnPxzH0gQURqGQcrMAt7jf32QxjouDadu+6Pcy/FiHYSAAvl8OyvKjL8fCOVNZ0a23acTi+eYng3sHVW5KrcfkVZjq+KuidlS1jmqadtTBXDcNBTCo78P+PcS4ucs5yd+D7U+Zv0zj36zlVwyNaW83AyoWBELnCQfgeo4uTet0mBYjPGKKiIm+bzPomUxFOU1s1J6Hfiagu7Yt6VsQXa8C/X1S4PMi5XNJvcG1PdrR4RQDFYovIunI7BTWu9sxxIyFQ/3WW/k2NeU5748BnKb8AHCS8llKux/xyeVxITpQCgfT6LK/FaHAoy2waj9/A//+Aw==",
+  "k4dcf9cce28b8": "bVXRjpswEPyXPLblFmI4jKV7cI5TL1JT5T5hDWvgQiCySahS9d8rSEgC3L4gxKxnPLM2fxcHTHaY0dOnrauFWHxb/FhYPJFjyZzIPH3ahVhEibckJuSH7GorpXztYIkpDo2FslCAqsJ8T87RNFSUT0nfpp/RDZSA9k1mWwANZ4jbl5dpa6korZ0GNQ2NLrGAk5gCjzZDRQ4edU92BavQ93gioC8ey00M18r693UMK/iEyWIKq3Ss1vMifA6FbNdSyo+pyrRAapyyqOzA66VhpF0xkEG7mfUYbJ0zUl6SuTYR9zxfDWJXnZ2dNZNGXR6tHZFxlgZLLgCiKTYjWyR54xxMragaPImWoYdiNXc7Oxwd/agIlUKupl7nSFVGZqTBZYl+9gT84dNFd7gng06F+RUauSxcqrs3APA+11L2wnuKQbjP+JJ7o8YuRDh1BqdyVNsh5EvpdviQ3CCZnJHaJC/MfmyX9mnpMvFrLtHmmJJxdrVtbmhGoe8q0ROsY7ho4atp531zQ4aIyB8GBjjI95mXttZNi4ac7HAchsanIAyElOsZuMH9/iaLcWTTIG3TDfqjjGWkg8AXAN8vB2W+6cuxcM5UlHSb2yRk0XTxk8G9gyozhdZD8ipIdPTVoLZUNo6q62bQwVw3CQQwqB7D/t3HuH7IOc4+/KZctW/j+NdyqrtnqE1zuxlQMd8XOos5ANdTdGEap8UkH+AhU0RMdPM2gZ7JlJTRyEbtebhMBbT6ovvMpdyG16tAfx8N8HmW8rmgzuDKHu3gcIK+CsQXkbRkdgqr3e0YYsqCfvxWm/4yvtfba9YdAzhxGHsVn/rn5uf26l0sZcz1lehACRxMrYvuVoQcjzbHsrn/Ev79Bw=="
  },
  "ungemessen": {
   "karte2.planet.kosmos.himmelsmechanik#1": {
@@ -3220,110 +3361,5 @@
   },
   "fahrtS": 1364.6,
   "minuten": 22.91
- },
- "fortsetzung": [
-  {
-   "start": "2026-11-28T08:18:40.325Z",
-   "ordner": "sitzung-20261128-091840",
-   "port": 7804,
-   "warten": 0.03,
-   "bootS": 8.2,
-   "grundstellungS": [],
-   "proben": 1,
-   "freigaben": [],
-   "geraet": {
-    "name": "GTX 1060",
-    "adapter": "NVIDIA GeForce GTX 1060",
-    "preis": true
-   },
-   "orte": [
-    {
-     "ort": null,
-     "vor": "karte2.same.entfaltung.schirm#1",
-     "s": 28.3,
-     "takte": 794,
-     "chunks": 81,
-     "nach": null
-    }
-   ],
-   "wegeTueren": [],
-   "felder": [
-    {
-     "probe": "karte2.same.entfaltung.schirm#1",
-     "weg": [
-      "__ortZeit",
-      "__weltaktSpionBuch",
-      "__wetterSpionBuch",
-      "__buehneUhr",
-      "__bandDecke",
-      "__zensusCalls",
-      "__pbiv"
-     ]
-    }
-   ],
-   "wirt": [
-    {
-     "probe": "karte2.same.entfaltung.schirm#1",
-     "anders": [
-      "r._bildZeit",
-      "r._wolkenZeit",
-      "r._weltaktGehalten",
-      "r._setWeather",
-      "r.state.weather",
-      "window.__wieseMessen",
-      "window.__wieseUrteil",
-      "window.__ortSchritt"
-     ],
-     "wie": {
-      "r._bildZeit": "getauscht: () => S.T → der Wert 12.5",
-      "r._wolkenZeit": "getauscht: () => S.T → der Wert 12.5",
-      "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
-      "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
-      "r.state.weather": "getauscht: () => wert → der Wert sunny",
-      "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
-      "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
-      "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
-     },
-     "haelt": [],
-     "heap": [
-      200.6,
-      502.6
-     ],
-     "ungemessen": null
-    }
-   ],
-   "messHalt": [
-    {
-     "probe": "karte2.same.entfaltung.schirm#1",
-     "halt": -1000000000,
-     "zurueck": 0
-    }
-   ],
-   "ciBlicke": 2,
-   "strom": {
-    "datei": "strom.ndjson",
-    "bilder": 781,
-    "frameP95": 48.51,
-    "taktP95": 35.67,
-    "vramMax": 161,
-    "seiten": 1,
-    "marken": 0,
-    "fehler": 0,
-    "verloren": 0,
-    "ortImDeckel": [
-     {
-      "probe": "karte2.same.entfaltung.schirm#1",
-      "m": 1204,
-      "ringVor": 4,
-      "ringMin": -1
-     }
-    ],
-    "zapfen": 448,
-    "luecken": 1,
-    "letzteLuecke": "/eval ohne Antwort binnen 10 s"
-   },
-   "fahrtS": 474.2,
-   "minuten": 8.03
-  }
- ]
+ }
 }

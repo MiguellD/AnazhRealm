@@ -1,0 +1,10 @@
+$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
+[linse-gpu] nvidia/pascal
+@@ 21.4 s · am Messort stadt (ego) nach 21.4 s, 538 Takte, Anlauf stand
+@@ 21.4 s · Übung: 23 Hersteller von 31 Werken · R² 1 · α 0.2658 (Gesetz [object Object]) · Stunden 0–35780
+@@ 21.4 s · Können: 477 Bewohner · Lauf {"n":100,"mittelS":72.06,"cv":15.62,"alterRho":0.6635943594359436} · mit Können-Profil 477
+@@ 21.4 s · S2 ein feld: Stunden 5419 → 5519, Güte des Werks 0.9172 → 0.9217 (das Gesetz 0.9172 → 0.9217), R² 1
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal
