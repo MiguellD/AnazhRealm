@@ -1,0 +1,13 @@
+$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
+[linse-gpu] amd/rdna-3
+@@PUNKTE@@ ZEIT planet.wetter.lagen 12.1 s
+@@PUNKTE@@ ZEIT planet.wetter.wolken 26.1 s
+@@PUNKTE@@ ZEIT planet.wetter.klimazonen 48.1 s
+@@PUNKTE@@ ZEIT planet.wetter.extreme 62.7 s
+@@PUNKTE@@ ZEIT planet.wetter.vorhersage 66.1 s
+@@PUNKTE@@ ZEIT planet.wetter.fremde-atmosphaeren 80.2 s
+@@PUNKTE@@ PROBE 80.2 s · Exit 0
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
+[linse-gpu] amd/rdna-3

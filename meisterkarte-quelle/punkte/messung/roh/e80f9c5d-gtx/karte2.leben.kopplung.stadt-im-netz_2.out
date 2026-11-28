@@ -1,0 +1,12 @@
+$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
+[linse-gpu] nvidia/pascal
+@@PUNKTE@@ ZEIT dorf 2.0 s
+@@PUNKTE@@ ZEIT leben.kopplung.leben-formt-planet 33.2 s
+@@PUNKTE@@ ZEIT leben.kopplung.evolution-planet 54.1 s
+@@PUNKTE@@ ZEIT leben.kopplung.stadt-im-netz 305.0 s
+@@PUNKTE@@ FEHLER Error: /eval: {"ms":1,"fehler":"ABSTURZ der Seite: Prozess unbekannt · Abbild C:\\Users\\micha\\AppData\\Local\\Temp\\anazh-absturz\\f7997654-4c58-4783-8201-a7d2ec110d75.dmp","stapel":["at stirb (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\AnazhRealm-mess\\.claude\\worktrees\\punkte-gtx\\scripts\\lib\\welt-boot.cjs:1455:15)","at Timeout._onTimeout (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\AnazhRealm-mess\\.c |     at H.ruf (eval at <anonymous> ([eval]:1:1), <anonymous>:12:70) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async H.seite (eval at
+@@PUNKTE@@ PROBE 305.0 s · Exit 2
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal
