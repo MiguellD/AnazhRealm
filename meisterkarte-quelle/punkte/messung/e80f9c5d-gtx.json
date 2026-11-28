@@ -1,7 +1,7 @@
 {
  "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
  "geraet": "gtx",
- "zeit": "2026-11-28T07:43:13.632Z",
+ "zeit": "2026-11-28T07:48:22.189Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "profiband.K4#1": {
@@ -1895,6 +1895,70 @@
    },
    "zeit": "2026-11-28T07:32:12.601Z",
    "abdruck": "5d0e67824753",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.verstaendigung#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 50.7 s · S1 warf: /eval ohne Antwort binnen 40 s",
+   "exit": 0,
+   "minuten": 0.85,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 50.7 s · S1 warf: /eval ohne Antwort binnen 40 s",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 50.9,
+   "fremd": {
+    "s": 53.9,
+    "takte": 25,
+    "fremdS": 15.05,
+    "kerne": 0.279,
+    "fensterKerne": 0.589,
+    "namen": [
+     [
+      "bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \"",
+      3.08
+     ],
+     [
+      "Explorer.EXE",
+      2.13
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      1.5
+     ]
+    ],
+    "dienerS": 8.09,
+    "diener": [
+     [
+      "System",
+      3.08
+     ],
+     [
+      "WmiPrvSE.exe",
+      2.11
+     ]
+    ],
+    "geraetS": 22.84,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      16.55
+     ],
+     [
+      "svchost.exe",
+      5.63
+     ],
+     [
+      "SearchIndexer.exe",
+      0.28
+     ]
+    ],
+    "eigenS": 73.98,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-28T07:48:22.189Z",
+   "abdruck": "55183cc3768b",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
