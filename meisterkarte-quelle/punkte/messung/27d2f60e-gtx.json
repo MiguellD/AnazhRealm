@@ -1,7 +1,7 @@
 {
  "sha": "27d2f60e46a1f78c9b9151bc911f13312be7fce5",
  "geraet": "gtx",
- "zeit": "2026-11-28T03:13:26.786Z",
+ "zeit": "2026-11-28T03:32:59.691Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "profiband.K4#1": {
@@ -1274,6 +1274,70 @@
    "modus": "session",
    "offen": 1,
    "fahrt": "9264@mwzsw6gi"
+  },
+  "karte2.mensch.fahrzeug.lenker#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 181 s · S1 warf: eine Spielstunde Verkehr nicht erreicht: 32.5 von 2500000000000 s in 8400 Takten, 168.7 s Wand (20.1 ms je Takt)",
+   "exit": 0,
+   "minuten": 3.04,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 181 s · S1 warf: eine Spielstunde Verkehr nicht erreicht: 32.5 von 2500000000000 s in 8400 Takten, 168.7 s Wand (20.1 ms je Takt)",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 181.5,
+   "fremd": {
+    "s": 184.8,
+    "takte": 85,
+    "fremdS": 68.91,
+    "kerne": 0.373,
+    "fensterKerne": 0.606,
+    "namen": [
+     [
+      "bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \"",
+      9.59
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      9.09
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      8.78
+     ]
+    ],
+    "dienerS": 44.36,
+    "diener": [
+     [
+      "System",
+      18.2
+     ],
+     [
+      "dwm.exe",
+      15.13
+     ]
+    ],
+    "geraetS": 83.92,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      60.08
+     ],
+     [
+      "svchost.exe",
+      21.56
+     ],
+     [
+      "SearchIndexer.exe",
+      0.97
+     ]
+    ],
+    "eigenS": 302.42,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-28T03:32:59.691Z",
+   "abdruck": "1fee50cfa72d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
