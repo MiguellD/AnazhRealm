@@ -3020,7 +3020,7 @@
   },
   "profiband.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Gehen 63 Bilder · max 75.35 ms · 68.25 % > 33 ms · Fahrt 47 Bilder · max 125.6 ms · 95.74 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 68.25 % > 33 ms | Fahrt: 4 Bild(er) > 100 ms (max 125.6), 95.74 % > 33 ms an 27d2f60e radeon · gehalten: Gehen 79 Bilder · max 83.36 ms · 21.52 % > 33 ms · Fahrt 54 Bilder · max 116.68 ms · 74.07 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 21.52 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 116.68), 74.07 % > 33 ms an b3740dd5 gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an 27d2f60e: Last: Referenz f 1,285 (Faden 1,285 · alle Kerne 1,169; vor 107,3/282,7 ms, nach 106,6/303,8 ms, Ruhe 83,5/259,8 ms seit 2026-11-16) · fremd: bash.exe -c source /c/Users/micha/.claude/shell-sna… mpr/\" · profiband.K4#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, koerper-core.js +30) — zuletzt an b3740dd5: Last: Referenz f 1,446 (Faden 1,446 · alle Kerne 1,185; vor 122,1/261,6 ms, nach 128,8/249,9 ms, Ruhe 89,1/220,7 ms seit 2026-11-16) · fremd: bash.exe sk/wacht6.sh 4,1 CPU-s · bash.exe -c echo \\ [lins",
+   "beleg": "Maschine: gehalten: Gehen 63 Bilder · max 75.35 ms · 68.25 % > 33 ms · Fahrt 47 Bilder · max 125.6 ms · 95.74 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 68.25 % > 33 ms | Fahrt: 4 Bild(er) > 100 ms (max 125.6), 95.74 % > 33 ms an 27d2f60e radeon · gehalten: Gehen 79 Bilder · max 83.36 ms · 21.52 % > 33 ms · Fahrt 54 Bilder · max 116.68 ms · 74.07 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 21.52 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 116.68), 74.07 % > 33 ms an b3740dd5 gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an 27d2f60e: Last: Referenz f 1,443 (Faden 1,443 · alle Kerne 1,303; vor 117,8/338,5 ms, nach 120,5/325,8 ms, Ruhe 83,5/259,8 ms seit 2026-11-16) · fremd: node scripts/diag-altlasten.cjs --selftest 67,9 CPU-s · ba · profiband.K4#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, koerper-core.js +30) — zuletzt an b3740dd5: Last: Referenz f 1,446 (Faden 1,446 · alle Kerne 1,185; vor 122,1/261,6 ms, nach 128,8/249,9 ms, Ruhe 89,1/220,7 ms seit 2026-11-16) · fremd: bash.exe sk/wacht6.sh 4,1 CPU-s · bash.exe -c echo \\ [lins",
    "stationen": [
     {
      "id": "profiband.K4#1",
@@ -3028,7 +3028,7 @@
      "gruen": true,
      "zahl": "Gehen 63 Bilder · max 75.35 ms · 68.25 % > 33 ms · Fahrt 47 Bilder · max 125.6 ms · 95.74 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 68.25 % > 33 ms | Fahrt: 4 Bild(er) > 100 ms (max 125.6), 95.74 % > 33 ms",
      "sha": "27d2f60e46a1f78c9b9151bc911f13312be7fce5",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, koerper-core.js +30) — zuletzt an bed6256c: Last: Referenz f 1,287 (Faden 1,287 · alle Kerne 1,203; vor 107,4/310 ms, nach 107,5/312,5 ms, Ruhe 83,5/259,8 ms seit 2026-11-16) · fremd: node.exe punkte/punkte.cjs buchen --kopf bed6256cc52c9489d5f",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, koerper-core.js +30) — zuletzt an 27d2f60e: Last: Referenz f 1,443 (Faden 1,443 · alle Kerne 1,303; vor 117,8/338,5 ms, nach 120,5/325,8 ms, Ruhe 83,5/259,8 ms seit 2026-11-16) · fremd: node scripts/diag-altlasten.cjs --selftest 67,9 CPU-s · ba",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -3048,7 +3048,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 27d2f60e: Last: Referenz f 1,285 (Faden 1,285 · alle Kerne 1,169; vor 107,3/282,7 ms, nach 106,6/303,8 ms, Ruhe 83,5/259,8 ms seit 2026-11-16) · fremd: bash.exe -c source /c/Users/micha/.claude/shell-sna… mpr/\"",
+     "grund": "Station seit der Messung geändert — zuletzt an 27d2f60e: Last: Referenz f 1,443 (Faden 1,443 · alle Kerne 1,303; vor 117,8/338,5 ms, nach 120,5/325,8 ms, Ruhe 83,5/259,8 ms seit 2026-11-16) · fremd: node scripts/diag-altlasten.cjs --selftest 67,9 CPU-s · ba",
      "ungemessen": true
     },
     {
@@ -18830,8 +18830,9 @@
      "gruen": true,
      "zahl": "S3 GRÜN · Robinson-Foulds des Stammbaums 0.155 (Soll ≤ 0.3) · Anteil der Bäume mit RF ≤ 0,3 1 (Soll ≥ 0.7) · Sprachfamilien 6 (Soll ≥ 5) · Umfang 192 (Soll ≥ 100 Sprachen (U_eff)) · RF je Familie mitteleuropa 0.155 · alpin 0.017 · mediterran 0.19 · nordisch 0.034 · fernost 0.086 · antik 0.155 (Median gemeldet) · 105 Bedeutungen je Liste · Zeuge 32 von 32 Ortsnamen · [linse-gpu] nvidia/pascal",
      "sha": "45bad33ff93297aed1d46e24df214ff014d1d0d8",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js)",
+     "gehalten": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.mensch.kultur.sprache#4",
@@ -37498,7 +37499,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 294,
+  "konsum": 295,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37621,11 +37622,11 @@
    "ultiversum.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3373
+  "ohne": 3372
  },
  "kopfVoll": "93e4b83b566e66bd9807dd24b737b3af5c4197b8",
- "zeit": "2026-11-28T00:55:22.002Z",
- "vorher": "27d2f60e",
+ "zeit": "2026-11-28T01:04:56.393Z",
+ "vorher": "93e4b83b",
  "bilanz": {
   "gewinn": [],
   "fall": [],
