@@ -18520,7 +18520,7 @@
   },
   "karte2.mensch.kultur.glaube": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.glaube#1 radeon: ungemessen (R10) · karte2.mensch.kultur.glaube#1 gtx: Station seit der Messung geändert · karte2.mensch.kultur.glaube#2 radeon: ungemessen (R10) · karte2.mensch.kultur.glaube#2 gtx: ungemessen (R10) · karte2.mensch.kultur.glaube#3 radeon: ungemessen (R10) · karte2.mensch.kultur.glaube#3 gtx: ungemessen (R10) · karte2.mensch.kultur.glaube#4 radeon: ungemessen (R10) · karte2.mensch.kultur.glaube#4 gtx: ungemessen (R10) · karte2.mensch.kultur.glaube#5 radeon: ungemessen (R10) · karte2.mensch.kultur.glaube#5 gtx: ungemessen (R10) · karte2.mensch.kultur.glaube#6 radeon: ungemessen (R10) · karte2.mensch.kultur.glaube#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.glaube#1 radeon: ungemessen (R10) · karte2.mensch.kultur.glaube#1 gtx: ROT: S1 ROT an Gläubige im Kultbau 0 verfehlt ≥ 0.3 — Täter: der Tag der Bewohner (koerper-core tagesPlan) kennt keinen Gang in den Kultbau und keinen Festtag · Gläubige im Kultbau 0 (Soll ≥ 0.3) · Festtag ÷ Werktag 1.125 (Soll ≥ 3) · Umfang 3 (Soll ≥ 1 Glaube mit Kalender (sein Kultbau steht)) · Stunde 7.5 h · im Kultbau 0 · an ihm 27 · Soll des Tags 0/36 · 7 Tage 27/22/24/24/24/24/24 · Gläubige = alle 1357 Bewohner (kein Bekenntnis am Bewohner) · [linse-gpu] nvidia/pascal an e80f9c5d · karte2.mensch.kultur.glaube#2 radeon: ungemessen (R10) · karte2.mensch.kultur.glaube#2 gtx: ungemessen (R10) · karte2.mensch.kultur.glaube#3 radeon: ungemessen (R10) · karte2.mensch.kultur.glaube#3 gtx: ungemessen (R10) · karte2.mensch.kultur.glaube#4 radeon: ungemessen (R10) · karte2.mensch.kultur.glaube#4 gtx: ungemessen (R10) · karte2.mensch.kultur.glaube#5 radeon: ungemessen (R10) · karte2.mensch.kultur.glaube#5 gtx: ungemessen (R10) · karte2.mensch.kultur.glaube#6 radeon: ungemessen (R10) · karte2.mensch.kultur.glaube#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.kultur.glaube#1",
@@ -18536,10 +18536,10 @@
      "id": "karte2.mensch.kultur.glaube#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true,
+     "zahl": "S1 ROT an Gläubige im Kultbau 0 verfehlt ≥ 0.3 — Täter: der Tag der Bewohner (koerper-core tagesPlan) kennt keinen Gang in den Kultbau und keinen Festtag · Gläubige im Kultbau 0 (Soll ≥ 0.3) · Festtag ÷ Werktag 1.125 (Soll ≥ 3) · Umfang 3 (Soll ≥ 1 Glaube mit Kalender (sein Kultbau steht)) · Stunde 7.5 h · im Kultbau 0 · an ihm 27 · Soll des Tags 0/36 · 7 Tage 27/22/24/24/24/24/24 · Gläubige = alle 1357 Bewohner (kein Bekenntnis am Bewohner) · [linse-gpu] nvidia/pascal",
+     "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
+     "grund": "ROT: S1 ROT an Gläubige im Kultbau 0 verfehlt ≥ 0.3 — Täter: der Tag der Bewohner (koerper-core tagesPlan) kennt keinen Gang in den Kultbau und keinen Festtag · Gläubige im Kultbau 0 (Soll ≥ 0.3) · Festtag ÷ Werktag 1.125 (Soll ≥ 3) · Umfang 3 (Soll ≥ 1 Glaube mit Kalender (sein Kultbau steht)) · Stunde 7.5 h · im Kultbau 0 · an ihm 27 · Soll des Tags 0/36 · 7 Tage 27/22/24/24/24/24/24 · Gläubige = alle 1357 Bewohner (kein Bekenntnis am Bewohner) · [linse-gpu] nvidia/pascal",
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -37461,7 +37461,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 309,
+  "konsum": 310,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37593,10 +37593,10 @@
    "karte2.same.kopplung.terraform#1 gtx",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3349
+  "ohne": 3348
  },
  "kopfVoll": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
- "zeit": "2026-11-28T10:59:06.192Z",
+ "zeit": "2026-11-28T11:25:49.395Z",
  "vorher": "e80f9c5d",
  "bilanz": {
   "gewinn": [],
