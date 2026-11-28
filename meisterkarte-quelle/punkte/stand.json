@@ -4802,7 +4802,7 @@
   },
   "karte2.erleben.bild.auge": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.bild.auge#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, gelaende-core.js, index.html +45) · karte2.erleben.bild.auge#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, gelaende-core.js, index.html +46) · karte2.erleben.bild.auge#2 radeon: ungemessen (R10) · karte2.erleben.bild.auge#2 gtx: Station seit der Messung geändert · karte2.erleben.bild.auge#3 radeon: ungemessen (R10) · karte2.erleben.bild.auge#3 gtx: Station seit der Messung geändert · karte2.erleben.bild.auge#4 radeon: ungemessen (R10) · karte2.erleben.bild.auge#4 gtx: ungemessen (R10) · karte2.erleben.bild.auge#5 radeon: ungemessen (R10) · karte2.erleben.bild.auge#5 gtx: Station seit der Messung geändert · karte2.erleben.bild.auge#6 radeon: ungemessen (R10) · karte2.erleben.bild.auge#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.bild.auge#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, gelaende-core.js, index.html +45) · karte2.erleben.bild.auge#1 gtx: ROT: ❌ über Schwelle (Spanne > 18 Luma) 2.95 % der ruhenden Fläche (44218 px, Soll ≤ 1 %) · ruhend 72.3 % des Bilds (≥ 50 %) · 16/16 Bilder · 1920×1080 · Uhr 0.5 sunny · [linse-gpu] nvidia/pascal an e80f9c5d · karte2.erleben.bild.auge#2 radeon: ungemessen (R10) · karte2.erleben.bild.auge#2 gtx: Station seit der Messung geändert · karte2.erleben.bild.auge#3 radeon: ungemessen (R10) · karte2.erleben.bild.auge#3 gtx: Station seit der Messung geändert · karte2.erleben.bild.auge#4 radeon: ungemessen (R10) · karte2.erleben.bild.auge#4 gtx: ungemessen (R10) · karte2.erleben.bild.auge#5 radeon: ungemessen (R10) · karte2.erleben.bild.auge#5 gtx: Station seit der Messung geändert · karte2.erleben.bild.auge#6 radeon: ungemessen (R10) · karte2.erleben.bild.auge#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.erleben.bild.auge#1",
@@ -4819,10 +4819,9 @@
      "id": "karte2.erleben.bild.auge#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, gelaende-core.js, index.html +46)",
-     "ungemessen": true,
+     "zahl": "❌ über Schwelle (Spanne > 18 Luma) 2.95 % der ruhenden Fläche (44218 px, Soll ≤ 1 %) · ruhend 72.3 % des Bilds (≥ 50 %) · 16/16 Bilder · 1920×1080 · Uhr 0.5 sunny · [linse-gpu] nvidia/pascal",
+     "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
+     "grund": "ROT: ❌ über Schwelle (Spanne > 18 Luma) 2.95 % der ruhenden Fläche (44218 px, Soll ≤ 1 %) · ruhend 72.3 % des Bilds (≥ 50 %) · 16/16 Bilder · 1920×1080 · Uhr 0.5 sunny · [linse-gpu] nvidia/pascal",
      "r6": "konsum",
      "beide": true
     },
@@ -26001,7 +26000,7 @@
   },
   "karte2.mensch.zeit.kausal": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: mit Gewalt (C: 3 Schläge, 27 Zeugen draußen, 3 Akten): 1412 → 1539, Häuser 12 → 15 (+3) · ohne (B): 1412 → 1724, Häuser 9 → 15 (+6) über dieselbe Uhr · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: mit Gewalt (C: 3 Schläge, 54 Zeugen draußen, 3 Akten): 1412 → 1539, Häuser 12 → 15 (+3) · ohne (B): 1412 → 2000, Häuser 9 → 27 (+18) über dieselbe Uhr · [linse-gpu] nvidia/pascal an 1e204f83 gtx — offen: karte2.mensch.zeit.kausal#2 radeon: Station seit der Messung geändert · karte2.mensch.zeit.kausal#2 gtx: Station seit der Messung geändert · karte2.mensch.zeit.kausal#3 radeon: Station seit der Messung geändert · karte2.mensch.zeit.kausal#3 gtx: Station seit der Messung geändert · karte2.mensch.zeit.kausal#4 radeon: Station seit der Messung geändert · karte2.mensch.zeit.kausal#4 gtx: Station seit der Messung geändert · karte2.mensch.zeit.kausal#5 radeon: Station seit der Messung geändert · karte2.mensch.zeit.kausal#5 gtx: Station seit der Messung geändert · karte2.mensch.zeit.kausal#6 radeon: Station seit der Messung geändert · karte2.mensch.zeit.kausal#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: mit Gewalt (C: 3 Schläge, 27 Zeugen draußen, 3 Akten): 1412 → 1539, Häuser 12 → 15 (+3) · ohne (B): 1412 → 1724, Häuser 9 → 15 (+6) über dieselbe Uhr · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: mit Gewalt (C: 3 Schläge, 54 Zeugen draußen, 3 Akten): 1412 → 1539, Häuser 12 → 15 (+3) · ohne (B): 1412 → 2000, Häuser 9 → 27 (+18) über dieselbe Uhr · [linse-gpu] nvidia/pascal an 1e204f83 gtx — offen: karte2.mensch.zeit.kausal#2 radeon: Station seit der Messung geändert · karte2.mensch.zeit.kausal#2 gtx: Station seit der Messung geändert · karte2.mensch.zeit.kausal#3 radeon: Station seit der Messung geändert · karte2.mensch.zeit.kausal#3 gtx: ROT: S3 ROT: fehlender Leser: keine Kette: die Akte eines Orts trägt Zeit und Art ({t, type}), kein Glied, keinen Vorgänger, keine Antwort auf „Warum?“ (0 von 1 Orten mit Akten, 0 Akten) (stamm/siedlung-bewohner.js:2169) · gemessen 0 · [linse-gpu] nvidia/pascal an e80f9c5d · karte2.mensch.zeit.kausal#4 radeon: Station seit der Messung geändert · karte2.mensch.zeit.kausal#4 gtx: Station seit der Messung geändert · karte2.mensch.zeit.kausal#5 radeon: Station seit der Messung geändert · karte2.mensch.zeit.kausal#5 gtx: Station seit der Messung geändert · karte2.mensch.zeit.kausal#6 radeon: Station seit der Messung geändert · karte2.mensch.zeit.kausal#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.zeit.kausal#1",
@@ -26056,10 +26055,10 @@
      "id": "karte2.mensch.zeit.kausal#3",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "zahl": "S3 ROT: fehlender Leser: keine Kette: die Akte eines Orts trägt Zeit und Art ({t, type}), kein Glied, keinen Vorgänger, keine Antwort auf „Warum?“ (0 von 1 Orten mit Akten, 0 Akten) (stamm/siedlung-bewohner.js:2169) · gemessen 0 · [linse-gpu] nvidia/pascal",
+     "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
+     "grund": "ROT: S3 ROT: fehlender Leser: keine Kette: die Akte eines Orts trägt Zeit und Art ({t, type}), kein Glied, keinen Vorgänger, keine Antwort auf „Warum?“ (0 von 1 Orten mit Akten, 0 Akten) (stamm/siedlung-bewohner.js:2169) · gemessen 0 · [linse-gpu] nvidia/pascal",
+     "r6": "konsum"
     },
     {
      "id": "karte2.mensch.zeit.kausal#4",
@@ -26119,7 +26118,7 @@
   },
   "karte2.mensch.zeit.palimpsest": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.zeit.palimpsest#2 radeon: Station seit der Messung geändert · karte2.mensch.zeit.palimpsest#2 gtx: Station seit der Messung geändert · karte2.mensch.zeit.palimpsest#3 radeon: Station seit der Messung geändert · karte2.mensch.zeit.palimpsest#3 gtx: Station seit der Messung geändert · karte2.mensch.zeit.palimpsest#4 radeon: Station seit der Messung geändert · karte2.mensch.zeit.palimpsest#4 gtx: Station seit der Messung geändert · karte2.mensch.zeit.palimpsest#5 radeon: Station seit der Messung geändert · karte2.mensch.zeit.palimpsest#5 gtx: Station seit der Messung geändert · karte2.mensch.zeit.palimpsest#6 radeon: Station seit der Messung geändert · karte2.mensch.zeit.palimpsest#6 gtx: Station seit der Messung geändert · karte2.mensch.zeit.palimpsest#7 radeon: Station seit der Messung geändert · karte2.mensch.zeit.palimpsest#7 gtx: Station seit der Messung geändert · karte2.mensch.zeit.palimpsest#8 radeon: Station seit der Messung geändert · karte2.mensch.zeit.palimpsest#8 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.zeit.palimpsest#2 radeon: Station seit der Messung geändert · karte2.mensch.zeit.palimpsest#2 gtx: ROT: S2 ROT an Überdeckung je Slot 1320 → 1935 0.733 verfehlt ≥ 0.9 — Täter: fachwerk-core.js exportSettlement (das Wachstum am Jahr, `_ortWaechst` vorTausch): der neue Plan trägt den alten Slot nicht, das Haus fällt · Überdeckung je Slot 1320 → 1935 0.733 (Soll ≥ 0.9) · Umfang 5 (Soll ≥ 4 Jahresringe (Jahrhunderte mit neuen Häusern, 1320 → 1935)) · Slots 1400:13−2 1500:16+3 1600:18+2 1700:20+3−1 1800:23+5−2 1900:25+5−3 1935:27+2 · Jahresringe (Jahrhunderte mit neuen Häusern) 5 · von 15 Häusern 1320 stehen 1935 noch 11 · 3573 ms · [linse-gpu] nvidia/pascal an e80f9c5d · karte2.mensch.zeit.palimpsest#3 radeon: Station seit der Messung geändert · karte2.mensch.zeit.palimpsest#3 gtx: Station seit der Messung geändert · karte2.mensch.zeit.palimpsest#4 radeon: Station seit der Messung geändert · karte2.mensch.zeit.palimpsest#4 gtx: Station seit der Messung geändert · karte2.mensch.zeit.palimpsest#5 radeon: Station seit der Messung geändert · karte2.mensch.zeit.palimpsest#5 gtx: Station seit der Messung geändert · karte2.mensch.zeit.palimpsest#6 radeon: Station seit der Messung geändert · karte2.mensch.zeit.palimpsest#6 gtx: Station seit der Messung geändert · karte2.mensch.zeit.palimpsest#7 radeon: Station seit der Messung geändert · karte2.mensch.zeit.palimpsest#7 gtx: Station seit der Messung geändert · karte2.mensch.zeit.palimpsest#8 radeon: Station seit der Messung geändert · karte2.mensch.zeit.palimpsest#8 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.zeit.palimpsest#2",
@@ -26134,10 +26133,10 @@
      "id": "karte2.mensch.zeit.palimpsest#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "zahl": "S2 ROT an Überdeckung je Slot 1320 → 1935 0.733 verfehlt ≥ 0.9 — Täter: fachwerk-core.js exportSettlement (das Wachstum am Jahr, `_ortWaechst` vorTausch): der neue Plan trägt den alten Slot nicht, das Haus fällt · Überdeckung je Slot 1320 → 1935 0.733 (Soll ≥ 0.9) · Umfang 5 (Soll ≥ 4 Jahresringe (Jahrhunderte mit neuen Häusern, 1320 → 1935)) · Slots 1400:13−2 1500:16+3 1600:18+2 1700:20+3−1 1800:23+5−2 1900:25+5−3 1935:27+2 · Jahresringe (Jahrhunderte mit neuen Häusern) 5 · von 15 Häusern 1320 stehen 1935 noch 11 · 3573 ms · [linse-gpu] nvidia/pascal",
+     "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
+     "grund": "ROT: S2 ROT an Überdeckung je Slot 1320 → 1935 0.733 verfehlt ≥ 0.9 — Täter: fachwerk-core.js exportSettlement (das Wachstum am Jahr, `_ortWaechst` vorTausch): der neue Plan trägt den alten Slot nicht, das Haus fällt · Überdeckung je Slot 1320 → 1935 0.733 (Soll ≥ 0.9) · Umfang 5 (Soll ≥ 4 Jahresringe (Jahrhunderte mit neuen Häusern, 1320 → 1935)) · Slots 1400:13−2 1500:16+3 1600:18+2 1700:20+3−1 1800:23+5−2 1900:25+5−3 1935:27+2 · Jahresringe (Jahrhunderte mit neuen Häusern) 5 · von 15 Häusern 1320 stehen 1935 noch 11 · 3573 ms · [linse-gpu] nvidia/pascal",
+     "r6": "konsum"
     },
     {
      "id": "karte2.mensch.zeit.palimpsest#3",
@@ -37466,7 +37465,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 296,
+  "konsum": 298,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37598,10 +37597,10 @@
    "karte2.same.kopplung.terraform#1 gtx",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3362
+  "ohne": 3360
  },
  "kopfVoll": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
- "zeit": "2026-11-28T08:36:34.034Z",
+ "zeit": "2026-11-28T08:43:13.321Z",
  "vorher": "e80f9c5d",
  "bilanz": {
   "gewinn": [],
