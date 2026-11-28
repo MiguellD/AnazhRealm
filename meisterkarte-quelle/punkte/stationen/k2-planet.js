@@ -1071,7 +1071,7 @@ L.perspektive("geologie", (() => {
             // ── E: was der Faden trägt — der Körper (ein Mond-Argument), die älteste Zeit, der Erd-Schlüssel (S3, S7, S8, S9)
             const e = await H.seite(
                 "await r._fadenQuelle(); const a = await r._planetAuftrag({ type: \"planet-ort\", samen: \"erde-01\", breite: 10, laenge: 20, zeitMa: 0 }); " +
-                    "const b = await r._planetAuftrag({ type: \"planet-ort\", samen: \"erde-01\", breite: 10, laenge: 20, zeitMa: 0, koerper: \"mond\", radiusKm: 1737.4, masseErden: 0.0123 }); " +
+                    "const b = await r._planetAuftrag({ type: \"planet-ort\", samen: \"erde-01\", breite: 10, laenge: 20, zeitMa: 0, koerper: { radiusKm: 1737.4, g: 1.62 } }); " +
                     "const c = await r._planetAuftrag({ type: \"planet-ort\", samen: \"erde-01\", breite: 10, laenge: 20, zeitMa: -3990 }); " +
                     "const G = r._gelaende && r._gelaende(); return { dh: b.hoeheM - a.hoeheM, h: a.hoeheM, hAlt: c.hoeheM, schluessel: !!(G && G.ort && G.ort.teil && G.ort.teil.erdSchluessel), schl: Object.keys(a).sort().join(\",\"), delta: Object.keys(a.delta).sort().join(\",\") };"
             );
@@ -1480,11 +1480,14 @@ L.perspektive("geologie", (() => {
             // fehlt eine, nennt die Adresse sie (`fehlt`), die Wände der Heimat stehen daneben als Zeuge
             const FELS_AN = async (r, T, a, mit) => {
                 const K = globalThis.__gelaendeCore, RAD = Math.PI / 180, k = a.ort + 1;
-                const breite = (Math.asin(((k * 0.6180339887) % 1) * 2 - 1) * 180) / Math.PI, laenge = ((k * 137.508) % 360) - 180;
+                // die Lage auf 0,01° — die Körnung des Satzes „reise <Breite> <Länge>“: der Fächer reist an DIESELBE Welt, deren Wände hier zählen
+                const breite = Math.round(((Math.asin(((k * 0.6180339887) % 1) * 2 - 1) * 180) / Math.PI) * 100) / 100, laenge = Math.round((((k * 137.508) % 360) - 180) * 100) / 100;
                 await r._fadenQuelle();
                 const o = await r._planetAuftrag({ type: "planet-ort", samen: r._planetSamen(), breite, laenge, zeitMa: 0 });
                 if (!o || !o.land) return { meer: true };
-                const zone = Number.isFinite(o.orogenAktiv) ? (o.orogenAktiv ? "kollision" : Number.isFinite(o.orogenAlterMa) && o.orogenAlterMa > 1000 ? "kraton" : "sonst") : null;
+                // der Kraton ist ALTE KRUSTE OHNE Orogen (krusteAlterMa > 1 500 Ma, das Alter der Scholle, wie planet-core `tafel` es liest) — ein
+                // erloschenes Orogen über 1 000 Ma ist gefaltet und bleibt es (Appalachen, Kaledoniden), kein Kraton
+                const zone = Number.isFinite(o.orogenAktiv) && Number.isFinite(o.krusteAlterMa) ? (o.orogenAktiv ? "kollision" : !(o.orogenStaerke > 0.01) && o.krusteAlterMa > 1500 ? "kraton" : "sonst") : null;
                 const einfallAn = typeof K.felsEinfall === "function" ? K.felsEinfall : null;
                 if (zone == null || !einfallAn)
                     return { fehlt: (zone == null ? "voxel-worker.js:1446 planetOrtAuftrag gibt die Zone nicht weiter (planet-core.js:1860 trägt orogenStaerke/orogenAktiv/orogenAlterMa, die Antwort nur " + Object.keys(o).sort().join(",") + ")" : "") + (zone == null && !einfallAn ? "; " : "") + (!einfallAn ? "gelaende-core.js:3351 FELS.einfall ist EINE Konstante (" + K.FELS.einfall + " rad), keine Funktion des Orts (gelaende-core.js:3417 FELS_TE liest sie)" : "") };
@@ -1493,19 +1496,40 @@ L.perspektive("geologie", (() => {
                 const O = K.ortGesetz(ort), eg = K.erbgutNormal(K.ortErbgut(K.erbgutNormal(heim == null ? undefined : heim), o.delta.wildnis));
                 const wl = K.GRUND.basis - O.meerUnterBasisM;
                 const L = K.lageAus({ seed: r._reiseSaat(ort, heim), baseHeight: K.GRUND.basis, waterLevel: wl, ort, erbgut: { terme: eg, wildnis: eg[0] && eg[0].art === "wildnis" ? 1 : 0 }, regionSize: K.GRUND.kachel }, SimplexNoise);
-                let waende = 0, verformt = 0;
+                let waende = 0, verformt = 0, einS = 0, einQ = 0;
+                const steil = [];
                 for (let z = -mit.halb; z < mit.halb; z += 5)
                     for (let x = -mit.halb; x < mit.halb; x += 5) {
                         const h0 = K.hoehe(L, x, z, true);
                         if (h0 < wl + 1) continue;
-                        if (Math.atan(Math.hypot(K.hoehe(L, x + 1.8, z, true) - h0, K.hoehe(L, x, z + 1.8, true) - h0) / 1.8) / RAD < 40) continue;
+                        const gx = (K.hoehe(L, x + 1.8, z, true) - h0) / 1.8, gz = (K.hoehe(L, x, z + 1.8, true) - h0) / 1.8, t = Math.hypot(gx, gz);
+                        if (Math.atan(t) / RAD < 40) continue;
                         waende++;
-                        if (einfallAn(L, x, z) / RAD >= 10) verformt++;
+                        const e = einfallAn(L, x, z) / RAD;
+                        // die zehn steilsten Wände, je ≥ 60 m auseinander (das Ego steht 40 m davor) (der Fächer schießt je Wand ein Bild)
+                        const neu = { t, x, z, y: Math.round(h0 * 100) / 100, fx: gx / t, fz: gz / t, einfall: Math.round(e * 10) / 10 };
+                        const nah = steil.findIndex((q) => Math.hypot(q.x - x, q.z - z) < 60);
+                        if (nah >= 0) {
+                            if (t > steil[nah].t) steil[nah] = neu;
+                        } else steil.push(neu);
+                        steil.sort((p, q) => q.t - p.t);
+                        if (steil.length > 10) steil.length = 10;
+                        einS += e;
+                        einQ += e * e;
+                        if (e >= 10) verformt++;
                     }
-                return { zone, waende, verformt, breite: Math.round(breite * 10) / 10, laenge: Math.round(laenge * 10) / 10 };
+                // die steilsten Wände der Lage (hangauf fx/fz): der Fächer stellt das Ego 40 m hangab vor jede (vision/pruefer/faecher.cjs gebirge#1)
+                for (const q of steil) q.yEgo = Math.round(K.hoehe(L, q.x - q.fx * 40, q.z - q.fz * 40, true) * 100) / 100;
+                return { zone, waende, verformt, einS, einQ, bilder: steil, breite, laenge };
             };
+            // DAS BILD VOR DEM FÄCHER: 200 Lagen × 1 km² brauchen den Deckel der Leiter — geschossen danach, lag kein Bild mehr darin
+            // (Nachtrag 01:09: „Bild fehlt (kein Bild im Deckel der Leiter)“); die Pose steht in der Heimat, die Lagen reisen nicht
+            const bild = await Promise.race([
+                M.auge("geologie-gebirge", { px: 0, py: 140, pz: 260, lx: 0, ly: 95, lz: 0 }),
+                new Promise((f) => setTimeout(() => f({ bild: null, grund: "kein Bild im Deckel der Leiter" }), Math.max(500, (U[1].augeBis - M.uhr()) * 1000))),
+            ]);
             const RF = await FAECHER((c) => H.seite(c), {
-                gesetz: { fn: FELS_AN, export: "voxel-worker.js:1446 planetOrtAuftrag (die Zone) · gelaende-core.js:3351 FELS (das Einfallen)", leser: "gelaende-core.js:3417 FELS_TE (die Bänke im Fels-Stoff)" },
+                gesetz: { fn: FELS_AN, export: "voxel-worker.js planetOrtAuftrag (die Zone: orogenAktiv · orogenStaerke · krusteAlterMa) · gelaende-core.js felsEinfall (das Einfallen der Lage)", leser: "gelaende-core.js felsGeologie (die Bänke im Fels-Stoff: Vertex felsStoff und Shader felsFein/felsWelle)" },
                 adressen: { orte: Array.from({ length: U[1].orte }, (_, j) => j) },
                 mit: { halb: U[1].halb },
                 ms: U[1].ms,
@@ -1514,6 +1538,8 @@ L.perspektive("geologie", (() => {
                     kraton: { wie: (v, aus) => { const w = aus.reduce((s, x) => s + x.w.waende, 0); return w ? (100 * aus.reduce((s, x) => s + x.w.verformt, 0)) / w : null; }, feld: "zone", nur: (a, w) => w.zone === "kraton" },
                     waende: { wie: "summe", feld: "waende" },
                     zonen: { wie: "verschieden", feld: "zone", nur: (a, w) => w.zone === "kollision" || w.zone === "kraton" },
+                    // die Streuung des Einfallens über ALLE Wände der Orte (Grad) — EIN Einfallen für jede Wand ist 0
+                    einfallStreu: { wie: (v, aus) => { const n = aus.reduce((s, x) => s + x.w.waende, 0); if (!n) return 0; const m = aus.reduce((s, x) => s + x.w.einS, 0) / n; return Math.sqrt(Math.max(0, aus.reduce((s, x) => s + x.w.einQ, 0) / n - m * m)); }, feld: "waende" },
                 },
                 schlecht: { feld: "waende", richtung: "max" },
                 pose: (a, w) => "Ego vor der Wand der Lage " + w.breite + "°/" + w.laenge + "° (" + w.zone + ")",
@@ -1521,21 +1547,17 @@ L.perspektive("geologie", (() => {
             });
             // ── die Felswände der Heimat (Hang ≥ 40° der Welt-Höhe, 1 km²) und das Einfallen ihrer Bänke, wie der Fels-Stoff es liest — der Zeuge
             const w = await H.seite(
-                "const G = globalThis.__gelaendeCore; const hoch = (x, z) => r._terrainMacroSurfaceY(x, z); const wl = r.state.waterLevel; let n = 0, wand = 0; const ein = [];" +
+                "const G = globalThis.__gelaendeCore; const L0 = r._gelaende(); const hoch = (x, z) => r._terrainMacroSurfaceY(x, z); const wl = r.state.waterLevel; let n = 0, wand = 0; const ein = [];" +
                     "for (let z = -500; z < 500; z += 5) for (let x = -500; x < 500; x += 5) { const h0 = hoch(x, z); n++; if (h0 < wl + 1) continue; const t = Math.hypot(hoch(x + 1.8, z) - h0, hoch(x, z + 1.8) - h0) / 1.8; " +
-                    "if (Math.atan(t) * 180 / Math.PI >= 40) { wand++; if (ein.length < 400) ein.push(G.FELS.einfall * 180 / Math.PI); } } " +
-                    "return { n, wand, ein, streichenGrad: G.FELS.streichen * 180 / Math.PI };"
+                    "if (Math.atan(t) * 180 / Math.PI >= 40) { wand++; if (ein.length < 400) ein.push(G.felsEinfall(L0, x, z) * 180 / Math.PI); } } " +
+                    "const geo = G.felsGeologie(L0); return { n, wand, ein, streichenGrad: Math.atan2(geo.sn, geo.cs) * 180 / Math.PI };"
             );
             const verformt = w.ein.filter((x) => x >= 10).length;
             const einMittel = w.ein.length ? w.ein.reduce((s, x) => s + x, 0) / w.ein.length : NaN;
             const einStreu = w.ein.length ? Math.sqrt(w.ein.reduce((s, x) => s + (x - einMittel) * (x - einMittel), 0) / w.ein.length) : 0;
-            const bild = await Promise.race([
-                M.auge("geologie-gebirge", { px: 0, py: 140, pz: 260, lx: 0, ly: 95, lz: 0 }),
-                new Promise((f) => setTimeout(() => f({ bild: null, grund: "kein Bild im Deckel der Leiter" }), Math.max(500, (U[1].augeBis - M.uhr()) * 1000))),
-            ]);
             aus[1] = {
                 werte: { verformtProzent: r3(RF.werte.kollision), kratonProzent: r3(RF.werte.kraton) },
-                zeuge: { antworten: w.n + RF.adressen, waende: w.wand + (RF.werte.waende || 0), zonen: RF.werte.zonen || 0, einfallGrad: r3(einMittel), einfallStreuGrad: r3(einStreu), streichenGrad: r3(w.streichenGrad), adressen: RF.adressen, ohneFaehigkeit: RF.fehltAn.length },
+                zeuge: { antworten: w.n + RF.adressen, waende: w.wand + (RF.werte.waende || 0), zonen: RF.werte.zonen || 0, einfallGrad: r3(einMittel), einfallStreuGrad: r3(RF.werte.einfallStreu != null ? RF.werte.einfallStreu : einStreu), einfallStreuHeimatGrad: r3(einStreu), streichenGrad: r3(w.streichenGrad), adressen: RF.adressen, ohneFaehigkeit: RF.fehltAn.length },
                 auge: bild,
             };
             if (RF.fehlt) aus[1].taeter = "Leser fehlt: " + RF.fehlt + " · " + RF.akte;
@@ -1602,14 +1624,14 @@ L.perspektive("geologie", (() => {
             // ── S7: der Körper — ein Mond-Argument am Faden
             const k = await H.seite(
                 "await r._fadenQuelle(); const a = await r._planetAuftrag({ type: \"planet-ort\", samen: \"erde-02\", breite: -20, laenge: 60, zeitMa: 0 }); " +
-                    "const b = await r._planetAuftrag({ type: \"planet-ort\", samen: \"erde-02\", breite: -20, laenge: 60, zeitMa: 0, koerper: \"mars\", schwere: 3.71 }); return b.hoeheM - a.hoeheM;"
+                    "const b = await r._planetAuftrag({ type: \"planet-ort\", samen: \"erde-02\", breite: -20, laenge: 60, zeitMa: 0, koerper: { g: 3.71, radiusKm: 3389.5 } }); return b.hoeheM - a.hoeheM;"
             );
             aus[7] = { werte: {}, zeuge: { antworten: 2, dhKoerper: r3(k) }, ...(Math.abs(k) > 0 ? {} : { nicht: "keine Schwere je Saat: ein Körper-Argument (Mars, 3,71 m/s²) ändert die Höhe um " + r3(k) + " m — jeder Samen rechnet auf PLANET_ERDE (voxel-worker.js:1159)" }) };
             return { sprossen: aus };
         },
         sprossen: {
             1: {
-                u: { augeBis: 46, orte: 24, halb: 100, ms: 6000 },
+                u: { augeBis: 46, orte: 200, halb: 500, ms: 6000 },
                 soll: [K.soll(GE, 1, "in Kollisionszonen ≥ 80 % der Wände verformt", { key: "verformtProzent", einheit: "%" }), K.soll(GE, 1, "im alten Kraton ≤ 20 %", { key: "kratonProzent", einheit: "%" })],
                 zeuge: zMin({ antworten: 1000, waende: 20, zonen: 2, einfallStreuGrad: 0.5 }),
                 auge: { pose: "Ego 45 m über dem Spawn vor der nächsten Felswand, Blick auf sie", vorbild: "Fotos von Felswänden in Faltengebirgen und Kratonen (Feldfotos je Gestein), Blindpaar R11" },

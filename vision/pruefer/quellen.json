@@ -9290,6 +9290,48 @@
    "ablage": "2afc/wikimedia-commons/schichtfels-2"
   },
   {
+   "id": "falten-fels",
+   "art": "2afc",
+   "quelle": "Wikimedia Commons",
+   "fuer": [
+    "planet.geologie.gebirge#1"
+   ],
+   "soll": 40,
+   "breite": 1280,
+   "lizenz": "je Datei (gemeinfrei · CC0 · CC BY · CC BY-SA)",
+   "motiv": "gefaltete und gekippte Bänke in der Wand aus Augenhöhe (die Klasse gefaltet des Fachs: Sättel und Mulden, Schenkel 20–60°, Ramsay & Huber 1987) — die Klasse flach tragen schichtfels und schichtfels-2 (flach lagernde Tafel-Deckschichten des Colorado-Plateaus)",
+   "abfrage": {
+    "art": "commons",
+    "kategorie": "Anticlines",
+    "ohne": "map|diagram|chart|drawing|painting|sign|museum|specimen|hand sample|thin section|microscop|seismic|cross-section|profile|aerial|satellite"
+   },
+   "dateien": [],
+   "liegenGeblieben": [],
+   "stand": "Kategorie Anticlines 103 Dateien (11 Unterkategorien) — gezählt 28.11. an der Commons-API; nicht geholt: sie antwortet der Wolke mit 429, hole.cjs am Gerät holt und sichtet am Bogen",
+   "ablage": "2afc/wikimedia-commons/falten-fels"
+  },
+  {
+   "id": "falten-fels-2",
+   "art": "2afc",
+   "quelle": "Wikimedia Commons",
+   "fuer": [
+    "planet.geologie.gebirge#1"
+   ],
+   "soll": 40,
+   "breite": 1280,
+   "lizenz": "je Datei (gemeinfrei · CC0 · CC BY · CC BY-SA)",
+   "motiv": "gefaltete und gekippte Bänke in der Wand aus Augenhöhe (die Klasse gefaltet des Fachs: Sättel und Mulden, Schenkel 20–60°, Ramsay & Huber 1987) — die Klasse flach tragen schichtfels und schichtfels-2 (flach lagernde Tafel-Deckschichten des Colorado-Plateaus)",
+   "abfrage": {
+    "art": "commons",
+    "kategorie": "Synclines",
+    "ohne": "map|diagram|chart|drawing|painting|sign|museum|specimen|hand sample|thin section|microscop|seismic|cross-section|profile|aerial|satellite"
+   },
+   "dateien": [],
+   "liegenGeblieben": [],
+   "stand": "Kategorie Synclines 61 Dateien (4 Unterkategorien) — gezählt 28.11. an der Commons-API; nicht geholt: sie antwortet der Wolke mit 429, hole.cjs am Gerät holt und sichtet am Bogen",
+   "ablage": "2afc/wikimedia-commons/falten-fels-2"
+  },
+  {
    "id": "weiler-2",
    "art": "2afc",
    "quelle": "Wikimedia Commons",
