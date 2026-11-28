@@ -55,5 +55,10 @@ Kein Soll, kein Richter-Text, kein Umfang der Karte wird geändert.
      mit Mittel 1) LÖSCHT die Art: das Kalb aus dem Gipfel stirbt vor dem nächsten Gipfel, keine Mutter wirft zweimal. Darum ist sie
      NICHT eingebaut. Die Setzzeit braucht EINE Uhr — Leben-Jahr = Welt-Jahr (refS ≙ jahreRef · jahrK, oder das Jahr der Welt auf
      262,5 s); beides rückt jede Spanne des Lebens oder den Gang des Laubs und ist die Raffung der Welt (leben-core :116 „unsicher“).
+   - DIE JUGEND-PROPORTION (der Guss `bauTier(F, dials)` je Gattung, das Alter skaliert nur isometrisch über `_bestandBs`): das Gesetz
+     braucht ein Band mit Zahl. Gefunden, noch ohne Längen-Zahl: Becciolini et al. (Rotwild, Apennin) — der Hinterfuß hört als erstes Maß
+     auf zu wachsen, höchste Wachstums-Konstante (das Kalb trägt lange Läufe); Wenham & Pennie (Animal Science, Rotwild Geburt 8,8 kg bis
+     10 Jahre) — Knochen-Gewicht allometrisch Achse 1,13 · Vorderlauf 0,93 · Hinterlauf 0,92. Die Längen-Exponenten (Lauf, Schädel gegen
+     Masse) stehen hinter der Bezahlschranke; ohne sie kein Dial der Jugend.
    - Die Wand `punkte.cjs liste` Basis ↔ Kandidat ist hier nicht gefahren (der Zweig punkte-maschine lädt in diesem Container nicht in Frist).
    - L_BODY (k2-leben.js:6878, evolution) zitiert noch `_creatureBodySize` — Text einer fremden Leiter, nicht angefasst.
