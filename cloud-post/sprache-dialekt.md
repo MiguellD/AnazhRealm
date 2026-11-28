@@ -149,6 +149,19 @@ Station rechnen ohne kandidat-6 die Gegenwart — der Preis-Schnitt soll diese z
 sprache#3 — Station nicht gefahren: GPU. Erwartung ehrlich: die Merkbücher senken die Ankunft und den Bewohner-Takt um wenige Prozent;
 hält die GTX danach weiter auf der Stufe 41,7 ms, liegt der Täter nicht in der Sprache.
 
+## R11-Zuteilung: `karte2.mensch.kopplung.kultur#1` „Baustoff aus Boden und Klima“ — Täter-Zahl (Bau nach Kopf 4)
+
+Soll (Zweig `punkte-maschine`, `k2-zusammenspiel.js` KULTUR S1): 32 Saaten, passender Baustoff ≥ 85 % (Boden der Zelle: Fels ≥ 0,3 →
+Stein, Wald ≥ 0,5 → Holz, sonst Lehm; der Plan: der Mehrheits-Stil seiner Häuser), Region aus Hausbild ≥ 70 % (Panel).
+Gemessen am Kopf (Null-Renderer, die 32 Zellen der Station um Genesis, `_autoSettlementCellInfo`):
+- Plan wie die Station (`_foundryRequestSettlement({seed, nH})`): **10 von 32 = 31,3 %** passend.
+- Plan mit dem Eingang der Zelle (`_zellEingang`: Klima, Mundart): **11 von 32 = 34,4 %**.
+- Der Boden fordert Holz 27, Lehm 5, Stein 0; die Pläne bauen Holz 10, Stein 7, Lehm 14, Glas 1 (Regionen alpin 8, mitteleuropa 19,
+  mediterran 3, nordisch 2).
+Täter: `fachwerk-core.js` `bauRezept` — der Stil folgt der Region (dem Wurf des Samens im Klima-Band), nie dem Vorrat am Ort; der
+Eingang der Zelle trägt keinen Boden. Der Schnitt gehört an denselben Chokepoint wie die Mundart (`_zellEingang` → `DP` → Plan) und
+verlangt einen Stations-Kandidaten (die Station bestellt ohne Eingang). Er folgt nach Kopf 4, damit Kopf 4 nur den Preis trägt.
+
 ## Kopf 3 (2d05e947, sprache#5) — GPU-Probe GRÜN (Post 28.11. 01:34), Urteil offen
 
 Die vier Tore plus webgl-probe auf radeon-890m GRÜN in 1 177 s (das Probe-Blatt zu 2d05e947 im Zweig koordination). Ich warte auf das Urteil
