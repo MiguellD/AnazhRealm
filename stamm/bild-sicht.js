@@ -834,6 +834,24 @@ class AnazhRealm_bild_sicht {
         // DER ABSTAND ZUR WELT längs der Senkrechten an p (Höhe y über dem Bezug, die gefilterten Höhen s): negativ im Boden
         // (unter der unteren Fläche) oder in der Krone (zwischen Basis und Dach), sonst der Abstand zur nächsten Fläche
         const abstand = (y, s) => min(y.sub(s.r), max(s.g.sub(y), y.sub(s.b)));
+        // die Tiefe der Szene in Metern längs der Blick-Achse (die Tiefen-Zeilen p10, p14 der Projektion des Laufs)
+        const linear = (dd) => U.p14.div((webgpuRaum ? dd : dd.mul(2).sub(1)).add(U.p10));
+        // DAS WASSER IM BILD (A12) — erkannt an dem, was es IST, nie an einer Höhe (A12-n1): der Texel `tx` der Szenen-Tiefe (in
+        // Metern `wz`) zeigt Wasser, wo vor der Szene ohne das Wasser (das Tiefen-Abbild, gezogen im Pass-Bruch, ehe Wasser, Marsch
+        // und Transparentes zeichnen) eine Fläche um mehr als `bildSchicht` näher liegt und er nicht vor dem Nachbarn seines
+        // waagrechten Paars steht (das Abbild hält je Paar das Fernste: ein Halm von 1 px vor dem See trüge sonst dessen Grund).
+        // Ohne Fläche im Abbild (die Ferne des Marschs) ist es kein Wasser. EIN Prädikat für den Wasser-Punkt des Passes und für
+        // den Treffer seines Strahls (`kandidat`).
+        const wasserImBild = (tx, wz) => {
+            const schicht = wz.mul(K.bildSchicht[0]).add(K.bildSchicht[1]);
+            const dOpak = abbild.load(ivec2(floor(tx.x.mul(0.5)), tx.y)).r;
+            const paarX = min(tx.x.add(1).sub(mod(tx.x, 2.0).mul(2)), vec2(tiefe.size()).x.sub(1));
+            const wPaar = linear(tiefe.load(ivec2(paarX, tx.y)).r);
+            return dOpak
+                .lessThan(0.99999)
+                .and(linear(dOpak).sub(wz).greaterThan(schicht))
+                .and(wz.greaterThan(wPaar.sub(schicht)));
+        };
         const mat = new THREE.MeshBasicNodeMaterial();
         mat.name = "spiegel:strahl";
         mat.fog = false;
@@ -870,11 +888,21 @@ class AnazhRealm_bild_sicht {
                     const rel = pt.xz.sub(U.mitte).div(kante);
                     return max(abs(rel.x), abs(rel.y)).lessThan(0.48);
                 };
-                const wasser = aufWasser(P).and(imFeld(P)).and(U.feld.greaterThan(0.5)).toVar();
                 const tiefeGr0 = vec2(tiefe.size());
                 const glaenzt = glanzBild
                     .load(ivec2(screenUV.mul(vec2(glanzBild.size()))))
                     .r.greaterThan(K.glanzSchwelle);
+                // DER WASSER-PUNKT (seegang#1): das Feld trägt ihn, wo es steht (der flache Saum am Ufer, dessen Wasser das Abbild
+                // nicht trennt), das BILD überall (`wasserImBild` am eigenen Texel; eine glänzende Fläche — die Scheibe — trägt die
+                // Normale ihrer Tiefe, nie die des Wassers). Bis seegang-spiegel fragte nur das Feld: jedes Wasser jenseits seiner
+                // 368 m, unter einem Feld, das nach einem Sprung noch bäckt, und dort, wo die Gezeit den Spiegel über den gebackenen
+                // hob (die Marsch im Hochwasser), las im Wasser-Stoff den Himmel der Atmosphäre allein (`_wasserBlick`, Deckung 0) —
+                // die blasse Ebene ohne Ufer, Wolke und Welle.
+                const wasser = aufWasser(P)
+                    .and(imFeld(P))
+                    .and(U.feld.greaterThan(0.5))
+                    .or(wasserImBild(floor(screenUV.mul(tiefeGr0)), linear(d)).and(glaenzt.not()))
+                    .toVar();
                 If(wasser.or(glaenzt), () => {
                     const v = normalize(P.sub(U.auge));
                     // DIE FLÄCHE DES SPIEGELS (material.K4): das Wasser liegt waagrecht (sein Gesetz), jede andere glänzende Fläche
@@ -939,7 +967,6 @@ class AnazhRealm_bild_sicht {
                     const sMax = min(min(austritt(uvP.x, du.x), austritt(uvP.y, du.y)), float(1.0));
                     const raus = sMax.lessThan(0.999);
                     const tiefeGr = vec2(tiefe.size());
-                    const linear = (dd) => U.p14.div((webgpuRaum ? dd : dd.mul(2).sub(1)).add(U.p10));
                     const bild = vec3(0).toVar();
                     const bildW = float(0).toVar();
                     const sVor = float(0).toVar();
@@ -972,23 +999,11 @@ class AnazhRealm_bild_sicht {
                                     1
                                 )
                             );
-                            // DAS WASSER IST NIE SEIN BILD (A12) — erkannt an dem, was es IST, nie an einer Höhe (A12-n1): ein
-                            // Texel zeigt Wasser, wo vor der Szene ohne das Wasser (das Tiefen-Abbild, gezogen im Pass-Bruch, ehe
-                            // Wasser, Marsch und Transparentes zeichnen) eine Fläche um mehr als `bildSchicht` näher liegt und
-                            // nicht vor dem Nachbarn ihres waagrechten Paars steht (das Abbild hält je Paar das Fernste: ein
-                            // Halm von 1 px vor dem See trüge sonst dessen Grund). Ohne Fläche im Abbild (die Ferne des Marschs)
-                            // ist es Bild. So fällt der Kamm, der Buckel des Wasser-Dachs, die höhere Fläche dahinter — und jedes
-                            // Ding an der Wasserlinie bleibt. Bis A12-n1 hielt eine Höhe (±1,5 m um den Spiegel in 2×2 Zellen à
-                            // 2 m): Pfahl, Halm, der Watende, der Wagen in der Furt und der Ufer-Busch verloren an der Linie ihr
-                            // Bild (Prüfer A12: unter dem Pfahl 13 Zeilen, der Spiegel des 1,2-m-Stumpfs ganz)
-                            const schicht = wz.mul(K.bildSchicht[0]).add(K.bildSchicht[1]);
-                            const dOpak = abbild.load(ivec2(floor(tx.x.mul(0.5)), tx.y)).r;
-                            const paarX = min(tx.x.add(1).sub(mod(tx.x, 2.0).mul(2)), tiefeGr.x.sub(1));
-                            const wPaar = linear(tiefe.load(ivec2(paarX, tx.y)).r);
-                            const wasserTexel = dOpak
-                                .lessThan(0.99999)
-                                .and(linear(dOpak).sub(wz).greaterThan(schicht))
-                                .and(wz.greaterThan(wPaar.sub(schicht)));
+                            // DAS WASSER IST NIE SEIN BILD (A12, `wasserImBild`): so fällt der Kamm, der Buckel des Wasser-Dachs, die
+                            // höhere Fläche dahinter — und jedes Ding an der Wasserlinie bleibt. Bis A12-n1 hielt eine Höhe (±1,5 m um
+                            // den Spiegel in 2×2 Zellen à 2 m): Pfahl, Halm, der Watende, der Wagen in der Furt und der Ufer-Busch
+                            // verloren an der Linie ihr Bild (Prüfer A12: unter dem Pfahl 13 Zeilen, der Spiegel des 1,2-m-Stumpfs ganz)
+                            const wasserTexel = wasserImBild(tx, wz);
                             // vor der Fläche des Spiegels (über dem Wasser, vor der Scheibe) um `bildUfer`; ein Wasser-Texel ist
                             // nur dem Wasser nie sein Bild — die Scheibe am See zeigt den See
                             kandidat.assign(
@@ -1027,6 +1042,25 @@ class AnazhRealm_bild_sicht {
                                     .level(float(0))
                                     .rgb.div(kBild);
                             bild.assign(tap(-1, -1).add(tap(1, -1)).add(tap(-1, 1)).add(tap(1, 1)).mul(0.25));
+                            // DIE LUFT DES GESPIEGELTEN WEGS (seegang#1): das Bild trägt den Treffer H unter der Luft Auge → H; der
+                            // Spiegel trägt ihn unter der Luft P → H, die Luft Auge → P legt der Stoff des Wassers selbst auf (die
+                            // EINE Luft, `scene.fogNode`). Die Luft des Auges fällt heraus (die Mischung umgekehrt), die des Wegs
+                            // kommt hinein — wie im Feld (`luft.mische(strahl, P, q)`). Koschmieder 1924: Sicht = 3,912 / β; im Regen
+                            // β 1,5·10⁻³ /m (Sicht 2,5 km). Bis seegang#1 trug der Spiegel die Luft Auge → P zweimal: im Regen
+                            // spiegelTreue 0,23–0,44 an der Bucht, mit der Luft der Sonne 0,81–0,83.
+                            const dT = tiefe.load(ivec2(uvT.mul(tiefeGr))).r;
+                            const hT = U.invVP.mul(
+                                vec4(
+                                    uvT.x.mul(2).sub(1),
+                                    float(1).sub(uvT.y).mul(2).sub(1),
+                                    webgpuRaum ? dT : dT.mul(2).sub(1),
+                                    1
+                                )
+                            );
+                            const H = hT.xyz.div(hT.w);
+                            const fA = luft.faktor(U.auge, H);
+                            const roh = bild.sub(luft.farbe(U.auge, H).mul(fA)).div(max(vec3(1).sub(fA), vec3(1e-3)));
+                            bild.assign(luft.mische(max(roh, vec3(0)), P, H));
                             // am Schirm-Rand blendet der Treffer in den Rest des Strahls (das Feld, der Himmel): keine Naht
                             bildW.assign(
                                 smoothstep(
@@ -1379,6 +1413,25 @@ class AnazhRealm_bild_sicht {
         // Wellen-Amplitude (Ozean voll, See/Fluss still) → kein Riss am Ufer.
         const aFlowV = attribute("aFlow", "vec2");
         const aWaveV = attribute("aWave", "float");
+        // DER SEEGANG IST FETCH-BEGRENZT (planet.wasser.seegang; das Band und seine Quelle: gelaende-core STREICH, Sverdrup–Munk–
+        // Bretschneider, SPM 1984): `aStreich` = √(F/fRef) des Orts (der Kern, je Vertex des Sheets), der Wind am Wasser U (m/s, das
+        // Wind-Gesetz wie die Weißkappe) — die Dünung trägt Hs(F, U)/Hs(fRef, U) = min(f, U/U_voll)/min(1, U/U_voll). Die Bucht der
+        // Station seegang#1 (F 1 814 m) wogt im Regen-Wind (U 6,5 m/s) mit 19 % der offenen See, die offene See (F ≥ 50 km) ganz.
+        // Bis seegang-spiegel 4 trug jedes Wasser auf Meereshöhe die Dünung der offenen See (aWave = die Höhen-Rampe allein): die
+        // Bucht trug Hs 1,44 m (das Band an ihr: 0,14 m) und ihr Wasser stieg über den Steg des Anlegers (Bahn 0,2 m über dem Spiegel)
+        const aStreichV = attribute("aStreich", "float");
+        const streichS = uWind
+            .mul(
+                (AnazhRealm.WIND_BOE.mitte * globalThis.__phytoCore.WIND_FELD.sturmMS) /
+                    globalThis.__gelaendeCore.streichUvoll(this.state.gravity)
+            )
+            .max(1e-4);
+        const streichK = aStreichV.min(streichS).div(streichS.min(float(1.0)));
+        // Die Wind-Zeile hat zwei Glieder: w0 ist die Dünung der offenen See (sie läuft auch bei Flaute), w1·Wind die See des Winds.
+        // Die See des Winds trägt k; die Dünung erreicht das Wasser nur durch seine Öffnung zur offenen See und trägt f selbst —
+        // hinter der Öffnung im Lee ist die gebeugte Welle ≤ 0,5 der einlaufenden (EM 1110-2-1100 II-7: K = 0,5 an der
+        // Schattengrenze, tiefer im Lee kleiner); die Bucht (f 0,19) liegt im Lee, die offene See (f 1) trägt sie ganz.
+        const seegangF = float(WG.wind[0]).mul(aStreichV).add(uWind.mul(WG.wind[1]).mul(streichK));
         // V18.14 — der MAKRO-Kontext: die echte Wassertiefe (L−Bett) pro Vertex.
         // DIE GEZEIT IM BILD (planet.wasser.gezeiten #1): der Vertex des Meers liegt in seiner Ruhe-Höhe (`aMeer` 1, der Sheet-Bau
         // `_computeWaterSheetData`), der Hub der Stufe, die jetzt gilt (`uGezeit` = `_gezeitHubBild`, derselbe, den der Körper in
@@ -1426,7 +1479,7 @@ class AnazhRealm_bild_sicht {
             // Offene See: organische Dünung, nur wo aWaveV hoch — ×(1−flowMix), weil auch Binnenwasser
             // aWaveV > 0 trägt; fließende Flüsse bekommen nur die advektierte Kräuselung, die Mündung blendet
             // weich. Der Rest-Moiré im steilen Lauf-Kern kommt von der Fresnel-Lesart (s. `fres`-Block).
-            const ocean = oceanSwell(xz).mul(aWaveV).mul(float(1.0).sub(flowMix)).mul(windF);
+            const ocean = oceanSwell(xz).mul(aWaveV).mul(float(1.0).sub(flowMix)).mul(seegangF);
             // See + Fluss: organische, advektierte Kräuselung (stromab in Flüssen, still in Seen) — zwei Lagen der
             // Fluss-Phase, je höchstens eine Phase weit getragen.
             // Kräusel-Oktaven klar UNTER der Mesh-Nyquist (~1,8-m-Raster → 3,6 m): 0.07 ≈ 14 m, 0.12 ≈ 8 m,
@@ -1544,7 +1597,7 @@ class AnazhRealm_bild_sicht {
         const kappeQ = float(qa).add(kappeS.mul(qb)).add(kappeS.mul(kappeS).mul(qc));
         const duenungMax = float(0.5 * AnazhRealm.WASSER_WELLE.duenung.reduce((a, b) => a + b, 0))
             .mul(aWaveV)
-            .mul(windF)
+            .mul(seegangF) // die Kappe deckt W des Winds auch auf der kurzen Dünung (die Höhe normiert an ihrem eigenen Maximum)
             .max(1e-3);
         const crest = smoothstep(kappeQ.sub(0.03), kappeQ.add(0.03), vWave.div(duenungMax)).mul(aWaveV);
         const foam = crest.mul(WG.schaum.kamm).mul(float(1.0).sub(riverness));

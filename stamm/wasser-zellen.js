@@ -945,6 +945,7 @@ class AnazhRealm_wasser_zellen {
         geom.setAttribute("position", new THREE.BufferAttribute(f32(data.positions), 3));
         geom.setAttribute("aFlow", new THREE.BufferAttribute(f32(data.aFlow), 2));
         geom.setAttribute("aWave", new THREE.BufferAttribute(f32(data.aWave), 1));
+        geom.setAttribute("aStreich", new THREE.BufferAttribute(f32(data.aStreich), 1));
         geom.setAttribute("aDepth", new THREE.BufferAttribute(f32(data.aDepth), 1));
         geom.setAttribute("aSlope", new THREE.BufferAttribute(f32(data.aSlope), 1));
         geom.setAttribute("aMeer", new THREE.BufferAttribute(f32(data.aMeer), 1));
@@ -971,7 +972,7 @@ class AnazhRealm_wasser_zellen {
 
     // Die EINE pure-typed-array-Mathematik des Zell-Oberkanten-Sheets: keine THREE-Objekte, Zellen/Level
     // NUR via ctx → der Worker-Mirror `buildWaterSheetGeometry` ist byte-identisch. Liefert
-    // {positions, indices, aFlow, aWave, aDepth, aSlope, aMeer} (plain Arrays) oder null.
+    // {positions, indices, aFlow, aWave, aStreich, aDepth, aSlope, aMeer} (plain Arrays) oder null.
     _computeWaterSheetData(cx, cz, ctx) {
         // Wie die Zellen + die Fläche: IMMER LOD0 (V9.93/V18.22 — eine Skala).
         const cfg0 = this._voxelChunkConfig(0);
@@ -1308,6 +1309,8 @@ class AnazhRealm_wasser_zellen {
         // aus.meer) — der Vertex liegt in der Ruhe-Höhe des Meers, Bild (`uGezeit`) und Körper (`_wasserNetzHoehe`) heben ihn um
         // den Hub der Stufe, die JETZT gilt (`_gezeitGilt`); bis hier stand das Sheet auf der Stufe seines Baus (Hub 0 m am Gerät)
         const aMeer = [];
+        // DIE STREICHLÄNGE je Vertex (planet.wasser.seegang): f = √(F/fRef) des Kerns (`seegangStreich`), nur wo die See wogt
+        const aStreich = [];
         const MEER = {};
         const vmap = new Int32Array(NV * NV).fill(-1);
         const vertIsAnchor = []; // V18.114 — pro Vertex: Anker (kein nasser Nachbar)?
@@ -1397,7 +1400,9 @@ class AnazhRealm_wasser_zellen {
             const rt = Math.max(0, Math.min(1, (Math.hypot(avFx, avFz) - 0.04) / 0.46));
             const riverness = rt * rt * (3 - 2 * rt);
             const isLake = n > 0 && heightRamp > 0 && this._hydrosphereLakeAt(wx, wz);
-            aWave.push(isLake ? 0 : heightRamp * (1 - riverness));
+            const welle = isLake ? 0 : heightRamp * (1 - riverness);
+            aWave.push(welle);
+            aStreich.push(welle > 0 ? globalThis.__gelaendeCore.seegangStreich(this._gelaende(), wx, wz) : 1);
             aDepth.push(depthM);
             aSlope.push(n > 0 ? slopeMax : 0);
             aMeer.push(meer);
@@ -1414,6 +1419,7 @@ class AnazhRealm_wasser_zellen {
             const id = positions.length / 3;
             positions.push(nx, ny, nz);
             aWave.push(aWave[srcId]);
+            aStreich.push(aStreich[srcId]);
             aDepth.push(aDepth[srcId]);
             aSlope.push(slopeOverride !== undefined ? slopeOverride : aSlope[srcId]);
             aMeer.push(meer);
@@ -1517,7 +1523,7 @@ class AnazhRealm_wasser_zellen {
                 positions[3 * v + 1] -= hubBau;
                 aDepth[v] -= hubBau;
             }
-        return { positions, indices, aFlow, aWave, aDepth, aSlope, aMeer };
+        return { positions, indices, aFlow, aWave, aStreich, aDepth, aSlope, aMeer };
     }
 
     // V9.72 (Welle C.2) — Iso-Wasser-Mesh disposen. Geometry wird disposed,

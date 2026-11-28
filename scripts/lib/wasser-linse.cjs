@@ -1435,6 +1435,24 @@ async function wasserBild(o = {}) {
         r._ensureSkyEnvironment(true);
     };
     himmelMittag(0.5, 0.5);
+    // DER HIMMEL DER PROBE STEHT, ehe sie misst (B3 an der Radeon, seegang-spiegel 3): das Wasser spiegelt die Himmels-Sicht der
+    // Tafeln (`_wasserBlick` → `himmelFarbe`), und die zeichnet `_atmoTakt` erst, wenn ihre Pipelines stehen (`_atmoZeichne` false →
+    // zurück, der NÄCHSTE Takt zeichnet; Ψ_ms übersetzt an der Radeon nach dem Boot noch). Die Probe TREIBT den Takt wie die des
+    // Regens, bis die Tafeln frisch sind und die Himmels-Sicht die Sonne der Probe trägt. Bis hier las der erste Ruf eine nie
+    // gezeichnete Himmels-Sicht (Version 0): der ruhige Fluss ohne Spiegel, Mittel 1,5 statt 5,5 von 255, Kanten 0,069 statt 0,209,
+    // sturmVerhaeltnis 1,196 statt 1,989 — ein zweiter Ruf derselben Seite maß wie die GTX 1060 (1,97). Steht er nach 200 Takten
+    // nicht, wirft die Probe beim Namen (B HIMMEL), nie misst sie ohne ihn.
+    const A = r._atmoLutBau();
+    const himmelSteht = () =>
+        !!A.tafelnFrisch && String(A.himmelSchluessel).startsWith(`${st._sonne ? st._sonne.winkel : 0}:`);
+    let himmelTakte = 0;
+    for (; himmelTakte < 200 && !himmelSteht(); himmelTakte++) {
+        await sleep(30);
+        r._applyDayNightToScene();
+    }
+    const himmelFehler = himmelSteht()
+        ? null
+        : `B HIMMEL: die Himmels-Sicht der Probe stand nach ${himmelTakte} Takten nicht (Tafeln frisch ${!!A.tafelnFrisch}, Himmels-Sicht v${A.himmelVersion}, Schlüssel ${A.himmelSchluessel})`;
     // Das Gefühl der Welt ruht (uEmotion hebt den Schaum, der Takt schreibt es aus dem Feld, je nach Boot-Dauer).
     const gefuehlAlt = U.emotion ? U.emotion.value : null;
     if (U.emotion) U.emotion.value = 0;
@@ -1522,6 +1540,7 @@ async function wasserBild(o = {}) {
     mGeom.setAttribute("aFlow", fuell(MN * MN, 2, 0));
     mGeom.setAttribute("aDepth", fuell(MN * MN, 1, 20));
     mGeom.setAttribute("aWave", fuell(MN * MN, 1, 1));
+    mGeom.setAttribute("aStreich", fuell(MN * MN, 1, 1)); // die offene See: f = 1 (gelaende-core `seegangStreich` bei F ≥ fRef)
     mGeom.setAttribute("aSlope", fuell(MN * MN, 1, 0));
     mGeom.setIndex(mIdx);
     const meer = new T.Mesh(mGeom, mat);
@@ -1587,7 +1606,7 @@ async function wasserBild(o = {}) {
             U.sunDir.value.copy(alt[4]);
         }
     };
-    let a, b, sturm, kamm, sonne;
+    let a, b, sturm, windlos, kamm, sonne;
     // B7: das Fragment-WGSL, das r184 dem Bogen baut (sein Render-Objekt mit dem Wasser-Stoff) — die Leck-Linse liest es
     const fragmente = new Set();
     const holen = renderer._objects.get;
@@ -1602,12 +1621,17 @@ async function wasserBild(o = {}) {
     // Welle L trug das Material keinen Wind — dann ist beides dasselbe Bild.
     const windAlt = U.wind ? U.wind.value : null;
     try {
+        if (himmelFehler) return { fehler: himmelFehler }; // der finally stellt die Welt zurück
         // zwei Uhren, die keine ganze Zahl von Phasen trennt (sonst verglichen beide dieselbe Phase)
         if (U.wind) U.wind.value = 0.06;
         a = await mess(o.t0 || 61.3);
         b = await mess(o.t1 || 3601.7);
         if (U.wind) U.wind.value = 1.0;
         sturm = await mess(o.t0 || 61.3);
+        // DIE MUTANTE „WIND OHNE WIRKUNG" (B3 SELBSTTEST): derselbe Sturm-Frame mit einem Stoff, den der Wind nicht bewegt (der Wind
+        // bleibt 0,06) — ihr Verhältnis muss unter der Schwelle bleiben, sonst misst B3 etwas anderes als den Wind
+        if (U.wind) U.wind.value = 0.06;
+        windlos = await mess(o.t0 || 61.3);
         if (U.wind) kamm = { ruhig: await kammMess(0.06), sturm: await kammMess(0.8) };
         if (U.wind && U.sunDir) sonne = await sonneMess();
     } finally {
@@ -1639,6 +1663,9 @@ async function wasserBild(o = {}) {
         kantenVerhaeltnis: R(a.schnelle.kantenDichte > 0 ? b.schnelle.kantenDichte / a.schnelle.kantenDichte : 0),
         // der Sturm am ruhigen Fluss: Kanten-Dichte bei Wind 1,0 gegen 0,06 (dieselbe Uhr)
         sturmVerhaeltnis: R(a.ruhig.kantenDichte > 0 ? sturm.ruhig.kantenDichte / a.ruhig.kantenDichte : 0),
+        // … dasselbe Verhältnis der Mutante ohne Wind (B3 SELBSTTEST), und die Takte, bis der Himmel der Probe stand
+        sturmWindlos: R(a.ruhig.kantenDichte > 0 ? windlos.ruhig.kantenDichte / a.ruhig.kantenDichte : 0),
+        himmelTakte,
         fragmente: [...fragmente],
         // die Weißkappe (B8): der Anteil der See, den der Schaum hebt, in der Flaute und bei Wind 0,8
         kamm: kamm && {
@@ -1652,6 +1679,87 @@ async function wasserBild(o = {}) {
         pngKammRuhig: kamm && kamm.ruhig.png,
         pngKammSturm: kamm && kamm.sturm.png,
     };
+}
+
+// B10 DER SPIEGEL OHNE FELD (Karte 2 planet.wasser.seegang#1): der echte Spiegel-Pass (`_spiegelPassRechne` nach dem Bild der
+// Post-Kette) über einer See aus dem echten Wasser-Stoff, 2 m unter dem Auge, ihr Grund 6 m tiefer, das Auge blickt 25° hinab — und
+// das Spiegel-Feld STEHT NICHT (seine Mitte fehlt: der Sprung des Auges, die Ferne jenseits seiner 368 m, die Gezeit über dem
+// gebackenen Spiegel). Gezählt die Texel des Pass-Ziels im unteren Drittel (dort ist alles See), die der Pass deckt (Alpha ≥ 0,99):
+// das Wasser erkennt er im Bild (`wasserImBild`), nie nur im Feld. Bis seegang-spiegel deckte er dort 0 — das Meer der Bucht las
+// den Himmel allein. → { deckt, texel } oder { fehler }
+async function wasserSpiegel() {
+    const T = window.THREE;
+    const st = r.state;
+    const rend = st.renderer,
+        cam = st.camera,
+        sc = st.scene;
+    if (!rend || rend._isHeadlessNull || !st.postProcessing || !st.scenePass) return { fehler: "keine Post-Kette" };
+    rend.setAnimationLoop(null);
+    const pp = st.playerMesh.position;
+    const o = new T.Vector3(pp.x, r._voxelSurfaceY(pp.x, pp.z) + 45, pp.z);
+    // flüssig: 8 m unter der tiefsten Linie, über der Eis beginnt (wie der Lichtweg `spiegel`, licht-linsen.cjs)
+    o.y = Math.min(o.y, Math.min(...r._eisLinien().null) - 8);
+    const flaeche = (mat, kipp, y) => {
+        const m = new T.Mesh(new T.PlaneGeometry(400, 400).rotateX(kipp), mat);
+        m.frustumCulled = false;
+        m.position.set(o.x, y, o.z);
+        return m;
+    };
+    const see = flaeche(r._ensureHydroSurfaceMaterial(), Math.PI / 2, o.y - 2);
+    const n = see.geometry.attributes.position.count;
+    [["aFlow", 2, 0], ["aWave", 1, 0], ["aDepth", 1, 6], ["aSlope", 1, 0], ["aMeer", 1, 0]].forEach(([a, k, v]) => see.geometry.setAttribute(a, new T.Float32BufferAttribute(new Float32Array(n * k).fill(v), k))); // prettier-ignore
+    const grund = flaeche(new T.MeshStandardNodeMaterial({ color: new T.Color(0.18, 0.18, 0.18), roughness: 1, metalness: 0 }), -Math.PI / 2, o.y - 8); // prettier-ignore
+    const alle = [];
+    sc.traverse((m) => (m.isMesh || m.isSprite || m.isPoints) && alle.push([m, m.visible]));
+    const S = r._spiegelFeld(),
+        L = r._spiegelLeser();
+    const alt = { mitte: S.mitte, pos: cam.position.clone(), quat: cam.quaternion.clone() };
+    try {
+        for (const [m] of alle) m.visible = false;
+        sc.add(see, grund);
+        S.mitte = null;
+        cam.position.copy(o);
+        cam.lookAt(o.x + 1, o.y - Math.tan((25 * Math.PI) / 180), o.z);
+        cam.updateMatrixWorld(true);
+        // die Pipelines des Passes und der Stoffe entstehen im Vorbau: Bilder der Post-Kette, bis ein Bild nichts mehr baut, nichts
+        // verschiebt und kein Draw wartet (die Erst-Zeichnung `r._erstZeichnung`, wie `erstRuhe` der Aufnahme) und der Pass ganz
+        // zeichnet — sonst fehlte der See im Bild, und der Pass hätte nichts zu decken
+        // — gezählt vom EINEN Deckel (`__deckel`: ein Gang zählt nur, wenn nichts mehr offen ist; ein Hänger fällt beim Namen)
+        const E = r._erstZeichnung;
+        let ganz = false,
+            ruht = false;
+        for (const weiter = window.__deckel("wasserSpiegel: der Vorbau des Passes", 120, () => !(ganz && ruht)); weiter(); ) {
+            const b0 = E ? [E.bauN, E.verschoben, E.wartetN] : null;
+            st.postProcessing.render();
+            ganz = r._spiegelPassRechne(L);
+            await rend.backend?.device?.queue?.onSubmittedWorkDone?.();
+            await sleep(30);
+            ruht = !E || (E.offen.size === 0 && E.bauN === b0[0] && E.verschoben === b0[1] && E.wartetN === b0[2]);
+            if (ganz && ruht) break;
+        }
+        // drei Läufe nach der Ruhe (wie der Lichtweg `spiegel`): das Tiefen-Abbild und der Stoff stehen im selben Bild
+        for (let k = 0; k < 3; k++) st.postProcessing.render(), r._spiegelPassRechne(L);
+        const [W, H] = [L.rt.width, L.rt.height];
+        const px = await rend.readRenderTargetPixelsAsync(L.rt, 0, 0, W, H);
+        const sch = __weltLicht.zeilenSchritt(px, W, H);
+        // die Zeilen des Ziels: WebGPU liest von oben — das untere Drittel des Bilds sind die letzten Zeilen
+        let deckt = 0,
+            texel = 0;
+        for (let y = Math.ceil((2 * H) / 3); y < H; y++)
+            for (let x = 0; x < W; x++, texel++) if (T.DataUtils.fromHalfFloat(px[y * sch + x * 4 + 3]) >= 0.99) deckt++;
+        return { deckt: wasserRund(3)(deckt / Math.max(1, texel)), texel };
+    } finally {
+        sc.remove(see, grund);
+        for (const [m, v] of alle) m.visible = v;
+        see.geometry.dispose();
+        grund.geometry.dispose();
+        grund.material.dispose();
+        S.mitte = alt.mitte;
+        S.stand++;
+        cam.position.copy(alt.pos);
+        cam.quaternion.copy(alt.quat);
+        cam.updateMatrixWorld(true);
+    }
 }
 
 // ── Q7-Regen ──
@@ -3610,6 +3718,7 @@ module.exports = {
             wasserUferFarbe,
             wasserKoerper,
             wasserBild,
+            wasserSpiegel,
             __wasserSeeAm,
             wasserLicht,
             wasserRegen,

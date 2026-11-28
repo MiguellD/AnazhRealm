@@ -116,6 +116,7 @@ class AnazhRealm_gelaende_chunks {
                                 indices: new Uint32Array(msg.indices),
                                 aFlow: new Float32Array(msg.aFlow),
                                 aWave: new Float32Array(msg.aWave),
+                                aStreich: new Float32Array(msg.aStreich),
                                 aDepth: new Float32Array(msg.aDepth),
                                 aSlope: new Float32Array(msg.aSlope),
                                 aMeer: new Float32Array(msg.aMeer),

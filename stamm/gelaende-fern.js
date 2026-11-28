@@ -361,6 +361,9 @@ class AnazhRealm_gelaende_fern {
         const vmap = new Int32Array(NV * NV).fill(-1);
         const positions = [];
         const aWave = [];
+        // die Streichlänge der Ferne wie das Nah-Sheet (`seegangStreich` des Kerns, planet.wasser.seegang): die ferne Bucht wogt
+        // so kurz wie die nahe
+        const aStreich = [];
         const aDepth = [];
         const indices = [];
         const outR2 = outR * outR;
@@ -382,6 +385,7 @@ class AnazhRealm_gelaende_fern {
             // der per-Pixel-Ufer-Fade trägt die Kante, kein Makro-Sample nötig = O(1)).
             const ramp = Math.max(0, Math.min(1, 1 - (Math.abs(L - waterLevel) - 0.8) / 2.0));
             aWave.push(wet ? ramp : 0);
+            aStreich.push(wet && ramp > 0 ? globalThis.__gelaendeCore.seegangStreich(this._gelaende(), vx, vz) : 1);
             aDepth.push(wet ? F.depth : 0);
             vmap[vi] = id;
             return id;
@@ -416,6 +420,7 @@ class AnazhRealm_gelaende_fern {
             // der VOLLE Material-Vertrag (WebGPU strikt — jedes gelesene Attribut MUSS da sein):
             geom.setAttribute("aFlow", new THREE.Float32BufferAttribute(new Float32Array(vCount * 2), 2));
             geom.setAttribute("aWave", new THREE.Float32BufferAttribute(aWave, 1));
+            geom.setAttribute("aStreich", new THREE.Float32BufferAttribute(aStreich, 1));
             geom.setAttribute("aDepth", new THREE.Float32BufferAttribute(aDepth, 1));
             geom.setAttribute("aSlope", new THREE.Float32BufferAttribute(new Float32Array(vCount), 1));
             // die Gezeit trägt der Ring selbst (`_fernRingWasserNeu` legt je Stufe seine Punkte): kein Vertex hebt sich am Hub

@@ -9492,7 +9492,96 @@
         };
     }
 
+    // DIE STREICHLÄNGE (planet.wasser.seegang, rein additiv): der Seegang aus dem Wind ist FETCH-begrenzt — Sverdrup–Munk–
+    // Bretschneider (Shore Protection Manual 1984, Gl. 3-33/3-34; JONSWAP, Hasselmann 1973): g·Hs/U² = 1,6·10⁻³ · (g·F/U²)^½,
+    // voll ausgereift 0,243 — bei U = 10 m/s über F = 435 m Hs ≈ 0,11 m, über 50 km 1,14 m. DASSELBE Gesetz wie vehicle-core
+    // `bootWelle` (das Boot am Anleger; `hsA`, `hsVoll` sind seine Zahlen). Die Dünung der Welt ist die der offenen See
+    // (F ≥ `fRef`); ein Wasser mit kürzerer Streichlänge trägt den Anteil Hs(F, U) / Hs(fRef, U) = min(√F, S) / min(√fRef, S) mit
+    // S = √F_voll(U), F_voll = (hsVoll/hsA)² · U²/g = 23 066 · U²/g. Der Kern gibt je Ort f = √(min(F, fRef)/fRef); der Stoff
+    // schließt mit dem Wind am Wasser (`streichUvoll(g)`: U_voll = hsA·√(g·fRef)/hsVoll = 4,61 m/s auf der Erde, darüber ist auch fRef
+    // fetch-begrenzt): k = min(f, U/U_voll) / min(1, U/U_voll).
+    // F je Ort: je Richtung (16, je 22,5°) die Strecke über Wasser bis zum trockenen Ufer (`trocken`: die Höhe ohne Detail über dem
+    // Meeresspiegel; ein Strahl, der auf Land beginnt, zählt ab dem ersten Wasser binnen 100 m), je Wind-Richtung das mit cos²
+    // gewogene Mittel der fünf Strahlen ± 45° (Saville et al. 1962, das Verfahren der effektiven Streichlänge im SPM; auf die offene
+    // See normiert: alle Strahlen fRef → F = fRef) und davon das MAXIMUM über die Richtungen — die See des Orts, wenn der Wind von
+    // dort weht, wo sie am offensten ist. `seegangStreich` liest f bilinear zwischen den Ecken eines 64-m-Gitters (je Ort nur von
+    // der Welt-Lage: Main und Faden rechnen dasselbe, Blätter treffen sich an der Naht).
+    const STREICH = Object.freeze({ fRef: 50000, richtungen: 16, sektor: 2, schritt: 25, wachstum: 0.1, landM: 100, gitter: 64, hsA: 0.0016, hsVoll: 0.243 }); // prettier-ignore
+    // der Wind, über dem auch die offene See fetch-begrenzt ist (m/s), bei der Schwere `g` der Welt (m/s², das Vorzeichen zählt nicht)
+    function streichUvoll(g) {
+        return (STREICH.hsA * Math.sqrt(Math.abs(g) * STREICH.fRef)) / STREICH.hsVoll;
+    }
+    function streichLaenge(L, x, z, trocken) {
+        const S = STREICH;
+        const tr = trocken || ((a, b) => hoehe(L, a, b, false) >= L.waterLevel);
+        // je Strahl erst, wenn ein Sektor ihn fragt (-1: noch nicht gelaufen); trägt ein Sektor die offene See, endet die Suche
+        const strahl = new Float64Array(S.richtungen).fill(-1);
+        const amLand = tr(x, z);
+        const lauf = (k) => {
+            if (strahl[k] >= 0) return strahl[k];
+            const a = (k * 2 * Math.PI) / S.richtungen,
+                dx = Math.cos(a),
+                dz = Math.sin(a);
+            let d = 0,
+                ab = amLand ? -1 : 0,
+                F = S.fRef;
+            while (d - Math.max(ab, 0) < S.fRef) {
+                d += Math.max(S.schritt, S.wachstum * (d - Math.max(ab, 0)));
+                const land = tr(x + dx * d, z + dz * d);
+                if (ab < 0) {
+                    if (!land) ab = d;
+                    else if (d > S.landM) break;
+                } else if (land) {
+                    F = d - ab;
+                    break;
+                }
+            }
+            return (strahl[k] = ab < 0 ? 0 : Math.min(F, S.fRef));
+        };
+        let best = 0;
+        for (let k = 0; k < S.richtungen; k++) {
+            let sw = 0,
+                sf = 0;
+            for (let j = -S.sektor; j <= S.sektor; j++) {
+                const c = Math.cos((j * Math.PI) / (S.richtungen / 2)) ** 2;
+                sw += c;
+                sf += c * lauf((k + j + S.richtungen) % S.richtungen);
+            }
+            if (sf / sw >= S.fRef * 0.999) return S.fRef; // die offene See (das Mittel der Gewichte rundet unter fRef)
+            if (sf / sw > best) best = sf / sw;
+        }
+        return best;
+    }
+    const streichEcken = new WeakMap();
+    function seegangStreich(L, x, z, trocken) {
+        const S = STREICH;
+        // die Ecken gelten der Lage (Saat und Meeresspiegel): die Lage des Wirts ist EIN Objekt über alle Welten der Sitzung
+        const lage = L.seed + "|" + L.waterLevel;
+        let m = streichEcken.get(L);
+        if (!m || m.lage !== lage || m.size > 40000) streichEcken.set(L, (m = Object.assign(new Map(), { lage })));
+        const ecke = (i, j) => {
+            const k = i + "," + j;
+            let f = m.get(k);
+            if (f === undefined) {
+                f = Math.sqrt(Math.min(streichLaenge(L, i * S.gitter, j * S.gitter, trocken), S.fRef) / S.fRef);
+                m.set(k, f);
+            }
+            return f;
+        };
+        const gx = x / S.gitter,
+            gz = z / S.gitter,
+            i = Math.floor(gx),
+            j = Math.floor(gz),
+            u = gx - i,
+            v = gz - j;
+        return (ecke(i, j) * (1 - u) + ecke(i + 1, j) * u) * (1 - v) + (ecke(i, j + 1) * (1 - u) + ecke(i + 1, j + 1) * u) * v;
+    }
+
     root.__gelaendeCore = Object.freeze({
+        STREICH: STREICH,
+        streichLaenge: streichLaenge,
+        streichUvoll: streichUvoll,
+        seegangStreich: seegangStreich,
         WELT_FELD: WELT_FELD,
         weltFeldRausch: weltFeldRausch,
         weltFeld: weltFeld,
