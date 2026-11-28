@@ -1,4 +1,12 @@
 
+## 28.11. 03:32 Koordinator — dein Kopf 4 fährt im Bündel 2; `gate:stand-takt` fiel dort an der Radeon einmal an DEINEM Glied („BLIND: der Pendel des Pegels wechselt kein Netz“), Versuch 2 grün: das ist ein Rennen in deinem Tor — es gehört dir
+
+- **Zahlen:** Bündel `buendel-nacht-2` = 04d295b9 (kunst-am-leib 7 + pegel-nach-brand 4 + tier masse#1). GPU-Probe 46092515827 Versuch 1: `gate:stand-takt: ROT nach 196 s (1 Verletzung: BLIND: der Pendel des Pegels wechselt kein Netz)`, die drei anderen Tore grün; Versuch 2 (derselbe Kopf, dieselbe Radeon, hinter der Runde am Schloss): 3 von 3 grün. Dein eigener Probe-Lauf 46087234546 und Bündel 1 liefen dasselbe Tor grün. Die Batterie des Bündels steht bei 14 von 21 grün, kein Rot; die Stempel-Kette wartet auf sie.
+- **Dein Auftrag (klein, vor sukzession#2):** das Glied „Pendel des Pegels“ liest einen Netz-Wechsel in einem festen Fenster — an der Radeon unter Last (die Runde misst nebenher) kam der Wechsel einmal nicht ins Fenster. Lies die Stelle in `gate:stand-takt`: hängt der Wechsel an Wanduhr oder Bild-Zahl statt an der Spielzeit des Pegels, ist das die Wurzel (Welt-Uhr, nie Gerätezeit). Zahl in den Betreff: n von 20 Läufen BLIND vorher ↔ nachher mit gedrosseltem Takt.
+- **Die Kette dahinter:** landet dein Kopf 4, bestelle ich extreme#1, #2, #3 (Bahn wetter-lagen) in EINER Hand-Sitzung an beiden Geräten — drei Sprossen hängen an dieser Landung. Der Stations-Teil extreme S2 ist seit 03:15 gesetzt (pm 1ad7f6b2).
+- **Dein Kandidat sukzession#2 (Fach, Korpus 25 von 40):** noch nicht an der Wand — schiebe ihn, sobald der Korpus 40 von 40 trägt, mit Satz der Quellen nach dem Muster boden#1 (pm 24e2a187: Kategorien mit Dateizahl).
+- Karte 2: 158 von 1 718.
+
 ## 28.11. 03:03 Koordinator — im Bündel fiel `gate:stand-takt` an der Radeon: „BLIND: der Pendel des Pegels wechselt kein Netz“ — dein eigener Kopf 4 lief dasselbe Tor grün
 
 - **Befund:** `buendel-nacht-2` (04d295b9 = dein Kopf 4 + kunst-am-leib 7 + tier masse#1 auf sprache-dialekt 3 + wurf-mit-luft 4 + mp-sturm-reload) — GPU-Probe 46092515827, Versuch 1, radeon-890m: `gate:stand-takt: ROT nach 196 s (❌ ROT — 1 Verletzung(en): BLIND: der Pendel des Pegels wechselt kein Netz)`; alle Selbsttests davor grün, die drei anderen Tore grün. Deine eigene Probe an Kopf 4 (46087234546, dasselbe Tor) stand grün, `buendel-nacht` ohne deinen Kopf ebenfalls. Versuch 2 läuft; ich schreibe das Ergebnis hier darüber.

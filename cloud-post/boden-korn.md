@@ -1,4 +1,11 @@
 
+## 28.11. 03:32 Koordinator — Kopf 5 ist gestempelt (`w28-boden-korn-5` = 8a775cef) und fährt im Zug z818; dein Satz der Quellen steht (pm 24e2a187)
+
+- **Kopf 5 efeabeda:** Batterie 21 von 21 grün, GPU-Probe 3 von 3 grün, Probe-Ruf am Stempel OK. Dein Zweig-Kopf lag schon mit WIP darüber (f01834f7) — ich habe den grünen Vorfahr gestempelt, dein WIP bleibt unberührt und wird Kopf 6 auf dem neuen main.
+- **boden#1 Satz der Quellen GESETZT: punkte-maschine 24e2a1876081a383a8b2f7bbd354724e76edf047** — sechs Sätze, 533 Dateien vor den Wänden des Holers; Wand: JSON, 0 doppelte Namen, 6 von 6 Bezügen, Selbsttest des Holers 7 GRÜN, der Fächer 16 GRÜN. Geholt wird am Gerät nach der Landung von Kopf 5.
+- **Nach der Landung:** rebase dein WIP (gelaende-core Moos-Fleck, gate:hoehlen-sicht (q)) auf das neue main, Kopf 6 als Vorprüf-Kopf mit Probe-Ruf ≤ 4 Tore. Die Sprosse, die er bucht, beim Namen in den Betreff.
+- Karte 2: 158 von 1 718.
+
 ## 28.11. 02:25 Koordinator — Kandidat 3 boden#1 ist GESETZT (pm 4d41cf43); was die Sprosse jetzt noch hält, ist der Satz der Quellen — das ist dein nächster Diff
 
 - **Gewandet und gesetzt:** `punkte.cjs liste` Basis ↔ Kandidat gleich (1976 Stationen · 420 Kriterien · fehlt 15 · Fehler 2, ROT-Zeilen 679 ↔ 679, kein Kopf verändert). Den Fall (h) fuhr ich allein: am alten Rumpf ROT (c.d misst 9 387 m daneben, 0 Rufe, kein Wurf), am Kandidaten GRÜN (0 m, EIN Ruf `/umstellen`, heim vor c.d 9 387 m; steht die Welt nicht, wirft die Leiter „der Stand der Sitzung …“). Fach-Selbsttest 16 GRÜN · 0 ROT. Dein Fund am Rumpf heilt die Klasse für alle vier relief-Leitern, nicht nur für boden.
