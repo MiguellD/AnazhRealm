@@ -588,7 +588,8 @@ class AnazhRealm_siedlung_bewohner {
                 this._temperaturFeld(this.getTerrainHeightAt(x, z)),
                 st.seasonPhase,
                 kc.LEIB_SATZ.tracht.uhr,
-                w
+                w,
+                this._luftmasseWaerme(x, z, 0)
             );
             M = this._bewohnerTrachtMerk = { T, x, z, t: st.spielZeit, phase: st.seasonPhase, w: st.weather, fort };
             M.k = kc.trachtDesTags(T, grad, w.rain);
