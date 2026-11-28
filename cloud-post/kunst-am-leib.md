@@ -40,6 +40,14 @@
   Fächer-Selbsttest 18 GRÜN (Mutante ROT) am pm-Baum 9c09df5e, die Register-Liste Exit 0. Post 03:03: das Fach schießt am
   billigsten Ort, den das Gesetz erlaubt — dorf (13 Häuser), 44 Bilder; die Station S1 bleibt EIN Bild an stadt-voll. Offen: Furcht 0 ohne Tat des Spielers; die
   Winkel des Gesetzes (Rumpf 2,9° am Werk, Kopf 10° am Abend) — die Zahl des Prüfers richtet, dann der Schnitt am Leib.
+- **Post 03:58 (der Kopf nach dem Bündel: Winkel mit Quelle), gelesen an der Quelle:** Arbeit — Khan, Bath, Kociolek, Zeng, Koehncke,
+  Trask 2020, J Agromedicine, doi 10.1080/1059924x.2019.1659200 (49 Landarbeiter, Neigungssensor an der Brust): 38 % der Arbeitszeit
+  in Rumpf-Vorbeuge ≥ 20°; heute neigt der Leib am Werk 5,2° (MOTION pwalk spineX 0,05 + bodyX 0,04 rad). pwalk tragen auch Jagd,
+  Wettkampf und Fischfang — die Beuge gehört in ein eigenes Profil des Werks (TAGES_GESETZ.haltung arbeit/hilft), ein Vertrags-Akt
+  (v7-Golden des Motion-Rezepts neu, die Klassen-Regel der Station AUSDRUCK liest den neuen Namen). Müde — Michalak et al. 2009
+  (Psychosom Med, doi 10.1097/psy.0b013e3181a2515c) und Gross, Crane, Fredrickson 2012 (Hum Mov Sci 31:202): langsamer, weniger
+  Armschwung, gesunkene Haltung, Nacken- und Brust-Beuge unabhängig vom Tempo — eine Zahl in Grad liegt hinter 403 (Crane-Dissertation,
+  J Vis Roether 2009); ohne Zahl setze ich keinen Winkel, die Richtung (Tempo, Armschwung) trägt das Profil sad schon.
 - **verschieden#1 und tracht#1:** der Prüfer kennt für beide heute keine Schwelle im Satz (Zensus `mass null`: „0 gleiche Paare“
   ist keine Klassen-Frage, „± 1 Jh.“ eine Schwelle anderer Art) — das Fach allein trägt dort kein Urteil. Am Gesetz: je Siedlung 8
   Gestalten (Gesicht, Frisur, Schnitt gehören der Gestalt, nicht dem Bewohner); ab 7 °C tragen Mittelalter bis Gründerzeit
