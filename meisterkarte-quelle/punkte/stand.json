@@ -19992,7 +19992,7 @@
   },
   "karte2.mensch.macht.grenze": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S1 GRÜN · Grenze im Bild deckt die Karte (Anteil) 1 (Soll ≥ 1) · Burg, wo Lage und Reichtum sie tragen (Anteil) 1 (Soll ≥ 1) · Umfang 1 (Soll ≥ 1 Herrschaftsgebiet) · Reich 424 m um den Ort mit Herrn (0.565 km²) · Grenzzeichen in der Szene 109, davon am Rand 109 · Rand im Bild 360 von 360 Punkten · Burg in Lage 1 · [linse-gpu] nvidia/pascal an cf1e6404 gtx — offen: karte2.mensch.macht.grenze#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +13) · karte2.mensch.macht.grenze#2 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#2 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#3 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#3 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#4 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#4 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#5 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#5 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#6 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#6 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#7 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#7 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#8 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#8 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: S1 GRÜN · Grenze im Bild deckt die Karte (Anteil) 1 (Soll ≥ 1) · Burg, wo Lage und Reichtum sie tragen (Anteil) 1 (Soll ≥ 1) · Umfang 1 (Soll ≥ 1 Herrschaftsgebiet) · Reich 424 m um den Ort mit Herrn (0.565 km²) · Grenzzeichen in der Szene 109, davon am Rand 109 · Rand im Bild 360 von 360 Punkten · Burg in Lage 1 · [linse-gpu] nvidia/pascal an cf1e6404 gtx — offen: karte2.mensch.macht.grenze#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +13) · karte2.mensch.macht.grenze#2 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#2 gtx: ROT: S2 ROT: fehlender Leser: keine Grenze aus der Kostenfläche: 7512 Gemeinwesen in 15876 von 15876 Zellen (32 × 32 km) tragen kein Reich mit Grenze, kein Fluss und kein Kamm verlegt eine (stamm/siedlung-ort.js:1609) · gemessen 7512 · [linse-gpu] nvidia/pascal an e80f9c5d · karte2.mensch.macht.grenze#3 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#3 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#4 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#4 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#5 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#5 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#6 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#6 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#7 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#7 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#8 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#8 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.macht.grenze#1",
@@ -20029,10 +20029,10 @@
      "id": "karte2.mensch.macht.grenze#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "zahl": "S2 ROT: fehlender Leser: keine Grenze aus der Kostenfläche: 7512 Gemeinwesen in 15876 von 15876 Zellen (32 × 32 km) tragen kein Reich mit Grenze, kein Fluss und kein Kamm verlegt eine (stamm/siedlung-ort.js:1609) · gemessen 7512 · [linse-gpu] nvidia/pascal",
+     "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
+     "grund": "ROT: S2 ROT: fehlender Leser: keine Grenze aus der Kostenfläche: 7512 Gemeinwesen in 15876 von 15876 Zellen (32 × 32 km) tragen kein Reich mit Grenze, kein Fluss und kein Kamm verlegt eine (stamm/siedlung-ort.js:1609) · gemessen 7512 · [linse-gpu] nvidia/pascal",
+     "r6": "konsum"
     },
     {
      "id": "karte2.mensch.macht.grenze#3",
@@ -23168,7 +23168,7 @@
   },
   "karte2.mensch.sport.geistspiel": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S1 GRÜN · regelwidrige Züge 0 (Soll ≤ 0) · Umfang 100 (Soll ≥ 100 Partien zwischen 2 Bewohnern) · [linse-gpu] nvidia/pascal an 2d6a0447 gtx — offen: karte2.mensch.sport.geistspiel#1 radeon: ungemessen (R10) · karte2.mensch.sport.geistspiel#2 radeon: ungemessen (R10) · karte2.mensch.sport.geistspiel#2 gtx: Station seit der Messung geändert · karte2.mensch.sport.geistspiel#3 radeon: ungemessen (R10) · karte2.mensch.sport.geistspiel#3 gtx: Station seit der Messung geändert · karte2.mensch.sport.geistspiel#4 radeon: ungemessen (R10) · karte2.mensch.sport.geistspiel#4 gtx: Station seit der Messung geändert · karte2.mensch.sport.geistspiel#5 radeon: ungemessen (R10) · karte2.mensch.sport.geistspiel#5 gtx: Station seit der Messung geändert · karte2.mensch.sport.geistspiel#6 radeon: ungemessen (R10) · karte2.mensch.sport.geistspiel#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: S1 GRÜN · regelwidrige Züge 0 (Soll ≤ 0) · Umfang 100 (Soll ≥ 100 Partien zwischen 2 Bewohnern) · [linse-gpu] nvidia/pascal an 2d6a0447 gtx — offen: karte2.mensch.sport.geistspiel#1 radeon: ungemessen (R10) · karte2.mensch.sport.geistspiel#2 radeon: ungemessen (R10) · karte2.mensch.sport.geistspiel#2 gtx: ROT: S2 ROT: fehlender Leser: keine Spielstärke, keine Übung, kein Elo: kein Brettspiel: Gasthaus und Platz bieten mahl und treff, keinen Tisch mit Brett (0 Bewohner im Akt treff) (koerper-core.js:5182) · gemessen 0 · [linse-gpu] nvidia/pascal an e80f9c5d · karte2.mensch.sport.geistspiel#3 radeon: ungemessen (R10) · karte2.mensch.sport.geistspiel#3 gtx: Station seit der Messung geändert · karte2.mensch.sport.geistspiel#4 radeon: ungemessen (R10) · karte2.mensch.sport.geistspiel#4 gtx: Station seit der Messung geändert · karte2.mensch.sport.geistspiel#5 radeon: ungemessen (R10) · karte2.mensch.sport.geistspiel#5 gtx: Station seit der Messung geändert · karte2.mensch.sport.geistspiel#6 radeon: ungemessen (R10) · karte2.mensch.sport.geistspiel#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.sport.geistspiel#1",
@@ -23204,10 +23204,10 @@
      "id": "karte2.mensch.sport.geistspiel#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "zahl": "S2 ROT: fehlender Leser: keine Spielstärke, keine Übung, kein Elo: kein Brettspiel: Gasthaus und Platz bieten mahl und treff, keinen Tisch mit Brett (0 Bewohner im Akt treff) (koerper-core.js:5182) · gemessen 0 · [linse-gpu] nvidia/pascal",
+     "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
+     "grund": "ROT: S2 ROT: fehlender Leser: keine Spielstärke, keine Übung, kein Elo: kein Brettspiel: Gasthaus und Platz bieten mahl und treff, keinen Tisch mit Brett (0 Bewohner im Akt treff) (koerper-core.js:5182) · gemessen 0 · [linse-gpu] nvidia/pascal",
+     "r6": "konsum"
     },
     {
      "id": "karte2.mensch.sport.geistspiel#3",
@@ -37015,7 +37015,7 @@
   },
   "karte2.same.preis.speicher": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.preis.speicher#1 radeon: ungemessen (R10) · karte2.same.preis.speicher#1 gtx: Station seit der Messung geändert · karte2.same.preis.speicher#2 radeon: ungemessen (R10) · karte2.same.preis.speicher#2 gtx: Station seit der Messung geändert · karte2.same.preis.speicher#3 radeon: ungemessen (R10) · karte2.same.preis.speicher#3 gtx: Station seit der Messung geändert · karte2.same.preis.speicher#4 radeon: ungemessen (R10) · karte2.same.preis.speicher#4 gtx: Station seit der Messung geändert · karte2.same.preis.speicher#5 radeon: ungemessen (R10) · karte2.same.preis.speicher#5 gtx: Station seit der Messung geändert · karte2.same.preis.speicher#6 radeon: ungemessen (R10) · karte2.same.preis.speicher#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.same.preis.speicher#1 radeon: ungemessen (R10) · karte2.same.preis.speicher#1 gtx: Station seit der Messung geändert — zuletzt an e80f9c5d: Frist der Probe 87 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter same.preis.speicher) · Täter: @@PUNKTE@@ FRIST 87 s der Probe gerissen — Abbau · karte2.same.preis.speicher#2 radeon: ungemessen (R10) · karte2.same.preis.speicher#2 gtx: Station seit der Messung geändert · karte2.same.preis.speicher#3 radeon: ungemessen (R10) · karte2.same.preis.speicher#3 gtx: Station seit der Messung geändert · karte2.same.preis.speicher#4 radeon: ungemessen (R10) · karte2.same.preis.speicher#4 gtx: Station seit der Messung geändert · karte2.same.preis.speicher#5 radeon: ungemessen (R10) · karte2.same.preis.speicher#5 gtx: Station seit der Messung geändert · karte2.same.preis.speicher#6 radeon: ungemessen (R10) · karte2.same.preis.speicher#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.preis.speicher#1",
@@ -37033,7 +37033,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Station seit der Messung geändert — zuletzt an e80f9c5d: Frist der Probe 87 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter same.preis.speicher) · Täter: @@PUNKTE@@ FRIST 87 s der Probe gerissen — Abbau",
      "ungemessen": true,
      "beide": true
     },
@@ -37465,7 +37465,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 298,
+  "konsum": 300,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37597,10 +37597,10 @@
    "karte2.same.kopplung.terraform#1 gtx",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3360
+  "ohne": 3358
  },
  "kopfVoll": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
- "zeit": "2026-11-28T08:43:13.321Z",
+ "zeit": "2026-11-28T08:49:40.451Z",
  "vorher": "e80f9c5d",
  "bilanz": {
   "gewinn": [],
