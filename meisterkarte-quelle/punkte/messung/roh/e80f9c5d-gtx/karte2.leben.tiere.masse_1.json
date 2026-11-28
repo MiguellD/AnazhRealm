@@ -1,0 +1,182 @@
+{
+ "serie": [
+  {
+   "schuss": 1,
+   "abstand": 46.5,
+   "spieler": 43,
+   "glieder": 5,
+   "fliehen": 5,
+   "takte": 2130,
+   "kamera": [
+    -581.49,
+    58.01,
+    -867.8,
+    -547.32,
+    40.19,
+    -893.9
+   ],
+   "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Herde im Bild frei 46.54 m · Luma 101 σ 38.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.466 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Blick-Wahl 2 Posen",
+   "fehler": null,
+   "klassen": {
+    "tier-satz": 69,
+    "tier:bestaeuber": 3,
+    "tier:wesen": 184
+   },
+   "pulk": {
+    "glieder": 5,
+    "sichtbar": 5,
+    "je": [
+     101,
+     45,
+     41,
+     96,
+     90
+    ],
+    "flecken": 1,
+    "kruemel": 1,
+    "pixel": 256,
+    "leibPx": 35.2
+   },
+   "datei": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\e80f9c5d-gtx\\karte2.leben.tiere.masse_1-herde-1.png",
+   "bisS": 58.5
+  },
+  {
+   "schuss": 2,
+   "abstand": 49.8,
+   "spieler": 42.9,
+   "glieder": 5,
+   "fliehen": 5,
+   "takte": 2160,
+   "kamera": [
+    -550.03,
+    54.49,
+    -849.85,
+    -544.09,
+    38.95,
+    -896.8
+   ],
+   "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Herde im Bild frei 49.81 m · Luma 104.2 σ 43.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.466 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Blick-Wahl 5 Posen",
+   "fehler": null,
+   "klassen": {
+    "tier-satz": 86,
+    "tier:bestaeuber": 45,
+    "tier:wesen": 345
+   },
+   "pulk": {
+    "glieder": 5,
+    "sichtbar": 5,
+    "je": [
+     147,
+     147,
+     180,
+     86,
+     151
+    ],
+    "flecken": 2,
+    "kruemel": 4,
+    "pixel": 476,
+    "leibPx": 32.1
+   },
+   "datei": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\e80f9c5d-gtx\\karte2.leben.tiere.masse_1-herde-2.png",
+   "bisS": 71.7
+  },
+  {
+   "schuss": 3,
+   "abstand": 54.6,
+   "spieler": 43.2,
+   "glieder": 5,
+   "fliehen": 5,
+   "takte": 2190,
+   "kamera": [
+    -573.74,
+    57.99,
+    -861.14,
+    -540.82,
+    37.89,
+    -899.73
+   ],
+   "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Herde im Bild frei 54.56 m · Luma 102.7 σ 40.1 schwarz 0.0 % weiß 0.0 % · Stand 18.546.466 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Blick-Wahl 2 Posen",
+   "fehler": null,
+   "klassen": {
+    "tier-satz": 43,
+    "tier:bestaeuber": 6,
+    "tier:wesen": 182
+   },
+   "pulk": {
+    "glieder": 5,
+    "sichtbar": 5,
+    "je": [
+     84,
+     66,
+     77,
+     54,
+     58
+    ],
+    "flecken": 1,
+    "kruemel": 3,
+    "pixel": 231,
+    "leibPx": 30
+   },
+   "datei": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\e80f9c5d-gtx\\karte2.leben.tiere.masse_1-herde-3.png",
+   "bisS": 80.5
+  }
+ ],
+ "zeiten": {
+  "herdeS": 23.7,
+  "szeneS": 24
+ },
+ "szene": {
+  "kamera": [
+   -573.42,
+   38.41,
+   -928.07,
+   -547.32,
+   40.19,
+   -893.9
+  ],
+  "abstand": 43,
+  "punkte": [
+   [
+    -548.25,
+    40.8,
+    -892.98
+   ],
+   [
+    -546.75,
+    40.04,
+    -895.95
+   ],
+   [
+    -546.5,
+    40.78,
+    -891.46
+   ],
+   [
+    -550.12,
+    41.03,
+    -894.63
+   ],
+   [
+    -545,
+    39.82,
+    -894.47
+   ]
+  ],
+  "glieder": 5,
+  "fliehen": 5,
+  "takte": 2130,
+  "hang": {
+   "x": -550.6,
+   "z": -889.6,
+   "neigung": 21.2,
+   "lebensraum": false
+  },
+  "wurf": 5,
+  "fluchtBei": 11.1
+ },
+ "ende": {
+  "ende": true,
+  "max": 20,
+  "takt": true
+ }
+}
