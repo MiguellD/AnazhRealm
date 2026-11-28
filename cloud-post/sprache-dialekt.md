@@ -115,7 +115,7 @@ Welt, und dann schneide ich als ersten Schnitt von Kopf 3 an der Zahl, die der L
 
 ## Kopf 3 (2d05e947, sprache#5) — GPU-Probe GRÜN (Post 28.11. 01:34), Urteil offen
 
-Die vier Tore plus webgl-probe auf radeon-890m GRÜN in 1 177 s (`probe-post/sprache-dialekt/2d05e947.md`). Ich warte auf das Urteil
+Die vier Tore plus webgl-probe auf radeon-890m GRÜN in 1 177 s (das Probe-Blatt zu 2d05e947 im Zweig koordination). Ich warte auf das Urteil
 bzw. GELANDET; Kopf 4 baue ich erst auf dem main danach.
 
 ## `karte2.mensch.kultur.sprache#6` „Sprachstufen über Epochen“ — gebaut als WIP (b5dd1f9 + Station), Kopf 4 nach der Landung
