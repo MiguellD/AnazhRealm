@@ -1,0 +1,127 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.461",
+  "sha": "27d2f60e46a1f78c9b9151bc911f13312be7fce5"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 0,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0,
+   "taeter": {},
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 20,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   0,
+   92.405,
+   0
+  ],
+  "blick": [
+   0,
+   0,
+   1
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 82.1,
+  "sigma": 27,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 20 m · Luma 82.1 σ 27 schwarz 0.0 % weiß 0.0 % · Stand 18.546.461 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Inhalt bodenSatz 45.3 % (≥ 5.0 %) Luma 68, fern-ring 2.6 % (≥ 2.0 %) Luma 87",
+ "rot": [],
+ "inhalt": {
+  "rot": [],
+  "zeile": "Inhalt bodenSatz 45.3 % (≥ 5.0 %) Luma 68, fern-ring 2.6 % (≥ 2.0 %) Luma 87"
+ },
+ "urteil": "GRÜN",
+ "klasse": {
+  "ausdruck": "^bodenSatz([-_:].*)?$|^fern-ring([-_:].*)?$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0.000007,
+   "pixel": 15,
+   "max": 233
+  },
+  "misch": 1110921,
+  "kenn": {
+   "n": 8,
+   "tw": 1440,
+   "th": 810,
+   "ms": 1761,
+   "wechsel": 657536
+  },
+  "rinde": null,
+  "toene": [
+   "bodenSatz=255/80/80",
+   "fern-ring=80/255/80"
+  ],
+  "klassen": {
+   "bodenSatz": {
+    "objekte": 1,
+    "pixel": 938430,
+    "farbe": [
+     0.09361,
+     0.05117,
+     0.03042
+    ]
+   },
+   "fern-ring": {
+    "objekte": 4,
+    "pixel": 53409,
+    "farbe": [
+     0.0893,
+     0.09774,
+     0.08101
+    ]
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\27d2f60e-radeon\\auge-erleben-bild-s6.maske.png"
+ }
+}
