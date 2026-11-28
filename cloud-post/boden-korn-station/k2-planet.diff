@@ -1,50 +1,71 @@
 --- a/meisterkarte-quelle/punkte/stationen/k2-planet.js
 +++ b/meisterkarte-quelle/punkte/stationen/k2-planet.js
-@@ -2869,13 +2869,16 @@
- const posen = [];
- for (let p = 0; p < 30; p++) { const x0 = (zf() - 0.5) * 3000, z0 = (zf() - 0.5) * 3000; for (let i = 0; i < 9; i++) { const x = x0 + (i % 3) * 10, z = z0 + Math.floor(i / 3) * 10; const a = {}; K.hoehe(L, x, z, true, a); posen.push([R3(hang(x, z)), R3(a.schutt || 0), R3(r._feuchteAt(x, z)), r._bodenKlasseAt(x, z)]); } }
- const lf = K.flussLaeufe(L, -3000, -3000, 3000, 3000, 50).filter((l) => l.k === 0).sort((a, b) => b.glieder.length - a.glieder.length).slice(0, 20);
--const laeufe = lf.map((l) => { const b = l.glieder.flatMap((g) => g.bahn); const st = []; for (let i = 0; i < b.length; i += Math.max(1, Math.floor(b.length / 8))) { const y = r._voxelSurfaceY(b[i].x, b[i].z); st.push(y === null ? null : r._terrainMaterialAt(b[i].x, b[i].z, y - 0.2)); } return st; });
-+// DAS KORN DER SOHLE (S2): derselbe Leser an denselben Punkten mit \`aus\` — die Korngröße nach Herkunft (gelaende-core \`korn\`) und
-+// der Weg stromab entlang der Bahn
-+const korn = [];
-+const laeufe = lf.map((l) => { const b = l.glieder.flatMap((g) => g.bahn); const st = [], kr = []; let weg = 0; for (let i = 0, j = 0; i < b.length; i++) { if (i) weg += Math.hypot(b[i].x - b[i - 1].x, b[i].z - b[i - 1].z); if (i !== j) continue; j += Math.max(1, Math.floor(b.length / 8)); const y = r._voxelSurfaceY(b[i].x, b[i].z); const a = {}; st.push(y === null ? null : r._terrainMaterialAt(b[i].x, b[i].z, y - 0.2, a)); if (Number.isFinite(a.kornMm)) kr.push([R3(weg), a.kornMm, a.kornKlasse, a.herkunft]); } korn.push(kr); return st; });
- const tiefen = [0.2, 0.5, 1, 2, 4, 8, 11, 13, 16, 20];
- const saeule = (x, z) => { const y = r._voxelSurfaceY(x, z); if (y === null) return null; const m = tiefen.map((d) => r._terrainMaterialAt(x, z, y - d)); let dick = null; for (let i = 1; i < m.length && dick === null; i++) if (m[i] !== m[0]) dick = tiefen[i]; return { y, m, dick, lagen: new Set(m).size }; };
- const paare = [];
- for (let p = 0; p < 50; p++) { const x0 = (zf() - 0.5) * 3000, z0 = (zf() - 0.5) * 3000; const c = []; for (let i = 0; i < 9; i++) { const x = x0 + ((i % 3) - 1) * 100, z = z0 + (Math.floor(i / 3) - 1) * 100; const q = saeule(x, z); if (q) c.push(q); } if (c.length < 2) continue; c.sort((a, b) => b.y - a.y); paare.push([R3(c[0].y), c[0].dick, R3(c[c.length - 1].y), c[c.length - 1].dick, c[0].lagen, c[0].m.join("|")]); }
- const klassen = {}; for (let p = 0; p < 100; p++) { const k = r._bodenKlasseAt((zf() - 0.5) * 6000, (zf() - 0.5) * 6000); klassen[k] = (klassen[k] || 0) + 1; }
--return { posen, laeufe, paare, klassen, strata: r.constructor.STRATA_STEIN_DEPTH, ms: Math.round(performance.now() - t0) };
-+return { posen, laeufe, korn, paare, klassen, strata: r.constructor.STRATA_STEIN_DEPTH, ms: Math.round(performance.now() - t0) };
- `);
-             const P = w.posen || [];
-             const steil = P.filter((x) => x[0] >= 30), flach = P.filter((x) => x[0] < 10);
-@@ -2943,7 +2946,15 @@
-                     taeter: (RB.fehler.length && !RB.gemessen ? "Leser fehlt: " + RB.fehler[0].fehler + " · " : "") + "kein Foto-Korpus der Erde als Zahl: die Welt zeichnet Fels/Schutt an " + zz(W1.stoffSteilProzent) + " % der " + W1.steilePunkte + " Punkte ≥ 30° (Schutthang " + zz(W1.schuttSteilProzent) + " %; der Fels beginnt erst an der Steile 0,42 ≈ 55°, stamm/daten.js:646 TERRAIN_GEOLOGY.rockLo), Moos an " + zz(W1.moosFeuchtProzent) + " % der feuchten Felsen (" + zz(W1.moosTrockenProzent) + " % der trockenen) — die Anteile gleichen Hangs und Klimas der Erde stehen nirgends (unklar), das Blindpaar nur am Gerät · " + RB.akte,
+@@ -2898,17 +2898,21 @@
+                     const K = globalThis.__gelaendeCore, L = r._gelaende(), FS = r.constructor.FELS_STOFF, R3 = (v) => Math.round(v * 1000) / 1000;
+                     const x = a.ort[0], z = a.ort[1];
+                     const gx = (K.hoehe(L, x + 2, z, true) - K.hoehe(L, x - 2, z, true)) / 4, gz = (K.hoehe(L, x, z + 2, true) - K.hoehe(L, x, z - 2, true)) / 4;
+-                    const t = Math.hypot(gx, gz), ny = 1 / Math.sqrt(1 + t * t), hang = (Math.atan(t) * 180) / Math.PI;
++                    const t = Math.hypot(gx, gz), ny = 1 / Math.sqrt(1 + t * t), nz = -gz * ny, hang = (Math.atan(t) * 180) / Math.PI;
+                     const q = {}, y = K.hoehe(L, x, z, true, q);
+                     const fe = r._feuchteAt(x, z, y);
+                     const c0 = [0, 0, 0];
+                     r._bodenFarbeAt(x, y, z, c0);
+                     const c1 = c0.slice(), c2 = c0.slice();
+-                    const w = K.felsStoffPunkt(L, FS.basis, FS.netz, x, y, z, ny, c1, (px, pz, py) => r._feuchteAt(px, pz, py));
+-                    K.felsStoffPunkt(L, FS.basis, FS.netz, x, y, z, ny, c2, () => 0);
++                    // was der Punkt trägt (`aus` von felsStoffPunkt): der Schutt, wie der Chunk ihn als `aSchutt` legt — Schutthang des
++                    // Schicht-Gesetzes, Wand des Erdbaus und der Schutt des Steilen (gelaende-core `hangSchutt`) —, und das Moos der Erde
++                    // (`moos`, gelaende-core `moosDeckung`: die Feuchte oder das Klima, der Nordhang `nz` hält das Wasser); ohne `aus` bleibt er leer
++                    const sa = {};
++                    const w = K.felsStoffPunkt(L, FS.basis, FS.netz, x, y, z, ny, c1, (px, pz, py) => r._feuchteAt(px, pz, py), sa, nz);
++                    K.felsStoffPunkt(L, FS.basis, FS.netz, x, y, z, ny, c2, () => 0, undefined, nz);
+                     const moos = Math.hypot(c1[0] - c2[0], c1[1] - c2[1], c1[2] - c2[2]) / Math.max(1e-6, Math.max(...c2)) > 0.02 ? 1 : 0;
+                     const steil = hang >= 30 ? 1 : 0;
+-                    return { pose: a.ort[2], hang: R3(hang), steil, flach: hang < 10 ? 1 : 0, schutt: R3(q.schutt > 0 ? q.schutt : 0), stoff: R3(w), feucht: R3(fe), moos, klasse: r._bodenKlasseAt(x, z), steilOhneStoff: steil && !(w > 0.5) ? 1 : 0, y: R3(y) };
++                    return { pose: a.ort[2], hang: R3(hang), steil, flach: hang < 10 ? 1 : 0, schutt: R3(Math.max(q.schutt > 0 ? q.schutt : 0, sa.schutt > 0 ? sa.schutt : 0)), stoff: R3(w), feucht: R3(fe), moos, moosErde: R3(sa.moos > 0 ? sa.moos : 0), klasse: r._bodenKlasseAt(x, z), steilOhneStoff: steil && !(w > 0.5) ? 1 : 0, y: R3(y) };
+                 };
+                 let sz = 12345;
+                 const zf = () => (sz = (sz * 16807) % 2147483647) / 2147483647;
+@@ -2916,7 +2920,7 @@
+                 for (let p = 0; p < (Number(u1.posen) || 30); p++) { const x0 = (zf() - 0.5) * 3000, z0 = (zf() - 0.5) * 3000; for (let i = 0; i < 9; i++) ORTE.push([Math.round(x0 + (i % 3) * 10), Math.round(z0 + Math.floor(i / 3) * 10), p]); }
+                 const pct = (aus, wo, f) => { const a = aus.filter((x) => wo(x.w)); return a.length ? Math.round((1000 * a.filter((x) => f(x.w)).length) / a.length) / 10 : null; };
+                 const RB = await FAECHER((c) => H.seite(c), {
+-                    gesetz: { fn: BODEN_AN, export: "gelaende-core.js:5501 felsStoffPunkt (Fels und Schutt am Hang, Flechte, Moos — felsFarbe) · gelaende-core.js:2821 hoehe (der Schutthang) · stamm/gelaende-boden.js:1619 _feuchteAt · stamm/kreatur-leben.js:1707 _bodenKlasseAt", leser: "stamm/gelaende-boden.js:2753 _bodenGruenAt (die Farbe des Bodens am Punkt: _bodenFarbeAt + felsStoffPunkt mit _feuchteAt — das Auge, der Kontakt, der Wurf der Wiese)" },
++                    gesetz: { fn: BODEN_AN, export: "gelaende-core.js:6428 felsStoffPunkt (Fels und Schutt am Hang, Flechte, Moos — felsFarbe) · gelaende-core.js:6357 hangSchutt (der Schutt des Steilen, 30° … 50°) · gelaende-core.js:4803 moosDeckung (das Moos nach Feuchte, Klima und Schatten) · gelaende-core.js:3434 hoehe (der Schutthang) · stamm/gelaende-boden.js:1636 _feuchteAt · stamm/kreatur-leben.js:1707 _bodenKlasseAt", leser: "stamm/gelaende-boden.js:2799 _bodenGruenAt (die Farbe des Bodens am Punkt: _bodenFarbeAt + felsStoffPunkt mit _feuchteAt — das Auge, der Kontakt, der Wurf der Wiese)" },
+                     adressen: { saaten: ["heim"], orte: ORTE },
+                     ms: Number(u1.ms) || 10000,
+                     masse: {
+@@ -2926,8 +2930,11 @@
+                         flachePunkte: { wie: "summe", feld: "flach" },
+                         schuttSteilProzent: { wie: (v, aus) => pct(aus, (w) => w.steil === 1, (w) => w.schutt > 0.5), feld: "schutt" },
+                         schuttFlachProzent: { wie: (v, aus) => pct(aus, (w) => w.flach === 1, (w) => w.schutt > 0.5), feld: "schutt" },
++                        schuttMittelSteil: { wie: (v, aus) => { const a = aus.filter((x) => x.w.steil === 1); return a.length ? Math.round((1000 * a.reduce((s, x) => s + x.w.schutt, 0)) / a.length) / 1000 : null; }, feld: "schutt" },
+                         stoffSteilProzent: { wie: (v, aus) => pct(aus, (w) => w.steil === 1, (w) => w.stoff > 0.5), feld: "stoff" },
+                         feuchtProzent: { wie: (v, aus) => pct(aus, () => true, (w) => w.feucht > 0.5), feld: "feucht" },
++                        moosErdeFeuchtProzent: { wie: (v, aus) => pct(aus, (w) => w.feucht > 0.5 && !(w.stoff > 0.5), (w) => w.moosErde > 0.25), feld: "moosErde" },
++                        moosErdeTrockenProzent: { wie: (v, aus) => pct(aus, (w) => !(w.feucht > 0.5) && !(w.stoff > 0.5), (w) => w.moosErde > 0.25), feld: "moosErde" },
+                         moosFeuchtProzent: { wie: (v, aus) => pct(aus, (w) => w.feucht > 0.5 && w.stoff > 0, (w) => w.moos === 1), feld: "moos" },
+                         moosTrockenProzent: { wie: (v, aus) => pct(aus, (w) => !(w.feucht > 0.5) && w.stoff > 0, (w) => w.moos === 1), feld: "moos" },
+                         klassen: { wie: "verschieden", feld: "klasse" },
+@@ -2940,10 +2947,10 @@
+                 const nz = (o) => { const r0 = {}; for (const k of Object.keys(o)) if (o[k] != null) r0[k] = o[k]; return r0; };
+                 const zz = (v) => (v == null ? "—" : v);
+                 aus[1] = {
+-                    werte: nz({ posen: W1.posen, schuttSteilProzent: W1.schuttSteilProzent, schuttFlachProzent: W1.schuttFlachProzent, stoffSteilProzent: W1.stoffSteilProzent, feuchtProzent: W1.feuchtProzent, moosFeuchtProzent: W1.moosFeuchtProzent, moosTrockenProzent: W1.moosTrockenProzent, steilePunkte: W1.steilePunkte }),
++                    werte: nz({ posen: W1.posen, schuttSteilProzent: W1.schuttSteilProzent, schuttMittelSteil: W1.schuttMittelSteil, schuttFlachProzent: W1.schuttFlachProzent, stoffSteilProzent: W1.stoffSteilProzent, feuchtProzent: W1.feuchtProzent, moosFeuchtProzent: W1.moosFeuchtProzent, moosTrockenProzent: W1.moosTrockenProzent, moosErdeFeuchtProzent: W1.moosErdeFeuchtProzent, moosErdeTrockenProzent: W1.moosErdeTrockenProzent, steilePunkte: W1.steilePunkte }),
+                     zeuge: { posen: W1.posen, punkte: W1.punkte, steilePunkte: W1.steilePunkte, flachePunkte: W1.flachePunkte, klassen: W1.klassen, gerissen: RB.gerissen, akte: RB.akte },
+                     auge: await M.auge("relief-boden-s1", { ort: "wiese" }),
+-                    taeter: (RB.fehler.length && !RB.gemessen ? "Leser fehlt: " + RB.fehler[0].fehler + " · " : "") + "kein Foto-Korpus der Erde als Zahl: die Welt zeichnet Fels/Schutt an " + zz(W1.stoffSteilProzent) + " % der " + W1.steilePunkte + " Punkte ≥ 30° (Schutthang " + zz(W1.schuttSteilProzent) + " %; der Fels beginnt erst an der Steile 0,42 ≈ 55°, stamm/daten.js:646 TERRAIN_GEOLOGY.rockLo), Moos an " + zz(W1.moosFeuchtProzent) + " % der feuchten Felsen (" + zz(W1.moosTrockenProzent) + " % der trockenen) — die Anteile gleichen Hangs und Klimas der Erde stehen nirgends (unklar), das Blindpaar nur am Gerät · " + RB.akte,
++                    taeter: (RB.fehler.length && !RB.gemessen ? "Leser fehlt: " + RB.fehler[0].fehler + " · " : "") + "kein Foto-Korpus der Erde als Zahl: die Welt zeichnet Fels/Schutt an " + zz(W1.stoffSteilProzent) + " % der " + W1.steilePunkte + " Punkte ≥ 30° (Schutt " + zz(W1.schuttSteilProzent) + " %, im Mittel " + zz(W1.schuttMittelSteil) + "; der Schutt des Steilen ab 30°, gelaende-core HANG_SCHUTT, der Fels ab der Steile 0,42 ≈ 55°, stamm/daten.js:647 TERRAIN_GEOLOGY.rockLo), Moos an " + zz(W1.moosFeuchtProzent) + " % der feuchten Felsen (" + zz(W1.moosTrockenProzent) + " % der trockenen), Moos-Polster auf " + zz(W1.moosErdeFeuchtProzent) + " % der feuchten Erde (" + zz(W1.moosErdeTrockenProzent) + " % der trockenen) — die Anteile gleichen Hangs und Klimas der Erde stehen nirgends (unklar), das Blindpaar nur am Gerät · " + RB.akte,
                  };
              }
--            aus[2] = { werte: { laeufe: (w.laeufe || []).length, stoffeDerSohle: stoffe.size }, zeuge: { laeufe: (w.laeufe || []).length, stoffe: [...stoffe] }, nicht: "keine Korngröße in der Welt: der Boden kennt Stoffe (" + [...stoffe].join(", ") + "), kein Korn nach Herkunft (stamm/vegetation-wiese.js:2362 _terrainMaterialAt)" };
-+            // S2 DAS KORN STROMAB: je Lauf der Rang (Spearman) Weg stromab ↔ −Korngröße an seinen Punkten, der Rang der Station ist der
-+            // Median der Läufe; die Stufen sind die Wentworth-Klassen, die der Leser nennt
-+            const spear = (a, b) => { const rk = (v) => { const o = v.map((x, i) => [x, i]).sort((p, q) => p[0] - q[0]); const R = new Array(v.length); for (let i = 0; i < o.length; ) { let j = i; while (j + 1 < o.length && o[j + 1][0] === o[i][0]) j++; for (let k = i; k <= j; k++) R[o[k][1]] = (i + j) / 2; i = j + 1; } return R; }; const ra = rk(a), rb = rk(b), n = a.length, ma = ra.reduce((s, x) => s + x, 0) / n, mb = rb.reduce((s, x) => s + x, 0) / n; let sab = 0, saa = 0, sbb = 0; for (let i = 0; i < n; i++) { sab += (ra[i] - ma) * (rb[i] - mb); saa += (ra[i] - ma) ** 2; sbb += (rb[i] - mb) ** 2; } return saa > 0 && sbb > 0 ? sab / Math.sqrt(saa * sbb) : null; };
-+            const kr = (w.korn || []).filter((st) => st.length >= 4);
-+            const rhos = kr.map((st) => spear(st.map((q) => q[0]), st.map((q) => -q[1]))).filter((v) => v !== null).sort((a, b) => a - b);
-+            const kornStufen = new Set(kr.flat().map((q) => q[2])).size;
-+            aus[2] = !rhos.length
-+                ? M.nicht("keine Korngröße in der Welt: der Boden kennt Stoffe (" + [...stoffe].join(", ") + "), kein Korn nach Herkunft (stamm/vegetation-wiese.js _terrainMaterialAt nennt kein kornMm)", { laeufe: (w.laeufe || []).length })
-+                : { werte: { rang: R3(rhos[rhos.length >> 1]), laeufe: rhos.length }, zeuge: { laeufe: rhos.length, kornStufen, rangMin: R3(rhos[0]), klassen: [...new Set(kr.flat().map((q) => q[2]))], herkunft: kr.flat().reduce((o, q) => ((o[q[3]] = (o[q[3]] || 0) + 1), o), {}), quelleMuendungMm: kr.slice(0, 3).map((st) => [R3(st[0][1]), R3(st[st.length - 1][1])]) } };
-             aus[3] = {
-                 werte: { orte: pa.length, kuppeDuennerProzent: mitDick.length ? R3((100 * mitDick.filter((x) => x[1] < x[3]).length) / mitDick.length) : null, lagenMax: pa.length ? Math.max(...pa.map((x) => x[4])) : null, maechtigkeitM: mitDick.length ? mitDick[0][1] : null },
-                 zeuge: { orte: pa.length, saeulen: pa.slice(0, 6), strata: w.strata },
-@@ -2987,9 +2998,8 @@
-                 soll: [K.soll(BO, 2, "Rang ≥ 0,7", { key: "rang" }), K.soll(BO, 2, "20 Läufen", { key: "laeufe", rel: "≥" })],
-                 zeuge: zMin({ laeufe: 20, kornStufen: 2 }),
-                 zeugeText: "20 Läufe, das Korn der Sohle in ≥ 2 Stufen gezählt",
--                taeter: "stamm/vegetation-wiese.js _terrainMaterialAt (kein Korn)",
--                nicht: "keine Korngröße",
--                leser: "stamm/vegetation-wiese.js:2362 _terrainMaterialAt — der Boden nennt einen Stoff (erde, stein, glut, quarz), keine Korngröße nach Herkunft",
-+                taeter: "gelaende-core.js korn (das Korn nach Herkunft: Bett, Aue, Hang, Wind) · stamm/vegetation-wiese.js _terrainMaterialAt",
-+                leser: "stamm/vegetation-wiese.js _terrainMaterialAt(x, z, y, aus) — aus.kornMm, aus.kornKlasse: das Korn der Sohle, dasselbe Feld, das die Boden-Farbe am Fluss zeichnet (stamm/gelaende-boden.js _bodenFarbeAt, voxel-worker.js bodenFarbe)",
-                 gruen: gut({ rang: 0.78, laeufe: 20 }, { laeufe: 20, kornStufen: 4 }),
-                 attrappen: [{ name: "der Rang ohne Korn in der Welt", roh: gut({ rang: 0.78, laeufe: 20 }, { laeufe: 20, kornStufen: 0 }) }],
-             },
+             // S2 DAS KORN STROMAB: je Lauf der Rang (Spearman) Weg stromab ↔ −Korngröße an seinen Punkten, der Rang der Station ist der
+@@ -2984,7 +2991,7 @@
+                 },
+                 zeugeText: "der Fächer: 30 Zufallsposen × 9 Punkte am Gesetz des Bodens (felsStoffPunkt mit der Feuchte des Wirts), steile und flache Punkte darunter, keine Adresse gerissen",
+                 taeter: "gelaende-core.js:5501 felsStoffPunkt (Schutt, Flechte, Moos) · stamm/gelaende-boden.js:2617 _bodenFarbeAt",
+-                leser: "stamm/gelaende-boden.js:2753 _bodenGruenAt — die Farbe des Bodens am Punkt (_bodenFarbeAt + gelaende-core felsStoffPunkt mit _feuchteAt), die das Auge, der Kontakt und der Wurf der Wiese lesen",
++                leser: "stamm/gelaende-boden.js:2799 _bodenGruenAt — die Farbe des Bodens am Punkt (_bodenFarbeAt + gelaende-core felsStoffPunkt mit _feuchteAt), die das Auge, der Kontakt und der Wurf der Wiese lesen",
+                 unklar: "der Foto-Korpus „Anteile ±20 %“ steht nicht als Zahl in der Karte — Vorschlag: Schutt-Anteil je Hangklasse (≥ 30°, < 10°) und Moos-Anteil je Feuchte-Klasse aus einem benannten Korpus",
+                 gruen: gut({ afcProzent: 80, anteilJeKorpus: 1.1, posen: 30 }, { posen: 30, punkte: 270, steilePunkte: 20, flachePunkte: 120, gerissen: 0 }),
+                 attrappen: [

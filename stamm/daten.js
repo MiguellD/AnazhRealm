@@ -658,7 +658,6 @@ class AnazhRealm_daten {
                 gruenSchwelle: 0.04, // die Wiesen-Wache: smoothstep(0, gruenSchwelle, g − (r+b)/2)
                 mossDampLo: 0.05, // unter dieser linearen Luminanz = „feucht/Niederung" (nasser Grund 0,042)
                 mossDampHi: 0.09, //   (Wiese 0,10, beschattete Streu 0,086 — die Feuchte lebt im Vertex)
-                mossMax: 0.6, // Deckel der Moos-Übernahme (kein uniformer Teppich)
                 roughBase: 0.94, // V18.386 — Portal-Terrain-Roughness (`_terMat` 0.94, matter Boden). Der Substanz-Kern
                 //                  variiert sie ums Korn (Erhebung rau, Mulde glänzt), Moos wird matter,
                 //                  feuchte kahle Niederung glänzt → das Licht fängt den Boden lebendig

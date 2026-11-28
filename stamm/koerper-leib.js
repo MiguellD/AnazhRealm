@@ -3497,7 +3497,9 @@ AnazhRealm.HAAR_WIND = Object.freeze({
 AnazhRealm.TON_TAFEL = Object.freeze({ zeilen: 4096 });
 // Das Volumen einer GESCHLOSSENEN Fläche (m³ im Rahmen ihrer Geometrie) über den Divergenz-Satz, Σ a · (b × c) / 6 je
 // Dreieck — und ob sie geschlossen ist (jede Kante gerade oft: die glatte Vereinigung der Haut teilt manche Kante mit vier
-// Dreiecken, dicht ist sie trotzdem). Eine offene Fläche (Mähne, Strähnen) hat kein Volumen.
+// Dreiecken, dicht ist sie trotzdem). Eine offene Fläche (Mähne, Strähnen) hat kein Volumen. Ohne Index (je Dreieck eigene
+// Ecken, die Polyeder-Formen des Pools: der Keil des Fischs) ist eine Ecke ihre LAGE — die Kante zählt an den Lagen ihrer Enden;
+// vorher zählte sie am Index, und jede nicht indizierte Gestalt galt als offen (der Fisch trug kein Volumen).
 AnazhRealm._geschlossenesVolumen = function (geo) {
     const pos = geo && geo.attributes && geo.attributes.position;
     if (!pos) return { v: 0, geschlossen: false };
@@ -3506,11 +3508,26 @@ AnazhRealm._geschlossenesVolumen = function (geo) {
     const n = ix ? ix.length : pos.count;
     const N = pos.count;
     const kanten = new Map();
+    let lage = null;
+    if (!ix) {
+        const orte = new Map();
+        lage = new Uint32Array(N);
+        for (let i = 0; i < N; i++) {
+            const k =
+                Math.round(p[3 * i] * 1e6) +
+                "," +
+                Math.round(p[3 * i + 1] * 1e6) +
+                "," +
+                Math.round(p[3 * i + 2] * 1e6);
+            if (!orte.has(k)) orte.set(k, i);
+            lage[i] = orte.get(k);
+        }
+    }
     let v = 0;
     for (let t = 0; t + 2 < n; t += 3) {
-        const a = ix ? ix[t] : t;
-        const b = ix ? ix[t + 1] : t + 1;
-        const c = ix ? ix[t + 2] : t + 2;
+        const a = ix ? ix[t] : lage[t];
+        const b = ix ? ix[t + 1] : lage[t + 1];
+        const c = ix ? ix[t + 2] : lage[t + 2];
         const ax = p[3 * a];
         const ay = p[3 * a + 1];
         const az = p[3 * a + 2];
