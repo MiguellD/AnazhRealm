@@ -1,0 +1,189 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.466",
+  "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 0,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "nvidia pascal",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0,
+   "taeter": {},
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Herde",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 49.81,
+  "gestalt": [
+   "tier:wesen 0",
+   "tier:wesen 1",
+   "tier:wesen 2",
+   "tier:wesen 3",
+   "tier:wesen 4"
+  ],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -550.03,
+   54.489,
+   -849.848
+  ],
+  "blick": [
+   0.11924,
+   -0.31195,
+   -0.94259
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 104.2,
+  "sigma": 43.5,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "wahl": {
+  "versucht": 5,
+  "gewaehlt": 6,
+  "posen": [
+   {
+    "k": 0,
+    "kamera": [
+     -581.49,
+     58.01,
+     -867.8
+    ],
+    "rot": [
+     "Ziel Herde verdeckt von Laub baum_eiche in 49.09 m"
+    ],
+    "ms": 134
+   },
+   {
+    "k": 2,
+    "kamera": [
+     -572.71,
+     58.193,
+     -859.108
+    ],
+    "rot": [
+     "Ziel Herde verdeckt von Laub baum_eiche in 49.1 m"
+    ],
+    "ms": 150
+   },
+   {
+    "k": 4,
+    "kamera": [
+     -561.979,
+     56.617,
+     -852.985
+    ],
+    "rot": [
+     "Ziel Herde verdeckt von an Punkt 3 Laub baum_eiche in 49.65 m"
+    ],
+    "ms": 180
+   },
+   {
+    "k": 1,
+    "kamera": [
+     -587.721,
+     54.857,
+     -878.468
+    ],
+    "rot": [
+     "Ziel Herde verdeckt von an Punkt 6 Laub baum_eiche in 48.39 m"
+    ],
+    "ms": 124
+   },
+   {
+    "k": 6,
+    "kamera": [
+     -550.03,
+     54.489,
+     -849.848
+    ],
+    "rot": [],
+    "ms": 7016
+   }
+  ],
+  "ms": 7605
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Herde im Bild frei 49.81 m · Luma 104.2 σ 43.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.466 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Blick-Wahl 5 Posen",
+ "rot": [],
+ "urteil": "GRÜN",
+ "klasse": {
+  "ausdruck": "^tier",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 4,
+  "kenn": {
+   "n": 8,
+   "tw": 1440,
+   "th": 810,
+   "ms": 1621,
+   "wechsel": 916336
+  },
+  "rinde": null,
+  "toene": [
+   "tier-satz=255/80/80",
+   "tier:bestaeuber=80/255/80",
+   "tier:wesen=80/120/255"
+  ],
+  "klassen": {
+   "tier-satz": {
+    "objekte": 4,
+    "pixel": 86
+   },
+   "tier:bestaeuber": {
+    "objekte": 1,
+    "pixel": 45
+   },
+   "tier:wesen": {
+    "objekte": 55,
+    "pixel": 345
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\e80f9c5d-gtx\\karte2.leben.tiere.masse_1-herde-2.maske.png"
+ }
+}
