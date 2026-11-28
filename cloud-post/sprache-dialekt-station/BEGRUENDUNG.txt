@@ -15,3 +15,21 @@ HOERBAR: am Kopf 6 von 6 Familien, 98 von 157 Segmenten Konsonanten; am main b56
 stimmRede fehlt“) → Umfang 0 → „nicht“ (vorher ROT, nachher auge).
 Satz ↔ Handlung (Vorbild): gate:klang-zensus Mk 38 von 38 Sätzen tragen das Verb ihres Akts (SATZ_GESETZ.handlung), frei beim Zufall 0,05–0,17.
 Kosten: die zweite Seite MUNDART ohne Fächer ≈ 1–2 s, HOERBAR < 1 s.
+
+── kandidat-6.diff: karte2.mensch.kultur.sprache#6 „Sprachstufen über Epochen“ (ÜBER kandidat.diff, also über dem #5-Kandidaten) ──
+Soll, Maße und Richter-Text bleiben unberührt: Umfang 100 000, Swadesh-Retention 0,70–0,86, Ursprache rekonstruiert ≥ 0,6.
+Am main ist #6 „nicht“ (`erwartet: "nicht"`, „die Silben-Tafel ist zeitlos“). Der Kopf 4 der Bahn macht die Sprache zur Funktion ihres
+Jahrs: fachwerk `spracheVon(region, mundart, jahr)`, der Leser des Spiels `spracheDesOrts(plan)` (Name, Rede, Klang, Ortsname).
+Der Kandidat:
+  · ZEIT (neue Seite): je Sprache einer Stichprobe der Welt (4² Orte, 25,6 km, 6 Familien) die verschiedenen Stufen von der
+    Wurzel bis zur Gegenwart im Schritt 25 J; Umfang = ihr Mittel × U_eff der Welt (die Seite MUNDART von #5). Swadesh: Retention
+    der Grundliste je 1 000 J an den Blättern (Kognat = folgt durch die Lautgesetze dazwischen). Ursprache: die häufigste Form der
+    32 Töchter je Bedeutung gegen das Wort der Ursprache. Der Jahreswechsel am Spiel: die Leute der geladenen Siedlung sprechen
+    `_bewohnerLauf` „rede“ im Jahr ihres Plans und 1 000 J davor — gezählt nur, wenn Sätze sich ändern und der Wechsel ≤ 1 s bleibt.
+  · die Zeugen von #3/#4 (NAMEN, MUNDART) lesen die Sprache über `spracheDesOrts` mit dem Jahr des Plans — PFLICHT mit Kopf 4:
+    ohne den Kandidaten rechnen sie die zeitlose Gegenwart, der Ort spricht aber die Stufe seines Jahrs → ihre Namen fallen auseinander.
+  `erwartet: "nicht"` fällt bei #6. Ohne `spracheDesOrts` (main) gibt ZEIT `leer` → „nicht“ wie vorher.
+Gemessen in node (welt-1, die Leser 1:1): 96 Sprachen × 49,5 Stufen → n ≈ 500 637 (Soll ≥ 100 000) · Ursprache 0,759 (≥ 0,6 ✅) ·
+Swadesh 0,876 über 768 Fenster → über dem Band 0,70–0,86 (ROT, ehrlich: die Konstante ERSATZ.halten 0,86 nach Swadesh 1955,
+die festen Grundwörter heben das Mittel). Jahreswechsel: 25 von 40 Sätzen anders, 28 ms (Plan mit `schnitt` und als Export gleich).
+Kosten der Seite ≈ 2–10 s (gitter 4).
