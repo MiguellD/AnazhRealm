@@ -1,7 +1,7 @@
 {
  "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
  "geraet": "gtx",
- "zeit": "2026-11-28T07:27:44.260Z",
+ "zeit": "2026-11-28T07:32:12.601Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "profiband.K4#1": {
@@ -1695,6 +1695,70 @@
    },
    "zeit": "2026-11-28T06:30:01.662Z",
    "abdruck": "c2532e791c76",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.sprache#5": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER Error: werkbank eval: FC.sprachKerne is not a function or its return value is not iterable [\"redeZeuge (werkbank/eval/redeZeuge.js:28:32)\",\"at #evaluate (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\node_modules\\\\puppeteer-core\\\\lib\\\\cjs\\\\puppeteer\\\\cdp\\\\ExecutionCont",
+   "exit": 2,
+   "minuten": 0.36,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER Error: werkbank eval: FC.sprachKerne is not a function or its return value is not iterable [\"redeZeuge (werkbank/eval/redeZeuge.js:28:32)\",\"at #evaluate (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\node_modules\\\\puppeteer-core\\\\lib\\\\cjs\\\\puppeteer\\\\cdp\\\\ExecutionCont",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 21.8,
+   "fremd": {
+    "s": 24,
+    "takte": 11,
+    "fremdS": 8.22,
+    "kerne": 0.343,
+    "fensterKerne": 0.398,
+    "namen": [
+     [
+      "bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \"",
+      1.31
+     ],
+     [
+      "OneDrive.Sync.Service.exe silentConfig",
+      1.11
+     ],
+     [
+      "Explorer.EXE",
+      1.08
+     ]
+    ],
+    "dienerS": 4.84,
+    "diener": [
+     [
+      "System",
+      1.88
+     ],
+     [
+      "dwm.exe",
+      1.28
+     ]
+    ],
+    "geraetS": 14.88,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      8.98
+     ],
+     [
+      "svchost.exe",
+      5.45
+     ],
+     [
+      "SearchProtocolHost.exe",
+      0.22
+     ]
+    ],
+    "eigenS": 54.03,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-28T07:32:12.601Z",
+   "abdruck": "5d0e67824753",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
