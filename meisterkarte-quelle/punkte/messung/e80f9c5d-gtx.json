@@ -1,7 +1,7 @@
 {
  "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
  "geraet": "gtx",
- "zeit": "2026-11-28T06:59:47.645Z",
+ "zeit": "2026-11-28T07:17:02.665Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "profiband.K4#1": {
@@ -1006,6 +1006,339 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.same.kopplung.ereignis#2": {
+   "gruen": false,
+   "zahl": "S2 brennendHa 1,024 ha gegen Soll ≥ 1 ha ✓ · meidenProzent 100 % gegen Soll = 100 % ✓ · der Zeuge der Welt fehlt: Frame p95 47.12 ms während des Brands über dem Preis P (REGELN R8, Klasse Ort: p95 ≤ 34 ms) · Täter: stamm/siedlung-bewohner.js `_bewohnerSoll` (liest kein Brand-Feld) · stamm/feld-brand.js `_tickBrand` (die Kosten der Front) · gemessen vor dem Abbruch: Deckel 691 s gerissen (der Anteil der Fahrt, mit Lebenszeichen)",
+   "exit": 1,
+   "minuten": 11.52,
+   "grund": "ROT: S2 brennendHa 1,024 ha gegen Soll ≥ 1 ha ✓ · meidenProzent 100 % gegen Soll = 100 % ✓ · der Zeuge der Welt fehlt: Frame p95 47.12 ms während des Brands über dem Preis P (REGELN R8, Klasse Ort: p95 ≤ 34 ms) · Täter: stamm/siedlung-bewohner.js `_bewohnerSoll` (liest kein Brand-Feld) · stamm/feld-brand.js `_tickBrand` (die Kosten der Front)",
+   "gpu": "nvidia/pascal",
+   "abbruch": "Deckel 691 s gerissen (der Anteil der Fahrt, mit Lebenszeichen)",
+   "konsumFehlt": "1 Prozess(e) ohne Ende (hart getötet oder ohne Antwort): 8792",
+   "s": 691.2,
+   "fremd": {
+    "s": 694,
+    "takte": 318,
+    "fremdS": 198.17,
+    "kerne": 0.286,
+    "fensterKerne": 0.611,
+    "namen": [
+     [
+      "bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \"",
+      38
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      26.63
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-e80f9c5d-w071931 x listen/kandidat-gtx-e80f9c5d-w071931.txt",
+      18.44
+     ]
+    ],
+    "dienerS": 158.22,
+    "diener": [
+     [
+      "System",
+      57.52
+     ],
+     [
+      "dwm.exe",
+      55.75
+     ]
+    ],
+    "geraetS": 320.58,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      228.41
+     ],
+     [
+      "svchost.exe",
+      82.31
+     ],
+     [
+      "SearchIndexer.exe",
+      4.38
+     ]
+    ],
+    "eigenS": 1986.06,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-28T07:03:41.299Z",
+   "abdruck": "08d810fcaae7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.same.kopplung.gewalt#1": {
+   "gruen": false,
+   "zahl": "S1 die Leiter same.kopplung.gewalt ist im Lauf nicht gemessen (die Probe endete vor ihr) · gemessen vor dem Abbruch: Deckel 691 s gerissen (der Anteil der Fahrt, mit Lebenszeichen)",
+   "exit": 1,
+   "minuten": 11.52,
+   "grund": "ROT: S1 die Leiter same.kopplung.gewalt ist im Lauf nicht gemessen (die Probe endete vor ihr)",
+   "gpu": "nvidia/pascal",
+   "abbruch": "Deckel 691 s gerissen (der Anteil der Fahrt, mit Lebenszeichen)",
+   "konsumFehlt": "1 Prozess(e) ohne Ende (hart getötet oder ohne Antwort): 8792",
+   "s": 691.2,
+   "fremd": {
+    "s": 694,
+    "takte": 318,
+    "fremdS": 198.17,
+    "kerne": 0.286,
+    "fensterKerne": 0.611,
+    "namen": [
+     [
+      "bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \"",
+      38
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      26.63
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-e80f9c5d-w071931 x listen/kandidat-gtx-e80f9c5d-w071931.txt",
+      18.44
+     ]
+    ],
+    "dienerS": 158.22,
+    "diener": [
+     [
+      "System",
+      57.52
+     ],
+     [
+      "dwm.exe",
+      55.75
+     ]
+    ],
+    "geraetS": 320.58,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      228.41
+     ],
+     [
+      "svchost.exe",
+      82.31
+     ],
+     [
+      "SearchIndexer.exe",
+      4.38
+     ]
+    ],
+    "eigenS": 1986.06,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-28T07:03:41.299Z",
+   "abdruck": "6db3ec055c02",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.ereignis#2",
+   "modus": "session"
+  },
+  "karte2.same.kopplung.kohaerenz#1": {
+   "gruen": false,
+   "zahl": "S1 die Leiter same.kopplung.kohaerenz ist im Lauf nicht gemessen (die Probe endete vor ihr) · gemessen vor dem Abbruch: Deckel 691 s gerissen (der Anteil der Fahrt, mit Lebenszeichen)",
+   "exit": 1,
+   "minuten": 11.52,
+   "grund": "ROT: S1 die Leiter same.kopplung.kohaerenz ist im Lauf nicht gemessen (die Probe endete vor ihr)",
+   "gpu": "nvidia/pascal",
+   "abbruch": "Deckel 691 s gerissen (der Anteil der Fahrt, mit Lebenszeichen)",
+   "konsumFehlt": "1 Prozess(e) ohne Ende (hart getötet oder ohne Antwort): 8792",
+   "s": 691.2,
+   "fremd": {
+    "s": 694,
+    "takte": 318,
+    "fremdS": 198.17,
+    "kerne": 0.286,
+    "fensterKerne": 0.611,
+    "namen": [
+     [
+      "bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \"",
+      38
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      26.63
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-e80f9c5d-w071931 x listen/kandidat-gtx-e80f9c5d-w071931.txt",
+      18.44
+     ]
+    ],
+    "dienerS": 158.22,
+    "diener": [
+     [
+      "System",
+      57.52
+     ],
+     [
+      "dwm.exe",
+      55.75
+     ]
+    ],
+    "geraetS": 320.58,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      228.41
+     ],
+     [
+      "svchost.exe",
+      82.31
+     ],
+     [
+      "SearchIndexer.exe",
+      4.38
+     ]
+    ],
+    "eigenS": 1986.06,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-28T07:03:41.299Z",
+   "abdruck": "c292778f29f5",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.ereignis#2",
+   "modus": "session"
+  },
+  "karte2.same.kopplung.terraform#1": {
+   "gruen": false,
+   "zahl": "S1 die Leiter same.kopplung.terraform ist im Lauf nicht gemessen (die Probe endete vor ihr) · gemessen vor dem Abbruch: Deckel 691 s gerissen (der Anteil der Fahrt, mit Lebenszeichen)",
+   "exit": 1,
+   "minuten": 11.52,
+   "grund": "ROT: S1 die Leiter same.kopplung.terraform ist im Lauf nicht gemessen (die Probe endete vor ihr)",
+   "gpu": "nvidia/pascal",
+   "abbruch": "Deckel 691 s gerissen (der Anteil der Fahrt, mit Lebenszeichen)",
+   "konsumFehlt": "1 Prozess(e) ohne Ende (hart getötet oder ohne Antwort): 8792",
+   "s": 691.2,
+   "fremd": {
+    "s": 694,
+    "takte": 318,
+    "fremdS": 198.17,
+    "kerne": 0.286,
+    "fensterKerne": 0.611,
+    "namen": [
+     [
+      "bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \"",
+      38
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      26.63
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-e80f9c5d-w071931 x listen/kandidat-gtx-e80f9c5d-w071931.txt",
+      18.44
+     ]
+    ],
+    "dienerS": 158.22,
+    "diener": [
+     [
+      "System",
+      57.52
+     ],
+     [
+      "dwm.exe",
+      55.75
+     ]
+    ],
+    "geraetS": 320.58,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      228.41
+     ],
+     [
+      "svchost.exe",
+      82.31
+     ],
+     [
+      "SearchIndexer.exe",
+      4.38
+     ]
+    ],
+    "eigenS": 1986.06,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-28T07:03:41.299Z",
+   "abdruck": "a7f9e6e221cb",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.ereignis#2",
+   "modus": "session"
+  },
+  "karte2.erleben.klang.stimme#1": {
+   "gruen": false,
+   "zahl": "S1 · ROT ✅ formant_abweichung_pct 9 (Soll ≤ 15) — Täter: Attrappe: spiel_gleich_pct 0 < 100 (Laute der Bewohner über den Weg des Spiels (`_bewohnerLaut` → Werkstatt `rufPuffer`) bit-gleich zum Gesetz, je Bewohner der Sitzung) · gespielt 0 < 1 (Laute, die das Spiel am Bus spielte (`rufSpielen`, rufeGespielt)) · leute 0 < 1 (Erwachsene der Sitzung am Abgriff mit dem Leib ihres Rufs gemessen) — die Welt änderte sich nicht",
+   "exit": 0,
+   "minuten": 0.03,
+   "grund": "ROT: S1 · ROT ✅ formant_abweichung_pct 9 (Soll ≤ 15) — Täter: Attrappe: spiel_gleich_pct 0 < 100 (Laute der Bewohner über den Weg des Spiels (`_bewohnerLaut` → Werkstatt `rufPuffer`) bit-gleich zum Gesetz, je Bewohner der Sitzung) · gespielt 0 < 1 (Laute, die das Spiel am Bus spielte (`rufSpielen`, rufeGespielt)) · leute 0 < 1 (Erwachsene der Sitzung am Abgriff mit dem Leib ihres Rufs gemessen) — die Welt änderte sich nicht",
+   "gpu": "nvidia/pascal",
+   "konsum": "k77dbb0388e94",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 3
+   },
+   "konsumBoot": "k0ac82d40df13",
+   "s": 1.4,
+   "fremd": {
+    "s": 4.4,
+    "takte": 2,
+    "fremdS": 2.06,
+    "kerne": 0.472,
+    "fensterKerne": 0.472,
+    "namen": [
+     [
+      "Explorer.EXE",
+      0.66
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-e80f9c5d-w071931 x listen/kandidat-gtx-e80f9c5d-w071931.txt",
+      0.58
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      0.14
+     ]
+    ],
+    "dienerS": 0.91,
+    "diener": [
+     [
+      "System",
+      0.36
+     ],
+     [
+      "audiodg.exe",
+      0.2
+     ]
+    ],
+    "geraetS": 3.17,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      2.34
+     ],
+     [
+      "svchost.exe",
+      0.58
+     ],
+     [
+      "SearchIndexer.exe",
+      0.13
+     ]
+    ],
+    "eigenS": 8.19,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-28T07:17:02.665Z",
+   "abdruck": "2a841240456c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -1021,7 +1354,8 @@
   "k44521fbe729a": "bVXRjqJAEPwXH++ObXBgGSbZh3HZ3JqcF/cTeqAHUAQzg3Lxcv9+AcUV2H4xxmqqqKoZ/y6OmOwxo6edrauFWHxb/FhYPJNjyZzJPO3sQiyixFsSE/JDdgNSytcOlpji2FgoCwWoKswP5JxMQ0X5lPRr+hndQAlo32S2BdBwgbh9eZmulorS2mlQ07DoEgs4iSnwZDNU5OBJ92Q3sAp9jycC+uGx3MRwm6z/vo5hBTuYPExhlY7Vel6Ez6GQ7VpK+TFVmRZIjVMWlR14vTSMtCsGMmg3sx2DrXNByksytyXinuerQeyqs7OzZrKoy5O1IzLO0mDJBUA0xWZkiyRvnKOpFVWDJ9Ey9FCs5m5nx5OjHxWhUsjV1OscqcrIjDS4LNHPnoA/fPrQPR7IoFNhfoNGLguX6tMbAHifayl74T3FINxnfMm90WIXIpw7g1M5mu0Q8nV0O/yQ3CGZnJHaJC/MYWyX9mnpMvFrLtHmmJJx9rVt7mhGoe8q0ROsY7hq4avp5ufLDRkiIn8oDHCQ7zMvba2bFg052fE0lManIAyElOsZuMHD4S6LcWTTIG3TFf1RxjLSQeALgO/XgzJ/6euxcC5UlHTvbRKySLzGcgo+Gzw4qDJTaD2kr4JER1+VtaWycVRdN4MW5rpJIIBB9Rj47z7K9UPWcfbhN+WqfRtXYD2T0zPUprnfDqiY7wudxRyA6ym6MI3TYpIP8JApIia6zk2gFzIlZTSyUnseLlMBrb7q3nEpt+HtOtDfRyW+zJK+FNSZXNmTHVxO0FeB+CKWlsxeYbW/H0VMWdBXcLWR25Enb7tjdxTgzGHsVXzuPzc/tzfvYiljrm9ER0rgaGpddDcj5HiyOZbN59/Cv/8=",
   "k0ac82d40df13": "lZXBcpswEIbfxcemZMFAEJrJQTaZxu24TfsGK1gBNgaPBKHjTt+9g22wgVy6Jx/+1f58+0v+szhivMeUHnemKhd88WnxeWHwnSxD+p30484s+CKMnSW5XFwKhBBfOlms82NtoMgloCwxO5DV6Jry4jE+t6kntH3JoX0R6RuAghNErRhqLZ6fp8cUkpLKqlFRf4hNrs+IT4WNSVGShY06D76KZeA5LOZwLhaJbQTXSgGYEJsIVrCDyWESy2Ts3HFCfAq4aDdCiJ9Tl0mOVFtFXpp+rpMEobJ5Pwza7axHY2udkLKC9LWJmON4sje76pB0mCaNqmiMGQ1jbuIvGQcIp9qUTB5ntXXUlaSyZxIuAwf5qp3RTo+Npe4doZTI5JR1hlSmpEcebDdWTw6H32x66B4PpNEqMbtKQ9sNlvLGBgBe516Ks/HziN6457Ilc0aN3VIvgBMxqrd+yZdSQ8ziQZLO42biLNeHMS7l0dJ2pwxMhglpa1+ZelC6FHi2vNyKTQQXH2w17bx9WL8/RGR3YQEG4nXG0VSqblGTlR6bPjAe+YHPRTpLl6nxcBhsuQznH1B3Ib+3sQyV73sc4OGKdIbnciWsE+UFDZmNAzfk68ibit81HiyUqc6V6jcv/ViFHwW1paK2ZFXVvRfXtmOfgwvl/bK/t2ItxPbuyYiKX15dfH14Ga//m/j60YRK18PLgNL1PK7aiAEwNVXnurZajLNeHriSaAbxRLqglEYYlePgMuHQ3pImIq//8TAK72m25VNOHeDSNKYnHKMn/Us6rinejJPbkt5LLPfDVcTE9bkQUSq24u2Oyg8hdkfViv+odN0NOlIMR12pvHsZIcPGZFjUt7+Iv/8A",
   "k5f79337e840d": "bVXRbptAEPwXPzYlCxyE46Q8nEPUWmoq5xP2YA+IMVh3YCpX/ffK2DgGsi8IefZmmNk9/10dMN1hTo8ftqlXYvVt9X1l8UiOJXMk8/hhV2IVp55PTMhLgZTy5QxLTXloLVSlAlQ1FntyOtNSWT2mQ5t+QjdUAvpXmW8BNJwg6Z+f562VoqxxWtQ0NrrEQk5iDuxsjooc7PRAdgWrKPB4KmAonsi3BK6VD++bBNbwAbPDFNbZVK3nxfgUCdlvXqR8n6vMSqTWqcrajrxeFsXaFSMZ9G+LHoO9c0IqKjLXJuKeF6hR7PphywdrZo266qydkHGWhT4XAPEcm5Mt06J1DqZRVI+exH7koVgv3c4PnaPvFaFSyNXc6wKpzslMNLgs1U+egD98fugO92TQqbG4QmOXRb769AYAfi61VIPwgWIUHjDuc2/SeA4RjmeDMzmp7RjypXQ//pDeILlckNq0KM1+apcOyHeZ+LWUaAvMyDi7xrY3NKMocNVlGzYJXLTw9bzz8+PGDBGR3w0McJA/F17aRrc9GnLyQzcOTUBhFAopNwtwi/v9TRbjyOZB2vY86Pcy/FiHYSAAHi6Lsvzoy1o4Jyorus1tGrF4fvjR4N5BlZtS6zF5FaY6/mpQe6paRzVNO+pgrpuGAhjU92H/HmLc3OWc5O9BW63712n8GznXPTA0pr3dDKhYEAidJxyA6zm6NK3TY1qM8IgpIibO8zaDnshUlNPERu156GcCen3RfeJSbqPrVaAfJgN8WqR8KulscG07OzqcYqBC8UUkPZmdwnp3W0PMWDiM3/pNbieevL405zWAI4epV8lxeL792F69S6RMuL4SHSiFg2l0eb4VocDOFli1n38J//4D",
-  "k694ab3fe9f4f": "tVZdj5s6EP0veWzLms9gLPXBCZE2vV0p+3gfxzAGNgQi2yxXqfrfKyAkAbZSdaXOG9IZz8yZcyb5sTpDcoQMn950Xa3Y6tPqy0rDO1oa1Tuqpze9YqsocVz0GB+CcM63HSxRxdlokhaQWUeFYBpllSiwekr6tFSshYwY+RvR7rpWXvkYMd/y3Yb/ri0DR3PtSmIUgM02Gect//r1IaMsBAFRQX5Cq1EGi3JMWYMdCNYVzQ6ESHIhcXsrzXcfPFMKTGvLgMTxERu9gCKbAxudgUALGtkXvoJF6Ds0uVJHY/4Sj4Nn/fc+JhvyRvryr4vqAqp0OoHjRLAOGW/32y5hhk8LQGOVRaXH+k4aRtK+r659WeQoaK0LYF6iuiYhdRxfjE1vut46umaJsmy0nhSjXhq4lBESzbEZ6iLJjXVW9V1WInJDB9imXcydnRtLPnYEQgAVc85zwCpDNenB9hK5dhj5j84fPcIJFVgV5FdoZHuhKyayfl72MirvhJVO8pv2AP3/4wgqf/P8hJmIekGyZvxPYzv52vxxXrdYvvt31lLZr6ondWzI96hLndm8NCbvnaTS6YuHUd5DyJvBkoeiC5p1khfqNKVB+ujaHvu+XIrOIUVlHWttbmgPQ98WA2n7eLDUgW7mmffhRtUCAH2wCKGEPy/Uo2tpWlBoZedmtImPQRgwzvcLsIHT6daWR8H7cJcZX7hRm87yj+25kQwCnxHyeTgdSzKGA2FdsCjx5uAk9CK2jf05+F3ByQKRqULKUW0iSPrzvrBti6WxRF2PJ9f1bDsJOqqqRyEc+hXvHyaLs1fflJvhuN/jH/4slzP3VWplbjcThOf7TLYx/cAwbaGM1UKSj/DQE4ge6/Q4g15QlZjhhE7pOOCmjLRy6P1COT+E1+MoP08Eflmo4FJgR3SlGz0ynYAvAvbBalpURwHV8XaYIPUC9q0z6As/THjZbbPOJr2dZtGbW58G/J7HnMdUXgudMSFnVcui+50gOTQ6h9JM/gEMkAalaDCvsNOXKeoKqzvq5y8="
+  "k694ab3fe9f4f": "tVZdj5s6EP0veWzLms9gLPXBCZE2vV0p+3gfxzAGNgQi2yxXqfrfKyAkAbZSdaXOG9IZz8yZcyb5sTpDcoQMn950Xa3Y6tPqy0rDO1oa1Tuqpze9YqsocVz0GB+CcM63HSxRxdlokhaQWUeFYBpllSiwekr6tFSshYwY+RvR7rpWXvkYMd/y3Yb/ri0DR3PtSmIUgM02Gect//r1IaMsBAFRQX5Cq1EGi3JMWYMdCNYVzQ6ESHIhcXsrzXcfPFMKTGvLgMTxERu9gCKbAxudgUALGtkXvoJF6Ds0uVJHY/4Sj4Nn/fc+JhvyRvryr4vqAqp0OoHjRLAOGW/32y5hhk8LQGOVRaXH+k4aRtK+r659WeQoaK0LYF6iuiYhdRxfjE1vut46umaJsmy0nhSjXhq4lBESzbEZ6iLJjXVW9V1WInJDB9imXcydnRtLPnYEQgAVc85zwCpDNenB9hK5dhj5j84fPcIJFVgV5FdoZHuhKyayfl72MirvhJVO8pv2AP3/4wgqf/P8hJmIekGyZvxPYzv52vxxXrdYvvt31lLZr6ondWzI96hLndm8NCbvnaTS6YuHUd5DyJvBkoeiC5p1khfqNKVB+ujaHvu+XIrOIUVlHWttbmgPQ98WA2n7eLDUgW7mmffhRtUCAH2wCKGEPy/Uo2tpWlBoZedmtImPQRgwzvcLsIHT6daWR8H7cJcZX7hRm87yj+25kQwCnxHyeTgdSzKGA2FdsCjx5uAk9CK2jf05+F3ByQKRqULKUW0iSPrzvrBti6WxRF2PJ9f1bDsJOqqqRyEc+hXvHyaLs1fflJvhuN/jH/4slzP3VWplbjcThOf7TLYx/cAwbaGM1UKSj/DQE4ge6/Q4g15QlZjhhE7pOOCmjLRy6P1COT+E1+MoP08Eflmo4FJgR3SlGz0ynYAvAvbBalpURwHV8XaYIPUC9q0z6As/THjZbbPOJr2dZtGbW58G/J7HnMdUXgudMSFnVcui+50gOTQ6h9JM/gEMkAalaDCvsNOXKeoKqzvq5y8=",
+  "k77dbb0388e94": "bVVdb6MwEPwveeydaz6LsdQHp0RqTlcp/QlrWAMJAWRDOOV0//0ECTRA9w1p1juemTV/NzXEJ0jx+WiqcsM3T5ufGwMXJAb1BfXz0Wz4JoxtB10uPkVfVAjx1sNindeNoUkOKTkVUKbkiqVpzXM8dD09YIpcUpAlZGckrW4wL+4g9QKWLzntdiI9UKrolUadmGonXl+XxxQSk4o0oHA8xELXZ8iXwNakIJFAq4bBd7AMPJvFnA7FIvER0Xulw/c+olt6pOJD0KxbTZdQJvMb2HYILwEX3V4I8bnEJzlgQ4q8NON8OwlCZfFxKO0+Vj0aOnIFzArU9yZktu3JkfS2l6aXa9GoitaY2TDmJr7DOKXhEpuiyeOsIbWuJJajNqET2MC363undUvUIyOQEphcap4BlinqGQfLjdWLzekftjz0BGfUQErI7tDQcgNHfmlDKX1fcykG4sOIkbjnMofZs8beTHrpBU7ErA6j2bdSU9ziCZKuY2fiLNfnuVzKQ8dy+e81RZNBgpqcKtNMaBcDz5J8GLCP6I0L2y47vy43eggA7CEwlFHxvtLSVKrpQCNJ63YMjYd+4HMh9itwA+fzRMtl4C6NNE0f9EcaTqh83+OU/rgtzPrSt7UgV8wLnHIbB27I3yKxBF80nAnIVOdKje5LP1bhd2HtsGiIrKpm5OJaVuz3kpSPhh8GK/cPXkfpp9cU2243j8A+6r6bUOlmeiVAup7HVRoxSplaonPdkA7ibIQHrkR0eZ+5BfSKusAUZ1Iq2wYn4bRTN95XJsQhuD8H6scsxNeV09cci/lLizF40uff2NKhPkkoT9MqQuL6/JcQYvshDjNNdse6X4VhZRY1rIQ53/B7EQkRMdXd3roaY1rrSuX9y0gzaE0GRfP1O/n3Hw=="
  },
  "ungemessen": {
   "karte2.planet.kosmos.himmelsmechanik#1": {
@@ -1153,84 +1487,6 @@
    "bahn": "sitzung",
    "modus": "session"
   },
-  "karte2.same.kopplung.ereignis#2": {
-   "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (der Rest 487 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.ereignis#2) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (der Rest 487 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.ereignis#2) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-28T06:42:04.523Z",
-   "abdruck": "08d810fcaae7",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1,
-   "fahrt": "8540@mx00tfi8"
-  },
-  "karte2.same.kopplung.gewalt#1": {
-   "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (der Rest 487 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.ereignis#2) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (der Rest 487 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.ereignis#2) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-28T06:42:04.523Z",
-   "abdruck": "6db3ec055c02",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.same.kopplung.ereignis#2",
-   "modus": "session",
-   "offen": 1,
-   "fahrt": "8540@mx00tfi8"
-  },
-  "karte2.same.kopplung.kohaerenz#1": {
-   "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (der Rest 487 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.ereignis#2) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (der Rest 487 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.ereignis#2) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-28T06:42:04.523Z",
-   "abdruck": "c292778f29f5",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.same.kopplung.ereignis#2",
-   "modus": "session",
-   "offen": 1,
-   "fahrt": "8540@mx00tfi8"
-  },
-  "karte2.same.kopplung.terraform#1": {
-   "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (der Rest 487 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.ereignis#2) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (der Rest 487 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.ereignis#2) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-28T06:42:04.523Z",
-   "abdruck": "a7f9e6e221cb",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.same.kopplung.ereignis#2",
-   "modus": "session",
-   "offen": 1,
-   "fahrt": "8540@mx00tfi8"
-  },
-  "karte2.erleben.klang.stimme#1": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-28T06:42:04.572Z",
-   "abdruck": "2a841240456c",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1,
-   "fahrt": "8540@mx00tfi8"
-  },
   "karte2.leben.oeko.netz#2": {
    "gruen": false,
    "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\"}) — offen, UNGEMESSEN",
@@ -1238,38 +1494,38 @@
    "minuten": 0,
    "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-28T06:42:04.869Z",
+   "zeit": "2026-11-28T07:02:55.888Z",
    "abdruck": "34e9a4bf8007",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session",
-   "offen": 1,
-   "fahrt": "8540@mx00tfi8"
+   "offen": 2,
+   "fahrt": "19196@mx023iwx"
   },
   "karte2.leben.evolution.fremde-physik#1": {
    "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (der Rest 486 s unter dem Grund-Deckel 555 s von karte2.leben.evolution.fremde-physik#1) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (der Rest 486 s unter dem Grund-Deckel 555 s von karte2.leben.evolution.fremde-physik#1) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-28T06:42:04.905Z",
+   "zeit": "2026-11-28T07:02:55.934Z",
    "abdruck": "ad1cff8a47da",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session",
-   "offen": 1,
-   "fahrt": "8540@mx00tfi8"
+   "offen": 2,
+   "fahrt": "19196@mx023iwx"
   }
  },
  "sitzung": {
-  "start": "2026-11-28T06:20:06.239Z",
-  "ordner": "sitzung-20261128-072006",
+  "start": "2026-11-28T06:55:55.615Z",
+  "ordner": "sitzung-20261128-075555",
   "port": 7804,
-  "warten": 0.02,
+  "warten": 0.03,
   "bootS": 7.4,
   "grundstellungS": [],
-  "proben": 5,
+  "proben": 3,
   "freigaben": [],
   "geraet": {
    "name": "GTX 1060",
@@ -1277,10 +1533,6 @@
    "preis": true
   },
   "offen": [
-   "karte2.same.preis.ausdauer#1",
-   "karte2.mensch.macht.recht#1",
-   "karte2.mensch.nahrung.tier#2",
-   "karte2.leben.tiere.masse#1",
    "karte2.same.kopplung.ereignis#2",
    "karte2.same.kopplung.gewalt#1",
    "karte2.same.kopplung.kohaerenz#1",
@@ -1291,20 +1543,20 @@
   ],
   "orte": [
    {
-    "ort": "stadt-voll",
-    "vor": "karte2.mensch.geist.gespraech#2",
-    "s": 161.8,
-    "takte": 1487,
-    "chunks": 81,
+    "ort": null,
+    "vor": "karte2.same.preis.ausdauer#1",
+    "s": 13.5,
+    "takte": 247,
+    "chunks": 99,
     "nach": null
    },
    {
-    "ort": "genesis",
-    "vor": "karte2.planet.kosmos.himmelsmechanik#1",
-    "s": 20.8,
-    "takte": 675,
+    "ort": "wiese",
+    "vor": "karte2.leben.tiere.masse#1",
+    "s": 21.4,
+    "takte": 625,
     "chunks": 81,
-    "nach": "der Wanderung von karte2.erleben.spieler.wegfindung#1"
+    "nach": null
    }
   ],
   "wegeTueren": [],
@@ -1323,21 +1575,22 @@
     ]
    },
    {
-    "probe": "karte2.mensch.sport.kunst#1",
+    "probe": "karte2.same.preis.ausdauer#1",
     "weg": [
-     "__nahSpeicher",
-     "__imSchuss",
-     "__letzteSpiegel"
+     "__ortZeit",
+     "__weltaktSpionBuch",
+     "__wetterSpionBuch",
+     "__buehneUhr",
+     "__zensusCalls"
     ]
    },
    {
-    "probe": "karte2.planet.kosmos.himmelsmechanik#1",
+    "probe": "karte2.leben.tiere.masse#1",
     "weg": [
-     "__linse___aufnahmeRuhig",
+     "__nahSpeicher",
      "__imSchuss",
-     "__ruheBilder",
-     "__wegProbe",
-     "__abbruchEpoche"
+     "__letzteSpiegel",
+     "__letzteTeilung"
     ]
    }
   ],
@@ -1367,12 +1620,39 @@
     "haelt": [],
     "heap": [
      null,
-     282.7
+     279.1
     ],
     "ungemessen": null
    },
    {
-    "probe": "karte2.mensch.geist.gespraech#2",
+    "probe": "karte2.same.preis.ausdauer#1",
+    "anders": [
+     "r._bildZeit",
+     "r._wolkenZeit",
+     "r._feuchteLeser",
+     "r._weltaktGehalten",
+     "r._setWeather",
+     "r.state.weather",
+     "window.__ortSchritt"
+    ],
+    "wie": {
+     "r._bildZeit": "getauscht: () => S.T → der Wert 12.5",
+     "r._wolkenZeit": "getauscht: () => S.T → der Wert 12.5",
+     "r._feuchteLeser": "neu: (px, pz, py) => px === this._bfFx && pz === this._bfFz && py === this._bfFy ? th",
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
+     "r.state.weather": "getauscht: () => wert → der Wert sunny",
+     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+    },
+    "haelt": [],
+    "heap": [
+     319.7,
+     326.6
+    ],
+    "ungemessen": null
+   },
+   {
+    "probe": "karte2.leben.tiere.masse#1",
     "anders": [
      "r._bildZeit",
      "r._wolkenZeit",
@@ -1380,7 +1660,54 @@
      "r._setWeather",
      "r._feuchteLeser",
      "r.state.weather",
-     "window.__ortSchritt"
+     "window.r",
+     "window.st",
+     "window.pm",
+     "window.halt",
+     "window.__handTakt",
+     "window.aufsteigend",
+     "window.addiere",
+     "window.rang",
+     "window.__uebergangFaellt",
+     "window.rahmen",
+     "window.__png",
+     "window.__bundlesNeu",
+     "window.sleep",
+     "window.leihe",
+     "window.__fremd",
+     "window.__loopBild",
+     "window.__zielLesen",
+     "window.__messZiel",
+     "window.__pufferLesen",
+     "window.jsonKlon",
+     "window.fehlerText",
+     "window.fehlerStapel",
+     "window.__seitenTakt",
+     "window.__bedienung2",
+     "window.__takte",
+     "window.__streuTakte",
+     "window.__bildAus",
+     "window.__eichMs",
+     "window.__weltStehtNach",
+     "window.__gebautNach",
+     "window.__deckel",
+     "window.__weltDa",
+     "window.__abdruck",
+     "window.__farben",
+     "window.__lin",
+     "window.__stand",
+     "window.__standJson",
+     "window.__werkPutz",
+     "window.__bautenLeer",
+     "window.__bautenSeit",
+     "window.__peersWeg",
+     "window.__rufe",
+     "window.__wieseMessen",
+     "window.__wieseUrteil",
+     "window.__ortSchritt",
+     "window.__codeOf",
+     "window.__dokuOf",
+     "window.__fehlt"
     ],
     "wie": {
      "r._bildZeit": "getauscht: () => S.T → der Wert 12.5",
@@ -1389,97 +1716,61 @@
      "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
      "r._feuchteLeser": "neu: (px, pz, py) => px === this._bfFx && pz === this._bfFz && py === this._bfFy ? th",
      "r.state.weather": "getauscht: () => wert → der Wert sunny",
-     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
-    },
-    "haelt": [],
-    "heap": [
-     518.7,
-     571.4
-    ],
-    "ungemessen": null
-   },
-   {
-    "probe": "karte2.mensch.sport.kunst#1",
-    "anders": [
-     "r._bildZeit",
-     "r._wolkenZeit",
-     "r._weltaktGehalten",
-     "r._feuchteLeser",
-     "window.__ortSchritt"
-    ],
-    "wie": {
-     "r._bildZeit": "getauscht: () => S.T → der Wert 12.5",
-     "r._wolkenZeit": "getauscht: () => S.T → der Wert 12.5",
-     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
-     "r._feuchteLeser": "neu: (px, pz, py) => px === this._bfFx && pz === this._bfFz && py === this._bfFy ? th",
-     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
-    },
-    "haelt": [],
-    "heap": [
-     540.5,
-     589.8
-    ],
-    "ungemessen": null
-   },
-   {
-    "probe": "karte2.erleben.spieler.wegfindung#1",
-    "anders": [
-     "r._bildZeit",
-     "r._wolkenZeit",
-     "r._weltaktGehalten",
-     "r._feuchteLeser",
-     "window.__wieseMessen",
-     "window.__wieseUrteil",
-     "window.__ortSchritt"
-    ],
-    "wie": {
-     "r._bildZeit": "getauscht: () => S.T → der Wert 12.5",
-     "r._wolkenZeit": "getauscht: () => S.T → der Wert 12.5",
-     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
-     "r._feuchteLeser": "neu: (px, pz, py) => px === this._bfFx && pz === this._bfFz && py === this._bfFy ? th",
-     "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
-     "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
-     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
-    },
-    "haelt": [],
-    "heap": [
-     546.4,
-     491
-    ],
-    "ungemessen": null
-   },
-   {
-    "probe": "karte2.planet.kosmos.himmelsmechanik#1",
-    "anders": [
-     "r._bildZeit",
-     "r._wolkenZeit",
-     "r._weltaktGehalten",
-     "r._feuchteLeser",
-     "window.__tagKurve",
-     "window.__wieseMessen",
-     "window.__wieseUrteil",
-     "window.__ortSchritt",
-     "window.__aufnahmeRuhig",
-     "window.__linse___tagKurve"
-    ],
-    "wie": {
-     "r._bildZeit": "getauscht: () => S.T → der Wert 12.5",
-     "r._wolkenZeit": "getauscht: () => S.T → der Wert 12.5",
-     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
-     "r._feuchteLeser": "neu: (px, pz, py) => px === this._bfFx && pz === this._bfFz && py === this._bfFy ? th",
-     "window.__tagKurve": "getauscht: function tagKurve(o) { return (async () => { const T = window.THREE; const rend ",
+     "window.r": "getauscht: () => window.anazhRealm",
+     "window.st": "getauscht: () => window.anazhRealm && window.anazhRealm.state",
+     "window.pm": "getauscht: () => st && st.playerMesh",
+     "window.halt": "getauscht: () => st && st.verbTafel.gehalten",
+     "window.__handTakt": "getauscht: function handTakt() { try { r._gameLoopTick(performance.now()); } catch (e) { r.",
+     "window.aufsteigend": "getauscht: (a, b) => a - b",
+     "window.addiere": "getauscht: (a, b) => a + b",
+     "window.rang": "getauscht: (s, q = 0.5) => s[Math.min(s.length - 1, Math.floor(q * s.length))]",
+     "window.__uebergangFaellt": "getauscht: function uebergangFaellt(r) { r.state.weatherTransition = null; r.requestWeather",
+     "window.rahmen": "getauscht: (b) => b.obb || { cx: (b.minX + b.maxX) / 2, cz: (b.minZ + b.maxZ) / 2, c: 1, s:",
+     "window.__png": "getauscht: function png(u8, W, H) { const cv = Object.assign(document.createElement(\"canvas",
+     "window.__bundlesNeu": "getauscht: () => st.scene.traverse((o) => o.isBundleGroup && (o.needsUpdate = true))",
+     "window.sleep": "getauscht: (ms) => { const e = globalThis.__abbruchEpoche; return new Promise((r, f) => set",
+     "window.leihe": "getauscht: function leihe(o, tausch) { const alt = Object.keys(tausch).map((k) => [k, Objec",
+     "window.__fremd": "getauscht: async function fremd() { const { privateKey: k } = await crypto.subtle.generateK",
+     "window.__loopBild": "getauscht: function loopBild() { st.renderer._nodes?.nodeFrame?.update(); r._loopRender(); ",
+     "window.__zielLesen": "getauscht: async function zielLesen(ziel, W, H, renderer = st.renderer) { const px = await ",
+     "window.__messZiel": "getauscht: function messZiel(W, H, o, T = window.THREE, art = \"RenderTarget\") { return art ",
+     "window.__pufferLesen": "getauscht: function pufferLesen(puffer, wer, renderer = st.renderer) { const q = puffer?.is",
+     "window.jsonKlon": "getauscht: (x) => JSON.parse(JSON.stringify(x))",
+     "window.fehlerText": "getauscht: (e) => e?.message || String(e)",
+     "window.fehlerStapel": "getauscht: (e) => e?.stack || String(e)",
+     "window.__seitenTakt": "getauscht: async function seitenTakt() { const e = globalThis.__abbruchEpoche; const vor = ",
+     "window.__bedienung2": "getauscht: async function bedienung2(vor) { const taste = (code, art) => window.dispatchEve",
+     "window.__takte": "getauscht: async function takte(n, ms) { for (let i = 0; i < n; i++) { __handTakt(); await ",
+     "window.__streuTakte": "getauscht: async function streuTakte(n, ms) { for (let i = 0; i < n; i++) { st._frameOverBu",
+     "window.__bildAus": "getauscht: function bildAus() { if (st.renderer) { st.renderer.render = function () {}; if ",
+     "window.__eichMs": "getauscht: function eichMs(n) { const a = eichMs.puffer || (eichMs.puffer = new Float64Arra",
+     "window.__weltStehtNach": "getauscht: async function weltStehtNach(takt, max) { const W = () => r._weltStand || {}; co",
+     "window.__gebautNach": "getauscht: async function gebautNach(e, { takt, fertig, bau, max, offen, warum } = {}) { co",
+     "window.__deckel": "getauscht: function deckel(name, max, offen) { let n = 0, k = 0, still = 0, vor = \"\"; retur",
+     "window.__weltDa": "getauscht: async function weltDa(bed) { window.__weltDaWartet = bed ? String(bed).replace(/",
+     "window.__abdruck": "getauscht: function abdruck(x, alle) { let [h, n] = [0x811c9dc5, 0]; const ein = (a) => { c",
+     "window.__farben": "getauscht: function farben(g) { const set = new Set(); g?.traverse((o) => { const c = o.geo",
+     "window.__lin": "getauscht: (hx) => [(hx >> 16) & 255, (hx >> 8) & 255, hx & 255] .map((c) => Math.f16round(",
+     "window.__stand": "getauscht: async function stand() { await r._speicherStill(); return (await r._idbGetWorld(",
+     "window.__standJson": "getauscht: async function standJson() { const roh = await window.__stand(); try { return JS",
+     "window.__werkPutz": "getauscht: function werkPutz() { r.closeAllDrawers(); st.yaw = 0; if (st.playerMesh) st.pla",
+     "window.__bautenLeer": "getauscht: function bautenLeer() { r._bautenLeeren(); }",
+     "window.__bautenSeit": "getauscht: function bautenSeit() { const vor = new Set(st.architectures); return () => st.a",
+     "window.__peersWeg": "getauscht: function peersWeg() { for (const pid of Array.from(st.p2p.peers.keys())) r._p2pR",
+     "window.__rufe": "getauscht: function rufe(wer, methode, lieferer, name, args) { const echt = lieferer[name];",
      "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
      "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
      "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit",
-     "window.__aufnahmeRuhig": "neu: function ausgabeAufnahme(W, H, warm, opt) { return (async () => { const T = wind",
-     "window.__linse___tagKurve": "neu: function tagKurve(o) { return (async () => { const T = window.THREE; const rend "
+     "window.__codeOf": "neu: (f) => oK(String(f))",
+     "window.__dokuOf": "neu: (f) => String(f)",
+     "window.__fehlt": "neu: (f, re) => [].concat(f).every((g, i) => { if (typeof g !== \"function\") throw new"
     },
     "haelt": [],
     "heap": [
-     496.7,
-     1404.9
+     341.2,
+     393.7
     ],
-    "ungemessen": "die Arbeit der Probe läuft noch: /eval werkbank/eval/ruf-46.js (Rufer tot seit 32.1 s)"
+    "ungemessen": null
    }
   ],
   "messHalt": [
@@ -1489,33 +1780,23 @@
     "zurueck": 0
    },
    {
-    "probe": "karte2.mensch.geist.gespraech#2",
+    "probe": "karte2.same.preis.ausdauer#1",
+    "halt": -1000000000,
+    "zurueck": 0
+   },
+   {
+    "probe": "karte2.same.preis.ausdauer#1",
     "gehalten": [
      "tiere"
     ],
     "offen": []
    },
    {
-    "probe": "karte2.mensch.sport.kunst#1",
+    "probe": "karte2.leben.tiere.masse#1",
     "gehalten": [
      "skala",
      "spiegel",
      "tiere"
-    ],
-    "offen": []
-   },
-   {
-    "probe": "karte2.erleben.spieler.wegfindung#1",
-    "gehalten": [
-     "tiere"
-    ],
-    "offen": []
-   },
-   {
-    "probe": "karte2.planet.kosmos.himmelsmechanik#1",
-    "gehalten": [
-     "skala",
-     "spiegel"
     ],
     "offen": []
    }
@@ -1528,49 +1809,37 @@
   ],
   "wanderung": [
    {
-    "probe": "karte2.erleben.spieler.wegfindung#1",
-    "ort": "stadt-voll",
-    "m": 1871.65,
-    "dreh": 3.716
-   },
-   {
-    "probe": "karte2.planet.kosmos.himmelsmechanik#1",
-    "ort": "genesis",
-    "m": 1082.54,
-    "dreh": 0.401
+    "probe": "karte2.leben.tiere.masse#1",
+    "ort": "wiese",
+    "m": 323,
+    "dreh": 0
    }
   ],
-  "grund": "die Welt trägt nicht mehr vor karte2.same.preis.ausdauer#1: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\"} — offen: karte2.same.preis.ausdauer#1, karte2.mensch.macht.recht#1, karte2.mensch.nahrung.tier#2, karte2.leben.tiere.masse#1, karte2.same.kopplung.ereignis#2, karte2.same.kopplung.gewalt#1, karte2.same.kopplung.kohaerenz#1, karte2.same.kopplung.terraform#1, karte2.erleben.klang.stimme#1, karte2.leben.oeko.netz#2, karte2.leben.evolution.fremde-physik#1",
-  "ciBlicke": 7,
+  "grund": "die Welt trägt nicht mehr vor karte2.same.kopplung.ereignis#2: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\"} — offen: karte2.same.kopplung.ereignis#2, karte2.same.kopplung.gewalt#1, karte2.same.kopplung.kohaerenz#1, karte2.same.kopplung.terraform#1, karte2.erleben.klang.stimme#1, karte2.leben.oeko.netz#2, karte2.leben.evolution.fremde-physik#1",
+  "ciBlicke": 5,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 6449,
-   "frameP95": 33.48,
-   "taktP95": 31.93,
-   "vramMax": 242.8,
+   "bilder": 5532,
+   "frameP95": 33.35,
+   "taktP95": 23.56,
+   "vramMax": 163.5,
    "seiten": 2,
-   "marken": 1,
+   "marken": 2,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "karte2.erleben.spieler.wegfindung#1",
-     "m": 1872,
+     "probe": "karte2.leben.tiere.masse#1",
+     "m": 323,
      "ringVor": 4,
      "ringMin": -1
-    },
-    {
-     "probe": "karte2.planet.kosmos.himmelsmechanik#1",
-     "m": 1083,
-     "ringVor": 4,
-     "ringMin": 0
     }
    ],
-   "zapfen": 1228,
-   "luecken": 5,
+   "zapfen": 379,
+   "luecken": 2,
    "letzteLuecke": "/eval ohne Antwort binnen 10 s"
   },
-  "fahrtS": 1313.5,
-  "minuten": 22.05
+  "fahrtS": 413.4,
+  "minuten": 7.05
  }
 }
