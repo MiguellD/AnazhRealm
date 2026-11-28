@@ -193,6 +193,29 @@ const PROBE_DECKEL_S = 45;
 const PROBE_SEK = PROBE_DECKEL_S;
 const FAHRT_MAX_S = 1800;
 const STILLE_S = 15;
+// DER SCHRITT DER WELT (28.11., grossform#1 an der GTX 1060 b56b51f0 „Stille seit 354.9 s nach 355 s“ bei 4 958 m Reise der Probe, boden#1
+// an der GTX 1050 „Stille seit 148.8 s“ bei 10 272 m; 66 Sprossen der Karte 2 in 70 Messungen an derselben Stille): eine Probe, die in
+// EINEM /eval reist (`__vorBild` · `/umstellen` · `/bild` mit Pose), schreibt keine Zeile und zeigt kein Bild im Loop — die Welt aber
+// rückt. Der Zapfen der Sitzung (stromSeite, je STROM_TAKT_MS, auch ohne Bild) trägt darum ihre steigenden Zähler: die Bilder, die die
+// Welt zeichnete (`_gpuLeine.gerendert`, jeder Pfad, nicht nur der Loop), den Weg des Spielers, den gebauten Ring, die Chunks. Ein Schritt
+// ist ein Zähler, der STIEG — nie ein Herzschlag: ein Ruf ohne Wirkung, ein fallender Ring, eine stehende Welt geben keinen; eine Probe
+// ohne Fortschritt fällt weiter an der Stille beim Namen. Das Maß der Profis: das Watchdog-Gesetz der Fortschritts-Prüfung (Erlang/OTP
+// supervisor, systemd WatchdogSec — ein Lebenszeichen zählt nur, wenn der Dienst es aus seiner Arbeit gibt); der Weg ab WELT_SCHRITT_M
+// (ein Schritt des Spielers ≈ 0,7–0,8 m, Gehen 1,4 m/s — die Sitzung zapft je 1 s)
+const WELT_SCHRITT_M = 1;
+// vor/nach: { gerendert, ort: [x, z], ring, chunks } zweier Zapfen derselben Seite → was stieg ("Weg 41.0 m · Bilder +3"), sonst null
+function weltSchritt(vor, nach) {
+    if (!vor || !nach) return null;
+    const zahl = (v) => typeof v === "number" && Number.isFinite(v);
+    const s = [];
+    if (Array.isArray(vor.ort) && Array.isArray(nach.ort) && vor.ort.every(zahl) && nach.ort.every(zahl)) {
+        const weg = Math.hypot(nach.ort[0] - vor.ort[0], nach.ort[1] - vor.ort[1]);
+        if (weg >= WELT_SCHRITT_M) s.push("Weg " + weg.toFixed(1) + " m");
+    }
+    for (const [k, name] of [["gerendert", "Bilder"], ["ring", "Ring"], ["chunks", "Chunks"]])
+        if (zahl(vor[k]) && zahl(nach[k]) && nach[k] > vor[k]) s.push(name + " +" + (nach[k] - vor[k]));
+    return s.length ? s.join(" · ") : null;
+}
 // DIE SEITE WARF (14.11., Koordinator 23:16): an 68d24688 meldete gelaende.K2#1 auf der GTX „Ferne {"fehler":"Cannot read properties of
 // undefined (reading 'length')"}“, danach „third FEHLER Runtime.callFunctionOn timed out“ — die Probe fing den Wurf, lief weiter und hing
 // mit Lebenszeichen bis zum Deckel 1256 s (21 von 30 Minuten der Fahrt, der 13. Fall dieser Station). Eine Zeile der Probe, die einen
@@ -2234,7 +2257,8 @@ function fahreGruppeEinmal(sts, ctx) {
             clearTimeout(uhr);
             // DIE STILLE (10.11., Koordinator: „kein Lebenszeichen der Probe (Takt/Log), nicht kein Ergebnis in 90 s“): eine Zeile der Probe
             // ODER ein Bild ihrer Welt (der Zapfen der Sitzung brachte Bilder: die Probe treibt einen Loop — zwischen den Befehlen steht die
-            // Welt) ist ein Lebenszeichen; eine Probe, die in der Seite rechnet und Bilder zeigt, schweigt nie
+            // Welt) ist ein Lebenszeichen; eine Probe, die in der Seite rechnet und Bilder zeigt, schweigt nie — ebenso ein SCHRITT der Welt
+            // (`sitz.lebt` trägt ihn, weltSchritt: ein steigender Zähler des Zapfens — die reisende Probe in einem /eval lebt, die stehende fällt)
             const leben = Math.max(tLeben, (sitz && typeof sitz.lebt === "function" && sitz.lebt()) || 0);
             const k = kind, t = Date.now(), lauf = (t - tA) / 1000, still = (t - leben) / 1000;
             if (lauf >= deckelS || (lauf >= grundS && still >= stilleS)) {
@@ -2326,7 +2350,7 @@ function fahreGruppeEinmal(sts, ctx) {
             if (tot && wurf && wurf.fiel) return rot("die Seite warf: " + wurfVoran(wurf.zeile) +" — die Probe lief " + wurfGnadeS + " s danach noch" + imTeil + ", beendet", code);
             // DER DECKEL DER LEINE: UNGEMESSEN beim Namen — außer der Sprosse der Karte 2, deren Ergebnis schon in der Ausgabe steht
             // (keinUrteil (e)): die Ausgabe wird unten gelesen, jede Station ohne Ergebnis trägt diesen Grund wörtlich
-            const deckelRiss = tot && sitz ? (riss && riss.art === "stille" ? "Deckel " + grundS + " s gerissen: Stille seit " + riss.still + " s nach " + riss.lauf + " s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt)"
+            const deckelRiss = tot && sitz ? (riss && riss.art === "stille" ? "Deckel " + grundS + " s gerissen: Stille seit " + riss.still + " s nach " + riss.lauf + " s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt, kein Schritt der Welt)"
                 : fahrtKappt ? "Deckel der Fahrt " + (sitz.fahrtMaxS || FAHRT_MAX_S) + " s gerissen nach " + deckelS + " s der Probe"
                     : "Deckel " + deckelS + " s gerissen" + (deckelS > grundS ? " (der Anteil der Fahrt, mit Lebenszeichen)" : "")) + imTeil : null;
             const deckelGrund = deckelRiss && deckelRiss + " — beendet, UNGEMESSEN" + wobei;
@@ -3527,6 +3551,8 @@ function stromSeite(r, a) {
         uhr: Number.isFinite(st.timeOfDay) ? +st.timeOfDay.toFixed(3) : null, chunks: st.voxelChunks ? st.voxelChunks.size : null,
         // der Ort des Spielers und der gebaute Ring je Zapfen (30.10.: wo jede Probe stand und wie lange ihr Ring brauchte — auch ohne Bild)
         ort: lies(() => [+st.playerMesh.position.x.toFixed(1), +st.playerMesh.position.z.toFixed(1)]), ring: lies(() => r._builtRingRadius()),
+        // die Bilder, die die Welt je zeichnete (jeder Pfad: Loop, /bild, Takt von Hand) — ein Zähler des Schritts der Welt (weltSchritt)
+        gerendert: lies(() => r._gpuLeine.gerendert),
         // was die Welt noch baut (band-urteil `einschwingOffen`: Foundry, Karten-Bake, Dorf, Streu, Chunks) — die Zeit einer Probe nach Ursache
         offen: lies(() => (typeof window.__einschwingOffen === "function" ? Object.keys(window.__einschwingOffen(r)) : null)),
     };
@@ -3687,7 +3713,7 @@ async function stromZapfen(w, datei, probe, a = {}) {
     }
     if (!e.bereit) return { ok: false, grund: e.grund || "nicht bereit" };
     fs.appendFileSync(datei, JSON.stringify({ probe, zeit: new Date().toISOString(), ...e }) + "\n");
-    return { ok: true, n: e.zeilen.length, seite: e.seite, fehler: e.fehler };
+    return { ok: true, n: e.zeilen.length, seite: e.seite, fehler: e.fehler, welt: { gerendert: e.gerendert, ort: e.ort, ring: e.ring, chunks: e.chunks } };
 }
 // EINE Marke im Strom (eine Probe nennt einen Stand der Welt beim Namen, z. B. den GC-Stand am Anfang der Dauer)
 function stromMarke(datei, probe, marke, wert) {
@@ -4125,12 +4151,17 @@ async function fahreSitzung(gruppen0, ctx, melde) {
     // (stromSeite zieht je Seite einen Haken ein) — eine neue Seite hat keinen gebauten Ring (DER WARME START)
     const W = ctx.port + 20000, zz = { zapfen: 0, luecken: 0, letzteLuecke: null };
     // das letzte Bild der Welt (die Leine liest es als Lebenszeichen der Probe, fahreGruppe): der Zapfen, der Bilder brachte
-    let bildZuletzt = 0;
+    // und der letzte Schritt der Welt (weltSchritt: ein Zähler des Zapfens stieg — die Probe reist, der Ring baut, die Welt zeichnet;
+    // nur innerhalb DERSELBEN Seite verglichen: eine neue Seite beginnt ihre Zähler neu)
+    let bildZuletzt = 0, schrittZuletzt = 0, weltVor = null;
     let aktuell = "(sitzung)", laeuft = null, ruht = false, seite = null;
     const zapf = (probe) => {
         laeuft = (laeuft || Promise.resolve()).then(() => stromZapfen(W, strom, probe)).then((z) => {
-            if (z.ok) (zz.zapfen++, (seite = z.seite), z.n > 0 && (bildZuletzt = Date.now()));
-            else (zz.luecken++, (zz.letzteLuecke = z.grund));
+            if (z.ok) {
+                if (z.seite === seite && weltSchritt(weltVor, z.welt)) schrittZuletzt = Date.now();
+                weltVor = z.welt;
+                (zz.zapfen++, (seite = z.seite), z.n > 0 && (bildZuletzt = Date.now()));
+            } else (zz.luecken++, (zz.letzteLuecke = z.grund));
         });
         return laeuft;
     };
@@ -4444,7 +4475,7 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         if (felderVor.fehler) (kopf.felderBlind = kopf.felderBlind || []).push({ probe: schluessel(g[0]), wann: "vor", fehler: felderVor.fehler });
         const zeit = new Date().toISOString();
         aktuell = schluessel(g[0]);
-        const es = await fahreGruppe(g, { ...ctx, ...aus, sitzung: { log, zeuge, strom, grund, probe: aktuell, restS: restS(), anteilS: anteil(gruppen.indexOf(g)), fahrtMaxS, lebt: () => bildZuletzt, konsumWelt } });
+        const es = await fahreGruppe(g, { ...ctx, ...aus, sitzung: { log, zeuge, strom, grund, probe: aktuell, restS: restS(), anteilS: anteil(gruppen.indexOf(g)), fahrtMaxS, lebt: () => Math.max(bildZuletzt, schrittZuletzt), konsumWelt } });
         if (stellungVon(g) === "anfang") (anfangLief.add(schluessel(g[0])), (anfangHier = true)); // DIE SITZUNG TRÄGT (b): er fuhr in diesem Lauf
         if (es.some((e) => /^Deckel der Fahrt /.test(e.grund || ""))) (gerissen = "in " + aktuell), kopf.offen.push(...g.map(schluessel));
         // DIE PROBE RÄUMT, WAS SIE AUF WINDOW LEGTE (probeFelder), VOR der Wache: jedes neue Daten-Feld fällt beim Namen (im Kopf `felder`)
@@ -9066,7 +9097,7 @@ async function selbsttest(o = {}) {
         const zeile = /^  (GRÜN|ROT ) (\S+) · .* · Exit \S+ · ([\d.]+) min( \(Zwilling von \S+\))?$/;
         const schloss = gl && fs.existsSync(glLog) ? fs.readFileSync(glLog, "utf8").trim().split("\n") : [];
         pruef("SITZUNG EINE Welt: jede Probe darin (WERKBANK_PORT, das Log, der Zeuge der Welt), der Deckel der Probe beim Namen ihrer letzten Zeile, nach dem Fehler die nächste in DERSELBEN Welt, Zwillinge EIN Lauf",
-            r1.z.filter((l) => l === "start").length === 1 && x["a.K1#1"].gruen && /^Deckel 2 s gerissen: Stille seit [\d.]+ s nach [\d.]+ s \(kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt\) — beendet, UNGEMESSEN \(zuletzt: SCHRITT \/umstellen 41\.3 s\)$/.test(x["b.K1#1"].grund) && x["b.K1#1"].ungemessen === true &&
+            r1.z.filter((l) => l === "start").length === 1 && x["a.K1#1"].gruen && /^Deckel 2 s gerissen: Stille seit [\d.]+ s nach [\d.]+ s \(kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt, kein Schritt der Welt\) — beendet, UNGEMESSEN \(zuletzt: SCHRITT \/umstellen 41\.3 s\)$/.test(x["b.K1#1"].grund) && x["b.K1#1"].ungemessen === true &&
             x["c.K1#1"].gruen === false && x["c.K1#1"].exit === 1 &&
             x["d.K1#1"].gruen && x["d.K1#2"].gruen && x["d.K1#2"].zwilling === "d.K1#1" && x["a.K1#1"].gpu === "amd/stub-sitzung" && r1.kopf.proben === 4, JSON.stringify([r1.z, x]));
         // DIE SEITE WARF (WURF_TEXT · WURF_MARKE · WURF_GNADE_S): eine Probe, die einen Wurf meldet und weiterläuft, fällt nach der
@@ -9139,7 +9170,7 @@ async function selbsttest(o = {}) {
         const xl = rl.es, sekEnv = (/ sek (\d+) env (\d+)$/.exec((xl["l.K1#1"] || {}).zahl || "") || []).slice(1).map(Number);
         pruef("LEINE (a) die stille Probe fällt über ihrem Grund-Deckel 2 s nach 1 s Stille beim Namen, die Fahrt läuft weiter; die LEBENDE (4 s Arbeit am Grund 2 s) misst GRÜN, " +
             "ihre Frist folgt dem EINEN Deckel ({SEK} = PUNKTE_PROBE_DECKEL_S = der Anteil > 2 s); (c) ROT im Maß nach 3 s am Grund 1 s bleibt ROT gemessen",
-            !!xl["s.K1#1"] && xl["s.K1#1"].ungemessen === true && /^Deckel 2 s gerissen: Stille seit [\d.]+ s nach [\d.]+ s \(kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt\) — beendet, UNGEMESSEN$/.test(xl["s.K1#1"].grund) && xl["s.K1#1"].s < 4 &&
+            !!xl["s.K1#1"] && xl["s.K1#1"].ungemessen === true && /^Deckel 2 s gerissen: Stille seit [\d.]+ s nach [\d.]+ s \(kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt, kein Schritt der Welt\) — beendet, UNGEMESSEN$/.test(xl["s.K1#1"].grund) && xl["s.K1#1"].s < 4 &&
             !!xl["l.K1#1"] && xl["l.K1#1"].gruen === true && !xl["l.K1#1"].ungemessen && xl["l.K1#1"].s >= 4 && sekEnv.length === 2 && sekEnv[0] > 2 && sekEnv[0] === sekEnv[1] &&
             !!xl["r.K1#1"] && xl["r.K1#1"].gruen === false && !xl["r.K1#1"].ungemessen && /^n 7/.test(xl["r.K1#1"].zahl) && xl["r.K1#1"].s >= 3 && !!xl["n.K1#1"] && xl["n.K1#1"].gruen === true,
             JSON.stringify(Object.entries(xl).map(([id, e]) => [id, e.gruen, e.ungemessen, e.s, e.grund || e.zahl])));
@@ -9153,7 +9184,7 @@ async function selbsttest(o = {}) {
             const rk = await lauf([[{ ...S("k.K1", 1, schreibtUndSchweigt, sprosse(1)), karte2: true }, { ...S("k.K1", 2, schreibtUndSchweigt, sprosse(2)), karte2: true }],
                 [S("m.K1", 1, schreibtUndSchweigt, sprosse(1))]], "gut");
             const [k1, k2, m1] = ["k.K1#1", "k.K1#2", "m.K1#1"].map((id) => rk.es[id] || {});
-            const stilleGrund = /^Deckel 2 s gerissen: Stille seit [\d.]+ s nach [\d.]+ s \(kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt\) — beendet, UNGEMESSEN$/;
+            const stilleGrund = /^Deckel 2 s gerissen: Stille seit [\d.]+ s nach [\d.]+ s \(kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt, kein Schritt der Welt\) — beendet, UNGEMESSEN$/;
             pruef("LEINE die Sprosse der Karte 2 mit Ergebnis trägt ihr ROT über den Deckel der Stille (der Riss daneben, zensiert), die ohne Ergebnis steht UNGEMESSEN am Deckel; die Mutante ohne karte2 UNGEMESSEN",
                 k1.gruen === false && !k1.ungemessen && k1.grund === "ROT: S1 · ROT Leser fehlt" && /^Deckel 2 s gerissen: Stille seit [\d.]+ s nach [\d.]+ s /.test(k1.abbruch || "") && !!rissVon(k1) &&
                     k2.ungemessen === true && stilleGrund.test(k2.grund || "") && m1.ungemessen === true && stilleGrund.test(m1.grund || ""),
@@ -9172,10 +9203,32 @@ async function selbsttest(o = {}) {
             'fs.writeFileSync(process.argv[1], JSON.stringify({ n: 0 })); })();', "{AUS}"];
         const rw = await lauf([[S("w.K1", 1, { befehl: schweigt(true), sek: 2 }, nN)], [S("v.K1", 1, { befehl: schweigt(false), sek: 2 }, nN)]], "gut");
         const rg = await lauf([[S("v.K1", 1, { befehl: schweigt(false), sek: 2 }, nN)]], "gut", null, null, null, { geraet: "gtx" });
-        const stille = /^Deckel 2 s gerissen: Stille seit [\d.]+ s nach [\d.]+ s \(kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt\) — beendet, UNGEMESSEN$/;
+        const stille = /^Deckel 2 s gerissen: Stille seit [\d.]+ s nach [\d.]+ s \(kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt, kein Schritt der Welt\) — beendet, UNGEMESSEN$/;
         pruef("LEINE DIE WELT LEBT: die stille Probe, die den Loop der Welt treibt, misst über ihrem Grund-Deckel 2 s GRÜN; dieselbe ohne Loop fällt nach der Stille beim Namen (die Mutante: nur Zeilen zählten)",
             !!rw.es["w.K1#1"] && rw.es["w.K1#1"].gruen === true && !rw.es["w.K1#1"].ungemessen && rw.es["w.K1#1"].s >= 3 &&
                 !!rw.es["v.K1#1"] && rw.es["v.K1#1"].ungemessen === true && stille.test(rw.es["v.K1#1"].grund), JSON.stringify(Object.entries(rw.es).map(([id, e]) => [id, e.gruen, e.s, e.grund || e.zahl])));
+        // DER SCHRITT DER WELT (weltSchritt; GTX 1060 b56b51f0 grossform#1 „Stille seit 354.9 s nach 355 s“ bei 4 958 m Reise, GTX 1050
+        // boden#1 „Stille seit 148.8 s“ bei 10 272 m): die Probe, die 3 s ohne Zeile und ohne Loop REIST (je 0,25 s ein /eval, das den
+        // Spieler 40 m trägt), misst über ihrem Grund-Deckel 2 s GRÜN; dieselbe, die je 0,25 s nur fragt (ein Herzschlag ohne Wirkung),
+        // fällt an der Stille beim Namen. DIE MUTANTE (vorher ROT am Täter, die Leine bis 28.11.: nur Zeile und Bild im Loop) tötete die
+        // reisende nach 1 s Stille. Dazu das Gesetz selbst: nur ein Zähler, der STIEG, ist ein Schritt
+        {
+            const reist = (code) => ["node", "-e", 'const fs = require("fs"), http = require("http"); const e = (c) => new Promise((ok) => http.request({ host: "127.0.0.1", ' +
+                'port: Number(process.env.WERKBANK_PORT), path: "/eval", method: "POST" }, (r) => { r.resume(); r.on("end", ok); }).end(JSON.stringify({ code: c }))); ' +
+                '(async () => { const t0 = Date.now(); while (Date.now() - t0 < 3000) { await e(' + JSON.stringify("seite: " + code) + '); await new Promise((w) => setTimeout(w, 250)); } ' +
+                'fs.writeFileSync(process.argv[1], JSON.stringify({ n: 0 })); })();', "{AUS}"];
+            const rr = await lauf([[S("g.K1", 1, { befehl: reist("r.state.playerMesh.position.x += 40; return 1;"), sek: 2 }, nN)],
+                [S("p.K1", 1, { befehl: reist("return r.state.playerMesh.position.x;"), sek: 2 }, nN)]], "gut");
+            const [eg, ep] = ["g.K1#1", "p.K1#1"].map((id) => rr.es[id] || {});
+            const o = (x, z, g, ring, chunks) => ({ ort: [x, z], gerendert: g, ring, chunks });
+            const gesetz = weltSchritt(o(0, 0, 5, 4, 81), o(41, 0, 5, 4, 81)) === "Weg 41.0 m" && weltSchritt(o(0, 0, 5, -1, 13), o(0, 0, 8, 0, 20)) === "Bilder +3 · Ring +1 · Chunks +7" &&
+                weltSchritt(o(0, 0, 5, 4, 81), o(0.5, 0, 5, -1, 13)) === null && weltSchritt(o(0, 0, 5, 4, 81), o(0, 0, 5, 4, 81)) === null &&
+                weltSchritt(null, o(0, 0, 5, 4, 81)) === null && weltSchritt(o(0, 0, null, null, null), o(0, 0, null, null, null)) === null;
+            pruef("LEINE DER SCHRITT DER WELT: die Probe, die 3 s ohne Zeile und ohne Loop reist (je 0,25 s 40 m), misst über ihrem Grund-Deckel 2 s GRÜN; die, die nur fragt " +
+                "(Herzschlag ohne Wirkung), fällt an der Stille beim Namen; nur ein steigender Zähler ist ein Schritt (Weg ≥ " + WELT_SCHRITT_M + " m, Bilder, Ring, Chunks — nie ein fallender, nie die Stelle)",
+                eg.gruen === true && !eg.ungemessen && eg.s >= 3 && ep.ungemessen === true && stille.test(ep.grund || "") && gesetz,
+                JSON.stringify([["g.K1#1", eg.gruen, eg.s, eg.grund || eg.zahl], ["p.K1#1", ep.gruen, ep.s, ep.grund || ep.zahl], gesetz]));
+        }
         const vSt = S("v.K1", 1, { befehl: schweigt(false), sek: 2 }, nN);
         pruef("LEINE DER DECKEL DES GERÄTS: dieselbe stille Probe (3 s, Grund 2 s) reißt mit Faktor 1 (Radeon) und misst mit dem Takt-Faktor der GTX (Grund an der Leine " +
             grundDeckel(vSt, "gtx") + " s); die Radeon behält ihren Deckel, Tafel und Plan der Fahrt bleiben Byte für Byte",
