@@ -7131,7 +7131,7 @@
   },
   "karte2.erleben.kopplung.wahrnehmung": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: mit Witterung 50 m: 8/8 Risse (8 Jagden mit Hetze, bei 12.6/12.1/12/12.1/12.1/12.2/14.6/12.3 s) · Witterung aus (0 m): 0/8 Risse (0 Jagden mit Hetze) · first · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: mit Witterung 50 m: 8/8 Risse (8 Jagden mit Hetze, bei 12.3/12.4/12.3/12.4/12.2/12.2/14.3/13.7 s) · Witterung aus (0 m): 0/8 Risse (0 Jagden mit Hetze) · first · [linse-gpu] nvidia/pascal an 18058dba gtx — offen: karte2.erleben.kopplung.wahrnehmung#2 radeon: Konsum seit der Messung geändert (R6: klang-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kreatur-proben.cjs +4) — zuletzt an e80f9c5d: die Fahrt riss 1800 s (vor karte2.mensch.fahrzeug.lenker#1) — offen, UNGEMESSEN · karte2.erleben.kopplung.wahrnehmung#2 gtx: Station seit der Messung geändert — zuletzt an e80f9c5d: die Fahrt riss 1800 s (der Rest 78 s unter dem Grund-Deckel 513 s von karte2.erleben.kopplung.wahrnehmung#2) — offen, UNGEMESSEN · karte2.erleben.kopplung.wahrnehmung#3 radeon: ungemessen (R10) · karte2.erleben.kopplung.wahrnehmung#3 gtx: Station seit der Messung geändert · karte2.erleben.kopplung.wahrnehmung#4 radeon: ungemessen (R10) · karte2.erleben.kopplung.wahrnehmung#4 gtx: Station seit der Messung geändert · karte2.erleben.kopplung.wahrnehmung#5 radeon: ungemessen (R10) · karte2.erleben.kopplung.wahrnehmung#5 gtx: Station seit der Messung geändert · karte2.erleben.kopplung.wahrnehmung#6 radeon: ungemessen (R10) · karte2.erleben.kopplung.wahrnehmung#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: mit Witterung 50 m: 8/8 Risse (8 Jagden mit Hetze, bei 12.6/12.1/12/12.1/12.1/12.2/14.6/12.3 s) · Witterung aus (0 m): 0/8 Risse (0 Jagden mit Hetze) · first · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: mit Witterung 50 m: 8/8 Risse (8 Jagden mit Hetze, bei 12.3/12.4/12.3/12.4/12.2/12.2/14.3/13.7 s) · Witterung aus (0 m): 0/8 Risse (0 Jagden mit Hetze) · first · [linse-gpu] nvidia/pascal an 18058dba gtx — offen: karte2.erleben.kopplung.wahrnehmung#2 radeon: Konsum seit der Messung geändert (R6: klang-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kreatur-proben.cjs +4) — zuletzt an e80f9c5d: die Fahrt riss 1800 s (vor karte2.mensch.fahrzeug.lenker#1) — offen, UNGEMESSEN · karte2.erleben.kopplung.wahrnehmung#2 gtx: ROT: S2 Umfang nicht erzeugbar: die Beute wählt keine Lage gegen den Wind: der Kreatur-Takt rief _windAt in 15 × 300 Schritten an 5 Orten 0×; mit gedrehtem Wind steht das Kitz nach 5 s im Mittel 0.00 m anders, im Rauschen zweier gleicher Läufe 0.00 m (stamm/kreatur-furcht.js:119 witterung is · ueberlebenFaktor ungemessen gegen Soll ≥ 1,5 × ✗ · Täter: stamm/kreatur-furcht.js _creatureWarinessSpieler (die Witterung der Beute ohne Wind) an e80f9c5d · karte2.erleben.kopplung.wahrnehmung#3 radeon: ungemessen (R10) · karte2.erleben.kopplung.wahrnehmung#3 gtx: Station seit der Messung geändert · karte2.erleben.kopplung.wahrnehmung#4 radeon: ungemessen (R10) · karte2.erleben.kopplung.wahrnehmung#4 gtx: Station seit der Messung geändert · karte2.erleben.kopplung.wahrnehmung#5 radeon: ungemessen (R10) · karte2.erleben.kopplung.wahrnehmung#5 gtx: Station seit der Messung geändert · karte2.erleben.kopplung.wahrnehmung#6 radeon: ungemessen (R10) · karte2.erleben.kopplung.wahrnehmung#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.erleben.kopplung.wahrnehmung#1",
@@ -7167,10 +7167,10 @@
      "id": "karte2.erleben.kopplung.wahrnehmung#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an e80f9c5d: die Fahrt riss 1800 s (der Rest 78 s unter dem Grund-Deckel 513 s von karte2.erleben.kopplung.wahrnehmung#2) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "S2 Umfang nicht erzeugbar: die Beute wählt keine Lage gegen den Wind: der Kreatur-Takt rief _windAt in 15 × 300 Schritten an 5 Orten 0×; mit gedrehtem Wind steht das Kitz nach 5 s im Mittel 0.00 m anders, im Rauschen zweier gleicher Läufe 0.00 m (stamm/kreatur-furcht.js:119 witterung is · ueberlebenFaktor ungemessen gegen Soll ≥ 1,5 × ✗ · Täter: stamm/kreatur-furcht.js _creatureWarinessSpieler (die Witterung der Beute ohne Wind)",
+     "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
+     "grund": "ROT: S2 Umfang nicht erzeugbar: die Beute wählt keine Lage gegen den Wind: der Kreatur-Takt rief _windAt in 15 × 300 Schritten an 5 Orten 0×; mit gedrehtem Wind steht das Kitz nach 5 s im Mittel 0.00 m anders, im Rauschen zweier gleicher Läufe 0.00 m (stamm/kreatur-furcht.js:119 witterung is · ueberlebenFaktor ungemessen gegen Soll ≥ 1,5 × ✗ · Täter: stamm/kreatur-furcht.js _creatureWarinessSpieler (die Witterung der Beute ohne Wind)",
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.kopplung.wahrnehmung#3",
@@ -37472,7 +37472,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 295,
+  "konsum": 296,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37600,10 +37600,10 @@
    "karte2.same.kopplung.terraform#1 gtx",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3367
+  "ohne": 3366
  },
  "kopfVoll": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
- "zeit": "2026-11-28T08:03:26.744Z",
+ "zeit": "2026-11-28T08:10:12.436Z",
  "vorher": "e80f9c5d",
  "bilanz": {
   "gewinn": [],
