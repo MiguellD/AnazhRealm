@@ -1,0 +1,160 @@
+--- a/vision/pruefer/quellen.json
++++ b/vision/pruefer/quellen.json
+@@ -12057,6 +12057,138 @@
+    "liegenGeblieben": [],
+    "stand": "geholt 40 von 40 · gesichtet am Bogen des Satzes (26.11., dritte Welle): 31 tragen das Motiv, 9 fielen (nicht)",
+    "ablage": "2afc/wikimedia-commons/haus-zehn-meter-2"
++  },
++  {
++   "id": "hang-heiligkreuz",
++   "art": "2afc",
++   "quelle": "Wikimedia Commons",
++   "fuer": [
++    "planet.relief.boden#1"
++   ],
++   "soll": 40,
++   "breite": 1280,
++   "lizenz": "je Datei (gemeinfrei · CC0 · CC BY · CC BY-SA)",
++   "motiv": "die Hänge der Heiligkreuzberge (Góry Świętokrzyskie) — Kielce IST der Klima-Anker des Gesetzes: gesucht: Wald- und Wiesenflanken, das Gołoborze (Quarzit-Schutt am Steilen), Fels-Anschnitt, aus Augenhöhe",
++   "klima": "das Klima der Heimat im Gesetz: Sommer 18 °C, Winter −4 °C, 547,5 mm (gelaende-core TEMPERATUR, NIEDERSCHLAG.heimatMm) — Köppen Dfb, Mitteleuropa östlich der Elbe (Kielce 7,6 °C, Prag 8,4 °C, je 500–650 mm)",
++   "abfrage": {
++    "art": "commons",
++    "kategorie": "Świętokrzyskie Mountains",
++    "ohne": "map|mapa|plan|sign|tablica|tabule|drawing|rysunek|painting|obraz|aerial|lotnicz|panorama|interior|church|kościół|museum|muzeum|postcard|stamp|diagram|ski|narciar|road|droga|ulica|street"
++   },
++   "dateien": [],
++   "liegenGeblieben": [],
++   "stand": "ungeholt — geholt wird am Gerät (`--nur hang-heiligkreuz`), nie in der Sitzung des Machers · die Kategorie trägt 55 Dateien unmittelbar (Commons categoryinfo 28.11.; 28 Unterkategorien liest der Holer nicht)",
++   "ablage": "2afc/wikimedia-commons/hang-heiligkreuz"
++  },
++  {
++   "id": "hang-fels-polen",
++   "art": "2afc",
++   "quelle": "Wikimedia Commons",
++   "fuer": [
++    "planet.relief.boden#1"
++   ],
++   "soll": 40,
++   "breite": 1280,
++   "lizenz": "je Datei (gemeinfrei · CC0 · CC BY · CC BY-SA)",
++   "motiv": "Fels-Anschnitt und Schutt an Hängen in Polen, aus Augenhöhe — die Klassen Fels und Schutt des Fachs",
++   "klima": "das Klima der Heimat im Gesetz: Sommer 18 °C, Winter −4 °C, 547,5 mm (gelaende-core TEMPERATUR, NIEDERSCHLAG.heimatMm) — Köppen Dfb, Mitteleuropa östlich der Elbe (Kielce 7,6 °C, Prag 8,4 °C, je 500–650 mm)",
++   "abfrage": {
++    "art": "commons",
++    "kategorie": "Rock formations in Poland",
++    "ohne": "map|mapa|plan|sign|tablica|tabule|drawing|rysunek|painting|obraz|aerial|lotnicz|panorama|interior|church|kościół|museum|muzeum|postcard|stamp|diagram|ski|narciar|road|droga|ulica|street"
++   },
++   "dateien": [],
++   "liegenGeblieben": [],
++   "stand": "ungeholt — geholt wird am Gerät (`--nur hang-fels-polen`), nie in der Sitzung des Machers · die Kategorie trägt 47 Dateien unmittelbar (Commons categoryinfo 28.11.)",
++   "ablage": "2afc/wikimedia-commons/hang-fels-polen"
++  },
++  {
++   "id": "hang-aufschluss-polen",
++   "art": "2afc",
++   "quelle": "Wikimedia Commons",
++   "fuer": [
++    "planet.relief.boden#1"
++   ],
++   "soll": 23,
++   "breite": 1280,
++   "lizenz": "je Datei (gemeinfrei · CC0 · CC BY · CC BY-SA)",
++   "motiv": "Aufschlüsse an Hängen in Polen — der Anschnitt, an dem Erde über Fels liegt (die Klasse Anschnitt des Gesetzes)",
++   "klima": "das Klima der Heimat im Gesetz: Sommer 18 °C, Winter −4 °C, 547,5 mm (gelaende-core TEMPERATUR, NIEDERSCHLAG.heimatMm) — Köppen Dfb, Mitteleuropa östlich der Elbe (Kielce 7,6 °C, Prag 8,4 °C, je 500–650 mm)",
++   "abfrage": {
++    "art": "commons",
++    "kategorie": "Outcrops in Poland",
++    "ohne": "map|mapa|plan|sign|tablica|tabule|drawing|rysunek|painting|obraz|aerial|lotnicz|panorama|interior|church|kościół|museum|muzeum|postcard|stamp|diagram|ski|narciar|road|droga|ulica|street"
++   },
++   "dateien": [],
++   "liegenGeblieben": [],
++   "stand": "ungeholt — geholt wird am Gerät (`--nur hang-aufschluss-polen`), nie in der Sitzung des Machers · die Kategorie trägt 23 Dateien unmittelbar (Commons categoryinfo 28.11.) — das Soll ist ihre Zahl",
++   "ablage": "2afc/wikimedia-commons/hang-aufschluss-polen"
++  },
++  {
++   "id": "hang-hang",
++   "art": "2afc",
++   "quelle": "Wikimedia Commons",
++   "fuer": [
++    "planet.relief.boden#1"
++   ],
++   "soll": 40,
++   "breite": 1280,
++   "lizenz": "je Datei (gemeinfrei · CC0 · CC BY · CC BY-SA)",
++   "motiv": "der Hang an sich — Wiesen-, Erd- und Schuttflanken aus Augenhöhe (die Kategorie ist weltweit: am Bogen fällt, was nicht im gemäßigten Klima steht)",
++   "klima": "das Klima der Heimat im Gesetz: Sommer 18 °C, Winter −4 °C, 547,5 mm (gelaende-core TEMPERATUR, NIEDERSCHLAG.heimatMm) — Köppen Dfb, Mitteleuropa östlich der Elbe (Kielce 7,6 °C, Prag 8,4 °C, je 500–650 mm)",
++   "abfrage": {
++    "art": "commons",
++    "kategorie": "Slopes",
++    "ohne": "map|mapa|plan|sign|tablica|tabule|drawing|rysunek|painting|obraz|aerial|lotnicz|panorama|interior|church|kościół|museum|muzeum|postcard|stamp|diagram|ski|narciar|road|droga|ulica|street"
++   },
++   "dateien": [],
++   "liegenGeblieben": [],
++   "stand": "ungeholt — geholt wird am Gerät (`--nur hang-hang`), nie in der Sitzung des Machers · die Kategorie trägt 172 Dateien unmittelbar (Commons categoryinfo 28.11.)",
++   "ablage": "2afc/wikimedia-commons/hang-hang"
++  },
++  {
++   "id": "hang-fordon",
++   "art": "2afc",
++   "quelle": "Wikimedia Commons",
++   "fuer": [
++    "planet.relief.boden#1"
++   ],
++   "soll": 40,
++   "breite": 1280,
++   "lizenz": "je Datei (gemeinfrei · CC0 · CC BY · CC BY-SA)",
++   "motiv": "die Flanke von Fordon (Bydgoszcz, das Weichsel-Urstromtal): Wiesen-, Erd- und Waldflanke aus Augenhöhe — ein Vorlauf der Suche „zbocze“ (28.11., 20 Dateien) traf mit 11 das Motiv, die Treffer lagen hier; Blicke über die Stadt fallen am Bogen",
++   "klima": "das Klima der Heimat im Gesetz: Sommer 18 °C, Winter −4 °C, 547,5 mm (gelaende-core TEMPERATUR, NIEDERSCHLAG.heimatMm) — Köppen Dfb, Mitteleuropa östlich der Elbe (Kielce 7,6 °C, Prag 8,4 °C, je 500–650 mm)",
++   "abfrage": {
++    "art": "commons",
++    "kategorie": "Views from the Fordon slope",
++    "ohne": "map|mapa|plan|sign|tablica|tabule|drawing|rysunek|painting|obraz|aerial|lotnicz|panorama|interior|church|kościół|museum|muzeum|postcard|stamp|diagram|ski|narciar|road|droga|ulica|street"
++   },
++   "dateien": [],
++   "liegenGeblieben": [],
++   "stand": "ungeholt — geholt wird am Gerät (`--nur hang-fordon`), nie in der Sitzung des Machers · die Kategorie trägt 127 Dateien unmittelbar (Commons categoryinfo 28.11.)",
++   "ablage": "2afc/wikimedia-commons/hang-fordon"
++  },
++  {
++   "id": "hang-schutt",
++   "art": "2afc",
++   "quelle": "Wikimedia Commons",
++   "fuer": [
++    "planet.relief.boden#1"
++   ],
++   "soll": 40,
++   "breite": 1280,
++   "lizenz": "je Datei (gemeinfrei · CC0 · CC BY · CC BY-SA)",
++   "motiv": "der Schutt am Steilen: Halden und Schuttkegel unter der Wand aus Augenhöhe (die Klasse Schutt des Fachs; die Kategorie ist weltweit: am Bogen fällt Hochgebirge über der Baumgrenze und fremdes Klima)",
++   "klima": "das Klima der Heimat im Gesetz: Sommer 18 °C, Winter −4 °C, 547,5 mm (gelaende-core TEMPERATUR, NIEDERSCHLAG.heimatMm) — Köppen Dfb, Mitteleuropa östlich der Elbe (Kielce 7,6 °C, Prag 8,4 °C, je 500–650 mm)",
++   "abfrage": {
++    "art": "commons",
++    "kategorie": "Screes",
++    "ohne": "map|mapa|plan|sign|tablica|tabule|drawing|rysunek|painting|obraz|aerial|lotnicz|panorama|interior|church|kościół|museum|muzeum|postcard|stamp|diagram|ski|narciar|road|droga|ulica|street"
++   },
++   "dateien": [],
++   "liegenGeblieben": [],
++   "stand": "ungeholt — geholt wird am Gerät (`--nur hang-schutt`), nie in der Sitzung des Machers · die Kategorie trägt 109 Dateien unmittelbar (Commons categoryinfo 28.11.)",
++   "ablage": "2afc/wikimedia-commons/hang-schutt"
+   }
+  ],
+  "liegenGebliebenQuellen": [
+@@ -12366,9 +12498,16 @@
+    "c": "einzelbild",
+    "station": "k2-planet.js auge „Ego an der Wiese, Blick auf den nächsten Hang“",
+    "motiv": "Ego-Blick auf den nächsten Hang",
+-   "saetze": [],
++   "saetze": [
++    "hang-heiligkreuz",
++    "hang-fels-polen",
++    "hang-aufschluss-polen",
++    "hang-hang",
++    "hang-fordon",
++    "hang-schutt"
++   ],
+    "bereitBisAufDenFaecher": false,
+-   "fehlt": "b: Fotos GLEICHEN Hangs und Klimas (die 98 Landschafts-Fotos tragen weder Hang noch Klima als Etikett)"
++   "fehlt": "b: die Sätze stehen mit Abfrage (Kategorien 55 + 47 + 23 + 172 + 127 + 109 = 533 Dateien vor den Wänden des Holers), ungeholt — geholt und gesichtet wird am Gerät"
+   },
+   {
+    "id": "planet.wasser.eis#3",

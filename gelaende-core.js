@@ -5001,9 +5001,23 @@
         return glatt(MOOS.nass[0], MOOS.nass[1], m) * glatt(0.15, 0.7, ny);
     }
     // Der Fleck des Mooses (λ `lm`: der Sims `FELS.moosLambda`, die Erde `MOOS.lambda`): wo das Netz ihn trägt (`tm`), sonst sein
-    // Mittel — Fels und Erde teilen die Form.
+    // Mittel — Fels und Erde teilen die Form. DAS MITTEL IST DAS MITTEL SEINES GESETZES (`moosFleckMittel`): der Erwartungswert von
+    // glatt(0,45, 0,7, wert3) an 65 536 gestreuten Punkten des Rauschens (die Folge R3), einmal gerechnet am selben
+    // Hash — nie eine Zahl daneben. Bis 28.11. stand 0,32 fest, das Gesetz trägt 0,358 (eine Million Punkte, ± 0,0004): die Masche,
+    // die den Fleck nicht trägt, lag 11 % unter der Nähe. Ein Gitter mit festen Schritten traf 0,367 (es tastet das Rauschen in
+    // Mustern); die Linse gate:hoehlen-sicht (q) misst das Fern-Mittel gegen das Nah-Mittel an 16 384 Punkten je λ.
+    let MOOS_FLECK_MITTEL = 0;
+    function moosFleckMittel() {
+        if (MOOS_FLECK_MITTEL > 0) return MOOS_FLECK_MITTEL;
+        // die Folge R3 (Roberts 2018: k · (1/φ₃, 1/φ₃², 1/φ₃³) mod 1, φ₃ die Plastik-Zahl) — gestreut ohne Gitter, ohne Generator
+        const p = 1.2207440846057596;
+        let s = 0;
+        for (let k = 0; k < 65536; k++)
+            s += glatt(0.45, 0.7, wert3(((0.5 + k / p) % 1) * 4096, ((0.5 + k / (p * p)) % 1) * 64, ((0.5 + k / (p * p * p)) % 1) * 4096, FELS_SAAT ^ 0xa3));
+        return (MOOS_FLECK_MITTEL = s / 65536);
+    }
     function moosFleck(x, y, z, tm, lm) {
-        return (tm > 0 ? tm * glatt(0.45, 0.7, wert3(x / lm, y / lm, z / lm, FELS_SAAT ^ 0xa3)) : 0) + (1 - tm) * 0.32;
+        return (tm > 0 ? tm * glatt(0.45, 0.7, wert3(x / lm, y / lm, z / lm, FELS_SAAT ^ 0xa3)) : 0) + (1 - tm) * moosFleckMittel();
     }
     // Das Mittel des Stoffs (die Ferne, wo kein Netz eine Bank trägt): ein senkrechter Fels unter dem Himmel.
     function felsMittel(B, feucht) {
@@ -9554,6 +9568,7 @@
         anschnittErde: anschnittErde,
         felsAnschnitt: felsAnschnitt,
         moosDeckung: moosDeckung,
+        moosFleck: moosFleck, // Leser: gate:hoehlen-sicht (q) — das Fern-Mittel gegen das Nah-Mittel
         hangSchuttAnteil: hangSchuttAnteil,
         hangSchutt: hangSchutt,
         SCHUTT_FAECHER: SCHUTT_FAECHER,

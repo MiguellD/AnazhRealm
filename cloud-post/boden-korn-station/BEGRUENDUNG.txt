@@ -157,3 +157,38 @@ EHRLICH OFFEN
 - Der Korpus (quellen.json fronten2afc „planet.relief.boden#1“, b: false): ≥ 40 gesichtete Fotos GLEICHEN Hangs und Klimas fehlen
   — paare.cjs verweigert das Blatt bis dahin beim Namen („Korpus fehlt“). Die Spiel-Bilder des Fachs kann die GTX schon schießen.
 - anteilJeKorpus bleibt ungemessen, bis der Korpus die Anteile (Schutt am Steilen, Moos im Feuchten) als Zahl trägt.
+
+KANDIDAT 4 — karte2.planet.relief.boden#1: DER SATZ DER QUELLEN (gegen origin/punkte-maschine fd95ac83, nach der Post 28.11. 02:25)
+Datei: vision/pruefer/quellen.json · Diff: quellen-boden1.diff (git apply im Baum von punkte-maschine, geprüft an fd95ac83)
+Soll und Richter-Text bleiben unberührt: „Blindpaar Ego-Bild gegen Foto gleichen Hangs und Klimas (2AFC ≤ 85 %)“ · „Anteile ± 20 %“.
+
+WARUM
+Der Paar-Bauer des Prüfers verweigert unter 40 Fotos: ohne Korpus bleibt afcProzent ungemessen und anteilJeKorpus leer, gleich
+was Station und Fach tragen. Der Korpus nimmt Hang und Klima aus dem Gesetz der Welt, nie aus Bequemlichkeit: die Heimat trägt
+Sommer 18 °C, Winter −4 °C, 547,5 mm (gelaende-core TEMPERATUR, NIEDERSCHLAG.heimatMm) — Köppen Dfb, Mitteleuropa östlich der Elbe;
+die Pose ist benannt (Ego 1,7 m, Blick auf einen Hang ≥ 20° in 20–400 m).
+
+WAS DER KANDIDAT ÄNDERT
+- Sechs Sätze unter `saetze` (art 2afc, Breite 1280 wie der Schuss des Fachs, Lizenz je Datei frei, `ohne` gegen Karte, Schild,
+  Zeichnung, Luftbild, Innenraum, Ski-Piste und Straße), `dateien` leer, `stand` „ungeholt — geholt wird am Gerät“:
+    hang-heiligkreuz       commons, Kategorie „Świętokrzyskie Mountains“   55 Dateien (Kielce = Klima-Anker; Gołoborze = Schutt am Steilen)
+    hang-fels-polen        commons, Kategorie „Rock formations in Poland“  47 Dateien (Klassen Fels und Schutt)
+    hang-aufschluss-polen  commons, Kategorie „Outcrops in Poland“         23 Dateien (Soll 23 — die Klasse Anschnitt)
+    hang-hang              commons, Kategorie „Slopes“                    172 Dateien (weltweit: am Bogen fällt das fremde Klima)
+    hang-fordon            commons, Kategorie „Views from the Fordon slope“ 127 Dateien (die Flanke von Fordon, Weichsel-Urstromtal)
+    hang-schutt            commons, Kategorie „Screes“                    109 Dateien (Klasse Schutt; weltweit, am Bogen fällt das Hochgebirge)
+  Die Zahlen nennt die Commons-API (prop=categoryinfo, 28.11.) ohne Download, je Kategorie nur die unmittelbaren Dateien — der
+  Holer liest keine Unterkategorien. Zusammen 533 vor den Wänden des Holers (Lizenz, JPEG, Breite ≥ 1280).
+- Die Zeile fronten2afc der Sprosse nennt die sechs Sätze und was fehlt.
+
+EHRLICH OFFEN
+Ungeholt und ungesichtet: der Holer läuft am Gerät (`--nur <satz>`), die Sichtung folgt am Kontaktbogen; erst ≥ 40 gesichtete
+Fotos geben dem Prüfer ein Paar. Commons drosselt den Cloud-Ausgang nach wenigen Rufen (429): Hang-Kategorien je Land
+(Tschechien, Slowakei, Deutschland) blieben ungezählt. Ein Vorlauf der Suche „zbocze“ (28.11., 20 Dateien) traf mit 11 das Motiv,
+die Treffer lagen an der Flanke von Fordon — daher deren Kategorie statt der Suche; 9 fielen (Haus, Stadt, Schild, Straße, Rad-Bahn,
+Waldboden ohne Flanke). Der Vorlauf steht nicht im Diff, die Nummern des Geräts zählen.
+
+formschatz#1 (die Zuteilung „prüfe seinen Satz der Quellen“): er braucht keinen. Der Zensus führt ihn als art ordnen, lauf spiel,
+stumpf rot, anker klasse — paare.cjs nimmt ihn über klasseBlatt: die Wahrheit je Bild ist die Klasse, die das Profil-Gesetz in die
+Akte des Fächers schreibt (V-Tal · Trogtal), quellen.json wird auf diesem Weg nie gelesen; Fang-Aufgaben verlangt erst stumpf gruen.
+Die Eichung ordnen × klasse steht (vision/pruefer/eichung/ordnen.klasse.*.d568b019). Was ihn hält, ist der Lauf des Fächers am Gerät.

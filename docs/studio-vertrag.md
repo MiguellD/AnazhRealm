@@ -1085,7 +1085,8 @@ in die Fels-Funktion), `felsZahl` (das Rechenwerk des Gesetzes, mit `falte` und 
 am Steilen `HANG_SCHUTT`/`HANG_SCHUTT_ST`/`hangSchuttAnteil`/`hangSchutt` (Flecken, deren Mittel die Kurve der Steile ist; die Ferne
 liest `HANG_SCHUTT_ST` im Boden-Shader) und der Fächer unter der Wand `SCHUTT_FAECHER`/`schuttFaecher` (der Schatten 27,5° ihrer
 Krone, Evans & Hungr 1993; Leser `felsStoff` und `felsStoffPunkt`), das Moos `MOOS`/`moosKlima`/`moosDeckung` (Feuchte des Bodens oder de Martonne des Orts,
-der Nordhang hält das Wasser; Fels und Erde aus EINEM Gesetz) und die Erde in der Farbe ihres Klimas `ERDE_KLIMA`/`ortErde` (Humus
+der Nordhang hält das Wasser; Fels und Erde aus EINEM Gesetz) und sein Fleck `moosFleck` (wo die Masche ihn nicht trägt, das Mittel
+seines Gesetzes; Linse `gate:hoehlen-sicht` (q)) und die Erde in der Farbe ihres Klimas `ERDE_KLIMA`/`ortErde` (Humus
 nach Jenny, Hämatit nach Schwertmann, relativ zur Heimat — Leser `_bodenFarbeAt` und der Worker `bodenFarbe`; die
 Wege und der Acker offen), der Anschnitt des Erdbaus als Unterboden `felsAnschnitt`/`anschnittErde` (Bw 10YR 4/4 über der Erde des Orts, der
 Grundton trägt sie: `felsBasis(…, erde)`; Linse `gate:hoehlen-sicht` (o)/(p)), die Himmels-Sicht der Höhle `HIMMELS_SICHT`/`himmelsSicht`, die Mulde des Bodens `MULDE`/`muldeEcken`

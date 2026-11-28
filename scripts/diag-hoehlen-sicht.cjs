@@ -56,6 +56,10 @@
 //       (`HANG_SCHUTT_ST` in `_terrainGeologyAlbedo`) trägt keine Sonde (die Quelltext-Wand verbietet die Präsenz). DER FÄCHER UNTER DER WAND (am Wirt): um den Ursprung legt das Gesetz
 //       Schutt unter die Wand (`schuttFaecher`: der Schatten 27,5° ihrer Krone, Evans & Hungr 1993), und jeder solche Punkt
 //       trägt ihn im Punkt-Stoff (`felsStoffPunkt` `aus.schutt`, der Leser des Auges und der Nah-Wiese).
+//   (q) DAS MITTEL DES MOOS-FLECKS — am Gesetz (gelaende-core `moosFleck`, ohne Browser): wo eine Masche den Fleck nicht trägt
+//       (die Ferne, `traegt` 0), steht sein Mittel; es trifft das Mittel derselben Flecken in der Nähe an 16 384 Punkten je λ (Erde
+//       `MOOS.lambda`, Sims `FELS.moosLambda`) auf ± 3 %. Bis 28.11. stand das Mittel fest auf 0,32, das Gesetz trägt 0,35 — das
+//       Moos des Fern-Rings lag 9 % unter dem Moos der Nähe (die Naht des Mooses, boden#1).
 //   (p) DIE ERDE IN DER FARBE IHRES KLIMAS — am Wirt (gelaende-core `ortErde` mit der Palette der Welt): die Heimat trägt die Palette
 //       des Studios byte-gleich (dasselbe Objekt), der warme Ort der Terra rossa (17 °C, 700 mm) wird röter (Hämatit,
 //       Schwertmann 1982), das kalte Moor (3 °C, 1 400 mm) dunkler und die Steppe (9 °C, 350 mm) heller (der Humus, Jenny 1930);
@@ -94,6 +98,8 @@ const KLUFT_DURCHLAUF_MIN = 0.4;
 const HANG_SCHUTT_MITTEL_TOL = 0.03;
 const HANG_SCHUTT_40_MIN = 1 / 3;
 const HANG_SCHUTT_SCHLEIER_MAX = 0.25;
+// (q) Das Mittel des Moos-Flecks: Fern-Mittel ÷ Nah-Mittel auf ± 3 % (der Stichproben-Fehler an 16 384 Punkten liegt unter 1 %).
+const MOOS_FLECK_TOL = 0.03;
 // (p) Die Erde des Klimas (boden#1): die Röte (r/g linear) der Terra rossa mindestens 1,15 × der Heimat (2,5YR gegen 10YR), die
 // Albedo des Moors höchstens 0,8 ×, der Steppe mindestens 1,1 × der Heimat (Munsell-Wert 2 bzw. 4 gegen 3).
 const ERDE_ROT_MIN = 1.15;
@@ -359,6 +365,18 @@ function urteil(b) {
                 );
         }
     }
+    // (q) DAS MITTEL DES MOOS-FLECKS: die Ferne trägt das Mittel der Nähe
+    const mf = b.moosFleck;
+    if (!mf || !(mf.lambdas && mf.lambdas.length))
+        v.push("LEER: (q) Mittel des Moos-Flecks: das Gesetz trägt keinen Moos-Fleck (gelaende-core `moosFleck` fehlt)");
+    else
+        for (const q of mf.lambdas)
+            if (!(Math.abs(q.fern / q.nah - 1) <= MOOS_FLECK_TOL))
+                v.push(
+                    `MOOS-FLECK OHNE MITTEL: an λ ${q.lambda} m trägt die Ferne ${q.fern}, die Nähe im Mittel ${q.nah} ` +
+                        `(${(q.fern / q.nah).toFixed(3)}, ± ${MOOS_FLECK_TOL}) — das Mittel der Masche, die den Fleck nicht ` +
+                        "trägt, ist nicht das Mittel seines Gesetzes (gelaende-core `moosFleckMittel`)"
+                );
     // (p) DIE ERDE IN DER FARBE IHRES KLIMAS: die Heimat byte-gleich, der Ort färbt, die Leser rufen das Gesetz
     const oe = b.ortErde;
     if (!oe) v.push("LEER: (p) Erde des Klimas: das Gesetz trägt keine Erde des Orts (gelaende-core `ortErde` fehlt)");
@@ -570,6 +588,7 @@ function selbsttest() {
                 { grad: 45, anteil: 0.799, mittel: 0.803, schleier: 0.04 },
             ],
         },
+        moosFleck: { lambdas: [{ lambda: 8, nah: 0.352, fern: 0.351 }, { lambda: 3.4, nah: 0.353, fern: 0.351 }] },
         ortErde: { heimatGleich: true, rot: 1.749, moor: 0.659, steppe: 1.226, leser: { pfad: 123, zurErde: 123 }, anschnitt: { wand: 1, natur: 0, rg: 1.693, gruen: -0.005, wandPunkte: 1168, getragen: 1165, erde: 1157, fern: { n: 1168, fremd: 0, abw: 0 } } },
         wieseUnterFels: { ohneHimmel: 700, fremd: 0, gruen: 0, erst: null, streuung: 0.19, albedo: 0.14 },
         kliff: { steil: 300, fremd: 0, gruen: 0, erst: null },
@@ -790,6 +809,13 @@ function selbsttest() {
             /FÄCHER OHNE LESER: 90 von 90 Punkten unter der Wand/,
         ],
         ["Ohne Schutt am Steilen", ["hangSchutt"], /LEER: \(o\) Schutt am Steilen/],
+        // (q) boden#1: bis 28.11. stand das Mittel des Moos-Flecks fest auf 0,32 (main 27d2f60e), das Gesetz trägt 0,35
+        [
+            "Moos-Fleck mit fester Zahl (main 27d2f60e)",
+            ["moosFleck.lambdas.0=", { lambda: 8, nah: 0.352, fern: 0.32 }],
+            /MOOS-FLECK OHNE MITTEL: an λ 8 m trägt die Ferne 0\.32, die Nähe im Mittel 0\.352/,
+        ],
+        ["Ohne Moos-Fleck", ["moosFleck"], /LEER: \(q\) Mittel des Moos-Flecks/],
         // (p) boden#1: der Zensus vom 27.11. (main 948f68ee) — dieselbe Erde 10YR 3/2 an jedem Ort
         [
             "Erde ohne Klima (main 948f68ee)",
@@ -2128,6 +2154,37 @@ const server = statikServer();
         befund.hangSchutt = null;
         console.log("  (o) Schutt am Steilen: gelaende-core nicht ladbar — " + (e?.message || e));
     }
+    // (q) DAS MITTEL DES MOOS-FLECKS am Gesetz (rein, ohne Browser): 16 384 Punkte je λ, die Nähe (der Fleck getragen) gegen die
+    // Ferne (`traegt` 0: sein Mittel) an denselben Punkten
+    try {
+        const GKn = globalThis.__gelaendeCore;
+        if (GKn && typeof GKn.moosFleck === "function") {
+            const lambdas = [];
+            for (const lambda of [GKn.MOOS.lambda, GKn.FELS.moosLambda]) {
+                let nah = 0,
+                    fern = 0;
+                const n = 16384;
+                for (let k = 0; k < n; k++) {
+                    const x = ((k * 7919) % 16384) * 3.07 - 25000,
+                        y = ((k * 104729) % 211) * 1.93,
+                        z = Math.floor(k / 128) * 23.9 + ((k * 15485863) % 101) * 0.37 - 1500;
+                    nah += GKn.moosFleck(x, y, z, 1, lambda);
+                    fern += GKn.moosFleck(x, y, z, 0, lambda);
+                }
+                const r3 = (q) => Math.round(q * 1000) / 1000;
+                lambdas.push({ lambda, nah: r3(nah / n), fern: r3(fern / n) });
+            }
+            befund.moosFleck = { lambdas };
+        } else befund.moosFleck = null;
+    } catch (e) {
+        befund.moosFleck = null;
+        console.log("  (q) Mittel des Moos-Flecks: gelaende-core nicht ladbar — " + (e?.message || e));
+    }
+    if (befund.moosFleck)
+        console.log(
+            "  (q) Mittel des Moos-Flecks am Gesetz: " +
+                befund.moosFleck.lambdas.map((q) => `λ ${q.lambda} m Nähe ${q.nah} · Ferne ${q.fern}`).join(" · ")
+        );
     if (befund.ortErde)
         console.log(
             `  (p) Erde des Klimas am Wirt: Heimat byte-gleich ${befund.ortErde.heimatGleich} · Terra rossa Röte ` +

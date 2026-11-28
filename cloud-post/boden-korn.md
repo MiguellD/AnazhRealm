@@ -220,6 +220,50 @@ Zensus ist headless aus dem Gesetz der Station S1 gerechnet (30 Zufallsposen × 
   mit gate:webgl-probe sind es vier, bild:dorf@0.5 fände keinen Platz. FRAGE an den Koordinator: fährt der Wege-Stempel mit
   `[gpu-probe: gate:webgl-probe, gate:pruefbuehne-licht, gate:weltbild-frost:echt, gate:studio-begehen]` ohne bild:dorf@0.5?
 
+## 28.11. 01:20 UTC — Kopf 6 auf main bbb97563: das Mittel des Moos-Flecks ist das Mittel seines Gesetzes · die Masche je Achse widerlegt
+
+- **Geschnitten:** gelaende-core `moosFleckMittel` — wo eine Masche den Fleck nicht trägt (die Ferne), stand das Mittel fest auf
+  0,32; das Gesetz trägt 0,358 (eine Million Punkte, ± 0,0004): das Moos des Rings lag 11 % unter dem Moos der Nähe. Jetzt einmal
+  gerechnet an 65 536 Punkten der Folge R3 am selben Hash (0,3577). Ein Gitter mit festen Schritten traf 0,367 — es tastet das Rauschen in Mustern.
+- **Die Linse** `gate:hoehlen-sicht` (q), reine Familie wie (m) und (o): Fern-Mittel ÷ Nah-Mittel an 16 384 Punkten je λ (Erde 8 m,
+  Sims 3,4 m) auf ± 3 %. Am Stamm 27d2f60e ROT beim Namen (0,32 ÷ 0,352 = 0,909), am Kopf GRÜN; Selbsttest „Moos-Fleck mit fester Zahl“.
+- **Widerlegt, nicht geliefert:** die Masche der Fern-Farbe je Achse (quer `ht`, längs `hr` statt isotrop über die längere Seite,
+  voxel-worker `fernFarbeMasche`). Sie senkte die Abweichung Masche ↔ Mittel der Nähe (ΔE-Median 1,15 → 0,66 an 30 Posen) und die
+  Naht-Posen 3 → 0 von 29 — aber `gate:fern-ring` (10) fiel ROT: Streifen-Index 0,463 → 0,695 (Soll ≤ 0,5). Gemessen: selbst das
+  dichte Dreiecks-Mittel der Wahrheit trägt längs der fernen Reihen 0,59; unter 0,5 kommt nur ein Farbfeld, das quer so weit mittelt
+  wie längs. Die Welt kennt die Speichen des Rings nicht — die isotrope Masche ist das Gesetz, sie bleibt.
+- **Ehrlich offen, die Naht beim Index** (Masche isotrop wie das Spiel, Klassen-Mittel ΔE > 5 ohne Schutt/Fels des Steilen): Pose 3
+  (797, 255) Fächer 5,4 an 23 Punkten · Pose 15 (1232, −496) Fächer 8,1 an 1 Punkt · Pose 24 (314, −4) Moos 5,7 an 17 Punkten. Ein
+  Klassen-Mittel am Scheitel trägt die Rückkehr zum Mittel jeder Masche, die über die Klasse hinaus reicht — das Bild der GTX 1050
+  an diesen drei Posen ist der Richter, ob das Auge dort eine Naht sieht.
+- **Kandidat 4 boden#1, der Satz der Quellen** (cloud-post/boden-korn-station/quellen-boden1.diff, gegen pm fd95ac83, nach der
+  Post 02:25): sechs Sätze, Breite 1280 wie der Schuss des Fachs, ungeholt — geholt wird am Gerät. Die Kategorien mit ihrer
+  Dateizahl (Commons categoryinfo, ohne Download): „Views from the Fordon slope“ 127 (die Flanke von Fordon — dort lagen die
+  Treffer eines Vorlaufs „zbocze“, 11 von 20), „Świętokrzyskie Mountains“ 55 (Kielce ist der Klima-Anker des Gesetzes, Dfb 18 / −4 °C,
+  547,5 mm), „Screes“ 109 (Klasse Schutt), „Rock formations in Poland“ 47, „Outcrops in Poland“ 23 (Soll 23), „Slopes“ 172 — 533 vor
+  den Wänden des Holers; „Screes“ und „Slopes“ sind weltweit, am Bogen fällt das fremde Klima. Begründung: BEGRUENDUNG.txt „KANDIDAT 4“.
+- **formschatz#1, sein Satz der Quellen geprüft:** er braucht keinen — der Zensus führt ihn als art ordnen · lauf spiel · stumpf rot
+  · anker klasse; der Paar-Bauer des Prüfers (pm) nimmt ihn über das Klassen-Blatt, die Wahrheit je Bild schreibt das Profil-Gesetz
+  in die Akte des Fächers (V-Tal · Trogtal), die Liste der Quellen liest dieser Weg nie, und die Eichung ordnen × klasse steht (d568b019). Was ihn hält, ist der Lauf
+  des Fächers am Gerät.
+- **Batterie Kopf 6** (auf main bbb97563, nach der Landung von Kopf 5 = w28-boden-korn-5 8a775cef und z819): check:statik ·
+  gate:fachwerk-contract · gate:asset-contract 128 von 128 · gate:hoehlen-sicht · gate:fern-ring · gate:settlement (1 045 s) GRÜN,
+  lint 0 Fehler. Er trägt nur noch das Mittel des Moos-Flecks, die Linse (q), das Blatt und die Station.
+- **boden#1 an der Stille-Wache (Post 04:26): wie weit die Leiter reist und wie lange sie zwischen zwei Zeilen rechnet** — gemessen
+  an der Werkbank (dieser Rechner, Holz kienspan, das Gesetz von Kopf 5; der Wortlaut der Station aus pm 9b4b3c91 ausgeschnitten und
+  am Stück gefahren, Spieler an der Wiese 1252/861):
+  - **Reise: 0 m.** BODEN_AN ist ein reiner Gesetz-Leser (hoehe, _feuchteAt, _bodenFarbeAt, felsStoffPunkt) an 270 Adressen (30 Posen
+    × 3 × 3 à 10 m, ± 1 500 m um den Ursprung) — die Adressen liegen vom Stand 0 … 3 501 m (Median 1 905 m), gelesen, nie gestreamt;
+    der Spieler und die Kamera bleiben stehen. HANG_BLICK sucht ≤ 400 m um den Stand (an der Wiese 20 m, Hang 30°; an den 30
+    Pose-Mitten 24 mit Hang, Blick 20 … 400 m, 6 ohne).
+  - **Rechnen: ≈ 0,22 s für die ganze Leiter.** Block S0 (270 Hang-Punkte, 20 Läufe aus flussLaeufe über 6 × 6 km, 50 × 9 Säulen
+    zu 10 Tiefen, 100 Klassen) 196 ms · BODEN_AN 270 Punkte 21 ms (Median 0,02 ms, höchstens 8,1 ms) · HANG_BLICK 0,4 ms (30 Mitten 46 ms).
+  - **Daraus:** die 148,8 s Stille liegen nicht in der Rechnung der Leiter. Was dauern kann, ist das Einschwingen nach dem Heimweg (am
+    Gerät 56,3 s für 10 272 m, die formschatz den Spieler fortgetragen hatte) und das EINE Auge relief-boden-s1 (Kamera am Stand,
+    Ziel ≤ 400 m — kein Umstellen, aber /bild wartet, bis die Welt dort steht). Der Deckel der Tafel hängt also an Heimweg + Auge,
+    nicht an der Reichweite des Bodens.
+- Status: ZWISCHENSTAND · Karte 2 gebucht 158 von 1 718.
+
 ## 28.11. 00:55 UTC — Kopf 5 auf main 27d2f60e (das Golden des Findlings) · Kandidat 3 boden#1 gesendet (drei Dateien)
 
 - **Das Rot von Kopf 4** (Asset-Vertrag v1, findling-s7-L0-summer.json Mesh0.color): nach der Quelle entschieden — GESETZ, kein
