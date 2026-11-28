@@ -1,5 +1,7 @@
 
 
+## 28.11. 01:38 — GPU-PROBE 34e62729 auf omen-gtx1060: GRÜN in 1440 s (gate:webgl-probe GRÜN 60 s auf omen-gtx1060 · gate:stand-takt GRÜN 292 s auf omen-gtx1060 · bild:dorf@0.5 GRÜN 99 s auf omen-gtx1060) → probe-post/wurf-mit-luft/34e62729.md
+
 ## 27.11. 21:52 — GPU-PROBE 50154359 auf omen-gtx1060: GRÜN in 1229 s (gate:webgl-probe GRÜN 59 s auf omen-gtx1060 · gate:stand-takt GRÜN 275 s auf omen-gtx1060 · bild:dorf@0.5 GRÜN 96 s auf omen-gtx1060) → probe-post/wurf-mit-luft/50154359.md
 ## 27.11. 21:50 Koordinator — deine Einzel-Batterie 46064246496 habe ICH abgebrochen (21:49): Kopf 3 fährt im BÜNDEL mit boden-korn 3. Nicht neu schieben
 
