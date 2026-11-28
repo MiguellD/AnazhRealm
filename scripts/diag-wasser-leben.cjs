@@ -630,6 +630,42 @@ function kammKurve(duenung, f, quantil) {
     return aus;
 }
 
+// B11 DIE STREICHLÄNGE (planet.wasser.seegang, ohne Browser): der Seegang aus dem Wind ist fetch-begrenzt — das Band Sverdrup–
+// Munk–Bretschneider (SPM 1984): Hs = min(1,6·10⁻³·U·√(F/g), 0,243·U²/g), das Gesetz vehicle-core `bootWelle`. Der Kern
+// (`streichLaenge`) misst am gestellten Ufer: die offene See trägt fRef, der runde See von 435 m Halbmesser in seiner Mitte 435 m
+// (± 10 %); der Anteil des Stoffs k = min(f, U/U_voll)/min(1, U/U_voll) trifft bootWelle(F, U)/bootWelle(fRef, U) (± 0,5 %) bei 3, 10 und 17 m/s; die
+// offene See behält k = 1. Am Stamm: der Seegang des Wasser-Stoffs trägt die Streichlänge (`seegangF`: die Dünung × f, die See des
+// Winds × k; `.mul(seegangF)`), beide Blatt-Zwillinge lesen den Kern
+// (`seegangStreich`). `quelle` (ein Wandel des Stamms) ist die Mutante „Fetch ohne Wirkung". → die Abweichungen beim Namen
+function streichUrteil(quelle) {
+    const G = require("./lib/welt-boot.cjs").fadenScope(["gelaende-core.js"]).__gelaendeCore;
+    const S = G.STREICH;
+    const v = [];
+    const offen = G.streichLaenge({}, 0, 0, () => false);
+    if (!(offen >= S.fRef * 0.999)) v.push(`die offene See trägt F ${offen.toFixed(0)} m statt ${S.fRef}`);
+    const see = G.streichLaenge({}, 0, 0, (x, z) => Math.hypot(x, z) > 435);
+    if (!(Math.abs(see - 435) / 435 <= 0.1)) v.push(`der See von 435 m Halbmesser trägt F ${see.toFixed(0)} m`);
+    // das Band ist EIN Gesetz: vehicle-core `bootWelle` (das Boot am Anleger liest dieselbe Welle)
+    const hs = require("./lib/welt-boot.cjs").fadenScope(["vehicle-core.js"]).__vehicleCore.bootWelle;
+    for (const U of [3, 10, 17]) {
+        const f = Math.sqrt(Math.min(see, S.fRef) / S.fRef),
+            s = U / S.stoffUvoll;
+        const k = Math.min(f, s) / Math.min(1, s),
+            band = hs(see, U) / hs(S.fRef, U);
+        if (!(Math.abs(k - band) / band <= 0.005)) v.push(`U ${U} m/s: k ${k.toFixed(4)} gegen das Band ${band.toFixed(4)} (bootWelle)`);
+        const fo = Math.sqrt(Math.min(offen, S.fRef) / S.fRef);
+        if (!(Math.abs(Math.min(fo, s) / Math.min(1, s) - 1) < 1e-3)) v.push(`U ${U} m/s: die offene See verliert ihre Dünung (k ${(Math.min(fo, s) / Math.min(1, s)).toFixed(4)})`);
+    }
+    if (
+        stammLib.fehlt("_ensureHydroSurfaceMaterial", /oceanSwell\(xz\)[^;]*\.mul\(seegangF\)/, quelle) ||
+        stammLib.fehlt("_ensureHydroSurfaceMaterial", /const seegangF = [^;]*mul\(aStreichV\)[^;]*mul\(streichK\)/, quelle)
+    )
+        v.push("Fetch ohne Wirkung: der Seegang des Wasser-Stoffs trägt die Streichlänge nicht (`oceanSwell(xz)… .mul(seegangF)`)");
+    if (stammLib.fehlt("_computeWaterSheetData", /seegangStreich\(/)) v.push("das Blatt des Mains liest die Streichlänge nicht");
+    if (stammLib.fehlt(null, /seegangStreich\(state,/, { datei: "voxel-worker.js" })) v.push("das Blatt des Fadens liest die Streichlänge nicht");
+    return { v, see, k10: Math.sqrt(see / S.fRef) };
+}
+
 // ── SELBSTTEST: ein grüner Befund bleibt grün, jeder Täter fällt beim Namen rot ──
 function selbsttest() {
     const gut = {
@@ -1079,6 +1115,15 @@ function selbsttest() {
         const ok = !k.length && m.length > 0;
         console.log(`  ${ok ? "✅" : "❌"} B8 KURVE an der Quelle: ${k.join(" · ") || "q(W) trägt W"} · Mutante fest 0,3 → ${m[0] || "blieb grün"}`);
         if (!ok) fehler.push("B8 KURVE: " + (k[0] || "die Mutante fiel nicht"));
+    }
+    // B11 STREICHLÄNGE an der Quelle (ohne Browser): der Kern misst die Streichlänge, der Stoff trägt ihr Band, beide Blätter lesen
+    // sie — die Mutante „Fetch ohne Wirkung" (der Seegang mit der Wind-Zeile allein, `.mul(windF)`) fällt beim Namen
+    {
+        const s = streichUrteil();
+        const m = streichUrteil((t) => t.replace(/\.mul\(seegangF\)/g, ".mul(windF)"));
+        const ok = !s.v.length && m.v.some((x) => x.startsWith("Fetch ohne Wirkung"));
+        console.log(`  ${ok ? "✅" : "❌"} B11 STREICHLÄNGE an der Quelle: ${s.v.join(" · ") || `der See von 435 m trägt F ${s.see.toFixed(0)} m, k ${s.k10.toFixed(3)} der offenen See`} · Mutante Fetch ohne Wirkung → ${m.v.find((x) => x.startsWith("Fetch")) || "blieb grün"}`); // prettier-ignore
+        if (!ok) fehler.push("B11 STREICHLÄNGE: " + (s.v[0] || "die Mutante fiel nicht"));
     }
     // N1 an der lebenden Quelle (ohne Browser, der Wirt in node): das Boot des Anlegers folgt dem Spiegel — und die Mutante fällt
     // beim Namen: der beim Bau eingefrorene Spiegel (die Lage des Boots fest)

@@ -2008,6 +2008,7 @@ class AnazhRealm_siedlung_bauten {
                     ["position", 3],
                     ["aFlow", 2],
                     ["aWave", 1],
+                    ["aStreich", 1],
                     ["aDepth", 1],
                     ["aSlope", 1],
                     ["aMeer", 1],

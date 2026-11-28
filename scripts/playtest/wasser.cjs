@@ -1752,7 +1752,7 @@ async function checkBandWasserWahrheit({ page, check }) {
 // B1 der Wasser-Sheet-Worker-Spiegel ist BYTE-IDENTISCH — eingefaltet aus gate:worker-watersheet: der Worker baut den
 // Wasser-Zell-Oberkanten-Sheet OFF-THREAD (`buildWaterSheetGeometry`) und MUSS bit-identisch zum Main-Sync-Pfad
 // (`_computeWaterSheetData`) sein, sonst lebt das Wasser auf zwei Wahrheiten (Lehre 7). Am nächsten Wasser der Welt (`__wasserOrte`):
-// je CA-freiem Wasser-Chunk Main gegen Worker-Round-Trip, positions/indices/aFlow/aWave/aDepth/aSlope byte-für-byte, maxDiff 0.
+// je CA-freiem Wasser-Chunk Main gegen Worker-Round-Trip, positions/indices/aFlow/aWave/aStreich/aDepth/aSlope byte-für-byte, maxDiff 0.
 async function checkBandWasserSheetSpiegel({ page, check }) {
     await safeEvaluate(page, require(path.join(SKRIPTE, "lib", "wasser-linse.cjs")).WASSER_INSTALL);
     const steer = await safeEvaluate(page, async () => {
@@ -1906,6 +1906,7 @@ async function checkBandWasserSheetSpiegel({ page, check }) {
             cmpU("index", c.mainData.indices, wd.indices, c.key);
             cmpF("aFlow", c.mainData.aFlow, wd.aFlow, c.key);
             cmpF("aWave", c.mainData.aWave, wd.aWave, c.key);
+            cmpF("aStreich", c.mainData.aStreich, wd.aStreich, c.key);
             cmpF("aDepth", c.mainData.aDepth, wd.aDepth, c.key);
             cmpF("aSlope", c.mainData.aSlope, wd.aSlope, c.key);
             out.compared++;

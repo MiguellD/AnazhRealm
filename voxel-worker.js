@@ -247,6 +247,7 @@ function nachricht(e) {
                 const indices = new Uint32Array(data.indices);
                 const aFlow = new Float32Array(data.aFlow);
                 const aWave = new Float32Array(data.aWave);
+                const aStreich = new Float32Array(data.aStreich);
                 const aDepth = new Float32Array(data.aDepth);
                 const aSlope = new Float32Array(data.aSlope);
                 const aMeer = new Float32Array(data.aMeer);
@@ -259,6 +260,7 @@ function nachricht(e) {
                         indices: indices.buffer,
                         aFlow: aFlow.buffer,
                         aWave: aWave.buffer,
+                        aStreich: aStreich.buffer,
                         aDepth: aDepth.buffer,
                         aSlope: aSlope.buffer,
                         aMeer: aMeer.buffer,
@@ -268,6 +270,7 @@ function nachricht(e) {
                         indices.buffer,
                         aFlow.buffer,
                         aWave.buffer,
+                        aStreich.buffer,
                         aDepth.buffer,
                         aSlope.buffer,
                         aMeer.buffer,
@@ -2914,6 +2917,8 @@ function buildWaterSheetGeometry(cx, cz, ctx) {
     const aSlope = [];
     // Mirror: DIE GEZEIT IM BILD — das Gewicht des Meers je Vertex (`atlasSpiegel` aus.meer), die Ruhe-Höhe unten
     const aMeer = [];
+    // Mirror: DIE STREICHLÄNGE je Vertex (planet.wasser.seegang, `seegangStreich` des Kerns), nur wo die See wogt
+    const aStreich = [];
     const MEER = {};
     const vmap = new Int32Array(NV * NV).fill(-1);
     const vertIsAnchor = [];
@@ -2991,7 +2996,9 @@ function buildWaterSheetGeometry(cx, cz, ctx) {
         const rt = Math.max(0, Math.min(1, (Math.hypot(avFx, avFz) - 0.04) / 0.46));
         const riverness = rt * rt * (3 - 2 * rt);
         const isLake = n > 0 && heightRamp > 0 && hydrosphereLakeAt(wx, wz);
-        aWave.push(isLake ? 0 : heightRamp * (1 - riverness));
+        const welle = isLake ? 0 : heightRamp * (1 - riverness);
+        aWave.push(welle);
+        aStreich.push(welle > 0 ? G.seegangStreich(state, wx, wz) : 1);
         aDepth.push(depthM);
         aSlope.push(n > 0 ? slopeMax : 0);
         aMeer.push(meer);
@@ -3004,6 +3011,7 @@ function buildWaterSheetGeometry(cx, cz, ctx) {
         const id = positions.length / 3;
         positions.push(nx, ny, nz);
         aWave.push(aWave[srcId]);
+        aStreich.push(aStreich[srcId]);
         aDepth.push(aDepth[srcId]);
         aSlope.push(slopeOverride !== undefined ? slopeOverride : aSlope[srcId]);
         aMeer.push(meer);
@@ -3076,7 +3084,7 @@ function buildWaterSheetGeometry(cx, cz, ctx) {
             positions[3 * v + 1] -= hubBau;
             aDepth[v] -= hubBau;
         }
-    return { positions, indices, aFlow, aWave, aDepth, aSlope, aMeer };
+    return { positions, indices, aFlow, aWave, aStreich, aDepth, aSlope, aMeer };
 }
 
 // =============================================================================

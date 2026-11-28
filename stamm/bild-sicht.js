@@ -1413,6 +1413,25 @@ class AnazhRealm_bild_sicht {
         // Wellen-Amplitude (Ozean voll, See/Fluss still) → kein Riss am Ufer.
         const aFlowV = attribute("aFlow", "vec2");
         const aWaveV = attribute("aWave", "float");
+        // DER SEEGANG IST FETCH-BEGRENZT (planet.wasser.seegang; das Band und seine Quelle: gelaende-core STREICH, Sverdrup–Munk–
+        // Bretschneider, SPM 1984): `aStreich` = √(F/fRef) des Orts (der Kern, je Vertex des Sheets), der Wind am Wasser U (m/s, das
+        // Wind-Gesetz wie die Weißkappe) — die Dünung trägt Hs(F, U)/Hs(fRef, U) = min(f, U/U_voll)/min(1, U/U_voll). Die Bucht der
+        // Station seegang#1 (F 1 814 m) wogt im Regen-Wind (U 6,5 m/s) mit 19 % der offenen See, die offene See (F ≥ 50 km) ganz.
+        // Bis seegang-spiegel 4 trug jedes Wasser auf Meereshöhe die Dünung der offenen See (aWave = die Höhen-Rampe allein): die
+        // Bucht trug Hs 1,44 m (das Band an ihr: 0,14 m) und ihr Wasser stieg über den Steg des Anlegers (Bahn 0,2 m über dem Spiegel)
+        const aStreichV = attribute("aStreich", "float");
+        const streichS = uWind
+            .mul(
+                (AnazhRealm.WIND_BOE.mitte * globalThis.__phytoCore.WIND_FELD.sturmMS) /
+                    globalThis.__gelaendeCore.STREICH.stoffUvoll
+            )
+            .max(1e-4);
+        const streichK = aStreichV.min(streichS).div(streichS.min(float(1.0)));
+        // Die Wind-Zeile hat zwei Glieder: w0 ist die Dünung der offenen See (sie läuft auch bei Flaute), w1·Wind die See des Winds.
+        // Die See des Winds trägt k; die Dünung erreicht das Wasser nur durch seine Öffnung zur offenen See und trägt f selbst —
+        // hinter der Öffnung im Lee ist die gebeugte Welle ≤ 0,5 der einlaufenden (EM 1110-2-1100 II-7: K = 0,5 an der
+        // Schattengrenze, tiefer im Lee kleiner); die Bucht (f 0,19) liegt im Lee, die offene See (f 1) trägt sie ganz.
+        const seegangF = float(WG.wind[0]).mul(aStreichV).add(uWind.mul(WG.wind[1]).mul(streichK));
         // V18.14 — der MAKRO-Kontext: die echte Wassertiefe (L−Bett) pro Vertex.
         // DIE GEZEIT IM BILD (planet.wasser.gezeiten #1): der Vertex des Meers liegt in seiner Ruhe-Höhe (`aMeer` 1, der Sheet-Bau
         // `_computeWaterSheetData`), der Hub der Stufe, die jetzt gilt (`uGezeit` = `_gezeitHubBild`, derselbe, den der Körper in
@@ -1460,7 +1479,7 @@ class AnazhRealm_bild_sicht {
             // Offene See: organische Dünung, nur wo aWaveV hoch — ×(1−flowMix), weil auch Binnenwasser
             // aWaveV > 0 trägt; fließende Flüsse bekommen nur die advektierte Kräuselung, die Mündung blendet
             // weich. Der Rest-Moiré im steilen Lauf-Kern kommt von der Fresnel-Lesart (s. `fres`-Block).
-            const ocean = oceanSwell(xz).mul(aWaveV).mul(float(1.0).sub(flowMix)).mul(windF);
+            const ocean = oceanSwell(xz).mul(aWaveV).mul(float(1.0).sub(flowMix)).mul(seegangF);
             // See + Fluss: organische, advektierte Kräuselung (stromab in Flüssen, still in Seen) — zwei Lagen der
             // Fluss-Phase, je höchstens eine Phase weit getragen.
             // Kräusel-Oktaven klar UNTER der Mesh-Nyquist (~1,8-m-Raster → 3,6 m): 0.07 ≈ 14 m, 0.12 ≈ 8 m,
@@ -1578,7 +1597,7 @@ class AnazhRealm_bild_sicht {
         const kappeQ = float(qa).add(kappeS.mul(qb)).add(kappeS.mul(kappeS).mul(qc));
         const duenungMax = float(0.5 * AnazhRealm.WASSER_WELLE.duenung.reduce((a, b) => a + b, 0))
             .mul(aWaveV)
-            .mul(windF)
+            .mul(seegangF) // die Kappe deckt W des Winds auch auf der kurzen Dünung (die Höhe normiert an ihrem eigenen Maximum)
             .max(1e-3);
         const crest = smoothstep(kappeQ.sub(0.03), kappeQ.add(0.03), vWave.div(duenungMax)).mul(aWaveV);
         const foam = crest.mul(WG.schaum.kamm).mul(float(1.0).sub(riverness));
