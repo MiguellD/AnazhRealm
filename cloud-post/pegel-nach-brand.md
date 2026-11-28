@@ -187,3 +187,10 @@ Karte 2 gebucht 156 von 1 718 · Status ZWISCHENSTAND.
 - Beide Stations-Kandidaten (S3, S1-Bild) stehen auch am pm-Kopf ca4c8a2d: `git apply --check` GRÜN.
 
 Karte 2 gebucht 156 von 1 718 · Status ZWISCHENSTAND.
+
+## 28.11. 01:25 — Vorprüf-Kopf 4 auf main 27d2f60e (gemischt über Kopf 3, kein Umschreiben)
+- Am gemischten Baum (tier-bewegung-3: Massen der Fauna) gezielt: Gegenlauf byte-gleich (tafel cf236202…, spiegel 65038fad…) · `gate:wasser-leben` P4 Hub 0,20, Tier-Glieder K6/E3 grün, K10 LEER wie am main in dieser Kiste · Playtest „Voxel V9.43-d → Welle L“ ✅ · welt-boot · stand-takt Selbsttest · statik · format · lint · betriebsgesetz. Die übrigen Zahlen gelten vom main b56b51f0 (oben).
+- `merge-tree` gegen main, wetter-lagen, boden-korn: 0 CONFLICT. `zug.sh probe-tag` ist von hier nicht erreichbar (koordination) — der Probe-Ruf: 4 Tore ohne Leerzeichen, darunter gate:webgl-probe und bild:dorf@0.5.
+- **offen:** stoerung#3 ROT (×1,134 < 1,3) · das Bildpaar der Flut ungefahren (Kandidat S1-Bild, Richter die GTX 1060).
+
+Karte 2 gebucht 156 von 1 718 · Status ZWISCHENSTAND.
