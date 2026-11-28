@@ -1696,15 +1696,25 @@
     // die Sonne, in der Nacht die Ausstrahlung zurück (bedeckt schrumpft die Tagesspanne um 25–50 %, Dai 1999): die Welle des Tags
     // trägt 1 − `daempft`·(1 − sun); der Regen kühlt (Verdunstung, die kalte Luft der Front) um `regen` K je Regen 1. Ohne Wetter
     // und unter klarem Himmel (sun 1, rain 0) bit-gleich zur Formel davor.
+    // DIE WÄRME DER LUFTMASSE (planet.wetter.extreme#2, `waerme` in K, optional): die Luft unter dem Block der Lage (phyto-core
+    // `lageWaerme`) steht um sie über dem Wetter des Worts; der Wirt reicht sie an Ort und Uhr (`_temperaturAt`, `_bewohnerTracht`).
+    // Ein Körper mit Trägheit folgt ihr nur zum Teil: `waerme` gilt für die Luft, die Welle des Körpers (`traegTage`) reicht der Wirt
+    // gedämpft. Ohne `waerme` bit-gleich zur Formel davor.
+    // DAS VORZEICHEN DER JAHRESZEIT (Hitze- UND Kältewelle): der Block hält den Himmel klar — im Sommer wärmen Sonne und Absinken die
+    // Luft, im Winter strahlt sie aus und kühlt (Pfahl & Wernli 2012, GRL 39 L12807: Blockierung trägt die warmen Extreme des Sommers
+    // und die kalten des Winters über Europa; die Kältewelle Februar 2012 unter dem Block über Russland). `waerme` ist der Betrag; die
+    // Anomalie folgt der Form der Jahres-Welle des Körpers (+1 im Hochsommer, −1 im Hochwinter, ~0 im Übergang).
     const WOLKE = Object.freeze({ daempft: 0.5, regen: 3 });
-    function temperaturAus(F, saison, uhr, wetter) {
+    function temperaturAus(F, saison, uhr, wetter, waerme) {
         if (!Number.isFinite(saison) || !Number.isFinite(uhr)) throw new Error("gelaende-core temperaturAus: Saison oder Uhr fehlt");
+        if (waerme !== undefined && !Number.isFinite(waerme)) throw new Error("gelaende-core temperaturAus: die Wärme der Luftmasse ist keine Zahl");
         const welle = (W, phase) => W.amp * Math.cos(2 * Math.PI * (phase - W.gipfel) - W.spaet);
-        if (!wetter) return F.mittel + welle(F.jahr, saison) + welle(F.tag, uhr) - F.kuehlung;
+        const luft = waerme === undefined ? 0 : waerme * Math.cos(2 * Math.PI * (saison - F.jahr.gipfel) - F.jahr.spaet);
+        if (!wetter) return F.mittel + welle(F.jahr, saison) + welle(F.tag, uhr) - F.kuehlung + luft;
         if (!Number.isFinite(wetter.sun) || !Number.isFinite(wetter.rain))
             throw new Error("gelaende-core temperaturAus: das Wetter trägt sun oder rain nicht");
         const tag = welle(F.tag, uhr) * (1 - WOLKE.daempft * (1 - wetter.sun));
-        return F.mittel + welle(F.jahr, saison) + tag - F.kuehlung - WOLKE.regen * wetter.rain;
+        return F.mittel + welle(F.jahr, saison) + tag - F.kuehlung - WOLKE.regen * wetter.rain + luft;
     }
     function temperatur(L, y, saison, uhr, traegTage, wetter) {
         return temperaturAus(temperaturFeld(L, y, traegTage), saison, uhr, wetter);
@@ -2342,6 +2352,53 @@
                 }
             }
         return out;
+    }
+    // DER WEG DES WASSERS EINES ORTS (Karte 2 mensch.kultur.sprache#4, das Dialekt-Kontinuum): der Knoten der Ebene 0, dem (x, z)
+    // am nächsten liegt (die Zellen 3 × 3 um den Ort), als Glied der Kette seiner Unterlieger bis zur Senke — dasselbe Netz, das
+    // die Täler schneidet (`knotenFluss`: jeder Knoten fließt zu seinem tiefsten Nachbarn). Zwei Orte, deren Wasser sich erst
+    // weit unten trifft (oder nie: zwei Senken), trennt eine Wasserscheide. → { i, j, x, z, unter (das Glied des Unterliegers,
+    // null an der Senke), tiefe (Glieder bis zur Senke), senke (1 benannter See, 2 Meer), weg (m bis zur Senke) }, eingefroren,
+    // gemerkt je Knoten am Netz (die Kosten folgen den gefragten Orten, nie der Welt). Leser: fachwerk `mundartVon` über den
+    // Wirt (`_mundartAm`), die Station der Sprache.
+    function talWeg(L, x, z) {
+        const N = netzFuer(L);
+        const S = N.S[0];
+        const ci = Math.floor(x / S);
+        const cj = Math.floor(z / S);
+        let kn = null;
+        let bd = Infinity;
+        for (let dj = -1; dj <= 1; dj++)
+            for (let di = -1; di <= 1; di++) {
+                const m = knoten(N, 0, ci + di, cj + dj);
+                const d = (m.x - x) ** 2 + (m.z - z) ** 2;
+                if (d < bd) [bd, kn] = [d, m];
+            }
+        const W = N.talWege || (N.talWege = new Map());
+        const kette = [];
+        let c = kn;
+        while (c && !W.has(c)) {
+            kette.push(c);
+            if (kette.length > 100000) throw new Error("gelaende-core talWeg: die Kette der Unterlieger endet nicht (" + kn.i + "," + kn.j + ")");
+            c = knotenFluss(N, c);
+        }
+        let unter = c ? W.get(c) : null;
+        const senke = unter ? unter.senke : kette[kette.length - 1].senke;
+        for (let k = kette.length - 1; k >= 0; k--) {
+            const g = kette[k];
+            const glied = Object.freeze({
+                i: g.i,
+                j: g.j,
+                x: g.x,
+                z: g.z,
+                unter,
+                tiefe: unter ? unter.tiefe + 1 : 0,
+                senke,
+                weg: unter ? unter.weg + Math.hypot(unter.x - g.x, unter.z - g.z) : 0,
+            });
+            W.set(g, glied);
+            unter = glied;
+        }
+        return W.get(kn);
     }
     // DAS WASSER LIEST DAS NETZ (K16): die Fluss-Läufe der Ebenen 0 und 1, die das Rechteck [x0, x1) × [z0, z1) berühren —
     // dasselbe Netz, das die Täler schneidet; die Hydrosphäre rechnet kein zweites. Ein Lauf beginnt an einer Quelle (ein
@@ -9015,6 +9072,7 @@
         landmarke: landmarke,
         landformRegler: landformRegler,
         netzZaehler: netzZaehler,
+        talWeg: talWeg, // der Weg des Wassers eines Orts bis zur Senke (Leser: fachwerk mundartVon über den Wirt, die Station der Sprache)
         benannteSeen: benannteSeen,
         flussLaeufe: flussLaeufe,
         schichtOrt: schichtOrt,

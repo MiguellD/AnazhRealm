@@ -718,7 +718,14 @@ class AnazhRealm_koerper_frei {
         // die Lage am Ende des Schritts (die Ruhe liest ihre Testpunkte), dann die Ruhe (`_freiRuhig`): ruhig ist, wessen drei
         // Testpunkte binnen ½ FREI.ruheMs · FREI.ruheS bleiben; er schläft nach FREI.ruheS, ruhen seine Nachbarn
         for (const K of W) this._freiLage(K);
-        for (const K of W) K.ruhe = this._freiRuhig(K, 0.5 * F.ruheMs * F.ruheS) ? K.ruhe + dt : 0;
+        // RUHE HEISST, DIE KRÄFTE GLEICHEN SICH (same.physik.flug#3): wen kein Kontakt trägt und wessen Auftrieb sein Gewicht um
+        // mehr als ruheMs / ruheS verfehlt (`K.nassRest`, `_freiAuftrieb`), der ist nach ruheS schneller als ruheMs — er ruht
+        // nicht, auch wenn er am Umkehrpunkt seines Tauchens still steht (vorher schlief der Eis-Würfel 6 cm zu tief ein)
+        for (const K of W)
+            K.ruhe =
+                this._freiRuhig(K, 0.5 * F.ruheMs * F.ruheS) && (K.welt || !(K.nassRest > F.ruheMs / F.ruheS))
+                    ? K.ruhe + dt
+                    : 0;
         for (const K of W) {
             let still = K.ruhe >= F.ruheS;
             for (let j = 0; still && j < K.nachbarn.length; j++)
@@ -1217,7 +1224,8 @@ class AnazhRealm_koerper_frei {
     // DIE PACKUNG der wachen Körper (EIN Puffer, kein Objekt je Körper im Gang): je Körper FREI_KOERPER Zahlen — v, ω, Lage, Lage
     // am Beginn, Quaternion, Dreh-Matrix (0–24), der Rollwiderstand je Drehung und ob er die Welt berührt (25, 26), die inverse
     // Masse und die Welt-Trägheit⁻¹ (27–36), ob er eine Kugel ist (37: ihre Anker drehen nicht mit, `_freiKontaktBereit`), die
-    // Luft je Fläche, der Magnus-Kraft und der Wind (38–42, `_freiLuftPacken`), der Zerfall des Dralls (43); sein
+    // Luft je Fläche, der Magnus-Kraft und der Wind (38–42, `_freiLuftPacken`), der Zerfall des Dralls (43), das Wasser
+    // (44–49, `_freiWasserPacken`); sein
     // Platz (`slot`) steht in jedem seiner Kontakte. Je Kontakt FREI_KONTAKT Zahlen
     // (`_freiKontakt`, `_freiKontaktBereit`): die Jacobi-Zeilen der Normalen und der zwei Tangenten (je 15), die wirksamen Massen
     // (45), die Impulse (48), Trennung, Feder, μ, der größte Normal-Impuls und das Tempo vor dem Stoß (51–57), die Plätze seiner
@@ -1230,6 +1238,7 @@ class AnazhRealm_koerper_frei {
         // der Rollwiderstand je Drehung (rad/s²): das Moment C_rr · m|g| · r um den Fuß durch die Trägheit um ihn (I + m r²) —
         // r der Roll-Radius (das Fass sein Rand, die Kiste ihre kleinste Halb-Kante), I die kleinste Haupt-Trägheit
         const rho = AnazhRealm._fahrSchrittGesetz().vc.FAHR.luft.rho;
+        const rhoW = this._stoff("wasser").rho;
         for (let i = 0, x = 0; i < W.length; i++, x += KS) {
             const K = W[i];
             K.slot = x;
@@ -1252,8 +1261,140 @@ class AnazhRealm_koerper_frei {
             X[x + 37] = K.ball ? 1 : 0;
             X.set(K.Iw, x + 28);
             this._freiLuftPacken(K, X, x, rho);
+            this._freiWasserPacken(K, X, x, rhoW, rho);
         }
         return X;
+    }
+
+    // DAS WASSER AM KÖRPER in den Puffer (same.physik.flug#3): der Spiegel über ihm (44; −Infinity: er reicht im Schritt nicht
+    // hinein), ρ_Wasser / m des Auftriebs (45), ½ ρ_Wasser c_w A / m des Widerstands im Wasser (46: dieselbe Quer-Fläche
+    // wie in der Luft, 38 mal ρ_Wasser / ρ_Luft), die Strömung (47, 48: m/s in Welt-x/z) und der Widerstand seiner Drehung
+    // (49). Spiegel und Strömung sind die der EINEN Wasser-Wahrheit (`_koerperWasser` über seinem Grund, das gezeichnete
+    // Wasser; `_waterFlowAt`), ρ die Zeile wasser der Stoff-Tafel (`_eintauchAnteil` liest dieselbe). Vorher kannte der Löser
+    // kein Wasser: der Holz-Würfel (ρ 720) sank am See der Welt auf den Grund, 3,42 m tief statt 0,22 m (1 485 %).
+    // DAS WASSER KOSTET, WAS ES ÄNDERT (Gebot 7): der Körper liest Spiegel und Strömung neu, wenn er FREI.wasser.leseM quer
+    // weiter steht oder die Uhr FREI.wasser.leseS weiter ist (`K.wasser`: x, z, Uhr, Spiegel, Strömung x, z); wer über dem
+    // Spiegel bleibt, zahlt im Teil-Schritt einen Vergleich.
+    _freiWasserPacken(K, X, x, rhoW, rhoL) {
+        const L = AnazhRealm.FREI.wasser;
+        const t = this.state._simZeit;
+        const M = K.wasser || (K.wasser = Float64Array.of(NaN, NaN, NaN, -Infinity, 0, 0));
+        if (!(Math.abs(K.p[0] - M[0]) < L.leseM && Math.abs(K.p[2] - M[1]) < L.leseM && Math.abs(t - M[2]) < L.leseS)) {
+            const s = this._koerperWasser(K.p[0], K.p[2], K.grund ? K.grund.a : -Infinity);
+            const f = s > -Infinity ? this._waterFlowAt(K.p[0], K.p[2]) : null;
+            [M[0], M[1], M[2], M[3], M[4], M[5]] = [K.p[0], K.p[2], t, s, f ? f.x : 0, f ? f.z : 0];
+        }
+        K.nassRest = 0;
+        X[x + 44] = K.p[1] - K.rad - K.weg < M[3] ? M[3] : -Infinity;
+        if (!(X[x + 44] > -Infinity)) return;
+        if (!K.zellen) this._freiZellen(K);
+        X[x + 45] = rhoW / K.m;
+        X[x + 46] = (X[x + 38] * rhoW) / rhoL;
+        X[x + 47] = M[4];
+        X[x + 48] = M[5];
+        X[x + 49] = rhoW * K.drehWasser;
+    }
+
+    // DIE ZELLEN DES VOLUMENS (der Auftrieb, `_freiAuftrieb`): die Hülle des Körpers in FREI.wasser.zellen³ Zellen seines
+    // Rahmens, je Zelle der Schwerpunkt ihres Inneren, ihr Volumen und ihre halben Kanten (`K.zellen`, je 7 Zahlen) — Walze und
+    // Kugel aus je zellen³ Proben je Zelle, die Volumen auf das der Gestalt geeicht (die Kiste 8abc, die Walze 2π r² h, die
+    // Kugel ⁴⁄₃ π r³; die hohle verdrängt mit ihrer Außenhaut). Dazu der Widerstand der Drehung je ρ (`K.drehWasser`): die
+    // Fläche dreht mit ω s quer durchs Wasser, je Fläche der Kiste ∫ ½ ρ c_w (ω s)² |s| · 2a ds über s ∈ [−a, a] — die vier
+    // Flächen um eine Achse M = 2 ρ c_w a⁵ ω², a die mittlere Halb-Kante, durch die mittlere Trägheit.
+    _freiZellen(K) {
+        const n = AnazhRealm.FREI.wasser.zellen;
+        const a = K.kiste ? K.hx : K.r;
+        const b = K.ball ? K.r : K.hy;
+        const c = K.kiste ? K.hz : K.r;
+        const innen = K.kiste
+            ? () => true
+            : K.ball
+              ? (x, y, z) => x * x + y * y + z * z <= K.r * K.r
+              : (x, y, z) => x * x + z * z <= K.r * K.r;
+        const Z = [];
+        let summe = 0;
+        const [dx, dy, dz] = [(2 * a) / n, (2 * b) / n, (2 * c) / n];
+        for (let i = 0; i < n; i++)
+            for (let j = 0; j < n; j++)
+                for (let k = 0; k < n; k++) {
+                    let [m, sx, sy, sz] = [0, 0, 0, 0];
+                    for (let u = 0; u < n; u++)
+                        for (let v = 0; v < n; v++)
+                            for (let w = 0; w < n; w++) {
+                                const x = -a + (i + (u + 0.5) / n) * dx;
+                                const y = -b + (j + (v + 0.5) / n) * dy;
+                                const z = -c + (k + (w + 0.5) / n) * dz;
+                                if (!innen(x, y, z)) continue;
+                                [m, sx, sy, sz] = [m + 1, sx + x, sy + y, sz + z];
+                            }
+                    if (!m) continue;
+                    Z.push(sx / m, sy / m, sz / m, m, dx / 2, dy / 2, dz / 2);
+                    summe += m;
+                }
+        K.volumen = K.kiste ? 8 * a * b * c : K.ball ? (4 / 3) * Math.PI * a * a * a : 2 * Math.PI * a * a * b;
+        for (let i = 3; i < Z.length; i += 7) Z[i] *= K.volumen / summe;
+        K.zellen = Float64Array.from(Z);
+        const s = Math.cbrt(a * b * c);
+        K.drehWasser = 2 * AnazhRealm.FREI.luft.cwWuerfel * s ** 5 * ((K.invI[0] + K.invI[1] + K.invI[2]) / 3);
+    }
+
+    // DER AUFTRIEB UND DER WIDERSTAND IM WASSER (same.physik.flug#3, der Teil-Schritt vor dem Gang): Archimedes je Zelle —
+    // ihr Anteil unter dem Spiegel `S` (ihre Höhe in der Welt ± ihre halbe Spanne längs y) trägt ρ_Wasser g V nach oben, am
+    // Schwerpunkt der Zelle: die Summe hebt, ihr Moment um den Schwerpunkt richtet auf (das Metazentrum entsteht, nie gesetzt).
+    // Liegt der Körper ganz unter dem Spiegel, trägt sein Volumen ohne Moment. Dann der Widerstand gegen das Tempo durch das
+    // Wasser (gegen die Strömung) und gegen die Drehung, je mit dem eingetauchten Anteil — implizit wie die Luft.
+    // Rückgabe: der eingetauchte Anteil (die Luft trägt den Rest, `_freiZiehen`).
+    _freiAuftrieb(X, x, K, schwere, h, S) {
+        let V = 0;
+        let tx = 0;
+        let tz = 0;
+        const py = X[x + 7];
+        if (py + K.rad <= S) V = K.volumen;
+        else {
+            const Z = K.zellen;
+            const [r10, r11, r12] = [X[x + 19], X[x + 20], X[x + 21]];
+            const [a10, a11, a12] = [Math.abs(r10), Math.abs(r11), Math.abs(r12)];
+            for (let i = 0; i < Z.length; i += 7) {
+                const [cx, cy, cz] = [Z[i], Z[i + 1], Z[i + 2]];
+                const oy = r10 * cx + r11 * cy + r12 * cz;
+                const e = a10 * Z[i + 4] + a11 * Z[i + 5] + a12 * Z[i + 6];
+                const anteil = (S - (py + oy - e)) / (2 * e);
+                if (!(anteil > 0)) continue;
+                const v = Z[i + 3] * Math.min(1, anteil);
+                V += v;
+                tx -= (X[x + 22] * cx + X[x + 23] * cy + X[x + 24] * cz) * v;
+                tz += (X[x + 16] * cx + X[x + 17] * cy + X[x + 18] * cz) * v;
+            }
+        }
+        // der Rest der Schwere, den das Wasser nicht trägt (die Ruhe liest ihn, `_freiSchritt`)
+        K.nassRest = Math.abs(X[x + 45] * V - 1) * schwere;
+        if (!(V > 0)) return 0;
+        // Δv = ρ_W g V / m · h; das Moment ρ_W g (r × ŷ V) · h durch die Welt-Trägheit
+        const k = X[x + 45] * schwere * h;
+        X[x + 1] += k * V;
+        const [mx, mz] = [k * K.m * tx, k * K.m * tz];
+        X[x + 3] += X[x + 28] * mx + X[x + 30] * mz;
+        X[x + 4] += X[x + 31] * mx + X[x + 33] * mz;
+        X[x + 5] += X[x + 34] * mx + X[x + 36] * mz;
+        const f = V / K.volumen;
+        const ux = X[x] - X[x + 47];
+        const uy = X[x + 1];
+        const uz = X[x + 2] - X[x + 48];
+        const u = Math.sqrt(ux * ux + uy * uy + uz * uz);
+        if (u > 1e-9) {
+            const d = 1 / (1 + f * X[x + 46] * u * h);
+            X[x] = X[x + 47] + ux * d;
+            X[x + 1] = uy * d;
+            X[x + 2] = X[x + 48] + uz * d;
+        }
+        const wm = Math.sqrt(X[x + 3] * X[x + 3] + X[x + 4] * X[x + 4] + X[x + 5] * X[x + 5]);
+        if (wm > 1e-9) {
+            const d = 1 / (1 + f * X[x + 49] * wm * h);
+            X[x + 3] *= d;
+            X[x + 4] *= d;
+            X[x + 5] *= d;
+        }
+        return f;
     }
 
     // DIE LUFT DES KÖRPERS in den Puffer (same.physik.flug#1): ½ ρ c_w A / m seiner Quer-Fläche (38) — die Fläche der Hülle
@@ -1443,9 +1584,13 @@ class AnazhRealm_koerper_frei {
     // Rollwiderstand der Stoffe am Boden (die Walze, soweit ihr Fuss läuft); `g` die Schwere davor (`vor`) — die Geschwindigkeit des Teil-Schritts.
     _freiZiehen(X, m, h, g, vor) {
         const KS = AnazhRealm.FREI_KOERPER;
+        const W = this._freiWach;
         for (let x = 0; x < m * KS; x += KS) {
             if (vor) {
                 X[x + 1] += g * h;
+                // DAS WASSER (`_freiWasserPacken`, `_freiAuftrieb`): wer in den Spiegel reicht, trägt seinen Auftrieb und den
+                // Widerstand im Wasser; die Luft trägt den Teil über dem Spiegel
+                const nass = X[x + 44] > -Infinity ? this._freiAuftrieb(X, x, W[x / KS], -g, h, X[x + 44]) : 0;
                 // DER WIDERSTAND DER LUFT (`_freiLuftPacken`): Δv = −c · |u| u · h, u das Tempo durch die Luft (gegen den Wind),
                 // c = ½ ρ c_w A / m der Quer-Fläche — implizit, stabil bei jedem h
                 const ux = X[x] - X[x + 41];
@@ -1453,7 +1598,7 @@ class AnazhRealm_koerper_frei {
                 const uz = X[x + 2] - X[x + 42];
                 const u = Math.sqrt(ux * ux + uy * uy + uz * uz);
                 if (u > 1e-9) {
-                    const f = 1 / (1 + X[x + 38] * u * h);
+                    const f = 1 / (1 + X[x + 38] * (1 - nass) * u * h);
                     X[x] = X[x + 41] + ux * f;
                     X[x + 1] = uy * f;
                     X[x + 2] = X[x + 42] + uz * f;
@@ -1654,7 +1799,7 @@ _stammZonen(AnazhRealm, [AnazhRealm_koerper_frei]);
 AnazhRealm.FREI_KONTAKT = 78;
 // die Marke eines Baus ohne freien Körper (die Stand-Tafel, `architectures`): vier leere Plätze der Drehung
 AnazhRealm.FREI_OHNE_DREHUNG = Object.freeze([null, null, null, null]);
-AnazhRealm.FREI_KOERPER = 44;
+AnazhRealm.FREI_KOERPER = 50;
 AnazhRealm.FREI = Object.freeze({
     teile: 4,
     gaenge: 1,
@@ -1701,4 +1846,9 @@ AnazhRealm.FREI = Object.freeze({
     // DER PRALL (same.physik.flug#2, `_freiPrallZahl`): der weichere fließt, wo die Hertz-Pressung p₀ das fliessDruck-fache
     // seiner Streckgrenze σ_Y erreicht (Tabor; Johnson 1985, §6.2); darüber e_σ = thornton · (V_Y / V)^¼ (Thornton 1997).
     prall: Object.freeze({ fliessDruck: 1.6, thornton: 1.185 }),
+    // DAS WASSER AM KÖRPER (same.physik.flug#3, `_freiWasserPacken`, `_freiAuftrieb`): Spiegel und Strömung gelten leseM quer
+    // und leseS lang (das Ufer ändert den Spiegel auf Metern, die Welle in Zehntel-Sekunden); der Auftrieb rechnet je Zelle
+    // der Hülle, zellen je Achse (`_freiZellen`: die aufrechte Kiste trägt damit exakt, die gekippte und die Walze je Zelle
+    // gerade geschnitten).
+    wasser: Object.freeze({ leseM: 0.5, leseS: 0.1, zellen: 4 }),
 });

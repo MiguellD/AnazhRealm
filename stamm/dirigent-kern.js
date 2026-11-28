@@ -1801,9 +1801,23 @@ class AnazhRealm {
         const soll = S.soll;
         // DIE NEUE MITTE im Hintergrund: erst die Höhen, dann die Quellen des Solls, je Bild bis zur Frist
         const cp = cam.position;
-        if (!Z.bau && !(Math.hypot(cp.x - Z.mx, cp.z - Z.mz) <= K.nachM)) {
+        // DIE MITTE SCHIEBT (nacht-licht-klasse, Gebot 7): steht ein Gitter, wartet die neue Mitte, bis kein Fleck halb steht
+        // (`Z.teil`: dann ist das Gitter genau die Summe seiner Beiträge), und trägt es verschoben mit (`_lichtKarteSchub`) — neu
+        // rechnet sie nur den Streifen, den der Weg freilegt. Bis hier baute jede Mitte alle Flecken des Solls neu (je Laterne
+        // 15 400 Zellen × 2 Lagen): nach jeden 12 m die ganze Karte.
+        if (!Z.bau && !(Math.hypot(cp.x - Z.mx, cp.z - Z.mz) <= K.nachM) && !(Z.g && Z.teil && Z.teil.length)) {
             const [tx, tz] = [Math.round(cp.x / zm), Math.round(cp.z / zm)];
-            Z.bau = { tx, tz, zeiger: 0, g: gitter(), beitrag: new Map(), liste: null, i: 0, j: null, ms: 0 };
+            Z.bau = (Z.g && this._lichtKarteSchub(Z, tx, tz, LK.gitter.image.data)) || {
+                tx,
+                tz,
+                zeiger: 0,
+                g: gitter(),
+                beitrag: new Map(),
+                liste: null,
+                i: 0,
+                j: null,
+                ms: 0,
+            };
         }
         if (Z.bau) {
             const B = Z.bau;
@@ -1828,29 +1842,32 @@ class AnazhRealm {
                 B.g.boden[t] = Z.hoehen.get(key);
             }
             if (B.zeiger >= n * n) {
-                if (!B.liste) B.liste = [...soll.values()];
+                if (!B.liste) B.liste = [...soll.values()].map((s) => ({ s, r: null }));
                 const tb = performance.now();
-                // je Quelle ihr Fleck Zeile um Zeile bis zur Frist (`B.j`: die Zeile, an der der nächste Takt weiterschreibt)
+                // je Quelle ihr Fleck Zeile um Zeile bis zur Frist (`B.j`: die Zeile, an der der nächste Takt weiterschreibt), im
+                // Schub nur im freigelegten Rechteck `r`
                 while (B.i < B.liste.length && performance.now() - t0 < K.bauMs) {
-                    const s = B.liste[B.i];
-                    const f = this._lichtKarteFleck(B.g, B.tx * zm, B.tz * zm, s, s.I, B.j, t0 + K.bauMs);
+                    const { s, r } = B.liste[B.i];
+                    const f = this._lichtKarteFleck(B.g, B.tx * zm, B.tz * zm, s, s.I, B.j, t0 + K.bauMs, r);
                     if (f && f.weiter != null) {
                         B.j = f.weiter;
                         break;
                     }
                     B.j = null;
-                    B.beitrag.set(s.q.id, s);
+                    if (!r) B.beitrag.set(s.q.id, s);
                     B.i++;
                 }
-                // die Bänder der neuen Mitte entstehen Zeile um Zeile in ihrer eigenen Ablage (`_lichtKarteHalb`), bis zur Frist
+                // die Bänder der neuen Mitte entstehen Zeile um Zeile in ihrer eigenen Ablage (`_lichtKarteHalb`), bis zur Frist —
+                // im Schub nur die freigelegten Zeilen und der Rand
                 if (B.i >= B.liste.length) {
                     B.ablage = B.ablage || new Uint16Array(LK.gitter.image.data.length);
+                    B.halb = B.halb || Array.from({ length: n }, (_, j) => [0, j, n - 1, j]);
                     B.zeile = B.zeile || 0;
-                    for (; B.zeile < n && performance.now() - t0 < K.bauMs; B.zeile++)
-                        this._lichtKarteHalb(B.g, B.ablage, [0, B.zeile, n - 1, B.zeile]);
+                    for (; B.zeile < B.halb.length && performance.now() - t0 < K.bauMs; B.zeile++)
+                        this._lichtKarteHalb(B.g, B.ablage, B.halb[B.zeile]);
                 }
                 B.ms += performance.now() - tb;
-                if (B.i >= B.liste.length && B.zeile >= n) {
+                if (B.i >= B.liste.length && B.zeile >= B.halb.length) {
                     // die neue Mitte steht: der Speicher der Höhen behält nur ihre Zellen, die Beiträge sind ihre
                     const behalten = new Map();
                     for (let t = 0; t < n * n; t++) behalten.set(zelle(t), B.g.boden[t]);
@@ -1884,21 +1901,22 @@ class AnazhRealm {
         // schreibt im nächsten Takt zuerst weiter — erst ein leerer Auftrag nimmt den nächsten Unterschied.
         const frist = t0 + K.bauMs;
         const teil = Z.teil || (Z.teil = []);
-        let rand = null; // das Rechteck [i0, j0, i1, j1], das hochlädt
-        const dazu = (r4) =>
-            r4 &&
-            (rand = rand
-                ? [
-                      Math.min(rand[0], r4[0]),
-                      Math.min(rand[1], r4[1]),
-                      Math.max(rand[2], r4[2]),
-                      Math.max(rand[3], r4[3]),
-                  ]
-                : r4);
+        // die Rechtecke [i0, j0, i1, j1], die hochladen, je Fleck eines — nie ihre Hülle: zwei Flecken an entgegengesetzten Rändern
+        // trugen die Zellen dazwischen mit; `flaeche` ist ihre Summe
+        const raender = [];
+        let flaeche = 0;
+        const dazu = (r4) => {
+            if (!r4) return;
+            raender.push(r4);
+            flaeche += (r4[2] - r4[0] + 1) * (r4[3] - r4[1] + 1);
+        };
         const schreibe = () => {
             while (teil.length) {
                 const a = teil[0];
-                const f = this._lichtKarteFleck(Z.g, Z.mx, Z.mz, a.s, a.I, a.j, frist);
+                // der Rest der Zellen dieses Bilds: der Fleck schreibt nie mehr, als der Takt hochladen darf
+                const rest = K.zellenJeBild - flaeche;
+                if (rest <= 0) return;
+                const f = this._lichtKarteFleck(Z.g, Z.mx, Z.mz, a.s, a.I, a.j, frist, null, rest);
                 if (f) dazu(f.rand);
                 if (f && f.weiter != null) return void (a.j = f.weiter);
                 teil.shift();
@@ -1920,12 +1938,7 @@ class AnazhRealm {
         if (wechsel.length > 1) wechsel.sort((a, b) => nah(a) - nah(b));
         Z.offen = wechsel.length;
         for (const [id, alt, s, ort] of wechsel) {
-            if (
-                teil.length ||
-                (rand &&
-                    (performance.now() >= frist || (rand[2] - rand[0] + 1) * (rand[3] - rand[1] + 1) > K.zellenJeBild))
-            )
-                break;
+            if (teil.length || (raender.length && (performance.now() >= frist || flaeche >= K.zellenJeBild))) break;
             Z.offen--;
             if (ort) teil.push({ s, I: s.I - alt.I, j: null });
             else {
@@ -1937,12 +1950,78 @@ class AnazhRealm {
             schreibe();
         }
         Z.offen += teil.length;
-        if (rand) {
-            this._lichtKarteHalb(Z.g, LK.gitter.image.data, rand);
+        if (raender.length) {
+            for (const r4 of raender) this._lichtKarteHalb(Z.g, LK.gitter.image.data, r4);
             LK.gitter.needsUpdate = true;
             Z.schriften++;
         }
         Z.msMax = Math.max(Z.msMax, performance.now() - t0);
+    }
+
+    // DER SCHUB DER MITTE (`_lichtKarteTakt`, Gebot 7: die Kosten am Weg, nie an der Zahl der Lichter): die neue Mitte (tx, tz)
+    // trägt das stehende Gitter `Z.g` und seine Ablage `ablage` verschoben mit — jede Zelle, die alt und neu innen liegt, behält
+    // ihre Summe (dieselbe Lage der Welt: zelleM 1, die Mitten ganzzahlig, die Abstände exakt); der neue Rand trägt 0. Neu
+    // gerechnet werden nur die freigelegten Rechtecke: je Beitrag des alten Gitters sein Fleck darin (die Beiträge bleiben, der
+    // Unterschied zum Soll folgt nach dem Bau, `pruefen`), die Bänder ihrer Zeilen und der Rand. 12 m Weg legen 12 von 142
+    // Spalten frei — ein Zwölftel der Flecken. Ein Sprung über das halbe Gitter baut ganz (→ null).
+    _lichtKarteSchub(Z, tx, tz, ablage) {
+        const K = AnazhRealm.LICHT_KARTE;
+        const n = K.texel;
+        const di = tx - Math.round(Z.mx / K.zelleM);
+        const dj = tz - Math.round(Z.mz / K.zelleM);
+        if (!(Math.abs(di) < n / 2 && Math.abs(dj) < n / 2)) return null;
+        // die innen getragenen Spalten und Zeilen der neuen Mitte
+        const [ci0, ci1] = [Math.max(1, 1 - di), Math.min(n - 2, n - 2 - di)];
+        const [cj0, cj1] = [Math.max(1, 1 - dj), Math.min(n - 2, n - 2 - dj)];
+        const schiebe = (alt, k, baender = 1) => {
+            const neu = new alt.constructor(alt.length);
+            for (let b = 0; b < baender; b++)
+                for (let j = cj0, o = b * n * n * k; j <= cj1; j++) {
+                    const von = o + ((j + dj) * n + ci0 + di) * k;
+                    neu.set(alt.subarray(von, von + (ci1 - ci0 + 1) * k), o + (j * n + ci0) * k);
+                }
+            return neu;
+        };
+        const g = Z.g;
+        const frei = [];
+        for (const [u, v] of [
+            [1, ci0 - 1],
+            [ci1 + 1, n - 2],
+        ])
+            if (u <= v) frei.push([u, 1, v, n - 2]);
+        for (const [u, v] of [
+            [1, cj0 - 1],
+            [cj1 + 1, n - 2],
+        ])
+            if (u <= v) frei.push([ci0, u, ci1, v]);
+        const liste = [];
+        for (const s of Z.beitrag.values()) for (const r of frei) liste.push({ s, r });
+        const halb = [
+            [0, 0, n - 1, 0],
+            [0, n - 1, n - 1, n - 1],
+            [0, 1, 0, n - 2],
+            [n - 1, 1, n - 1, n - 2],
+        ];
+        for (const [i0, j0, i1, j1] of frei) for (let j = j0; j <= j1; j++) halb.push([i0, j, i1, j]);
+        return {
+            tx,
+            tz,
+            zeiger: 0,
+            g: {
+                boden: new Float32Array(n * n),
+                d: [schiebe(g.d[0], 3), schiebe(g.d[1], 3)],
+                c: schiebe(g.c, 3),
+                e: schiebe(g.e, 1),
+            },
+            beitrag: new Map(Z.beitrag),
+            liste,
+            i: 0,
+            j: null,
+            ms: 0,
+            ablage: schiebe(ablage, 4, 3),
+            halb,
+            schub: [di, dj],
+        };
     }
 
     // DIE BÄNDER DER KARTE in Halb-Float (`_lichtKarteNeu`: d0 ab Zelle 0, d1 ab n², c ab 2n², d0.w die Höhe des Bodens) aus dem
@@ -1978,7 +2057,10 @@ class AnazhRealm {
     // die Uhr — `weiter` ist die nächste Zeile oder null, wenn der Fleck steht. Die Zellen eines Flecks wachsen mit dem Quadrat
     // seiner Reichweite (28 m: 2 480 Zellen, 70 m: 15 374): am Stück trug ein Fleck sie alle in EINEN Takt, jetzt höchstens die
     // Frist — die Kosten hängen am Takt, nie an der Größe des Lichts. → { rand: [i0, jA, i1, jE], weiter } | null
-    _lichtKarteFleck(G, mx, mz, s, I, ab = null, frist = Infinity) {
+    // IM RECHTECK `clip` [i0, j0, i1, j1] (der Schub der Mitte, `_lichtKarteSchub`): nur seine Zellen.
+    // HÖCHSTENS `zellen` (der Unterschied, `zellenJeBild`): was er schreibt, lädt sein Takt hoch (`_lichtKarteHalb`, je Zelle zwölf
+    // Halbe) — eine Laterne von 70 m deckt die ganze Karte, ihr Fleck bis zur Frist lud 19 881 Zellen in EINEN Takt (Dorf 21,9 ms).
+    _lichtKarteFleck(G, mx, mz, s, I, ab = null, frist = Infinity, clip = null, zellen = Infinity) {
         const K = AnazhRealm.LICHT_KARTE;
         const n = K.texel;
         const zm = K.zelleM;
@@ -1989,16 +2071,17 @@ class AnazhRealm {
         const farbe = this._lichtKarteC || (this._lichtKarteC = new THREE.Color());
         this._lichtLinear(L, farbe);
         const [l0, l1] = K.lagenM;
-        const i0 = Math.max(1, Math.floor((s.x - R - mx) / zm + n / 2 - 0.5));
-        const i1 = Math.min(n - 2, Math.ceil((s.x + R - mx) / zm + n / 2 - 0.5));
-        const j0 = Math.max(1, Math.floor((s.z - R - mz) / zm + n / 2 - 0.5));
-        const j1 = Math.min(n - 2, Math.ceil((s.z + R - mz) / zm + n / 2 - 0.5));
+        const kl = clip || [1, 1, n - 2, n - 2];
+        const i0 = Math.max(kl[0], Math.floor((s.x - R - mx) / zm + n / 2 - 0.5));
+        const i1 = Math.min(kl[2], Math.ceil((s.x + R - mx) / zm + n / 2 - 0.5));
+        const j0 = Math.max(kl[1], Math.floor((s.z - R - mz) / zm + n / 2 - 0.5));
+        const j1 = Math.min(kl[3], Math.ceil((s.z + R - mz) / zm + n / 2 - 0.5));
         if (i0 > i1 || j0 > j1) return null;
         const { d, c, e, boden } = G;
         const jA = ab == null ? j0 : Math.max(j0, ab);
         let j = jA;
         for (; j <= j1; j++) {
-            if (j > jA && performance.now() >= frist) break;
+            if (j > jA && (performance.now() >= frist || (j - jA) * (i1 - i0 + 1) >= zellen)) break;
             const vz = s.z - (mz + (j + 0.5 - n / 2) * zm);
             for (let i = i0; i <= i1; i++) {
                 const vx = s.x - (mx + (i + 0.5 - n / 2) * zm);
@@ -2566,7 +2649,7 @@ function _stammZonen(Ziel, zonen) {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.546.459";
+AnazhRealm.VERSION = "18.546.463";
 // Die Terme des ersten Weltbilds (`_weltbildLuecken`, K60): je Leser des ersten Frames ein Name — gate:ankunft L2a stellt je
 // Term einen Fall her, ein Term ohne Fall ist ROT.
 AnazhRealm.WELTBILD_TERME = Object.freeze([
