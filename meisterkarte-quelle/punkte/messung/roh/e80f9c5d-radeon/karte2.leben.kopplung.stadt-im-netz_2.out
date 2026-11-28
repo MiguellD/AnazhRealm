@@ -1,0 +1,12 @@
+$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
+[linse-gpu] amd/rdna-3
+@@PUNKTE@@ ZEIT dorf 1.3 s
+@@PUNKTE@@ ZEIT leben.kopplung.leben-formt-planet 36.7 s
+@@PUNKTE@@ ZEIT leben.kopplung.evolution-planet 66.9 s
+@@PUNKTE@@ ZEIT leben.kopplung.stadt-im-netz 223.1 s
+@@PUNKTE@@ FEHLER Error: /eval: {"ms":1,"fehler":"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\Users\\micha\\AppData\\Local\\Temp\\anazh-absturz\\9e592380-03fe-4ade-9b2a-1e550645c932.dmp","stapel":["at stirb (C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\punkte-radeon\\scripts\\lib\\welt-boot.cjs:1455:15)","at Timeout._onTimeout (C:\\Users\\micha\\AnazhRealm-profiband\\.claude |     at H.ruf (eval at <anonymous> ([eval]:1:1), <anonymous>:12:70) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async H.seite (eval at
+@@PUNKTE@@ PROBE 223.1 s · Exit 2
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
+[linse-gpu] amd/rdna-3

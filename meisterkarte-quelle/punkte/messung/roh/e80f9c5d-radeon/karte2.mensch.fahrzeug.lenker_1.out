@@ -1,0 +1,9 @@
+$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
+[linse-gpu] amd/rdna-3
+@@ 10.4 s · am Messort stadt-voll (ego) nach 10.4 s, 304 Takte, Anlauf stand
+@@ 48 s · Verkehr: {"n":21,"wagen":21,"fahrer":42,"kollisionen":0,"stillstand":0,"reisetempo":0.09844546305524957,"zeitluecke":8.34670076426355,"luecken":23,"stunden":0,"stundeS":2500000000000,"verkehrS":66.3,"spielS":214.5,"wandS":37.6,"msJeTakt":17.5,"takte":2145,"fehler":0,"wegM":1138}
+@@ 48 s · S1 warf: eine Spielstunde Verkehr nicht erreicht: 66.3 von 2500000000000 s in 2145 Takten, 37.6 s Wand (17.5 ms je Takt)
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
+[linse-gpu] amd/rdna-3
