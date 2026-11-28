@@ -80,3 +80,26 @@ Messort der Station: die Gang-Linse fährt an der Pose des Spielers (Preis-Pose 
   (die Raffung, leben-core :116). Begründung Punkt 4.
 - 28.11. 03:05 MEZ: masse#1 6e1d9d61 noch nicht im main 9885e7c, merge-tree ohne CONFLICT; keine neue Post seit 02:25. Wartezimmer.
 - 28.11. 03:03-Post abgearbeitet: der Kandidat lebenszyklus#2 nennt Ort und Bildzahl (wiese · 20 je Klasse an EINER Uhr = 40 Bilder; vorher fächerte er über 9 Uhren, bis 396) und trägt den Satz der Quellen im Muster boden#1 (stand · motiv · ablage), alle drei Diffs neu auf die Blobs faecher bf57832 · k2-leben 4f1f810 · quellen 180c397, git apply OK, Selbsttest 17 GRÜN, Mutante ohne uhren ROT.
+
+## ZWISCHENSTAND 28.11. ~04:40 MEZ — die EINE Uhr (Post 03:58), gemessen vor dem Kopf
+
+Werkbank an der wiese (swiftshader, main 896eb419), vier nahe Regionen, Bestands-Takt 10 s; vorher `refS` 2 100 ↔ nachher 19 200
+(= jahreRef 8 · jahrK 2 400), gleiche Saat, gleiche Reihenfolge (2 Welt-Jahre, dann 20):
+
+| | vorher | nachher |
+|---|---|---|
+| 2 Welt-Jahre: Tiere im Mittel · Jungtier-Anteil · Geburten | 4,37 · 4,63 % · 20 | 4,51 · 12,51 % · 18 |
+| 20 Welt-Jahre: Tiere im Mittel · Jungtier-Anteil · Geburten | 4,91 · 5,91 % · 218 | 5,21 · 15,98 % · 201 |
+| Jungtier-Anteil je Jahr (Spanne) | 3–13 % | 0–34 % |
+| Takt der vier Regionen p50 / p95 | 0,24 / 0,385 ms | 0,235 / 0,435 ms |
+
+Der Takt kostet gleich. Die EINE Uhr allein hebt jungProzent über 10 % (Mittel), aber das Jahr streut (Bestand ~5 Tiere).
+
+**Die Fenster der Generations-Proben SPRENGEN — die Zahl vor dem Vorprüf-Kopf (pm 9b4b3c91):**
+- lebenszyklus S7 (k2-leben.js:2912, 100 Generationen, msDeckel 9 000): vorher 26 153 Takte in 1,9 s → 100 Generationen; nachher
+  Ziel 244 153 Takte, der Deckel greift bei 127 614 → **52,3 Generationen** (ganz bräuchte es 17,2 s bei 0,0705 ms je Takt).
+- evolution.muster (:7426, `lauf(ort, 6 h)`): vorher 21 600 s / 2 651 s = 8,1 Hirsch-Generationen; nachher / 24 451 s = **0,88**.
+- evolution.erbe (:7204, 10 Lebensdauern über das Aufholen der Region): 215 088 s Welt-Zeit in 0 ms — das Fenster hält.
+- verhalten S5 (:2610, spieltage = max. Lebensdauer / 3 600 s): 0,81 → ~7,4 (Soll ≥ 7) — die längere Spanne trägt diese Zeile.
+Der Kopf `tier-bewegung-uhr` wird erst Vorprüf-Kopf, wenn die zwei Fenster entschieden sind (S7: msDeckel ≥ 18 s, oder die
+Generation am Gesetz statt an der Wand-Zeit; muster: dauerS × 9,14 = 54,8 h Welt-Zeit über das Aufholen, das 0 ms kostet).
