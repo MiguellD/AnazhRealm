@@ -31,7 +31,9 @@
 - **Kandidat ausdruck#1 (WIP über Kopf 7)** im Stations-Ordner: `cloud-post/kunst-am-leib-station/ausdruck-1-station.diff` (die
   Seite AUSDRUCK und S1 der Leiter) · `cloud-post/kunst-am-leib-station/ausdruck-1-faecher.diff` (das Fach, die Uhr der Pose) ·
   `cloud-post/kunst-am-leib-station/ausdruck-1-quellen.diff` (Post 02:25: der Satz der Quellen `haltung-arbeit`, Commons-Kategorie
-  Farmers at work: 108 Dateien, trocken 52 frei ≥ 40, Menschen im Akt draußen bei Tag; Müde ohne Satz: 0 von 40, offen) ·
+  Farmers at work: 108 Dateien, trocken 52 frei ≥ 40, Menschen im Akt draußen bei Tag) · GESETZT 03:58 (pm 405fbd22) ·
+  `cloud-post/kunst-am-leib-station/ausdruck-1-quellen-muede.diff` (Satz `haltung-gang` für Müde: Fußgänger des Stadtmuseums
+  Helsinki, 309 Treffer, trocken 111 frei ≥ 40, ohne Winter und Nacht) ·
   Begründung in `cloud-post/kunst-am-leib-station/BEGRUENDUNG.txt`. Die Klasse ist der Name, den der Leib zur Stunde steht (die
   Wahl des Wirts): Arbeit · Müde · Furcht; die Stunde des Feierabends 17:15–18:00 trägt Arbeit und Müde unter demselben Licht;
   die Pose seitlich 3,5 m (die Beuge im Profil). Gemessen headless: Arbeit 718 · Müde 518 draußen (14 Rollen × 40 × 4 Stunden);

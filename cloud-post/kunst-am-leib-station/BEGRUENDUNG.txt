@@ -78,5 +78,9 @@ eines Bewohners liest heute nur der Zensus: kein Bewohner schlägt mit seinem We
 Ehrlich offen: (1) Furcht trägt nur, wer die Tat des Spielers sah — in der Sitzung des Fächers 0, das Blatt hat zwei Klassen.
 (2) Das Gesetz ist schwach: pwalk beugt den Rumpf 2,9°, sad senkt den Kopf 10° (MOTION) — ob der Prüfer ≥ 60 % trifft, sagt
 seine Zahl; liegt sie darunter, ist die Beuge am Werk und die Müdigkeit des Abends (Winkel mit Quelle) die nächste Arbeit.
-(3) Der Satz der Quellen trägt die Klasse Arbeit; für Müde (ein Mensch im Gang des Feierabends, draußen) fand keine freie
-Abfrage ≥ 40 Fotos derselben Art — 0 von 40, offen beim Namen.
+(3) Post 03:58: ausdruck#1 GESETZT (pm 405fbd22). Nachtrag ausdruck-1-quellen-muede.diff gegen punkte-maschine f3d5472b — Satz
+"haltung-gang" für die Klasse Müde: Commons-Suche „Jalankulkijoita hkm“ (Helsingin kaupunginmuseo, Fußgänger, CC BY 4.0) mit
+`mit` jalankulkij und `ohne` gegen Winter, Schnee, Nacht, Gemälde: 309 Treffer, Trocken-Lauf 111 frei ≥ 40 — Menschen im Gang auf
+der Straße bei Tag, die Art des Bewohners im Gang des Feierabends. Geprüft und verworfen: Kategorien People walking outdoors 33,
+Old men mit walk 3, Walking men in Bangladesh (Gebäude), Pedestrians (Bahnhöfe, Kreuzungen), Shoulder-carrying (Stiche, Militär).
+Holer-Selbsttest 7 GRÜN, liste Exit 0.
