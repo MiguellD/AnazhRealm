@@ -25,6 +25,9 @@
 - **Post 00:57 gelesen:** nach Kopf 7 die Fächer `mensch.leib.verschieden#1` · `mensch.leib.tracht#1` · `mensch.leib.ausdruck#1`
   (Vorlage kunst#1: Fach, Station liest das Prüfer-Urteil, Klassen-Zeile P — die drei Zeilen stehen schon in der Klassen-Datei).
 - Kopf 7 b48bc4ac geschoben (lease über 36251792), PROBE-TAG OK; WIP-Linie in `kunst-am-leib-wip7`.
+- GPU-Probe Kopf 7 (gtx1050-desktop, 28.11. 02:00, Lauf 46086880276, 2726 s ab Push): GRÜN, probeUrteil GRÜN —
+  pruefbuehne-licht 108 · weltbild-frost:echt 328 · studio-begehen 483 · stand-takt 504 · webgl-probe 92 s. Post 02:00 gelesen:
+  merge-tree Kopf 7 gegen main 93e4b83b Exit 0 — Kopf 7 bleibt gültig.
 - **Kandidat ausdruck#1 (WIP über Kopf 7)** im Stations-Ordner: `cloud-post/kunst-am-leib-station/ausdruck-1-station.diff` (die
   Seite AUSDRUCK und S1 der Leiter) · `cloud-post/kunst-am-leib-station/ausdruck-1-faecher.diff` (das Fach, die Uhr der Pose) ·
   Begründung in `cloud-post/kunst-am-leib-station/BEGRUENDUNG.txt`. Die Klasse ist der Name, den der Leib zur Stunde steht (die
