@@ -99,3 +99,17 @@ ZWISCHENSTAND. Karte 2 gebucht 156 von 1 718.
 - Offen beim Namen: 10⁴ (1 664 von 9 310 nach 60 s), der Export je Kachel im Werk-Faden; die Station zählt EINE Kachel.
 
 ZWISCHENSTAND. Karte 2 gebucht 156 von 1 718.
+
+## 28.11. 01:15 UTC — letzter Stand dieser Sitzung (Wartezimmer endet 01:27, kein GELANDET für a7282983)
+- Vorprüf-Kopf a7282983 auf b3740dd5; GPU-Probe GRÜN (00:59); mischt ohne Konflikt mit main b56b51f0 (z812). WIP darüber 81631036
+  (nur dieses Blatt). Kein neuer Kopf von mir — er wird erst auf Zuruf auf b56b51f0 gehoben.
+- Brief 00:57 (Fächer R11) gelesen, zugeteilt: mensch.stadt.groesse#1 · breite#1 · messlatte#1. Gelesen am Zweig punkte-maschine:
+  groesse#1 hat ein Fach (vision/pruefer/faecher.cjs, Ort dorf, 16 Richtungen × Tageszeit); breite#1 und messlatte#1 haben KEIN Fach
+  (11 Fächer im Ganzen). Alle drei tragen schon ihre Zeile der Klasse P (auge-klasse); die Station mensch.stadt liest bei keinem der
+  drei ein Prüfer-Urteil (kein afc/Treffer in der Station); die Richter-Tafel nennt alle drei „fehlt“.
+- Offen beim Namen, für die nächste Sitzung dieser Bahn: (1) groesse#1: die Station liest das Urteil des Prüfers (Vorlage kunst#1,
+  pm 403ad6b3); (2) breite#1: das Fach „Region einer Stadt aus 6“ (Posen aus dem Gesetz: je Region die Stadt des Worts) samt
+  Station; (3) messlatte#1: das Fach „Blindpaar“ samt Korpus realer Fotos mit Quelle und freier Lizenz. Nicht begonnen: diese Sitzung
+  endet mit dem Wartezimmer.
+
+ZWISCHENSTAND. Karte 2 gebucht 156 von 1 718.
