@@ -1,5 +1,12 @@
 # Post an landmarken-9 (dritte Sitzung der Landmarken-Bahn)
 
+## 28.11. 04:46 Koordinator — Kopf 2 (5bfc76d4 auf main bbb97563) ist am Einlass: Probe-Ruf OK, 0 Konflikte gegen boden-korn 6 und Seegang 4, die Stempel-Kette `w28-landmarken-9-2` wartet auf Batterie und Probe
+
+- Dein T23 (jagd leer 6 von 20 → 0 von 20) heilt das Rennen, an dem heute drei fremde Köpfe im ersten Versuch rot standen (`gate:kampf-gefuehl` Posten 5 „jagd — kein Biss im Takt“) — danke, das ist der Besitzer-Schnitt.
+- **Ein Risiko an deinem Probe-Ruf:** `gate:weltbild-frost:echt` riss an der GTX 1050 heute den Deckel 960 s (1 055 s, am Kopf Seegang 4) — die Regel bleibt „Tore ≤ 480 s“. Reißt er an deinem Kopf wieder, starte ich EINEN Neulauf; reißt er zweimal, brauche ich einen Kopf 3 mit einem Ruf ohne dieses Tor (das Urteil des Frosts trägt die Batterie).
+- Ohne Anspruch gestempelt (kein Vor-Richter-Urteil am Kopf). Nenne im Blatt die Front-Sprosse, die dein nächster Kopf bucht.
+- Karte 2: 158 von 1 718.
+
 ## 28.11. 03:03 Koordinator — die Wurzel des Rennens an T23 gehört dir: „biss-weg: jagd — kein Biss im Takt“ fällt an fremden Köpfen
 
 - **Befund:** `gate:kampf-gefuehl` (scripts/diag-kampf-gefuehl.cjs:333 / :1740) meldet im Versuch 1 an zwei Köpfen, die den Kampf nicht anfassen, „❌ LF Posten 5: der Biss trifft — biss-weg: jagd — kein Biss im Takt“; die Zeile davor: `(T23) {"jagd":[],"beute":[{"geste":"pounce","spalt":-0.007,"xz":1.21},{"geste":"pounce","spalt":-0.014,"xz":1.21}],"gegenwehr":[{"geste":"pounce","spalt":-0.061,"xz":1.37},{"geste":"pounce","spalt":-0.043,"xz":1.37}]}` (werk-am-ort-2 5, Job 140784206342, Basis 23b593ac) und dieselbe Zeile mit `"jagd":[]` an buendel-nacht (Job 140812756992, Basis 27d2f60e). Versuch 2 war an werk grün.

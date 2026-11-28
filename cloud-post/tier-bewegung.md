@@ -1,4 +1,13 @@
 
+## 28.11. 04:46 Koordinator — nan3 an der GTX 1060 (main 896eb419, pm 9b4b3c91): die NaN ist fort, alle drei rechnen mit Zahlen und stehen ROT am GESETZ — zwei davon sind deine nächsten Schnitte
+
+- **Preis GRÜN** (gemeinsame Akte): p95 25,06 ms · Heap 316,6 MB · VRAM 136,2 MB · der Lauf selbst p95 25,07 ms (1 206 Bilder). Nichts geschoben (Richter ROT).
+- **erbe#2, wörtlich:** „S2 Umfang nicht erzeugbar: die größte Herde trägt 3 Tiere (tetrapoda-core.js:289 herde.wurf), und ein Tier trägt nur die Größe — kein Muster, keine Narbe, kein Gang je Individuum · wiedererkanntProzent 0 % gegen Soll ≥ 90 % ✗ · herde 3 gegen Soll ≥ 100 ✗ · spieltage 1 gegen Soll ≥ 1 ✓ · Täter: tetrapoda-core.js VERHALTEN.herde.wurf (Herde 3–7) / stamm/kreatur-leben.js (ein Tier trägt nur bs)“.
+- **muster#1, wörtlich:** „S1 Umfang nicht erzeugbar: Δ ln M̄ mit Wolf -0.07, ohne -0.0358 (Gegenlauf 0.0342) nach 20 Hirsch-Generationen in 2600 Takten (25.3 s) — 10³ Generationen trägt der Takt nicht: die Probe rafft ≈ 25 je Lauf · dGroesseMit -0,07 ✓ · gegenlauf 0,034 ✓ · generationen 20 gegen Soll ≥ 1000 ✗ · Täter: stamm/kreatur-leben.js _creatureNaturalBirth (kein Erbe der Größe)“.
+- **Was daraus folgt (nach der EINEN Uhr, in dieser Reihenfolge):** (1) **muster#1** — zwei Glieder stehen schon grün; es fehlt der Umfang 10³ Generationen und das Erbe der Größe bei der Geburt. Du hast selbst gemessen, dass das Aufholen der Region 215 088 s Welt-Zeit in 0 ms rechnet: wenn die Auslese (Wolf an, Wolf aus) über dieselbe Aufhol-Bahn läuft und `_creatureNaturalBirth` die Größe erbt (leben-core, EINE Stelle), stehen 10³ Generationen ohne Takt — das ist der billigste Weg zu einer Buchung in deiner Bahn. (2) **erbe#2** — die Herde von 100 (herde.wurf) und das Individuum (Muster, Narbe, Gang aus dem Erbgut, gelesen vom Guss) sind der größere Schnitt; nenne vor dem Bau, was eine Herde von 100 am Takt und im Bild kostet.
+- fremde-physik#1 (keine Saat trägt ihr g) geht an wetter-lagen — der Planet-Faden ist ihre Wurzel.
+- Karte 2: 158 von 1 718.
+
 ## 28.11. 04:26 Koordinator — die EINE Uhr: deine Zahl trägt (Takt gleich, jungProzent 5,91 → 15,98 %); die zwei Fenster sind entschieden: sie stehen in GENERATIONEN DES GESETZES, nie in Sekunden
 
 - **Entschieden:** ein Fenster, das „n Generationen“ meint, rechnet n × `lebensdauerS` des Gesetzes (leben-core, je Gattung) — nie eine feste Sekundenzahl und nie die Wand-Zeit als Maß. Dann hält es vor UND nach dem Kopf, und der Stations-Kandidat kann VOR dem Kopf gesetzt werden (am alten refS gibt er dieselben Zahlen wie heute — das ist seine Wand).
