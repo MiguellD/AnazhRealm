@@ -1,7 +1,7 @@
 {
  "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
  "geraet": "gtx",
- "zeit": "2026-11-28T08:19:20.251Z",
+ "zeit": "2026-11-28T08:30:10.990Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "profiband.K4#1": {
@@ -1823,6 +1823,76 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.mensch.sport.koennen#3": {
+   "gruen": false,
+   "zahl": "S3 ROT: fehlender Leser: kein Wettkampf, kein Bestwert (477 Bewohner, 134 im Sport-Akt) (koerper-core.js:5126) · gemessen 134 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.38,
+   "grund": "ROT: S3 ROT: fehlender Leser: kein Wettkampf, kein Bestwert (477 Bewohner, 134 im Sport-Akt) (koerper-core.js:5126) · gemessen 134 · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k037717809c18",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kd484c41761a8",
+   "s": 21.9,
+   "fremd": {
+    "s": 23.8,
+    "takte": 11,
+    "fremdS": 5.48,
+    "kerne": 0.23,
+    "fensterKerne": 0.252,
+    "namen": [
+     [
+      "bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \"",
+      1.63
+     ],
+     [
+      "Explorer.EXE",
+      0.81
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-e80f9c5d-w092741-s x listen/kandidat-gtx-e80f9c5d-w092741-s.t",
+      0.8
+     ]
+    ],
+    "dienerS": 4.8,
+    "diener": [
+     [
+      "System",
+      1.84
+     ],
+     [
+      "dwm.exe",
+      1.59
+     ]
+    ],
+    "geraetS": 8.53,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      6.63
+     ],
+     [
+      "svchost.exe",
+      1.66
+     ],
+     [
+      "SearchIndexer.exe",
+      0.13
+     ]
+    ],
+    "eigenS": 58.06,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-28T08:30:10.990Z",
+   "abdruck": "29da5e92df07",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -3220,110 +3290,5 @@
   },
   "fahrtS": 1364.6,
   "minuten": 22.91
- },
- "fortsetzung": [
-  {
-   "start": "2026-11-28T08:18:40.325Z",
-   "ordner": "sitzung-20261128-091840",
-   "port": 7804,
-   "warten": 0.03,
-   "bootS": 8.2,
-   "grundstellungS": [],
-   "proben": 1,
-   "freigaben": [],
-   "geraet": {
-    "name": "GTX 1060",
-    "adapter": "NVIDIA GeForce GTX 1060",
-    "preis": true
-   },
-   "orte": [
-    {
-     "ort": null,
-     "vor": "karte2.same.entfaltung.schirm#1",
-     "s": 28.3,
-     "takte": 794,
-     "chunks": 81,
-     "nach": null
-    }
-   ],
-   "wegeTueren": [],
-   "felder": [
-    {
-     "probe": "karte2.same.entfaltung.schirm#1",
-     "weg": [
-      "__ortZeit",
-      "__weltaktSpionBuch",
-      "__wetterSpionBuch",
-      "__buehneUhr",
-      "__bandDecke",
-      "__zensusCalls",
-      "__pbiv"
-     ]
-    }
-   ],
-   "wirt": [
-    {
-     "probe": "karte2.same.entfaltung.schirm#1",
-     "anders": [
-      "r._bildZeit",
-      "r._wolkenZeit",
-      "r._weltaktGehalten",
-      "r._setWeather",
-      "r.state.weather",
-      "window.__wieseMessen",
-      "window.__wieseUrteil",
-      "window.__ortSchritt"
-     ],
-     "wie": {
-      "r._bildZeit": "getauscht: () => S.T → der Wert 12.5",
-      "r._wolkenZeit": "getauscht: () => S.T → der Wert 12.5",
-      "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
-      "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
-      "r.state.weather": "getauscht: () => wert → der Wert sunny",
-      "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
-      "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
-      "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
-     },
-     "haelt": [],
-     "heap": [
-      200.6,
-      502.6
-     ],
-     "ungemessen": null
-    }
-   ],
-   "messHalt": [
-    {
-     "probe": "karte2.same.entfaltung.schirm#1",
-     "halt": -1000000000,
-     "zurueck": 0
-    }
-   ],
-   "ciBlicke": 2,
-   "strom": {
-    "datei": "strom.ndjson",
-    "bilder": 781,
-    "frameP95": 48.51,
-    "taktP95": 35.67,
-    "vramMax": 161,
-    "seiten": 1,
-    "marken": 0,
-    "fehler": 0,
-    "verloren": 0,
-    "ortImDeckel": [
-     {
-      "probe": "karte2.same.entfaltung.schirm#1",
-      "m": 1204,
-      "ringVor": 4,
-      "ringMin": -1
-     }
-    ],
-    "zapfen": 448,
-    "luecken": 1,
-    "letzteLuecke": "/eval ohne Antwort binnen 10 s"
-   },
-   "fahrtS": 474.2,
-   "minuten": 8.03
-  }
- ]
+ }
 }
