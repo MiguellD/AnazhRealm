@@ -1,0 +1,19 @@
+{
+ "v": 1,
+ "geraet": "omen",
+ "t": 1795869280,
+ "welten": [],
+ "frei": false,
+ "halter": {
+  "wer": "omen-punkte-gtx-sitzung",
+  "art": "MESSUNG",
+  "pid": 20888,
+  "seit": 1795868606,
+  "lebt": true,
+  "cpu": 1411.9,
+  "n": 27,
+  "regt": 1795869280
+ },
+ "warten": 0,
+ "wartende": []
+}
