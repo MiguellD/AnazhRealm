@@ -1,7 +1,7 @@
 {
  "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
  "geraet": "gtx",
- "zeit": "2026-11-28T10:37:26.436Z",
+ "zeit": "2026-11-28T10:54:13.852Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "profiband.K4#1": {
@@ -3155,6 +3155,76 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.mensch.netz.stoffwechsel#1": {
+   "gruen": false,
+   "zahl": "S1 ROT: fehlender Leser: die Laterne brennt ohne Leitung: keine Trennung, von der ein Licht abhinge (1228 Laternen in der Szene, 0 Leitungen) (stamm/siedlung-ort.js:562) · gemessen 1228 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.23,
+   "grund": "ROT: S1 ROT: fehlender Leser: die Laterne brennt ohne Leitung: keine Trennung, von der ein Licht abhinge (1228 Laternen in der Szene, 0 Leitungen) (stamm/siedlung-ort.js:562) · gemessen 1228 · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k037717809c18",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0ac82d40df13",
+   "s": 12.9,
+   "fremd": {
+    "s": 17.4,
+    "takte": 8,
+    "fremdS": 4.55,
+    "kerne": 0.261,
+    "fensterKerne": 0.238,
+    "namen": [
+     [
+      "sh.exe n0611/kandidat.sh gtx-e80f9c5d-w114753-s x listen/kandidat-gtx-e80f9c5d-w114753-s.t",
+      0.81
+     ],
+     [
+      "bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \"",
+      0.75
+     ],
+     [
+      "Explorer.EXE",
+      0.72
+     ]
+    ],
+    "dienerS": 3.38,
+    "diener": [
+     [
+      "System",
+      1.41
+     ],
+     [
+      "dwm.exe",
+      1.06
+     ]
+    ],
+    "geraetS": 7.73,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      5.14
+     ],
+     [
+      "svchost.exe",
+      2.3
+     ],
+     [
+      "SearchIndexer.exe",
+      0.16
+     ]
+    ],
+    "eigenS": 46.91,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-28T10:51:43.819Z",
+   "abdruck": "7172cf5c24fe",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -4625,6 +4695,70 @@
    },
    "zeit": "2026-11-28T09:34:29.162Z",
    "abdruck": "946d094f8050",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.leib.stoff#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 54.2 s · S1 warf: werkbank eval: ALTER: die Epoche ohne Jahr (fail-closed) [\"at  ( at page.<computed> [as evaluate] (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\punkte-gtx\\\\scripts\\\\lib\\\\welt-boot.cjs:1537:102), <anonymous>:1:72)\",\"at #evaluate (C:\\\\Users\\\\mic",
+   "exit": 0,
+   "minuten": 0.91,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 54.2 s · S1 warf: werkbank eval: ALTER: die Epoche ohne Jahr (fail-closed) [\"at  ( at page.<computed> [as evaluate] (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\punkte-gtx\\\\scripts\\\\lib\\\\welt-boot.cjs:1537:102), <anonymous>:1:72)\",\"at #evaluate (C:\\\\Users\\\\mic",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 54.5,
+   "fremd": {
+    "s": 57.3,
+    "takte": 26,
+    "fremdS": 20.3,
+    "kerne": 0.354,
+    "fensterKerne": 0.592,
+    "namen": [
+     [
+      "bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \"",
+      3.48
+     ],
+     [
+      "Explorer.EXE",
+      2.66
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      1.8
+     ]
+    ],
+    "dienerS": 15.11,
+    "diener": [
+     [
+      "System",
+      7.45
+     ],
+     [
+      "dwm.exe",
+      3.63
+     ]
+    ],
+    "geraetS": 30.28,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      21.16
+     ],
+     [
+      "svchost.exe",
+      7.83
+     ],
+     [
+      "SearchIndexer.exe",
+      0.59
+     ]
+    ],
+    "eigenS": 164.67,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-28T10:54:13.852Z",
+   "abdruck": "6962415f034e",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
