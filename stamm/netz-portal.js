@@ -705,7 +705,11 @@ class AnazhRealm_netz_portal {
             schwere: heim.schwere,
             himmel: { rayleighTiefe: heim.himmel.rayleighTiefe.slice() },
             wetter: Object.assign({}, heim.wetter),
-            gelaende: K.ortErbgut(K.erbgutNormal(heim.gelaende == null ? undefined : heim.gelaende), o.delta.wildnis, o.gross),
+            gelaende: K.ortErbgut(
+                K.erbgutNormal(heim.gelaende == null ? undefined : heim.gelaende),
+                o.delta.wildnis,
+                o.gross
+            ),
             ort,
         };
         AnazhRealm._weltGesetz(snap.worldMeta);

@@ -1293,7 +1293,10 @@ class AnazhRealm_feld_leben {
                     return Promise.all([
                         this._planetAnker("Satz"),
                         this._fadenQuelle().then(() =>
-                            this._planetAuftrag({ type: "planet-ort", samen, breite, laenge, zeitMa, gross: true }, "Satz")
+                            this._planetAuftrag(
+                                { type: "planet-ort", samen, breite, laenge, zeitMa, gross: true },
+                                "Satz"
+                            )
                         ),
                     ]).then(
                         ([a, o]) => {

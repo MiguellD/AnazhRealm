@@ -3503,8 +3503,17 @@ class AnazhRealm_stoff_material {
             // DIE GEOLOGIE DER LAGE (Karte 2 planet.geologie.gebirge#1): Streichen, Einfallen und Faltung der Bänke sind Gesetz des
             // Orts (gelaende-core `felsGeologie`) — fünf Uniforms, je Bild aus der Lage der Welt gelesen (gemerkt je Erbgut); der
             // Vertex (`felsStoff`) liest dieselbe Geologie. Die Heimat trägt `FELS_GEO_HEIMAT` (Faltung 0: dieselbe Fläche).
-            const _geoU = (f) => _T.uniform(f(GK.felsGeologie(this._gelaende()))).onRenderUpdate(() => f(GK.felsGeologie(this._gelaende())));
-            const _geo = { te: _geoU((g) => g.te), cs: _geoU((g) => g.cs), sn: _geoU((g) => g.sn), amp: _geoU((g) => g.amp), k: _geoU((g) => g.k) };
+            const _geoU = (f) =>
+                _T
+                    .uniform(f(GK.felsGeologie(this._gelaende())))
+                    .onRenderUpdate(() => f(GK.felsGeologie(this._gelaende())));
+            const _geo = {
+                te: _geoU((g) => g.te),
+                cs: _geoU((g) => g.cs),
+                sn: _geoU((g) => g.sn),
+                amp: _geoU((g) => g.amp),
+                k: _geoU((g) => g.k),
+            };
             const _welle = GK.felsWelle(_O, wp.x, wp.y, wp.z, _geo);
             const _felsFn = _T
                 .Fn(([x, y, z, w]) => {
