@@ -229,3 +229,11 @@ Karte 2 gebucht 158 von 1 718 · Status ZWISCHENSTAND.
 - **offen:** 28 von 40, die Stufe 5 a ohne freies Foto · die Bilder ungefahren · das Urteil des Prüfers · zerfall#2 (der Leser liegt in einer Datei, die diese Bahn nicht berührt).
 
 Karte 2 gebucht 158 von 1 718 · Status ZWISCHENSTAND.
+
+## 28.11. 03:40 — der Pendel der Linse stand-takt (WN): die Zahl main ↔ Kopf 4, die Wurzel, die Heilung im Bau
+- Gemessen (am Bach −396/−878, 30 Chunks binnen 96 m, Pendel je Welt-Sekunde, 300 Takte): **main** Hub 0,02 → 0,20 m (an der Krone geklemmt), je Wechsel 12 Chunks neu, die Reihe leer binnen 0,5 s, 40 Netz-Wechsel. **Kopf 4** q = 1 → Hub 9,34 m auf der Aue, je Wechsel 39 Chunks neu, die Reihe stand bei 38 und leerte sich nie: 7–10 Wechsel hier, 0 an der Radeon. Der Hub überstreicht die Stufe der Marke (1 cm) an jedem nassen Chunk — der Bruch ist die BREITE und die Frist.
+- Die Wurzel (zwei): die Frist des Pendels zählt Welt-Sekunden, der Bau landet in Gerätezeit im Faden; und die Schmelze der Welt trägt die Tafel allein über die Krone (0,0156 gegen 0,00055, Flut 135–158 m), so schaltet jeder Pendel mit ihr die Aue mit.
+- Geschnitten (im Arbeitsbaum, Linse allein, kein Gesetz): der Pendel IM BETT (der größte Abfluss ohne `T.flut`, halbiert, ohne Schmelze) — 12 Chunks je Wechsel, 38 Netz-Wechsel; jeder Wechsel geht über den Takt des Pegels, dann schwingt die Welt ein (Reihe, Flug, Faden leer), erst dann liest die Linse.
+- **offen:** n von 20 Läufen BLIND vorher ↔ nachher mit gedrosseltem Takt (CPU ×4) läuft.
+
+Karte 2 gebucht 158 von 1 718 · Status ZWISCHENSTAND.
