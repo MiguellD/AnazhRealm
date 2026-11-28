@@ -58,7 +58,7 @@ Zeuge 3 ohne Lesung · Richter ROT an drei Saaten („Blickziel verdeckt“ von 
 | frei im Bild von 51 Saaten | ROT 3 von 3 (GTX f07abc1a) | ungemessen — braucht die GTX (der Zeuge mit dem Kandidaten) |
 | Bilder-p95 GTX 1060 | 41,72 ms (ohne den Kopf 25,02) | ungemessen in der Wolke |
 
-## Kopf 2 (auf main b56b51f0) — die sechs roten Schritte von Kopf 1, je vorher → nachher (lokal, swiftshader, je mit Selbsttest)
+## Kopf 2 (auf main 9885e7c4) — die sechs roten Schritte von Kopf 1, je vorher → nachher (lokal, swiftshader, je mit Selbsttest)
 
 Die gemeinsame Wurzel: Kopf 2 stellt den Spieler an den Stand der Landmarke (34/−34 statt der Plan-Mitte 0/0). Jede Linse, deren Probe
 vom Start aus zählt, stand auf dem Glück des alten Orts — die Klasse fällt je Linse an ihrer Wahl, nie an einer gesenkten Schwelle.
@@ -72,8 +72,8 @@ vom Start aus zählt, stand auf dem Glück des alten Orts — die Klasse fällt 
 | Kreatur-Linse 2/3 `lebensraum` | vakuös: der Rand-Leib stand 31 m fern im Nah-Kreis und hielt | GRÜN, 6 von 6 Tätern (18 s) | scripts/diag-kreatur-leben.cjs: der Rand-Leib jenseits von `_kreaturNah` |
 | Werfer-Wand W6 | 1 unbekannter Werfer (streuNah:geroell) | 0 | WIP 3 |
 | Werfer-Wand S10 (blind an 34/142) | Zellen falsch 0 bei Kapsel-Schnitt 19 | 1 (W9 an Sonne [0,5, π/2], 15 Zellen) | scripts/diag-schatten-werfer.cjs: ungestempelte Höhlen-Zellen zählen nicht, die Pose sucht den Schnitt |
-| kampf Q13 Staffel 1 | tod (Anker 1 076 m) | GRÜN 2 von 2 | WIP 2: der Anker der Wiederkehr |
-| kampf LF Posten 5 jagd | rot 2 von 3 Läufen | GRÜN 3 von 3 (79 s je Lauf) | scripts/lib/kampf-proben.cjs:2305: der Wolf 6 m windab nach `_rauchWindAt` (am Ort 32,9/−42 weht 0,46/0,89 — der alte Platz +6 m z lag schon windab, cos 0,92: die Ursache der zwei roten Läufe ist nicht nachgestellt, s. offen) |
+| kampf Q13 Staffel 1 | tod (Anker 1 076 m) | GRÜN 6 von 6 | WIP 2: der Anker der Wiederkehr; der Wolf im Ring 0,8 × hetzM (scripts/lib/kampf-proben.cjs:3327) |
+| kampf LF Posten 5 jagd + Sims | „kein Biss im Takt“ in 3 von 7 Läufen; Sims 4,8 m waagrecht (1 Lauf) | GRÜN 3 von 3 am gemischten Baum (79–80 s), Sims 0,5 m | scripts/lib/kampf-proben.cjs:2310: der Täter beim Namen (Spur `jagdSpur`): der Wolf stand 6,01 m fern — GENAU auf dem Ring hetzM 6 m; lag er knapp darüber, pirschte er zum Ring und stand 1 500 Takte in „jagd“ auf 6,0 m. Die Klasse in einer Welle: (a), Sims (b) :2648 und Q13 :3327 im Ring 0,8 × hetzM, (a)/(b) windab |
 | haus-welt 2/2 Selbsttest `promotion` | blind: 4 Zellen unter den Häusern (Soll ≥ 5) | Täter sieht 8 Natur-Einträge im Grundriss; Teil 2/2 21 grün, 0 rot (912 s) | scripts/diag-haus-welt.cjs:1613: das ferne Dorf am dichtesten Kreis der Baum-Zellen (`promotable`) |
 | Prägung kreatur:diet | 154 von 155 | 155 von 155 | scripts/diag-praegung-welt.cjs: je kreatur-Zeile die volle Kappe gewürfelt (Würfe diet 2, sonst 1) |
 
@@ -81,12 +81,31 @@ Die Frist der 50 Saaten (GTX 1050: 43 von 50 in 544 s): die Erde-Decke fragt nur
 Faden der Ankunft an der teuersten Saat 5 305 → 2 752 ms; die Saaten fahren gestaffelt in zwei Teilen je mit voller Frist
 (`cloud-post/landmarken-9-station/BEGRUENDUNG.txt` Punkte 6–7).
 
+## Batterie lokal (Werkbank in der Wolke, je mit Selbsttest)
+
+| Tor | Baum | Urteil | Zeit |
+|---|---|---|---|
+| check:statik | main b56b51f0 gemischt / 9885e7c4 gemischt | GRÜN / s. unten | 581 s |
+| gate:daten-contract · gate:fachwerk-contract · gate:asset-contract · gate:welt-boot | b56b51f0 gemischt | GRÜN | 1 · 117 · 277 · 82 s |
+| Kreatur-Linse 1/3 · 2/3 · 3/3 (Stoppuhr, je ≤ 1 150 s) | b56b51f0 gemischt | GRÜN | 976 · 885 · 708 s |
+| herde · lebensraum · querhang · begegnung | 9885e7c4 gemischt | GRÜN, 23 Täter | 32 · 19 · 14 · 57 s |
+| gate:kampf-gefuehl ×3 | 9885e7c4 gemischt | GRÜN 3 von 3 | 80 · 80 · 79 s |
+| gate:haus-welt 2/2 | b3740dd5 | GRÜN 21 / 0 | 912 s |
+| gate:schatten-werfer · gate:praegung-welt | b56b51f0 gemischt | GRÜN | 17 · 169 s |
+| gate:studio-begehen (probeUrteil) | b56b51f0 gemischt | GRÜN | 260 s |
+| gate:pruefbuehne-licht · gate:tag-achse:echt (probeUrteil) | Kopf und main | ROT gleich main (offen) | 76 · 585 s |
+
 ## Ehrlich offen (mit Datei und Zeile)
 
 - koerper-stand K7 Aufbau (406 Büschel / 33 Pflanzen, Soll ≥ 1 000 / 500) und die blinden Selbsttests wiese/ring: am main b3740dd5
   lokal gleich rot (415 / 33) — die Werkbank in der Wolke, geerbt, nicht Kopf 2.
-- kampf LF Posten 5: zwei rote Läufe von drei am Kopf vor der Mischung, danach 3 von 3 grün; der Wind am Ort ist in jedem Lauf
-  derselbe (0,46/0,89), die Ursache der roten Läufe ist nicht benannt (Spur `jagdSpur` im Befund, scripts/lib/kampf-proben.cjs:2363).
+- Die Falle im Jagd-Gesetz selbst (nicht angefasst, Regel jagdkreis): der einzelne Jäger pirscht zu einem Ziel GENAU auf dem Ring hetzM
+  und hetzt erst bei d ≤ hetzM (stamm/kreatur-verhalten.js:423 `hetze`, :465 „auf dem Platz“, :469 das Pirsch-Ziel) — kommt er knapp
+  außerhalb an, steht er dort. In der Welt trifft das jeden Ungebundenen, der von außen kommt; die Probe steht jetzt im Ring.
+- Lokal rot, am main 9885e7c4/b56b51f0 in DERSELBEN Werkbank gleich rot (swiftshader in der Wolke, nicht Kopf 2): gate:pruefbuehne-licht
+  „S0 Himmel … 1.16e-7 / 1.07e-7“ (68 s main, 76 s Kopf) · gate:tag-achse:echt „DIE WELT STEHT NICHT nach 3601 Takten“ (637 / 585 s) ·
+  koerper-stand K7 Aufbau 415/33, blind wiese/ring, K8 streu wiese p95 3,3 cm (447 / 582 s). gate:weltbild-frost:echt startet hier
+  nur unter xvfb und stand 27 min an der ersten Zeile — abgebrochen (eigene PID); Richter ist die GPU-Probe.
 - Der Riss 0,54 m zwischen L1 und L0 an 216/44,1 (`_bodenSichtAt`, stamm/gelaende-boden.js:20): der Leser steht jetzt auf der Karte, die
   alle Ecken trägt; die Netze selbst klaffen dort weiter.
 - Die Gesamt-Arbeit im Faden: p95 4 061 ms Wald-Faden je Ankunft (die Spirale × Wald, phyto-core `landmarkeAnkunft`:4521, voxel-worker
