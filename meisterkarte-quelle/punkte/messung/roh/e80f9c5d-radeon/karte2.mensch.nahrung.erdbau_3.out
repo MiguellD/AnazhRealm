@@ -1,0 +1,482 @@
+$ C:\Program Files\nodejs\node.exe -e const H = (function sitzungWerkzeug() {
+    const fs = require("fs");
+    const path = require("path");
+    const os = require("os");
+    const http = require("http");
+    const S = Number(process.argv[1]);
+    const W = S + 20000;
+    const H = { S, W, AUS: process.argv[2], FRIST_S: Number(process.argv[3]) - 6, t0: Date.now(), fs, path, teil: undefined };
+    if (!(H.FRIST_S > 0)) {
+        console.log("@@ PROBE-FEHLER der Deckel des Laufs fehlt (argv „" + process.argv[3] + "“: der Läufer ersetzt den Platzhalter SEK)");
+        process.exit(2);
+    }
+    // DIE MARKE der gerissenen Frist (punkte.cjs FRIST_MARKE), EINMAL je Probe: am Deckel der Frist (H.fahre) oder wo die Probe selbst
+    // Fälle an ihr auslässt
+    H.fristRiss = (was) => {
+        if (H.gerissen) return;
+        H.gerissen = was;
+        console.log("@@PUNKTE@@ FRIST " + H.FRIST_S + " s der Probe gerissen — " + was);
+    };
+    const abbau = [];
+    H.url = "http://localhost:" + S + "/index.html";
+    H.sek = () => +((Date.now() - H.t0) / 1000).toFixed(1);
+    H.rest = () => H.FRIST_S - (Date.now() - H.t0) / 1000;
+    H.schlaf = (ms) => new Promise((r) => setTimeout(r, ms));
+    H.zeile = (t) => console.log("@@ " + H.sek() + " s · " + t);
+    H.beimAbbau = (f) => abbau.push(f);
+    // höchstens ms warten: der Wert oder `ersatz` — ein Wurf des Wartenden (auch nach der Frist, etwa die Seite, die neu lädt) steht
+    // beim Namen in der Ausgabe, nie als unbehandelte Ablehnung, die die Probe risse
+    H.binnen = (p, ms, ersatz = null) =>
+        Promise.race([
+            Promise.resolve(p).catch((e) => (console.log("@@ " + H.sek() + " s · gewartet, geworfen: " + String((e && e.message) || e).split("\n")[0]), ersatz)),
+            H.schlaf(Math.max(0, ms)).then(() => ersatz),
+        ]);
+    // DER MESSORT (punkte.cjs keinUrteil (d)): ein Wurf der Wege, die Ort und Seite stellen (/umstellen, /fenster, /status, /reload), der
+    // Anschluss an den Browser der Sitzung und die Grundstellung tragen `messort` — erreicht er den Rand der Probe (H.fahre), sagt sie
+    // die EINE Marke
+    const MESSORT_WEG = /^\/(umstellen|fenster|status|reload)\b/;
+    H.messort = (e, weg) => {
+        const t = e && typeof e === "object" ? String(e.message || e).replace(/\s+/g, " ") : "";
+        if ((!weg || MESSORT_WEG.test(weg)) && t && !e.messort) e.messort = (!weg || t.startsWith(weg) ? "" : weg + ": ") + t.slice(0, 280);
+        return e;
+    };
+    // DIE WERKBANK der Sitzung (POST mit Frist)
+    H.wb = (weg, nutz, ms = 120000) =>
+        new Promise((ja, nein0) => {
+            const nein = (e) => nein0(H.messort(e, weg));
+            const q = http.request({ host: "127.0.0.1", port: W, path: weg, method: "POST", agent: false, headers: { "Content-Type": "application/json" } }, (r) => {
+                let d = "";
+                r.on("data", (c) => (d += c));
+                r.on("end", () => {
+                    try {
+                        ja(JSON.parse(d));
+                    } catch (_e) {
+                        nein(new Error(weg + ": " + d.slice(0, 200)));
+                    }
+                });
+            });
+            q.setTimeout(Math.max(1000, ms), () => q.destroy(new Error(weg + " ohne Antwort binnen " + Math.round(ms / 1000) + " s")));
+            q.on("error", nein);
+            q.end(JSON.stringify(nutz || {}));
+        });
+    // ein Funktionsrumpf in der Seite der Welt (r = Welt, T = THREE), wie `werkbank eval`
+    H.evalWelt = async (code, ms) => {
+        const a = await H.wb("/eval", { code }, ms);
+        if (!a || a.fehler) throw new Error("werkbank eval: " + (a && a.fehler) + " " + JSON.stringify((a && a.stapel) || []));
+        return a.ergebnis;
+    };
+    // eine frische Welt in der Sitzung (die Grundstellung der Maschine: Spielstand weg, die Seite neu)
+    H.grundstellung = () => {
+        const p = require("child_process").spawnSync(process.execPath, [process.env.PUNKTE_MASCHINE, "grundstellung"], {
+            encoding: "utf8",
+            env: process.env,
+            timeout: 240000,
+        });
+        if (p.status !== 0) throw H.messort(new Error("grundstellung: " + String((p.stdout || "") + (p.stderr || "")).trim().split(/\r?\n/).slice(-2).join(" | ")));
+    };
+    // DER BROWSER DER SITZUNG
+    H.verbinde = async () => {
+        const pp = require("puppeteer");
+        // DER ANSCHLUSS ÜBER /status (die EINE Quelle, wie proben-welt tor.seite): die Werkbank nennt das Profil ihres Browsers —
+        // bis z216 suchte die Probe werkbank-profil-<W>-* im tmp, seit w11-profil-leck trägt der Starter ein Scratch-Profil
+        const st = await H.wb("/status", {}, 30000);
+        const profil = st && st.boot && st.boot.profil;
+        const kand = [profil && path.join(profil, "DevToolsActivePort")].filter((f) => f && fs.existsSync(f));
+        const fehl = [];
+        for (const f of kand) {
+            const [port, weg] = fs.readFileSync(f, "utf8").split(/\r?\n/);
+            let b = null;
+            try {
+                b = await pp.connect({ browserWSEndpoint: "ws://127.0.0.1:" + port + weg, defaultViewport: null, protocolTimeout: 600000 });
+                const seiten = await b.pages();
+                const page = seiten.find((p) => p.url().startsWith("http://localhost:" + S + "/"));
+                if (!page) throw new Error("keine Seite der Welt (" + seiten.map((p) => p.url()).join(" ") + ")");
+                const vorher = new Set(seiten);
+                // die souveräne Geste (window.confirm des Teilens, ein Dialog beim Verlassen) nimmt die Probe an — die Werkbank hört keinen
+                const ja = (d) => d.accept().catch(() => {});
+                page.on("dialog", ja);
+                // seit spielgang.K5 (29643272, 02.11.) fragt die Welt nie mehr über window.confirm, sondern über ihre eigene
+                // Oberfläche (#frage-dialog, `_frage`; die souveräne Geste `_sovereignGesture`) — der Hörer oben hört sie nicht, die
+                // Geste des Teilens stand offen, bis die Probe riss (bauen.K5#2 geteilt: „Waiting failed: 30000ms" seit 02.11.). Die
+                // Probe sagt dort Ja wie `frageJa` (scripts/lib/welt-boot.cjs), solange sie verbunden ist.
+                await page.evaluate(() => {
+                    const d = document.getElementById("frage-dialog");
+                    if (!d) return;
+                    const jaKlick = () => d.open && d.querySelector("#frage-ja").click();
+                    (window.__sitzungFrageJa = new MutationObserver(jaKlick)).observe(d, { attributes: true, attributeFilter: ["open"] });
+                    jaKlick();
+                });
+                H.beimAbbau(async () => {
+                    page.off("dialog", ja);
+                    await page.evaluate(() => (window.__sitzungFrageJa && window.__sitzungFrageJa.disconnect(), delete window.__sitzungFrageJa)).catch(() => {});
+                    await page.keyboard.up("KeyW").catch(() => {});
+                    for (const p of await b.pages().catch(() => [])) if (!vorher.has(p)) await p.close().catch(() => {});
+                    await page.bringToFront().catch(() => {});
+                    await b.disconnect();
+                });
+                Object.assign(H, { browser: b, page });
+                return { browser: b, page };
+            } catch (e) {
+                fehl.push(path.basename(path.dirname(f)) + ": " + e.message);
+                if (b) await b.disconnect().catch(() => {});
+            }
+        }
+        throw H.messort(new Error("kein Browser der Sitzung an :" + W + " (" + (fehl.join(" · ") || (profil ? "kein DevToolsActivePort in " + profil : "/status nennt kein Profil der Werkbank")) + ")"));
+    };
+    // DIE LINSE ALS BIBLIOTHEK
+    H.linse = (datei, namen, { argv = [], ersetze = [], stumm = {} } = {}) => {
+        const Module = require("module");
+        const f = path.resolve(datei);
+        let text = fs.readFileSync(f, "utf8").replace(/\r\n/g, "\n"); // die Anker in LF, wie auch immer der Baum auscheckt
+        for (const [alt, neu] of ersetze) {
+            const n = text.split(alt).length - 1;
+            if (n !== 1) throw new Error(datei + ": der Anker „" + alt.slice(0, 70) + "“ steht " + n + "× im Text (Soll 1) — die Linse änderte sich");
+            text = text.replace(alt, () => neu);
+        }
+        const wbt = require(path.resolve("scripts/lib/welt-boot.cjs"));
+        const ersatz = Object.assign({ hauptLauf: () => {} }, stumm);
+        const alt = Object.fromEntries(Object.keys(ersatz).map((k) => [k, wbt[k]]));
+        const av = process.argv;
+        Object.assign(wbt, ersatz);
+        process.argv = [av[0], f, ...argv];
+        try {
+            const m = new Module(f, module);
+            m.filename = f;
+            m.paths = Module._nodeModulePaths(path.dirname(f));
+            m._compile(text + "\n;module.exports = { " + namen.join(", ") + " };\n", f);
+            return m.exports;
+        } finally {
+            Object.assign(wbt, alt);
+            process.argv = av;
+        }
+    };
+    // DER EREIGNIS-STROM jeder Eingabe des Spielers (pointerdown · keydown · wheel, vor jedem Hörer der Seite) — wie die Linse
+    // diag-werkstatt-weg ihn je Seite anlegt; in einer schon geladenen Seite einmal
+    H.ereignisStrom = (page) =>
+        page.evaluate(() => {
+            if (window.__eingabeStrom) return;
+            const strom = (window.__eingabeStrom = []);
+            for (const typ of ["pointerdown", "keydown", "wheel"])
+                window.addEventListener(typ, (e) => strom.push({ was: typ === "keydown" ? e.code : typ === "wheel" ? "Rad" : "Klick", echt: e.isTrusted, t: performance.now() }), {
+                    capture: true,
+                    passive: true,
+                });
+        });
+    // DIE SEITE NEU im warmen Browser: warm der Zweit-Boot (nur die Seite neu: Platte, HTTP- und Shader-Cache bleiben), kalt vorher
+    // die Herkunft leer — IndexedDB (Welten, Platte, Chunk-Netze), localStorage, Cache- und Shader-Speicher — samt HTTP-Cache des
+    // Browsers und der Stand-Dateien des save-servers (Pflicht-OFFEN B: „IDB geleert, wie nach jedem Versions-Update"). Rückgabe
+    // die Uhr ab der Navigation (die Kontrolle von außen zählt ab ihr).
+    H.lade = async (page, { kalt = false } = {}) => {
+        if (kalt) {
+            const herkunft = "http://localhost:" + S;
+            await page.goto("about:blank", { waitUntil: "load", timeout: 60000 });
+            const c = await page.target().createCDPSession();
+            try {
+                await c.send("Storage.clearDataForOrigin", { origin: herkunft, storageTypes: "all" });
+                await c.send("Network.clearBrowserCache");
+            } finally {
+                await c.detach().catch(() => {});
+            }
+            for (const d of ["anazhRealmState.json", "anazhRealmState.json.bak", "anazhRealmPerf.json"]) fs.rmSync(d, { force: true });
+        }
+        const t0 = Date.now();
+        await page.goto(H.url, { waitUntil: "domcontentloaded", timeout: 120000 });
+        return t0;
+    };
+    // DER LAUF der Probe: ihr Ergebnis ist das JSON der Ausgabe; die Frist (H.FRIST_S) baut ab und schreibt den Stand `H.teil`
+    H.fahre = (fn) => {
+        let fertig = false;
+        const ende = async (code, j) => {
+            if (fertig) return;
+            fertig = true;
+            clearTimeout(uhr);
+            if (j !== undefined)
+                try {
+                    fs.writeFileSync(H.AUS, JSON.stringify(j));
+                } catch (e) {
+                    console.log("@@ Ausgabe: " + e.message);
+                }
+            for (const f of abbau.reverse()) await H.binnen(Promise.resolve().then(f).catch((e) => console.log("@@ Abbau: " + e.message)), 15000);
+            process.exit(code);
+        };
+        const uhr = setTimeout(() => {
+            H.fristRiss("Abbau, die Ausgabe trägt den Stand bis hier");
+            ende(3, H.teil);
+        }, H.FRIST_S * 1000);
+        Promise.resolve()
+            .then(() => fn(H))
+            .then(
+                (j) => ende(0, j),
+                (e) => {
+                    if (e && e.messort) console.log("@@PUNKTE@@ MESSORT " + e.messort);
+                    console.log("@@ PROBE-FEHLER " + String((e && e.stack) || e).split("\n").slice(0, 5).join(" | "));
+                    ende(2, H.teil);
+                }
+            );
+    };
+    return H;
+})();
+H.seite = {
+K: function k2Werkzeug(H, SPEC) {
+    const K = { H, SPEC, sicht: "ego" };
+    const j = (K.j = H.teil = { leiter: SPEC.leiter, adapter: null, sprossen: {} });
+    // DER ADAPTER DER SITZUNG: die Welt nennt ihn in ihrem Log (PUNKTE_SITZUNG_LOG) — Zeile der Probe und Feld des JSON
+    K.adapter = () => {
+        let z = null;
+        try {
+            const t = H.fs.readFileSync(String(process.env.PUNKTE_SITZUNG_LOG || ""), "utf8");
+            z = (/\[linse-gpu\][^\r\n]*/.exec(t) || [null])[0];
+        } catch (_e) {}
+        j.adapter = z || "[linse-gpu] ungenannt";
+        console.log(j.adapter);
+        return j.adapter;
+    };
+    // ein Funktionsrumpf in der Seite der Welt (r = Welt, T = THREE)
+    K.welt = (code, ms) => H.evalWelt(code, ms || 30000);
+    // DER MESSORT (spec/profiband/haushalt.json `messorte`): der Aufruf im Text heißt `K.messort("<ort>")` — so liest die Sitzung den Ort
+    // und stellt VOR dem Deckel um (punkte.cjs probeOrt); die Sicht vorher über K.sicht ("ego" | "third")
+    // DIE FRIST IM UMSTELLEN (Runde 4 GTX an 6066c757: 5 von 21 Stationen an stadt-voll „Frist der Probe 64 s gerissen“ ohne eine
+    // Zeile nach dem Adapter — die Werkbank ging je Ruf an den Anlauf vor die stehende Stadt, Ruf 2 74,2 s): reißt die Frist, während
+    // /umstellen läuft, sagt K.messort es an ihrem Rand selbst (H.fristRiss, die EINE Marke, mit Weg, Ort und Dauer) — der Läufer
+    // schreibt den Messort in den Grund (punkte.cjs abbruchVon), nie mehr eine stumme Frist. Die Zeile danach nennt die Takte und den
+    // Weg der Werkbank (`anlauf`: „stand“ — die Stadt des Orts stand, kein Anlauf · „gegangen“ — über den Anlauf)
+    K.messort = async (ort) => {
+        const t = H.sek();
+        const rand = setTimeout(() => H.fristRiss("im /umstellen " + ort + " seit " + (H.sek() - t).toFixed(1) + " s (der Ruf ab " + t + " s): der Messort trug die Frist, Abbau"),
+            Math.max(0, (H.rest() - 0.25) * 1000));
+        let a;
+        try {
+            a = await H.wb("/umstellen", { ort, sicht: K.sicht }, 120000);
+        } finally {
+            clearTimeout(rand);
+        }
+        if (!a || a.fehler) throw H.messort(new Error("/umstellen " + ort + ": " + ((a && a.fehler) || "ohne Antwort")), "/umstellen");
+        H.zeile("am Messort " + ort + " (" + K.sicht + ") nach " + (H.sek() - t).toFixed(1) + " s, " + a.takte + " Takte" + (a.anlauf ? ", Anlauf " + a.anlauf : ""));
+        return a;
+    };
+    K.warte = (ms) => H.schlaf(ms);
+    // JE SPROSSE EIN SCHRITT: ein Wurf ist keine Messung (die Sprosse bleibt ohne Ergebnis → UNGEMESSEN beim Namen), ein Wurf des
+    // Messorts endet die Probe (die Marke MESSORT); an der Frist bleibt die Sprosse ungemessen, nie geraten
+    K.schritt = async (n, f) => {
+        if (H.rest() < 2) {
+            H.zeile("S" + n + " an der Frist ausgelassen (" + H.sek() + " s)");
+            return null;
+        }
+        try {
+            return await f();
+        } catch (e) {
+            if (e && e.messort) throw e;
+            const t = String((e && e.message) || e).split("\n")[0].slice(0, 300);
+            H.zeile("S" + n + " warf: " + t);
+            j.sprossen[n] = { art: "fehler", text: t };
+            return null;
+        }
+    };
+    const kurz = (t) => String(t == null ? "" : t).slice(0, 300);
+    // DER STAND NACH JEDER SPROSSE (punkte.cjs keinUrteil (e)): die Ausgabe trägt jedes Ergebnis ganz, ehe die nächste Sprosse misst —
+    // reißt danach die Frist oder tötet die Leine die Probe, urteilt die Sprosse aus ihr (daneben geschrieben, dann umbenannt)
+    const setze = (n, e) => {
+        j.sprossen[n] = e;
+        try {
+            H.fs.writeFileSync(H.AUS + ".stand", JSON.stringify(j));
+            H.fs.renameSync(H.AUS + ".stand", H.AUS);
+        } catch (x) {
+            H.zeile("Stand: " + String((x && x.message) || x).split("\n")[0]);
+        }
+        return e;
+    };
+    K.zahl = (n, o) => setze(n, { art: "zahl", n: o.n, werte: o.werte || {}, ...(o.beleg ? { beleg: kurz(o.beleg) } : {}), ...(o.taeter ? { taeter: kurz(o.taeter) } : {}) });
+    K.nicht = (n, o) => setze(n, { art: "nicht", n: o.n, fehlt: kurz(o.fehlt) });
+    K.leser = (n, o) => setze(n, { art: "leser", fehlt: kurz(o.fehlt), wo: kurz(o.wo), ...(o.n != null ? { n: o.n } : {}) });
+    K.auge = (n, o) => setze(n, { art: "auge", bild: o.bild, pose: kurz(o.pose), vorbild: kurz(o.vorbild || (SPEC.sprossen[n] && SPEC.sprossen[n].auge && SPEC.sprossen[n].auge.vorbild)), ...(o.mass ? { mass: kurz(o.mass) } : {}) });
+    // DAS BILD EINER AUGEN-SPROSSE: der Ausgabe-Pfad der Spiel-Kamera (werkbank /bild) an fester Pose { px, py, pz, lx, ly, lz },
+    // abgelegt neben der Ausgabe der Probe (<AUS>-S<n>.png; die Abnahme der Werkbank legt ein ROT-Bild als -rot.png daneben)
+    K.bild = async (n, pose, mehr) => {
+        const datei = String(H.AUS).replace(/\.json$/i, "") + "-S" + n + ".png";
+        let a = null;
+        try {
+            a = await H.wb("/bild", Object.assign({ datei, w: 1280, h: 720 }, pose, mehr || {}), 90000);
+        } catch (e) {
+            a = { fehler: String((e && e.message) || e) };
+        }
+        const da = [a && a.datei, datei, datei.replace(/\.png$/i, "-rot.png")].find((f) => f && H.fs.existsSync(f));
+        if (!da) throw new Error("kein Bild S" + n + ": " + kurz(a && (a.fehler || a.abnahme)));
+        return { datei: da, abnahme: kurz(a && (a.abnahme || a.fehler)) };
+    };
+    K.ende = () => j;
+    return K;
+},
+SPEC: {"leiter":"mensch.nahrung.erdbau","sprossen":{"2":{"umfang":{"soll":1,"wort":"Acker, den Bewohner bewässern"},"masse":[{"key":"gruenDelta","wort":"Wuchs bewässert − unbewässert","soll":0,"richtung":">"},{"key":"grabenOhneBach","wort":"Gräben an Äckern ohne Bach","soll":0,"richtung":"≤"}]},"3":{"auge":{"pose":"60 m über der Mitte des Dorfs, 60 m südlich","vorbild":"Luftbild realer Reisterrassen und Mühlteiche (Banaue, Schwarzwald): Blindurteil ≤ 65 %, Terrassen über der Hang-Schwelle ≥ 80 %"}},"4":{"umfang":{"soll":1,"wort":"Polder mit Deich, Kanal und Pumpe (10³ km²)"},"masse":[{"key":"polderVoll","wort":"Polder voll nach Pumpe aus (ja = 1)","soll":1,"richtung":"≥"},{"key":"bruchRelief","wort":"Flut des Deichbruchs folgt dem Gefälle (ja = 1)","soll":1,"richtung":"≥"}]},"5":{"umfang":{"soll":1,"wort":"Talsperre oder Tagebau (≥ 10⁸ m³)"},"masse":[{"key":"seeFlaeche","wort":"Abweichung Stauseefläche","soll":0.1,"richtung":"≤"},{"key":"aue","wort":"Aue stromab geändert (Fläche, m²)","soll":0,"richtung":">"}]},"6":{"auge":{"pose":"Orbit über der Welt, Jahr 0 und 1000","vorbild":"Satellitenbild der Erde mit Umformung (Polder, Terrassen, Tagebaue): ≥ 1 % Land umgeformt, plausibel ≥ 90 %"}},"7":{"umfang":{"soll":64,"wort":"Welten mit Terraforming"},"masse":[{"key":"r","wort":"Terrassenhöhe ↔ 1/g (r)","soll":0,"richtung":">"}]}}},
+ZENSUS: async (r, T, arg) => {
+    const s = r.state;
+    const pm = s.playerMesh.position;
+    const offen = () => {
+        const o = typeof r._weltOffen === "function" ? r._weltOffen() : {};
+        return !o.leute && !o.leiber;
+    };
+    const alle = () => [...(r._bewohnerSiedlungen || new Map()).values()].filter((S) => S && S.plan);
+    await window.__gebautNach("die Siedlung am Messort (Zensus nahrung)", {
+        fertig: () => alle().some((S) => Array.isArray(S.liste) && S.liste.length > 0) && offen(),
+    });
+    const SL = alle().sort((a, b) => Math.hypot(a.ox - pm.x, a.oz - pm.z) - Math.hypot(b.ox - pm.x, b.oz - pm.z));
+    if (!SL.length) throw new Error("keine Siedlung mit Plan am Messort");
+    const plus = (o, k) => (o[k] = (o[k] || 0) + 1);
+    const acker = (x, z) => {
+        const a = {};
+        r._wegeBelagAt(x, z, a);
+        return a.acker || 0;
+    };
+    const Z = {
+        siedlungen: SL.length, bewohner: 0, berufe: {}, rollen: {}, slotRollen: {}, haeuser: 0, wagen: 0, fahrer: 0, staende: 0,
+        maerkte: 0, feldwege: 0, felder: [], jahre: [], feld10: 0, mahl: 0, mahlMitte: null, garten: null, kreaturen: 0, zahm: 0,
+        jaeger: 0, hirten: 0, spieler: { x: pm.x, z: pm.z }, nah: { ox: SL[0].ox, oz: SL[0].oz, name: SL[0].plan.name || null },
+    };
+    let mx = 0;
+    let mz = 0;
+    for (const S of SL) {
+        const P = S.plan;
+        if (Number.isFinite(P.jahr)) Z.jahre.push(P.jahr);
+        for (const sl of P.slots || []) {
+            Z.haeuser++;
+            const ro = typeof sl.rolle === "string" ? sl.rolle : "wohnhaus";
+            plus(Z.slotRollen, ro);
+            if (!Z.garten && /garten|gewaechs|glas|treib|farm/i.test(ro)) Z.garten = { x: S.ox + sl.x, z: S.oz + sl.z, rolle: ro };
+        }
+        for (const b of Array.isArray(S.liste) ? S.liste : []) {
+            Z.bewohner++;
+            const wer = String(b.beruf) + " " + String(b.rolle);
+            plus(Z.berufe, String(b.beruf));
+            plus(Z.rollen, String(b.rolle));
+            if (/jag|fisch|hirt/i.test(wer)) Z.jaeger++;
+            if (/hirt/i.test(wer)) Z.hirten++;
+            if (b.wagen) Z.fahrer++;
+            const z10 = r._bewohnerSoll(b, 10);
+            const z12 = r._bewohnerSoll(b, 12.5);
+            if (b.beruf === "feld" && z10 && !z10.drinnen && z10.ziel) Z.feld10++;
+            if (z12 && z12.akt === "mittag" && !z12.drinnen && z12.ziel) {
+                Z.mahl++;
+                mx += z12.ziel.x;
+                mz += z12.ziel.z;
+            }
+        }
+        Z.wagen += S.verkehr && Array.isArray(S.verkehr.wagen) ? S.verkehr.wagen.length : 0;
+        const st = (P.staende || []).length;
+        Z.staende += st;
+        if (st > 0) Z.maerkte++;
+        Z.feldwege += (P.feldwege || []).length;
+        for (const fd of P.felder || []) {
+            if (!fd || !Number.isFinite(fd.cx) || !Number.isFinite(fd.ex)) continue;
+            const x = S.ox + fd.cx;
+            const z = S.oz + fd.cz;
+            const c = Math.cos(fd.phi || 0);
+            const sn = Math.sin(fd.phi || 0);
+            const pt = (u, v) => [x + u * c - v * sn, z + u * sn + v * c];
+            let i = 0, ni = 0, a = 0, na = 0;
+            for (let p = -2; p <= 2; p++)
+                for (let q = -2; q <= 2; q++) {
+                    const w = pt((p / 2.5) * fd.ex, (q / 2.5) * fd.ez);
+                    ni++;
+                    if (acker(w[0], w[1]) >= 0.5) i++;
+                }
+            for (const t of [-1, -0.5, 0, 0.5, 1])
+                for (const uv of [[fd.ex + 2.5, t * fd.ez], [-(fd.ex + 2.5), t * fd.ez], [t * fd.ex, fd.ez + 2.5], [t * fd.ex, -(fd.ez + 2.5)]]) {
+                    const w = pt(uv[0], uv[1]);
+                    na++;
+                    if (acker(w[0], w[1]) >= 0.5) a++;
+                }
+            Z.felder.push({ x: +x.toFixed(2), z: +z.toFixed(2), phi: fd.phi || 0, ex: fd.ex, ez: fd.ez, m2: +(4 * fd.ex * fd.ez).toFixed(1), gemalt: +(i / ni).toFixed(3), rand: +(a / na).toFixed(3) });
+        }
+    }
+    if (Z.mahl) Z.mahlMitte = { x: mx / Z.mahl, z: mz / Z.mahl };
+    const C = s.creatures || [];
+    Z.kreaturen = C.length;
+    Z.zahm = C.filter((c) => c && c.userData && (c.userData.bond || 0) >= 0.5).length;
+    return Z;
+},
+WASSER: async (r, T, arg) => {
+    const span = r._voxelChunkConfig(0).span;
+    const flaechen = (x, z) => {
+        const ys = [];
+        for (let dz = -1; dz <= 1; dz++)
+            for (let dx = -1; dx <= 1; dx++) {
+                const n = r._wasserNetz(Math.floor(x / span) + dx, Math.floor(z / span) + dz);
+                const y = n ? r.constructor._wasserNetzHoehe(n, x, z) : null;
+                if (y !== null) ys.push(y);
+            }
+        return ys;
+    };
+    const nass = (x, z) => {
+        const g = r._bodenSichtAt(x, z) ?? r._voxelSurfaceY(x, z);
+        return flaechen(x, z).some((y) => y > g + 0.1);
+    };
+    const F = (arg.felder || []).filter((f) => f.gemalt >= 0.6 && f.rand <= 0.2);
+    let bew = 0, ohneBach = 0, wB = 0, nB = 0, wU = 0, nU = 0;
+    for (const f of F) {
+        const c = Math.cos(f.phi), sn = Math.sin(f.phi);
+        const pt = (u, v) => [f.x + u * c - v * sn, f.z + u * sn + v * c];
+        let w = 0;
+        for (let p = -3; p <= 3; p++)
+            for (let q = -2; q <= 2; q++) {
+                const a = pt((p / 3.5) * (f.ex + 3), (q / 2.5) * (f.ez + 3));
+                if (nass(a[0], a[1])) w++;
+            }
+        let bach = 0;
+        for (let k = 0; k < 24; k++) {
+            const a = (k / 24) * Math.PI * 2;
+            if (nass(f.x + Math.cos(a) * 30, f.z + Math.sin(a) * 30)) bach++;
+        }
+        const wu = typeof r._wuchsAt === "function" ? r._wuchsAt(f.x, f.z) : null;
+        if (w > 0) {
+            bew++;
+            if (!bach) ohneBach++;
+            if (Number.isFinite(wu)) (wB += wu), nB++;
+        } else if (Number.isFinite(wu)) (wU += wu), nU++;
+    }
+    return { aecker: F.length, bewaessert: bew, grabenOhneBach: ohneBach, gruenDelta: nB && nU ? +(wB / nB - wU / nU).toFixed(4) : null };
+}
+};
+H.fahre(async (H) => {
+    const K = H.seite.K(H, H.seite.SPEC);
+    K.adapter();
+    await (async (H, K) => {
+            await K.messort("dorf");
+            const ms = () => Math.max(5000, Math.floor((H.rest() - 3) * 1000));
+            const ruf = (name, arg) => K.welt("return await (" + H.seite[name] + ")(r, T, " + JSON.stringify(arg || {}) + ");", ms());
+            let Z = null, zf = "";
+            try {
+                Z = await ruf("ZENSUS");
+            } catch (e) {
+                zf = String((e && e.message) || e).slice(0, 200);
+            }
+            const z = () => {
+                if (!Z) throw new Error("kein Zensus der Siedlung: " + zf);
+                return Z;
+            };
+            const bau = (re) => Object.entries(z().slotRollen).filter(([k]) => re.test(k)).reduce((a, [, v]) => a + v, 0);
+            const rollen = () => Object.keys(z().slotRollen).join("/");
+            await K.schritt(3, async () => {
+                const n = bau(/terras|teich|damm|muehl|wehr/i);
+                if (n < 1) return K.nicht(3, { n, fehlt: "Terrasse, Mühlteich, Damm: kein Erdbau der Bewohner im Plan (Rollen " + rollen() + ")" });
+                const b = await K.bild(3, { px: z().nah.ox, py: "+60", pz: z().nah.oz + 60, lx: z().nah.ox, ly: "+0", lz: z().nah.oz });
+                K.auge(3, { bild: b.datei, pose: "60 m über der Mitte des Dorfs, 60 m südlich", mass: n + " Erdbauten" });
+            });
+            await K.schritt(4, async () => K.nicht(4, { n: bau(/polder|deich|kanal|pumpe/i), fehlt: "Polder, Deich und Kanal über 10³ km²: keiner im Plan (Rollen " + rollen() + ")" }));
+            await K.schritt(5, async () => K.nicht(5, { n: bau(/talsperre|stau|tagebau/i), fehlt: "Talsperre oder Tagebau (10⁸ m³): keiner im Plan" }));
+            await K.schritt(6, async () => K.nicht(6, { n: bau(/terras|teich|damm|polder|deich|kanal|tagebau/i), fehlt: "planetare Umformung über 1000 Jahre: die Bewohner formen kein Land, die Sitzung rafft Stunden" }));
+            await K.schritt(7, async () => K.nicht(7, { n: 1, fehlt: "64 Welten mit Terraforming: die Sitzung trägt eine Welt" }));
+            await K.schritt(2, async () => {
+                const w = await ruf("WASSER", { felder: z().felder });
+                H.zeile("Wasser am Acker: " + w.bewaessert + " von " + w.aecker + " gemalten Äckern, ohne Bach " + w.grabenOhneBach + ", Wuchs Δ " + w.gruenDelta);
+                if (w.bewaessert < 1) return K.nicht(2, { n: 0, fehlt: "Bewohner bewässern: an " + w.aecker + " gemalten Äckern liegt keine gezeichnete Wasser-Fläche (der Leser von gelaende.K2#1) — kein Graben der Bewohner" });
+                K.zahl(2, { n: w.bewaessert, werte: { gruenDelta: w.gruenDelta, grabenOhneBach: w.grabenOhneBach }, beleg: w.aecker + " Äcker, bewässert " + w.bewaessert, taeter: w.grabenOhneBach > 0 ? "Wasser am Acker ohne Bach im Umkreis 30 m" : null });
+            });
+        })(H, K);
+    return K.ende();
+}); 7804 C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\e80f9c5d-radeon\karte2.mensch.nahrung.erdbau_3.json 45
+[linse-gpu] amd/rdna-3
+@@ 16.5 s · am Messort dorf (ego) nach 16.5 s, 577 Takte
+@@ 16.6 s · Wasser am Acker: 0 von 5 gemalten Äckern, ohne Bach 0, Wuchs Δ null
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
+[linse-gpu] amd/rdna-3

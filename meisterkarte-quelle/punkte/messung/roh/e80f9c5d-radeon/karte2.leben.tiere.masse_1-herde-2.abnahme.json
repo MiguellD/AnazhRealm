@@ -1,0 +1,161 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.466",
+  "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 0,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0,
+   "taeter": {},
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Herde",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 50.49,
+  "gestalt": [
+   "tier:wesen 0",
+   "tier:wesen 1",
+   "tier:wesen 2",
+   "tier:wesen 3",
+   "tier:wesen 4"
+  ],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -562.002,
+   56.623,
+   -852.953
+  ],
+  "blick": [
+   0.3542,
+   -0.34968,
+   -0.86733
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 101.4,
+  "sigma": 42.2,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "wahl": {
+  "versucht": 3,
+  "gewaehlt": 4,
+  "posen": [
+   {
+    "k": 0,
+    "kamera": [
+     -581.5,
+     58.02,
+     -867.76
+    ],
+    "rot": [
+     "Ziel Herde verdeckt von Laub baum_eiche in 48.97 m"
+    ],
+    "ms": 228
+   },
+   {
+    "k": 2,
+    "kamera": [
+     -572.726,
+     58.199,
+     -859.073
+    ],
+    "rot": [
+     "Ziel Herde verdeckt von Laub baum_eiche in 48.93 m"
+    ],
+    "ms": 187
+   },
+   {
+    "k": 4,
+    "kamera": [
+     -562.002,
+     56.623,
+     -852.953
+    ],
+    "rot": [],
+    "ms": 6546
+   }
+  ],
+  "ms": 6961
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Herde im Bild frei 50.49 m · Luma 101.4 σ 42.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.466 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 3 Posen",
+ "rot": [],
+ "urteil": "GRÜN",
+ "klasse": {
+  "ausdruck": "^tier",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 11,
+  "kenn": {
+   "n": 8,
+   "tw": 1440,
+   "th": 810,
+   "ms": 2009,
+   "wechsel": 932190
+  },
+  "rinde": null,
+  "toene": [
+   "tier-satz=255/80/80",
+   "tier:bestaeuber=80/255/80",
+   "tier:wesen=80/120/255"
+  ],
+  "klassen": {
+   "tier-satz": {
+    "objekte": 4,
+    "pixel": 67
+   },
+   "tier:wesen": {
+    "objekte": 55,
+    "pixel": 252
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\e80f9c5d-radeon\\karte2.leben.tiere.masse_1-herde-2.maske.png"
+ }
+}
