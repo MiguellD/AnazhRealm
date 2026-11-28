@@ -1,0 +1,112 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.466",
+  "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 0,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "nvidia pascal",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0,
+   "taeter": {},
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 20,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   0,
+   92.405,
+   0
+  ],
+  "blick": [
+   0,
+   0,
+   1
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 82,
+  "sigma": 27,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME ROT [kein bauSatz im Bild: 0.0 % < 2.0 %] · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 20 m · Luma 82 σ 27 schwarz 0.0 % weiß 0.0 % · Stand 18.546.466 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Inhalt bauSatz 0.0 % (≥ 2.0 %)",
+ "rot": [],
+ "inhalt": {
+  "rot": [
+   {
+    "schluessel": "imBild.bauSatz",
+    "grund": "kein bauSatz im Bild: 0.0 % < 2.0 %"
+   }
+  ],
+  "zeile": "Inhalt bauSatz 0.0 % (≥ 2.0 %)"
+ },
+ "urteil": "ROT",
+ "klasse": {
+  "ausdruck": "^bauSatz([-_:].*)?$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "kenn": {
+   "n": 8,
+   "tw": 1440,
+   "th": 810,
+   "ms": 565,
+   "wechsel": 687493
+  },
+  "rinde": null,
+  "toene": [
+   "bauSatz=255/80/80"
+  ],
+  "klassen": {},
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\e80f9c5d-gtx\\auge-erleben-bild-s2-rot.maske.png"
+ }
+}
