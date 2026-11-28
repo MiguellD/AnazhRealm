@@ -2302,15 +2302,16 @@ async function WELLE_L(ort) {
                 gnade: p.respawnGraceUntil,
                 ort: { x: pm.position.x, y: pm.position.y, z: pm.position.z },
             };
-            // DER WOLF STEHT WINDAB (landmarken-9 Kopf 2): 6 m vom Spieler in der Richtung, in die der Wind seine Witterung trägt
-            // (`_rauchWindAt` am Spieler, dieselbe Uhr wie die Witterung `_scentAt`: cos > 0 heißt windab). Bis hier stand er fest
-            // 6 m nördlich — am Start 34/−34 roch er den Spieler nur, wenn der Wind gerade nach Norden wehte (Posten 5 „kein Biss
-            // im Takt“ 2 von 3 Läufen); in Windstille trägt der Mäander nach allen Seiten, dann bleibt Norden.
+            // DER WOLF STEHT IM RING DER HETZE, WINDAB (landmarken-9 Kopf 2): 0,8 × jagd.hetzM vom Spieler (das Gesetz hetzt ab
+            // d ≤ hetzM), in der Richtung, in die der Wind seine Witterung trägt (`_rauchWindAt` am Spieler, die Uhr der Witterung
+            // `_scentAt`: cos > 0 heißt windab; in Windstille trägt der Mäander nach allen Seiten, dann Norden). Bis hier stand er
+            // 6,01 m fern — GENAU auf dem Ring hetzM 6 m: lag sein Platz nach der Geburt knapp darüber, pirschte er zum Ring und
+            // stand dort 1 500 Takte in „jagd“ auf 6,0 m (Spur `jagdSpur`, Posten 5 „kein Biss im Takt“ in 3 von 7 Läufen)
             const wolfAb = (() => {
                 const wd = {};
                 r._rauchWindAt(pm.position.x, pm.position.z, s._simZeit, A.SCENT.hoeheM, null, wd);
-                const n = Math.hypot(wd.x, wd.z);
-                return wd.ms > 0 && n > 0 ? { x: (6 * wd.x) / n, z: (6 * wd.z) / n } : { x: 0, z: 6 };
+                const [n, m] = [Math.hypot(wd.x, wd.z), 0.8 * A._verhaltenGesetz().jagd.hetzM];
+                return wd.ms > 0 && n > 0 ? { x: (m * wd.x) / n, z: (m * wd.z) / n } : { x: 0, z: m };
             })();
             // der Spieler steht auf dem Boden (seine Füße auf der Höhe, auf der auch die Tiere stehen), auf freiem Feld: kein Bau
             // in 12 m um ihn und den Wolf (die Start-Plattform stünde zwischen ihnen)
