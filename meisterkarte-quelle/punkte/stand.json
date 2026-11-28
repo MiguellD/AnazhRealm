@@ -15441,7 +15441,7 @@
   },
   "karte2.mensch.bau.bauen": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.bau.bauen#1 radeon: Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, foundry-bruecke.js +123) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.mensch.bau.bauen#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, foundry-core.js +79) — zuletzt an e80f9c5d: die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 185 s von karte2.mensch.bau.bauen#1) — offen, UNGEMESSEN · karte2.mensch.bau.bauen#2 radeon: ungemessen (R10) · karte2.mensch.bau.bauen#2 gtx: ungemessen (R10) · karte2.mensch.bau.bauen#3 radeon: ungemessen (R10) · karte2.mensch.bau.bauen#3 gtx: ungemessen (R10) · karte2.mensch.bau.bauen#4 radeon: ungemessen (R10) · karte2.mensch.bau.bauen#4 gtx: ungemessen (R10) · karte2.mensch.bau.bauen#5 radeon: ungemessen (R10) · karte2.mensch.bau.bauen#5 gtx: ungemessen (R10) · karte2.mensch.bau.bauen#6 radeon: ungemessen (R10) · karte2.mensch.bau.bauen#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.bau.bauen#1 radeon: Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, foundry-bruecke.js +123) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.mensch.bau.bauen#1 gtx: ROT: fachwerk Labor ↔ Welt an derselben Kamera: 45.2 % (Soll ≤ 2,1 % über der Gestalt beider Seiten) [Differenz 0.4519 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · WebGPU pascal an e80f9c5d · karte2.mensch.bau.bauen#2 radeon: ungemessen (R10) · karte2.mensch.bau.bauen#2 gtx: ungemessen (R10) · karte2.mensch.bau.bauen#3 radeon: ungemessen (R10) · karte2.mensch.bau.bauen#3 gtx: ungemessen (R10) · karte2.mensch.bau.bauen#4 radeon: ungemessen (R10) · karte2.mensch.bau.bauen#4 gtx: ungemessen (R10) · karte2.mensch.bau.bauen#5 radeon: ungemessen (R10) · karte2.mensch.bau.bauen#5 gtx: ungemessen (R10) · karte2.mensch.bau.bauen#6 radeon: ungemessen (R10) · karte2.mensch.bau.bauen#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.bau.bauen#1",
@@ -15458,10 +15458,9 @@
      "id": "karte2.mensch.bau.bauen#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, foundry-core.js +79) — zuletzt an e80f9c5d: die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 185 s von karte2.mensch.bau.bauen#1) — offen, UNGEMESSEN",
-     "ungemessen": true,
+     "zahl": "fachwerk Labor ↔ Welt an derselben Kamera: 45.2 % (Soll ≤ 2,1 % über der Gestalt beider Seiten) [Differenz 0.4519 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · WebGPU pascal",
+     "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
+     "grund": "ROT: fachwerk Labor ↔ Welt an derselben Kamera: 45.2 % (Soll ≤ 2,1 % über der Gestalt beider Seiten) [Differenz 0.4519 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · WebGPU pascal",
      "r6": "konsum",
      "beide": true
     },
@@ -37596,7 +37595,7 @@
   "ohne": 3346
  },
  "kopfVoll": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
- "zeit": "2026-11-28T12:00:55.941Z",
+ "zeit": "2026-11-28T12:07:52.006Z",
  "vorher": "e80f9c5d",
  "bilanz": {
   "gewinn": [],
