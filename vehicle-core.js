@@ -350,6 +350,9 @@
         laterne: { color: 0xffe0a8, emissive: 0xffb45a, ei: 1.0, roughness: 0.3, metalness: 0, stoff: "licht", seh: "glut" },
         lichtKante: { color: 0xe6fbff, emissive: 0x9fe8ff, ei: 1.6, roughness: 0.25, metalness: 0, stoff: "licht", seh: "glut" },
         kanzel: { color: 0x1d3440, roughness: 0.05, metalness: 0.55, durch: 0.62, stoff: "glas", seh: "glas" }, // das Glas der Kanzel: getönt, spiegelnd
+        // das lohgegerbte Segeltuch (Eichenlohe färbt das Leinen rotbraun, das Segel der Ewer und Zillen); die Stoff-Tafel kennt
+        // kein Tuch — es trägt die Faser-Zeile leder, bis sie eins kennt (offen benannt, same.physik.flug#3)
+        segeltuch: { color: 0x8e5236, roughness: 0.92, metalness: 0, stoff: "leder", seh: "stoff" },
         // DER KÖRPER JEDER ZEIT (EPOCHE_GESETZ `koerper`): nur „heute" trägt den Lack des Samens — die Stufen davor und danach
         // tragen den Stoff ihrer Zeit, damit die Achse sich auf einen Blick liest (am 02.11. waren heute und Zukunft im selben
         // Azurblau kaum zu trennen): der Motorwagen das Wagengrün der Karosseriebauer (Uni, kein Metallic), die Zukunft eine
@@ -3240,6 +3243,223 @@
             rumpf: R,
         });
     }
+    // ── DER RUMPF IM WASSER UND DAS SEGEL (same.physik.flug#3 „Schwimmen und Segeln: Auftrieb und Widerstand in Wasser und Wind“,
+    // rein additiv — ohne `rumpf` im Fahr-Satz byte-gleich). Schwimmt der Rumpf (die Tiefe des Wirts e.tiefe > 0), trägt ihn das
+    // Wasser, nie ein Reifen: längs der Reib-Widerstand der benetzten Haut (ITTC 1957: C_F = 0,075 / (log Re − 2)², × die
+    // Formzahl 1 + k), quer der Lateralplan als Flügel kleiner Streckung (Jones 1946: C_L = π/2 · Λ · λ, Λ = 2 T / L — der Spiegel
+    // der Wasserfläche verdoppelt die Tiefe) und sein Querstrom (C_D 1), dazu das Seitenschwert als Flügel (C_L = 2π Λ / (Λ + 2)
+    // · λ, sein induzierter Widerstand C_L² / (π Λ e) zieht längs). Das Wellen-Tal begrenzt die Verdränger-Fahrt bei der Froude-
+    // Zahl 0,4 (die Rumpfgeschwindigkeit 0,4 · √(g L_wl): die Welle des Rumpfs ist so lang wie er). Das Segel (Spritsegel, das
+    // Segel des Kahns auf Elbe und Havel, mit Seitenschwertern — Ewer, Zille): Fläche aus der Verdrängung (SA/D = A / V^⅔ = 16,
+    // das Fahrtenboot nach Brewer, Understanding Boat Design, 16–18), Höhe aus der Streckung h² / A = 2; seine Beiwerte nach
+    // Marchaj (Aero-Hydrodynamics of Sailing, 1979: das Una-Segel C_L max ≈ 1,4 bei α ≈ 25°, vor dem Wind C_D ≈ 1,3): angelegt
+    // C_L = 2π α / (1 + 2 / Λ) bis C_L max, C_D = C_D0 + C_L² / (π Λ e); abgerissen die Platte C_N = 1,3 sin α. Der Segler trimmt
+    // die Schot auf den größten Vortrieb, den sein Aufrichten trägt: das Krängen F_quer · h_DP bleibt unter dem Moment, bei dem
+    // der Bord das Wasser schöpft (Form: Δ g BM sin φ, die Mannschaft auf der hohen Kante: Last · g · B/2 · cos φ, φ_max =
+    // atan(Freibord / (B/2))). Daraus wächst die Polare: gegen den Wind kein Vortrieb (der Winkel der Widerstände von Segel und
+    // Rumpf, Lanchester), am Wind und raum die Fahrt. ANNAHMEN (unbelegt, beim Namen): formK, schwertAnteil (Laser 0,25 m² auf
+    // 7,06 m² Segel: 3,5 %), ceHoch, ruderTau, ruderDreh. Offen: die Krängung im Bild, das Wellen-Spektrum statt des Tals.
+    const SEGEL_GESETZ = Object.freeze({
+        sad: 16, // Segelfläche ÷ Verdrängung^⅔ (Brewer 16–18)
+        streckung: 2, // h² / A des Spritsegels
+        clMax: 1.4, // Marchaj: Una-Segel
+        alphaAb: 0.44, // rad: der Abriss bei α ≈ 25°
+        cd0: 0.05, // Profil und Mast
+        oswald: 0.8, // e des induzierten Widerstands
+        cnPlatte: 1.3, // die abgerissene Platte, vor dem Wind C_D ≈ 1,3
+        schotMax: 1.48, // rad: der Baum bis 85° aus der Mitte
+        trimmSchritte: 24, // die Stufen der Schot, über die der Segler sucht
+        ceHoch: 0.42, // der Druckpunkt über dem Hals ÷ Vorliek (ANNAHME)
+        schwertAnteil: 0.04, // Seitenschwert ÷ Segelfläche (ANNAHME, Laser 3,5 %)
+        schwertStreckung: 2.5, // Tiefe ÷ Sehne des Schwerts
+        nu: 1.14e-6, // m²/s: das Süßwasser bei 15 °C (ITTC)
+        formK: 0.25, // 1 + k des Plattbodens (ANNAHME)
+        cdQuer: 1.0, // der Querstrom am Lateralplan
+        fnRumpf: 0.4, // die Froude-Zahl der Rumpfgeschwindigkeit
+        ruderTau: 0.6, // s: die Gier folgt dem Ruder (ANNAHME)
+        ruderDreh: 0.3, // rad/s: der Ruderer dreht das stehende Boot mit einem Riemen (ANNAHME)
+    });
+    // DAS SEGEL EINES RUMPFS (`P.segel` > 0 trägt eins): Fläche, Vorliek, Hals über dem Wasser, Höhe des Druckpunkts über der Mitte
+    // des Lateralplans und das Seitenschwert — EINE Quelle für den Bau (`bauBoot`) und die Fahrt (`bootFahrt`). Ohne Segel null.
+    function bootSegel(R, P) {
+        if (!(P && P.segel > 0)) return null;
+        const S = SEGEL_GESETZ;
+        const V = (R.masse + R.last) / BOOT_GESETZ.rhoWasser;
+        const A = S.sad * Math.pow(V, 2 / 3),
+            h = Math.sqrt(S.streckung * A);
+        const schwert = S.schwertAnteil * A;
+        return { A, h, hals: R.kiel + R.D, ceY: R.kiel + R.D + S.ceHoch * h, schwert, schwertTief: Math.sqrt(S.schwertStreckung * schwert) };
+    }
+    // DIE FAHRT DES RUMPFS (Leser: `exportDrive.rumpf` → `fahrGesetz.rumpf` → der Fahr-Schritt): je Masse die Beiwerte des Wassers
+    // und des Winds, die das Gesetz oben nennt. m = Rumpf + Last (die Mannschaft, für die er gebaut ist).
+    function bootFahrt(P) {
+        const R = P.rumpf || bootRumpf(P),
+            S = SEGEL_GESETZ,
+            rho = BOOT_GESETZ.rhoWasser,
+            g = FAHR.G;
+        const m = R.masse + R.last,
+            lwl = R.L * BOOT_GESETZ.lwl,
+            T = R.T + R.kiel;
+        const haut = lwl * (R.Bb + 2 * T); // die benetzte Haut des Plattbodens
+        const lp = lwl * T,
+            lamH = (2 * T) / lwl; // der Lateralplan und seine gespiegelte Streckung
+        const Sg = bootSegel(R, P);
+        const lamS = 2 * S.schwertStreckung; // das Schwert am Spiegel der Wasserfläche
+        const aS = Sg ? (2 * Math.PI * lamS) / (lamS + 2) : 0;
+        // das Aufrichten am Kipp-Winkel (der Bord am Wasser): Form + Mannschaft auf der hohen Kante
+        const phi = Math.atan(Math.max(0.01, R.D - R.T) / (R.B / 2));
+        const bm = (R.Bb * R.Bb) / (12 * Math.max(0.01, R.T));
+        const aufrichten = m * g * bm * Math.sin(phi) + R.last * g * (R.B / 2) * Math.cos(phi);
+        const Z = muskel(P.antrieb); // der Ruderer: seine Kraft und Leistung auf DIESE Masse (carPhys rechnet sie aufs Gleiten)
+        return {
+            m,
+            // die Wasserlinie über der Unterkante des Kiels (Archimedes des Rumpfs mit seiner Last, `bootRumpf` T) und der Anteil
+            // der Seitenhöhe, den sie taucht — der Wirt legt den Rumpf daran ins Wasser (`_fahrzeugGestalt`), nie an eine Hülle aus Blech
+            linie: R.kiel + R.T,
+            anteil: R.T / R.D,
+            ruder: Z && Z.zug ? { a: (Z.zug.tiere * Z.zug.kraftN) / m, p: (Z.zug.tiere * Z.zug.leistungW) / m } : null,
+            lwl,
+            kHaut: (0.5 * rho * haut * (1 + S.formK)) / m, // × C_F(Re) · v²
+            kLift: (0.5 * rho * (lp * (Math.PI / 2) * lamH + (Sg ? Sg.schwert * aS : 0))) / m, // × |v| · v_quer
+            kQuer: (0.5 * rho * lp * S.cdQuer) / m, // × |v_quer| · v_quer
+            kInd: Sg ? (0.5 * rho * Sg.schwert * aS * aS) / (Math.PI * lamS * SEGEL_GESETZ.oswald) / m : 0, // × v_quer² längs
+            vmax: S.fnRumpf * Math.sqrt(g * lwl),
+            // der Hebel des Krängens: vom Druckpunkt des Segels über der Wasserlinie (y = 0 ist die Unterkante des Kiels, die
+            // Wasserlinie liegt bei T) zum Druckpunkt des Schwerts darunter (0,45 seiner Tiefe)
+            segel: Sg ? { A: Sg.A, fMax: aufrichten / (Sg.ceY - T + 0.45 * Sg.schwertTief) } : null,
+            // DIE KRÄNGUNG (Leser: `fahrRumpf` → z.krang → die Wank-Feder in `fahrStand` → das Bild): das Aufrichten der Form
+            // (m · g · BM, × sin φ) und der Mannschaft auf der hohen Kante (× cos φ), der Kipp-Winkel (der Bord am Wasser) und der
+            // Hebel des Segels — dieselben Größen, aus denen `segel.fMax` steht
+            kraeng: { form: m * g * bm, mann: R.last * g * (R.B / 2), kipp: phi, arm: Sg ? Sg.ceY - T + 0.45 * Sg.schwertTief : 0 },
+            // die Form, aus der die Welle steht (`rumpfWelleGesetz` rechnet ihre Beiwerte in `fahrGesetz` — die Potenzen der
+            // Regression stehen nie im Rezept: Browser und node rechnen Math.pow nicht bit-gleich, der Umschlag ist eingefroren)
+            welleForm: { L: lwl, B: R.Bb + 2 * Math.tan(R.flare) * R.T, Bb: R.Bb, T: R.T, V: m / rho },
+        };
+    }
+    // DER WELLEN-WIDERSTAND DES RUMPFS (Holtrop & Mennen 1982, „An approximate power prediction method“, ISP 29; Holtrop 1984,
+    // „A statistical re-analysis of resistance and propulsion data“, ISP 31 — die Regression über 334 Modelle): unter Fn 0,40
+    // R_W = c1·c2·c5·∇·ρ·g·exp(m1·Fn^d + m4·cos(λ·Fn⁻²)) mit m4 = c15·0,4·exp(−0,034·Fn^−3,29), über Fn 0,55 dieselbe Form mit c17 und
+    // m3, dazwischen die Gerade der beiden (Holtrop 1984). Der Rumpf liefert L (Wasserlinie), B (Breite in ihr: Boden + Ausfall), T, ∇;
+    // C_M ist das Trapez seines Spants, C_B = ∇ ÷ (L·B·T), C_P = C_B ÷ C_M. ANNAHMEN: C_WP = (1 + 2·C_B) ÷ 3 (Schneekluth), lcb 0
+    // (der Rumpf ist vorn wie hinten), kein Wulst (c2 = 1), kein getauchter Spiegel (c5 = 1: die Enden des Kahns biegen auf, das
+    // Spitzboot hat Steven). Gültig nach der Regression für L/B 3,9–15 und C_P 0,55–0,85 — der Kahn 9,1 / 0,60, das Spitzboot
+    // 6,4 / 0,56. F = `bootFahrt.welleForm` → die Beiwerte je Masse (∇·ρ·g ÷ m = g; Leser: `rumpfWelle` im Fahr-Schritt).
+    function rumpfWelleGesetz(F) {
+        const g = FAHR.G,
+            { L, B, T, V } = F;
+        const CM = (F.Bb + B) / (2 * B),
+            CB = V / (L * B * T),
+            CP = CB / CM,
+            CWP = (1 + 2 * CB) / 3,
+            LR = L * (1 - CP),
+            BL = B / L,
+            LV = (L * L * L) / V;
+        const iE =
+            1 +
+            89 *
+                Math.exp(
+                    -Math.pow(L / B, 0.80856) *
+                        Math.pow(1 - CWP, 0.30484) *
+                        Math.pow(1 - CP, 0.6367) *
+                        Math.pow(LR / B, 0.34574) *
+                        Math.pow((100 * V) / (L * L * L), 0.16302)
+                );
+        const c7 = BL < 0.11 ? 0.229577 * Math.pow(BL, 0.33333) : BL < 0.25 ? BL : 0.5 - 0.0625 / BL;
+        const c16 = CP < 0.8 ? 8.07981 * CP - 13.8673 * CP * CP + 6.984388 * CP * CP * CP : 1.73014 - 0.7067 * CP;
+        return {
+            gL: g * L,
+            a1: g * 2223105 * Math.pow(c7, 3.78613) * Math.pow(T / B, 1.07961) * Math.pow(90 - iE, -1.37565), // c1 · g
+            m1: (0.0140407 * L) / T - (1.75254 * Math.cbrt(V)) / L - 4.79323 * BL - c16,
+            a17: g * 6919.3 * Math.pow(CM, -1.3346) * Math.pow(V / (L * L * L), 2.00977) * Math.pow(Math.max(0, L / B - 2), 1.40692),
+            m3: -7.2035 * Math.pow(BL, 0.326869) * Math.pow(T / B, 0.605375),
+            c15: LV < 512 ? -1.69385 : LV < 1726.91 ? -1.69385 + (L / Math.cbrt(V) - 8) / 2.36 : 0,
+            lam: L / B < 12 ? 1.446 * CP - 0.03 * (L / B) : 1.446 * CP - 0.36,
+        };
+    }
+    // die Verzögerung der Welle [m/s²] bei der Fahrt v (Betrag) — der Fahr-Schritt nimmt sie halb-implizit in den Widerstand längs
+    function rumpfWelle(W, v) {
+        if (!W || !(v > 0.05)) return 0;
+        const Fn = v / Math.sqrt(W.gL);
+        const form = (a, m, f) => a * Math.exp(m * Math.pow(f, -0.9) + W.c15 * 0.4 * Math.exp(-0.034 * Math.pow(f, -3.29)) * Math.cos(W.lam / (f * f)));
+        if (Fn <= 0.4) return form(W.a1, W.m1, Fn);
+        if (Fn >= 0.55) return form(W.a17, W.m3, Fn);
+        const A = form(W.a1, W.m1, 0.4);
+        return A + ((Fn - 0.4) / 0.15) * (form(W.a17, W.m3, 0.55) - A);
+    }
+    // DIE BEIWERTE DES SEGELS bei Anstellwinkel α (rad, 0 … π; sa = sin α, ca = cos α): angelegt bis zum Abriss, sonst die
+    // Platte — das größere Heben. Schreibt [cl, cd] in `aus` (der Löser ruft sie bis 25× je Schritt: kein Array, kein Winkel je Ruf).
+    function segelBeiwert(a, aus, sa, ca) {
+        const S = SEGEL_GESETZ;
+        if (sa === undefined) {
+            sa = Math.sin(a);
+            ca = Math.cos(a);
+        }
+        const cn = S.cnPlatte * sa;
+        let cl = cn * ca,
+            cd = S.cd0 + cn * sa;
+        if (a <= S.alphaAb) {
+            const c = Math.min((2 * Math.PI * a) / (1 + 2 / S.streckung), S.clMax);
+            if (c > cl) {
+                cl = c;
+                cd = S.cd0 + (c * c) / (Math.PI * S.streckung * S.oswald);
+            }
+        }
+        const o = aus || [0, 0];
+        o[0] = cl;
+        o[1] = cd;
+        return o;
+    }
+    const _segelCl = [0, 0];
+    // das Gitter der Schot (fest je Gesetz): je Stellung d_i sein cos und sin — α = β − d_i über die Additionstheoreme
+    const _schotGitter = (() => {
+        const S = SEGEL_GESETZ,
+            n = S.trimmSchritte,
+            G = new Float64Array(3 * (n + 1));
+        for (let i = 0; i <= n; i++) {
+            const d = (S.schotMax * i) / n;
+            G[3 * i] = d;
+            G[3 * i + 1] = Math.cos(d);
+            G[3 * i + 2] = Math.sin(d);
+        }
+        return G;
+    })();
+    // DER SEGLER AN DER SCHOT: zum scheinbaren Wind aus β (rad vom Bug, 0 … π) mit dem Staudruck × Fläche qA [N] die Stellung des
+    // Baums, die den größten Vortrieb gibt, solange die Querkraft das Aufrichten fMax [N] nicht übersteigt (kann keine es, die
+    // kleinste Querkraft: er fiert). → [Vortrieb, Querkraft, Schot-Winkel] in N, N, rad. Fällt der Anstellwinkel auf 0 (das Tuch
+    // killt), sind alle weiteren Stellungen dieselbe: die Suche endet dort, das Ergebnis ist byte-gleich dem ganzen Gitter.
+    function segelTrimm(beta, qA, fMax) {
+        const S = SEGEL_GESETZ,
+            n = S.trimmSchritte,
+            B = _segelCl;
+        const cb = Math.cos(beta),
+            sb = Math.sin(beta);
+        let bX = 0,
+            bY = 0,
+            bD = -1,
+            mX = 0,
+            mY = 0,
+            mD = -1;
+        for (let i = 0; i <= n; i++) {
+            const d = _schotGitter[3 * i],
+                a = Math.max(0, beta - d);
+            if (a > 0) segelBeiwert(a, B, sb * _schotGitter[3 * i + 1] - cb * _schotGitter[3 * i + 2], cb * _schotGitter[3 * i + 1] + sb * _schotGitter[3 * i + 2]);
+            else segelBeiwert(0, B, 0, 1);
+            const X = qA * (B[0] * sb - B[1] * cb),
+                Y = qA * (B[0] * cb + B[1] * sb);
+            if (Math.abs(Y) <= fMax && (bD < 0 || X > bX)) {
+                bX = X;
+                bY = Y;
+                bD = d;
+            }
+            if (mD < 0 || Math.abs(Y) < Math.abs(mY)) {
+                mX = X;
+                mY = Y;
+                mD = d;
+            }
+            if (a === 0) break;
+        }
+        return bD >= 0 ? [bX, bY, bD] : [mX, mY, mD];
+    }
     // DER ANTRIEB DES MUSKELS (fahrzeug-gattung): ein Rezept ohne Zeit-Stufe, das ein Tier zieht oder ein Mensch rudert, trägt
     // seinen Antrieb hier (dieselbe Form wie `EPOCHE_GESETZ.antrieb`, gelesen von carPhys). Der Leiterwagen ist das Fuhrwerk der
     // Kutschen-Zeile mit EINEM Pferd im Schritt: die Zugkraft je Tier und das Speichenrad mit Eisenreif (seine Rollreibung) liest er
@@ -3513,6 +3733,54 @@
         aussenG.add(baugruppe("rumpf", rumpf));
         aussenG.add(baugruppe("boden", boden));
         aussenG.add(baugruppe("gerippe", gerippe));
+        // DAS RIGG (same.physik.flug#3, nur mit Segel — `bootSegel`, dieselbe Quelle wie die Fahrt): der Mast in der Mastducht
+        // (das vordere Drittel), das Spritsegel als Viereck am Mast — Hals (über dem Bord), Klau (0,8 des Vorlieks), Piek (vom
+        // Spriet getragen, 0,75 der Breite achteraus), Schothorn (die volle Breite) — mit der Fläche des Gesetzes: das Viereck
+        // hat 0,8 · Breite · Vorliek; je Seite ein Seitenschwert mittschiffs, so tief wie das Gesetz es trägt. Die Baugruppe
+        // „segel“ steht im Fuß des Masts: um seine Achse dreht der Wirt sie mit der Schot (`z.schot` des Fahr-Schritts).
+        const Sg = bootSegel(R, P);
+        if (Sg) {
+            const uM = 0.68,
+                xM = xs(uM),
+                h = Sg.h,
+                yH = Sg.hals,
+                w = Sg.A / (0.8 * h),
+                tuch = Q("segeltuch");
+            const ecken = [
+                [0, yH],
+                [0, yH + 0.8 * h],
+                [-0.75 * w, yH + h],
+                [-w, yH],
+            ];
+            const pos = [],
+                idx = [];
+            for (const sd of [1, -1]) {
+                const o = pos.length / 3;
+                for (const [x, y] of ecken) pos.push(x - 0.06, y, sd * 0.004);
+                if (sd > 0) idx.push(o, o + 3, o + 2, o, o + 2, o + 1);
+                else idx.push(o, o + 1, o + 2, o, o + 2, o + 3);
+            }
+            const [px, py] = ecken[2],
+                sx = 0,
+                sy = yH + 0.12 * h,
+                lS = Math.hypot(px - sx, py - sy);
+            const segelG = baugruppe("segel", [
+                netz(pos, idx, tuch),
+                B((sx + px) / 2 - 0.06, (sy + py) / 2, 0.03, 0.022, lS / 2, 0.022, holz, Math.atan2(sx - px, py - sy)), // das Spriet
+            ]);
+            segelG.position.x = xM;
+            aussenG.add(segelG);
+            const yF = yc(uM),
+                yT = yH + h + 0.15,
+                uS = 0.5,
+                yWL = R.kiel + R.T,
+                yU = yWL - Sg.schwertTief,
+                yO = ys(uS) + 0.05,
+                sehne = Sg.schwert / Sg.schwertTief;
+            const rigg = [C(xM, (yF + yT) / 2, 0, "y", 0.055, yT - yF, holz, teil(12, 6))]; // der Mast
+            for (const sd of [-1, 1]) rigg.push(B(xs(uS), (yO + yU) / 2, sd * (bs(uS) + 0.04), sehne / 2, (yO - yU) / 2, 0.02, dunkel)); // die Seitenschwerter
+            aussenG.add(baugruppe("rigg", rigg));
+        }
         return { innen, aussen: aussenG };
     }
 
@@ -4125,6 +4393,9 @@
             // Kern-Masse reist als Mess-Flaeche mit, wird aber nicht gefahren.
             mass: ph.mass,
             vmax: ph.vmax,
+            // same.physik.flug#3 (rein additiv, nur das Boot): der Rumpf im Wasser und sein Segel (`bootFahrt`) — vmax oben ist
+            // das Gleiten des Boots auf Land, die Fahrt im Wasser trägt das Wasser
+            ...(P.topo === "boot" ? { rumpf: bootFahrt(P) } : null),
             spring: { k: P.springRate, c: P.damping },
             // SPIEGEL-ZENSUS 17.07. (rein additiv) — die SCHWERPUNKT-HOEHE aus
             // der EINEN Form-Formel (cgHeightOf: Bodenfreiheit + Guertel +
@@ -4343,6 +4614,8 @@
             // derselben Masse (vier Räder, zwei Läufer); `radImBoden` liest sie
             rad: a.rad ? Object.assign({ W: radLast(masse, a.rad.kufe) }, a.rad) : null,
             kipp: fahrKippForm(a.quer, d.cgH, a.breite, a.bauch),
+            // same.physik.flug#3 (rein additiv): der schwimmende Rumpf fährt im Wasser, nie auf Reifen (`fahrTakt`)
+            ...(d.rumpf ? { rumpf: Object.assign({}, d.rumpf, { welle: rumpfWelleGesetz(d.rumpf.welleForm) }) } : null),
         };
     }
     // DIE LAST JE RAD [N] (fahrzeug-gestalt): die EINE Masse des Werks × g durch die Räder, die sie tragen (vier, die Kufe
@@ -4615,7 +4888,9 @@
             const aL = Math.max(-G.aPitchMax, Math.min(G.aPitchMax, z.aLong || 0));
             const aQ = Math.max(-G.aLatMax, Math.min(G.aLatMax, z.aLat || 0));
             fahrFeder(z, "fNick", aL * (G.cgH / G.L) * G.pitchGain, G.k, G.cd, dt, S.nickMax);
-            fahrFeder(z, "fWank", aQ * (G.cgH / G.W) * G.rollGain, G.k, G.cd, dt, S.nickMax);
+            // der schwimmende Rumpf krängt nach seinem Aufrichten (`fahrRumpf` z.krang: das Ziel der Feder), nie nach der Querlast der Reifen
+            if (G.rumpf && Number.isFinite(z.krang)) fahrFeder(z, "fWank", z.krang * G.k, G.k, G.cd, dt, Math.max(S.nickMax, G.rumpf.kraeng.kipp));
+            else fahrFeder(z, "fWank", aQ * (G.cgH / G.W) * G.rollGain, G.k, G.cd, dt, S.nickMax);
             const mH = -Math.abs(aL) * G.heaveA - Math.abs(z.vlong) * G.heaveV;
             fahrFeder(z, "fHub", mH, G.k * G.heaveKMul, G.cd * G.heaveCMul, dt, S.hubMax);
         }
@@ -4639,6 +4914,62 @@
         z.wheelAng += (z.vlong / G.radR) * dt; // Abrollen ω = v/r (radR > 0: Pflicht des Fahr-Satzes)
         return z;
     }
+    // DER SCHRITT DES SCHWIMMENDEN RUMPFS (same.physik.flug#3, `SEGEL_GESETZ` · `bootFahrt`): der Ruderer (Kraft und Leistung, rückwärts
+    // gegen die Riemen), das Segel am scheinbaren Wind (der Wind des Wirts e.wind minus die Fahrt; die Schot trimmt der Segler,
+    // `segelTrimm`), der Wind auf der Flanke (aW), dann das Wasser halb-implizit (v / (1 + k · dt): stabil, es kehrt die Fahrt nie
+    // um) — längs die Haut nach ITTC und der induzierte Widerstand des Schwerts, quer der Lateralplan als Flügel und sein Querstrom.
+    // Die Gier folgt dem Ruder (v · tan δ / L) mit `ruderTau`, steht das Boot, dreht der Ruderer es mit einem Riemen. `z.schot`
+    // (rad, Vorzeichen = die Lee-Seite) und `z.segelKraft` ([Vortrieb, Querkraft] N) lesen das Bild und die Linse.
+    function fahrRumpf(z, e, G, thr, brk, steerIn, aW, dt) {
+        const R = G.rumpf,
+            S = SEGEL_GESETZ;
+        let ax = 0,
+            ay = aW;
+        if (R.ruder && thr > 0) ax += Math.min(R.ruder.a, R.ruder.p / Math.max(0.1, Math.abs(z.vlong))) * thr;
+        if (R.ruder && brk > 0) ax -= Math.min(R.ruder.a, R.ruder.p / Math.max(0.1, Math.abs(z.vlong))) * brk;
+        z.schot = 0;
+        z.segelKraft = null;
+        if (R.segel && e && e.wind) {
+            const cy = Math.cos(z.yaw),
+                sy = Math.sin(z.yaw);
+            const aL = e.wind.x * cy - e.wind.z * sy - z.vlong,
+                aQ = -e.wind.x * sy - e.wind.z * cy - z.vlat;
+            const V = Math.hypot(aL, aQ);
+            if (V > 1e-3) {
+                const lee = aQ >= 0 ? 1 : -1;
+                const [X, Y, d] = segelTrimm(Math.acos(Math.max(-1, Math.min(1, -aL / V))), 0.5 * FAHR.luft.rho * V * V * R.segel.A, R.segel.fMax);
+                ax += X / R.m;
+                ay += (lee * Y) / R.m;
+                z.schot = lee * d;
+                z.segelKraft = [X, lee * Y];
+            }
+        }
+        // DIE KRÄNGUNG: das Moment der Querkraft über dem Hebel gegen das Aufrichten — erst lehnt sich die Mannschaft hinaus (φ = 0,
+        // solange ihr Moment reicht), dann trägt die Form: form · sin φ + mann · cos φ = M → φ = asin(M / √(form² + mann²)) −
+        // atan(mann / form), höchstens der Kipp-Winkel. Vorzeichen der Wank-Feder: > 0 die rechte Seite tief, das Lee sinkt.
+        {
+            const K = R.kraeng,
+                M = z.segelKraft ? Math.abs(z.segelKraft[1]) * K.arm : 0;
+            let phi = 0;
+            if (M > K.mann) phi = Math.min(K.kipp, Math.asin(Math.min(1, M / Math.hypot(K.form, K.mann))) - Math.atan2(K.mann, K.form));
+            z.krang = z.segelKraft && z.segelKraft[1] > 0 ? -phi : phi;
+        }
+        z.vlong += (ax + z.vlat * z.yawRate) * dt;
+        z.vlat += (ay - z.vlong * z.yawRate) * dt;
+        const vL0 = z.vlong,
+            vQ0 = z.vlat,
+            v = Math.hypot(vL0, vQ0);
+        const lg = Math.log10(Math.max(1e5, (Math.abs(vL0) * R.lwl) / S.nu)) - 2;
+        const vA = Math.abs(vL0);
+        z.vlong = vL0 / (1 + (R.kHaut * (0.075 / (lg * lg)) * vA + (R.kInd * vQ0 * vQ0 + rumpfWelle(R.welle, vA)) / Math.max(0.1, vA)) * dt);
+        z.vlat = vQ0 / (1 + (R.kLift * v + R.kQuer * Math.abs(vQ0)) * dt);
+        const wSoll = (z.vlong * Math.tan(z.steer)) / G.L + steerIn * S.ruderDreh * Math.max(0, 1 - Math.abs(z.vlong) / R.vmax);
+        z.yawRate += (wSoll - z.yawRate) * Math.min(1, dt / S.ruderTau);
+        z.aLong = dt > 0 ? (z.vlong - vL0) / dt + ax : 0;
+        z.aLat = dt > 0 ? (z.vlat - vQ0) / dt + ay : 0;
+        z.slipF = 0;
+        z.slipR = 0;
+    }
     function fahrTakt(z, e, G, dt) {
         const S = FAHR.schritt;
         const m = G.m,
@@ -4655,6 +4986,9 @@
         const Wg = G.wasser;
         const tW = Wg && e && e.tiefe > 0 ? e.tiefe : 0;
         const motor = !(tW > 0 && tW >= Wg.ansaug);
+        // DER RUMPF SCHWIMMT (same.physik.flug#3, rein additiv — ohne G.rumpf byte-gleich): das Wasser trägt ihn, kein Reifen
+        const schwimmt = !!(G.rumpf && tW > 0);
+        if (G.rumpf && !schwimmt) z.krang = null; // an Land trägt die Feder wieder die Querlast
         const thr = motor && e && e.throttle > 0 ? Math.min(1, e.throttle) : 0;
         const brk = e && e.brake > 0 ? Math.min(1, e.brake) : 0;
         const hand = !!(e && e.hand);
@@ -4692,6 +5026,8 @@
             z.yawRate *= k;
             z.slipF = 0;
             z.slipR = 0;
+        } else if (schwimmt) {
+            fahrRumpf(z, e, G, thr, brk, steerIn, aW, dt);
         } else if (z.luft) {
             // IM FLUG greift kein Reifen: nur der Luftwiderstand; die Gier dreht mit ihrer Rate weiter.
             const aD = -G.dragK * z.vlong * Math.abs(z.vlong);
@@ -4854,7 +5190,7 @@
             //    0,69–0,95 · SSF · g), Fy allein trüge im Schritttempo den Schräglauf der Blende (der Karren mit 1,6 m/s kippte). ──
             fahrKipp(z, G, (1 - low) * aLatB + low * (z.vlong * z.yawRate - (rutscht ? 0 : aG)), cap * gN, gN, dt);
         }
-        if (tW > 0) {
+        if (tW > 0 && !schwimmt) {
             // ── DAS WASSER (SCHAU-2): der Widerstand der getauchten Stirn laengs und der Flanke quer, halb-implizit
             //    (v / (1 + k·|v|·dt): stabil bei jeder Tiefe und jedem Schritt, er kehrt die Fahrt nie um); er zaehlt in
             //    die Beschleunigung, die die Federn neigt (der Bug taucht beim Eintauchen). ──
@@ -4869,8 +5205,11 @@
             }
         }
         z.yaw += z.yawRate * dt;
-        if (z.vlong > G.vmax) z.vlong = G.vmax;
-        if (z.vlong < -G.vmax * S.rueckVmax) z.vlong = -G.vmax * S.rueckVmax;
+        // an Land deckelt das Gesetz des Antriebs; im Wasser kein Deckel — die Welle des Rumpfs bremst ihn (`rumpfWelle`)
+        if (!schwimmt) {
+            if (z.vlong > G.vmax) z.vlong = G.vmax;
+            if (z.vlong < -G.vmax * S.rueckVmax) z.vlong = -G.vmax * S.rueckVmax;
+        }
         // NaN-Wand vor dem Gedaechtnis (die Gier bleibt, wo sie war).
         if (!Number.isFinite(z.vlong) || !Number.isFinite(z.vlat) || !Number.isFinite(z.yawRate)) {
             z.vlong = 0;
@@ -5933,6 +6272,10 @@
         // die Gattungen ohne Motor und auf dem Wasser (fahrzeug-gattung, rein additiv): das Gesetz des Rumpfs, die Welle des
         // Gewässers, der Antrieb des Muskels, die Form der Gattung im EINEN Durchgang
         BOOT_GESETZ: BOOT_GESETZ,
+        SEGEL_GESETZ: SEGEL_GESETZ,
+        bootSegel: bootSegel,
+        bootFahrt: bootFahrt,
+        segelTrimm: segelTrimm,
         bootRumpf: bootRumpf,
         bootWelle: bootWelle,
         muskel: muskel,

@@ -76,6 +76,138 @@ Kopf 1 trug den glatten Baum auf main 7e73426e, Kopf 2 trägt ihn auf main 9a75d
 Dateien; gegen Kopf 1 kommt allein der Rang über `rang` und dieses Blatt hinzu). Der zweite Elter ist die Spitze meiner WIP-Kette, weil der Auftrag „nie force“ sagt: der Schub ist ein Fast-Forward, kein Stand wird
 überschrieben. Wer einen Elter braucht, nimmt den Baum (`git commit-tree <kopf>^{tree} -p 9a75d61c`), er ist byte-gleich.
 
+## Heap 740 MB und Einlauf 83 s am Vor-Richter (Post 21:27): was ich messen konnte, was offen bleibt
+
+**Gemessen nach der Landung (27.11., main b56b51f0 gegen 23b593ac):** an stadt-voll unter gleichen Bedingungen, Null-Renderer.
+Die Stadt ist von Hand aufgezogen wie in gate:klang-zensus Mk („dorf 7 300“ am Anker, bis jeder Bewohner seinen Leib trägt, dann 10 s
+Spielzeit), Heap nach doppelter GC:
+
+| main | `_mundartAm` | Bewohner | Stadt steht nach | Heap gehalten |
+|---|---|---|---|---|
+| 23b593ac (vor) | nein | 1 356 | 149,1 s | 115,7 MB |
+| b56b51f0 (nach) | ja | 1 356 | 150,0 s | 115,6 MB |
+| 23b593ac (vor) | nein | 1 356 | 150,0 s | 115,9 MB |
+
+Das Spiel mit Mundart trägt **0 MB** und **0 s** mehr. Die 200 MB und 42 s des Vor-Richters kommen aus der Sitzung der Station
+(die Seiten #2, #3 und #4 und das Gitter MUNDART in EINER Sitzung) oder aus dem Renderer, nicht aus dem Spiel. Ein Heap-Schnitt
+in Kopf 3 entfällt.
+
+
+**Gemessen im Kern** (node, `--expose-gc`, Heap nach GC vor ↔ nach, Kopf = Stempel 2fa60e40):
+- **Gesetz im Spiel:** `_mundartAm` je Zelle (talWeg → mundartVon) an 1 089 Zellen zu 256 m um den Ort (±4 km, mehr als der Nah-Ring
+  260 m fragt) kostet 610 ms und **+0,2 MB** gehalten.
+- **Seite MUNDART der Station:** das Gitter 48 × 48 auf 1,6 km (77 km, jede Kette bis zur Senke) kostet 1 026 ms und **+1,5 MB** gehalten.
+
+`talWeg` merkt sich je Knoten am EINEN Netz der Lage (`netzFuer` → `N.talWege`). Die Kosten folgen den gefragten Orten, nicht der
+Welt. Weder mein Gesetz noch das Gitter der Station trägt also im Kern 200 MB. Der Heap des Vor-Richters (740 MB gegen 505–540 MB)
+kommt nicht aus `talWeg`.
+
+**Nicht messbar in der Wolke:** die Welt an stadt-voll headless (Null-Renderer, `ortZug` stadt-voll, main b3740dd5 gegen Stempel). Der
+GPU-Prozess stand in `gl.clientWaitSync` (#1264), nach 2 371 s gab es 0 Bewohner in 9 Siedlungen, Heap 85,9 MB. Das ist kein Bild der
+Stadt und kein Vergleich. Offen mit Messname: **Preis stadt-voll am main nach der Landung, Heap und Einlauf, einmal OHNE die Seite
+MUNDART** (an der GTX 1060).
+
+Auch das Merkbuch der Sprachen ist gemessen. Die Seite MUNDART ruft `spracheVon` für 2 304 Orte × 6 Familien = 1 152 Sprachen
+(`_MUNDARTEN` ≤ 4 096) in 216 ms, gehalten werden **+3,5 MB**. Zusammen trägt die Seite MUNDART im Kern ≈ 5 MB, das Spiel an den Zellen
+0,2 MB. Die 200 MB über dem Band kommen aus keinem der beiden Glieder meines Schnitts. Sie sind offen bis zum Lauf oben. Steht der Heap
+dort bei 505–540 MB, trägt sie die Sitzung der Station (die Seiten #2, #3 und #4 in EINER Sitzung). Steht er ≥ 700 MB, trägt sie die
+Welt, und dann schneide ich als ersten Schnitt von Kopf 3 an der Zahl, die der Lauf nennt.
+
+## Die nächste rote Sprosse: `karte2.mensch.kultur.sprache#5` „hörbare Sprachen“ (Täter-Zahl am main b3740dd5, Post 20:57)
+
+Die Leiter (Zweig `punkte-maschine`, `meisterkarte-quelle/punkte/stationen/k2-mensch-kultur.js:764`): `{ n: 5, art: "auge", um: 7000 }`. Vorbild:
+„Tonaufnahme einer realen, den Hörern unbekannten Sprache (Linguisten-Blindtest 2AFC ≤ 60 %); Satz ↔ Handlung ≥ 80 %“. Der Umfang liest
+`sprachen` (die Regionen der Stadt, 2), genau wie #4 vor dem Kandidaten. Darüber liegen #6 (Stufen über Epochen) und #7 (Planeten).
+
+**Täter 1, das Ohr hört nur Vokale:** `klang-core.js:1640` `stimmPuffer` macht aus jeder Silbe den ERSTEN Vokal ihres Kerns
+(`STIMME.kern[K[i].charAt(0)]`). Die Quelle ist allein stimmhaft (Rosenberg-Puls, Klatt-Kaskade aus fünf Resonatoren). Es gibt keinen
+Verschluss, kein Reibe-Rauschen und keinen Nasal. `fachwerk-core.js:5071` `sprachKerne` reicht nur die Vokal-Folgen weiter.
+Gemessen über 3 000 Sätze in 6 Familien (`sprachSatz`, Ursprache):
+- 59 307 Laute, davon 35 790 Konsonanten (0,603);
+- im Ohr kommen davon 20 548 an (**0,346**), die Konsonanten **0**;
+- 2 964 von 20 548 Zwielauten sind auf ihren ersten Vokal gekürzt.
+
+Ein 2AFC-Blindtest gegen eine Tonaufnahme trennt eine Rede ohne Konsonanten mit Sicherheit (Soll ≤ 60 %).
+
+**Täter 2, der Satz kennt seine Handlung nicht:** `stamm/siedlung-bewohner.js:403` `sprachSatz(…, \`${b.seed}:${tag}\`)`. Der Same ist
+der Mensch und die Nummer der Rede, der Akt (`b.akt`) geht nie ein. Das Verb zieht `sprachSatz` aus 19 Verben des `SATZ_GESETZ` unabhängig
+vom Tun. Satz ↔ Handlung liegt also beim Zufall (1/19 ≈ 0,05), das Soll ist ≥ 0,8.
+
+**Täter 3, der Umfang:** die Station zählt Regionen (2 < 7 000). Mit #4 trägt die Welt Mundarten, gemessen U_eff 1 097–1 233 je Welt
+auf 77 km. Die Zahl 7 000 verlangt den Leser der Mundarten über Welten (die Seite MUNDART des Kandidaten) und nicht den der Regionen.
+
+**Soll mit Quelle, zur Entscheidung (ich ändere es nicht):** das Band für „Satz ↔ Handlung“ ist schmal. Ibbotson, Lieven & Tomasello
+2013 (Journal of Child Language) zählen in der Rede an Kinder etwa **30 %** der Beschreibungen als Handlungen im Hier und Jetzt;
+gelesen habe ich nur die Kurzfassung. Bindet das Gesetz 30 % der Sätze an den Akt und lässt den Rest frei, trifft ein Hörer im 2AFC
+0,3 + 0,7 · 0,5 = **0,65**, also unter dem Soll 0,8. Das Soll 0,8 verlangt mindestens 60 % gebundene Sätze, das Doppelte des Bands.
+Nachtrag: Täter 2 ist gebaut, in der Lesart „2AFC über Sätze am Akt“. Wer einen Akt trägt, spricht das Verb seines Akts
+(`SATZ_GESETZ.handlung`); ohne Akt bleibt der Satz byte-gleich frei. Der Markt misst 38 von 38. Das 30-%-Band gilt für Rede
+über alles; hier zählen nur Sätze am Akt. Das Soll bleibt beim Richter.
+
+Art „auge“: auch mit Gesetz bleibt die Sprosse bis zum Blindpaar am Gerät offen (Klasse P). Meine Bahn kann den Laut bauen (die
+Konsonanten als Quelle aus Rauschen und Verschluss im EINEN `stimmPuffer`, Band: Klatt 1980, die Parallel-Zweige für Frikative) und den
+Satz an den Akt binden. Das Urteil spricht das Ohr.
+
+### sprache#5 Täter 2 geschnitten: der Satz spricht von seinem Akt (27.11. 23:5x, WIP über Kopf 2)
+
+Die Lesart entscheide ich selbst, das Soll bleibt unverändert: Ein Satz, der während eines Akts fällt, trägt das Verb dieses Akts.
+- fachwerk `SATZ_GESETZ.handlung`: 17 Akte → das nächste Verb der Grundliste (QUELLE UNGEPRUEFT in der Zuordnung; Swadesh kennt kein arbeiten, spielen, kämpfen); wer es tut, sind Leute. `sprachSatz(L, saat, akt)`: ein Akt ohne Zeile bricht laut, ohne Akt spricht der Satz frei.
+- Byte-Beweis: Sätze ohne Akt alt ↔ neu 0 von 1 800 verschieden. Damit liest die Station #2 (Bewohner ohne Akt) dieselben Sätze.
+- Wirt `_bewohnerLauf` „rede“ reicht `b.akt`; die Rede der Menge merkt sich ihn (`z.akt`, klang.js).
+- node, 400 Sätze je Familie: gebunden 1,000; frei trägt das Verb nur durch Zufall 0,05–0,17.
+- Linse gate:klang-zensus Mk „Satz ↔ Handlung“ (Soll ≥ 0,8): Markt **38 von 38**. Selbsttest S31 „der Satz vergisst seinen Akt“ ist ROT (27 von 41, noch mit Sätzen vor dem Mutanten). `--markt --selftest` rc=0 · check:statik GRÜN.
+
+### sprache#5 Täter 1 geschnitten (WIP 88c3e75, 27.11. 22:43, über Kopf 2, kein Vorprüf-Kopf vor dem Urteil)
+
+Der Schnitt an der EINEN Wurzel, der Lautung des Satzes:
+- **fachwerk `sprachSilben(satz, L)`** ersetzt `sprachKerne`; Leser, Linse und Doku fallen in derselben Welle (Lehre 3).
+  - Jede Silbe ist { an, k, ab } mit Lauten der Tafel `SPRACH_LAUTE` (Art, Ort, Stimme).
+  - Die Schrift wird als längste Buchstabenfolge gelesen; die Familie liest z und w nach ihrer `schrift`.
+  - Die Grenze ist der maximale Anlaut unter steigender Sonorität (Clements 1990), dazu das s-Cluster.
+  - Je Familie neu: `einsatz` behaucht/unbehaucht (Lisker & Abramson 1964).
+- **klang `stimmRede`:** die Dauern nach Klatt 1979 (ICPhS, Tafel 1 INHDUR/MINDUR und Regeln 2–11, an der Quelle gelesen).
+- **klang `stimmPuffer` spricht sie:**
+  - Reibung über einen parallelen Bandpass am Gipfel des Orts (Jongman, Wayland & Wong 2000, Tafeln 1–3 gelesen), ihr Pegel am Vokal desselben Lauts.
+  - Knall, Verschluss mit Stimmbalken in der vorstimmhaften Reihe, VOT als Behauchung durch dieselbe Kaskade.
+  - Nasal, Liquid und Gleitlaut als leise Stimme.
+- **Wirt** `_bewohnerLautTakt`: Teile nach Silben-Dauer (`mengeSilben(sek, rede)`, `mengeSek(rede)`).
+
+Gemessen, node, 24–60 Sätze je Familie:
+- **%V je Familie** (Rede aus Kernen 1,00 →):
+
+  | Familie (Seite vor ↔ node nach Regel 7) | %V |
+  |---|---|
+  | mitteleuropa | 0,48 → 0,480 |
+  | alpin | 0,544 → 0,530 |
+  | mediterran | 0,654 → 0,657 |
+  | nordisch | 0,541 → 0,528 |
+  | fernost | 0,675 → 0,673 |
+  | antik | 0,506 → 0,495 |
+
+  Band 0,40–0,54 nach Ramus, Nespor & Mehler 1999; die Klassenmittel 41,2 · 44,2 · 53,1 % hat Dellwo, Abb. 1, gelesen.
+- **Gipfel nach Jongmans Messung** (Mann/Frau im Wechsel): f 7 850 / 7 678 · s 6 800 / 6 882 · v 7 225 / 7 678 · ʃ 3 825 / 3 712 · z 7 250 / 6 882 Hz.
+- **Konsonanten im Ohr** 0 → alle (jeder Laut der Silbe ein Segment).
+- **Byte-Beweis:** Die Laute ohne Satz (Gruß · Lachen · Mühe · Seufzer · Halten) sind byte-gleich, 54 von 54 Puffern.
+- **Bild:** Spektrogramm vorher ↔ nachher mit Knall, Reibung und Nasal sichtbar (Blick-Sonde im Scratchpad).
+
+Linse gate:klang-zensus (Sp):
+- %V ≤ 0,70 je Familie und der Gipfel je Frikativ ±15 % zu Jongman.
+- Selbsttest S29 „die Rede ohne An- und Abglied“, also der Stand am main, ist **ROT** mit 7 Befunden: 6 Familien mit %V 1, dazu „kein Frikativ“.
+- Ganzer Zensus auf der Seite (`--selftest`, 453 s): ✅ S1–S23, S28, S29 · Markt 259 Reden, 0 ohne Silben, L_Aeq 65,35 dB(A). Der Mk-Mutant S29 löschte noch `kerne` und blieb unbemerkt (rc=1). Er trifft jetzt die Fracht `rede`, die Rede wird an ihrem Einsatz erkannt: `--markt --selftest` ✅ S24–S27, S29 („97 von 97 Reden ohne die Silben eines Satzes“), S30, rc=0 (4e782ea).
+- Nach Regel 7 (8e7bcdf) ganzer Zensus auf der Seite, 446 s, rc=0: %V mitteleuropa 0,466 · alpin 0,53 · mediterran 0,653 (außer Band) · nordisch 0,527 · fernost 0,668 (außer Band) · antik 0,491; Gipfel f 7 850 · s 6 725 · v 7 175 · ʃ 3 700 · z 7 250 Hz; ✅ S1–S23, S28, S29 · ✅ S24–S27, S29, S30.
+
+Ehrlich offen:
+- Regel 7 nach Klatt S. 296: die Segmente der unbetonten Silbe kürzen, das Abglied der betonten nicht mehr (mein Schnitt kürzte es). Damit liegen alpin und nordisch im Band; ΔC mitteleuropa 5,39 cs (Englisch bei Ramus 5,35).
+- Zwei Familien liegen über dem Band ≤ 0,54: mediterran 0,657 und fernost 0,673. Die Wand prüft ≤ 0,70. Fast nur offene CV-Silben treffen Klatts englische Vokale (V 147 ms, C 67 ms); das Tempo heilt das nicht, Klatt S. 297: „most of the rate change is realized by manipulating pause durations“. Klatts Dauern sind Englisch, ein Sprecher. Das Japanische trägt kurze Kurzvokale, das Italienische lange Konsonanten. Messname `Sp %V außer Band`.
+- QUELLE UNGEPRUEFT im Wert:
+  - x (velar);
+  - die Breite der Rausch-Gipfel;
+  - Pegel und Lage von Knall und Behauchung;
+  - Pegel und Form der Sonoranten;
+  - die Dauern von x · ts · pf.
+
+Täter 2 (Satz ↔ Handlung) wartet auf die Entscheidung zum Soll.
+
 ## Antwort auf 19:50 (Stand 2. Merge d. h. main 948f68ee herein, 730f25b4)
 
 Die Stall-Akte steht an meinem Stand GRÜN („✅ eigene Ränge neben rang: Träger keiner statt FREMD keiner · gepflanzt 2/2 gefasst“,
