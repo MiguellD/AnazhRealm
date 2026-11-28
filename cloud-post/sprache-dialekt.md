@@ -147,8 +147,8 @@ ganzen Liste über 0,86. Die Wurzel wäre, die Konstante als Retention der GANZE
 jeden Ortsnamen der Welt und die gestempelte Messung von #4. Ich schneide das nicht ohne Wort des Richters.
 
 **Linse:** `gate:settlement` R14 „die Sprache trägt ihre Zeit“ (Wurzel = Ursprache, Blatt = Gegenwart, Rekonstruktion ≥ 0,6, die Pläne
-der Epochen sprechen ihre Stufe). Täter im Selbsttest: „die Sprache kennt keine Zeit“ und „der Ort liest sein Jahr nicht“ (Lauf offen, das
-Urteil folgt hier). Hauptlauf GRÜN 656 s.
+der Epochen sprechen ihre Stufe). Täter im Selbsttest: „die Sprache kennt keine Zeit“ und „der Ort liest sein Jahr nicht“ → beide ROT beim
+Namen R14, Selbsttest GRÜN in 715 s (probeUrteil GRÜN). Hauptlauf GRÜN 656 s.
 
 **Station:** `cloud-post/sprache-dialekt-station/kandidat-6.diff` (ÜBER `kandidat.diff`): die Seite ZEIT und die #6-Zeile als Zahl.
 **PFLICHT:** Kopf 4 und kandidat-6 landen ZUSAMMEN. Ohne ihn lesen die Zeugen von #3/#4 die zeitlose Gegenwart, die Orte sprechen aber
