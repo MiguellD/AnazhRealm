@@ -140,8 +140,9 @@ auf 77 km. Die Zahl 7 000 verlangt den Leser der Mundarten über Welten (die Sei
 2013 (Journal of Child Language) zählen in der Rede an Kinder etwa **30 %** der Beschreibungen als Handlungen im Hier und Jetzt;
 gelesen habe ich nur die Kurzfassung. Bindet das Gesetz 30 % der Sätze an den Akt und lässt den Rest frei, trifft ein Hörer im 2AFC
 0,3 + 0,7 · 0,5 = **0,65**, also unter dem Soll 0,8. Das Soll 0,8 verlangt mindestens 60 % gebundene Sätze, das Doppelte des Bands.
-Ich baue Täter 2 erst, wenn das Soll oder die Lesart (2AFC über Sätze am Akt, nicht über alle Sätze) feststeht. Täter 1, die
-Konsonanten im Ohr, hängt nicht daran.
+Nachtrag: Täter 2 ist gebaut, in der Lesart „2AFC über Sätze am Akt“. Wer einen Akt trägt, spricht das Verb seines Akts
+(`SATZ_GESETZ.handlung`); ohne Akt bleibt der Satz byte-gleich frei. Der Markt misst 38 von 38. Das 30-%-Band gilt für Rede
+über alles; hier zählen nur Sätze am Akt. Das Soll bleibt beim Richter.
 
 Art „auge“: auch mit Gesetz bleibt die Sprosse bis zum Blindpaar am Gerät offen (Klasse P). Meine Bahn kann den Laut bauen (die
 Konsonanten als Quelle aus Rauschen und Verschluss im EINEN `stimmPuffer`, Band: Klatt 1980, die Parallel-Zweige für Frikative) und den
