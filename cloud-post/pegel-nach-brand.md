@@ -181,3 +181,9 @@ Karte 2 gebucht 156 von 1 718 · Status ZWISCHENSTAND.
 - **offen:** stoerung#3 ROT (×1,134 < 1,3); das Bildpaar der Flut an der Station ungefahren (Kandidat S1-Bild, Richter die GTX 1060).
 
 Karte 2 gebucht 156 von 1 718 · Status ZWISCHENSTAND.
+
+## 28.11. 01:00 — Kopf 4 am main b56b51f0 gemessen (die ganze Batterie); main 27d2f60e (tier-bewegung-3) gemischt, glatt
+- Die ganze Batterie am gemischten Baum noch einmal: dieselben Zahlen wie am main 23b593ac (oben), dieselben Fingerabdrücke; `gate:wasser-leben` P4 Hub 0,20 · K10 LEER wie am main in dieser Kiste; Playtest V9.43-d ✅ · WERK-IM-WASSER GRÜN · `gate:kamera-laub` K7 ✅ · stand-takt ×3 · worker-dichte ×5 · wetter-wache · S1 · S3 ×1,134 · welt-boot · fachwerk · statik · format · lint · betriebsgesetz · daten-contract.
+- Beide Stations-Kandidaten (S3, S1-Bild) stehen auch am pm-Kopf ca4c8a2d: `git apply --check` GRÜN.
+
+Karte 2 gebucht 156 von 1 718 · Status ZWISCHENSTAND.

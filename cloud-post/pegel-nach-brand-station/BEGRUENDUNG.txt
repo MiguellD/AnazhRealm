@@ -19,7 +19,7 @@ Der Patch `k2-zusammenspiel-S3.diff` steht gegen den pm-Kopf 1522407ae4129f05c24
 (meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js, Teil S3, 4 Hunks): `spitze()` nach `fluss`, `blockVor.fluss` und
 `aus.block.nach.fluss` lesen sie, `aus.zurueck.fluss` den Gegenlauf, die Aufruf-Argumente tragen `regen: 1, regenS: 300`.
 Geprüft: `node --check` am gepatchten Stand; `git apply --check` an einem frischen Baum aus dem pm-Kopf GRÜN, angewendet byte-gleich.
-Am pm-Kopf 429c6cf9e6ff2d25333cb23ef48b60d35083040b steht derselbe Patch: `git apply --check` GRÜN (27.11. 23:55).
+Am pm-Kopf 429c6cf9 und am pm-Kopf ca4c8a2d6ccbe14a95a0b85ab05c12486ad2dd3f steht derselbe Patch: `git apply --check` GRÜN (28.11. 00:55); ebenso der Kandidat S1-Bild.
 
 ZWEITER KANDIDAT `k2-planet-S1-auge.diff` (karte2.planet.wetter.extreme#1, Teil S1, das Beleg-Bild), gegen den pm-Kopf
 429c6cf9e6ff2d25333cb23ef48b60d35083040b (meisterkarte-quelle/punkte/stationen/k2-planet.js, 1 Hunk): `M.auge` bekommt die Pose
