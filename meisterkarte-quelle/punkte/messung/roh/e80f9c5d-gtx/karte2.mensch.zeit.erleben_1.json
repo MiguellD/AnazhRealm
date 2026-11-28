@@ -1,0 +1,144 @@
+{
+ "proben": {
+  "brand": {
+   "schuesse": [
+    {
+     "name": "vor",
+     "datei": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\e80f9c5d-gtx\\karte2.mensch.zeit.erleben_1-brand-s1.png"
+    },
+    {
+     "name": "brennt",
+     "datei": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\e80f9c5d-gtx\\karte2.mensch.zeit.erleben_1-brand-s2.png"
+    },
+    {
+     "name": "erloschen",
+     "datei": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\e80f9c5d-gtx\\karte2.mensch.zeit.erleben_1-brand-s3.png"
+    }
+   ],
+   "krone": 0,
+   "bett": 1,
+   "posen": 1,
+   "flammenArt": "emission-pixel-median",
+   "vor": {
+    "luma": 0.173,
+    "warm": 299,
+    "neu": 0,
+    "rauschen": 0,
+    "flammen": 0,
+    "uhr": [
+     12.5
+    ],
+    "schleife": false,
+    "pool": {
+     "fix": true,
+     "ms": 259,
+     "blende": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "halter": 0
+    }
+   },
+   "entfacht": true,
+   "trockenS": 60,
+   "brennt": {
+    "zellen": 1,
+    "flammenListe": 64,
+    "luma": 0.153,
+    "warm": 1022,
+    "neu": 504,
+    "rauschen": 0,
+    "flammen": 504,
+    "uhr": [
+     12.5,
+     12.5,
+     12.5,
+     12.5,
+     12.5,
+     12.5,
+     12.5,
+     12.5,
+     12.5,
+     12.5,
+     12.5,
+     12.5,
+     12.5,
+     12.5,
+     12.5
+    ],
+    "schleife": false,
+    "pool": {
+     "fix": true,
+     "ms": 275,
+     "blende": [
+      1,
+      0,
+      0,
+      0
+     ],
+     "halter": 1
+    },
+    "serie": [
+     504,
+     504,
+     504,
+     504,
+     504
+    ],
+    "rauschenLaufend": 270
+   },
+   "regenS": 7,
+   "nachRegen": 0,
+   "erloschen": {
+    "zellen": 0,
+    "lebt": false,
+    "luma": 0.059,
+    "warm": 366,
+    "neu": 0,
+    "rauschen": 0,
+    "flammen": 0,
+    "uhr": [
+     12.5
+    ],
+    "schleife": false,
+    "pool": {
+     "fix": true,
+     "ms": 255,
+     "blende": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "halter": 0
+    }
+   },
+   "asche": 1,
+   "aschen": 1,
+   "veraendert": 0.883,
+   "herd": [
+    -248,
+    -1064
+   ],
+   "zelle": 16,
+   "kamera": [
+    -238.1,
+    38.6,
+    -1046.6,
+    -248,
+    26.6,
+    -1064
+   ],
+   "roi": [
+    392,
+    234,
+    558,
+    324
+   ],
+   "sek": 36.5
+  }
+ },
+ "fehler": []
+}
