@@ -3020,7 +3020,7 @@
   },
   "profiband.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Gehen 63 Bilder · max 75.35 ms · 68.25 % > 33 ms · Fahrt 47 Bilder · max 125.6 ms · 95.74 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 68.25 % > 33 ms | Fahrt: 4 Bild(er) > 100 ms (max 125.6), 95.74 % > 33 ms an 27d2f60e radeon · Gehen 90 Bilder · max 83.32 ms · 11.11 % > 33 ms · Fahrt 42 Bilder · max 108.27 ms · 95.24 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 11.11 % > 33 ms | Fahrt: 1 Bild(er) > 100 ms (max 108.27), 95.24 % > 33 ms an e80f9c5d gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an 27d2f60e: Last: Referenz f 1,331 (Faden 1,331 · alle Kerne 1,147; vor 111,1/297,2 ms, nach 105,8/278,1 ms, Ruhe 83,5/259,2 ms seit 2026-11-16) · fremd: bash.exe scratchpad/wache-0331.sh 27,9 CPU-s · bash.exe we · profiband.K4#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, klang-core.js +36) — zuletzt an e80f9c5d: Last: Referenz f 1,269 (Faden 1,269 · alle Kerne 1,064; vor 94,5/234,8 ms, nach 113,2/209,4 ms, Ruhe 89,2/220,7 ms seit 2026-11-27) · fremd: bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/",
+   "beleg": "Maschine: gehalten: Gehen 63 Bilder · max 75.35 ms · 68.25 % > 33 ms · Fahrt 47 Bilder · max 125.6 ms · 95.74 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 68.25 % > 33 ms | Fahrt: 4 Bild(er) > 100 ms (max 125.6), 95.74 % > 33 ms an 27d2f60e radeon — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an 27d2f60e: Last: Referenz f 1,331 (Faden 1,331 · alle Kerne 1,147; vor 111,1/297,2 ms, nach 105,8/278,1 ms, Ruhe 83,5/259,2 ms seit 2026-11-16) · fremd: bash.exe scratchpad/wache-0331.sh 27,9 CPU-s · bash.exe we · profiband.K4#2 gtx: ROT: Gehen 83 Bilder · max 108.35 ms · 15.66 % > 33 ms · Fahrt 49 Bilder · max 141.61 ms · 79.59 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 1 Bild(er) > 100 ms (max 108.35), 15.66 % > 33 ms | Fahrt: 4 Bild(er) > 100 ms (max 141.61), 79.59 % > 33 ms an e80f9c5d",
    "stationen": [
     {
      "id": "profiband.K4#1",
@@ -3035,10 +3035,10 @@
     {
      "id": "profiband.K4#1",
      "geraet": "gtx",
-     "gruen": true,
-     "zahl": "Gehen 90 Bilder · max 83.32 ms · 11.11 % > 33 ms · Fahrt 42 Bilder · max 108.27 ms · 95.24 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 11.11 % > 33 ms | Fahrt: 1 Bild(er) > 100 ms (max 108.27), 95.24 % > 33 ms",
+     "gruen": false,
+     "zahl": "Gehen 83 Bilder · max 108.35 ms · 15.66 % > 33 ms · Fahrt 49 Bilder · max 141.61 ms · 79.59 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 1 Bild(er) > 100 ms (max 108.35), 15.66 % > 33 ms | Fahrt: 4 Bild(er) > 100 ms (max 141.61), 79.59 % > 33 ms",
      "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
-     "grund": "GRÜN trotz Last: Referenz f 1,269 (Faden 1,269 · alle Kerne 1,064; vor 94,5/234,8 ms, nach 113,2/209,4 ms, Ruhe 89,2/220,7 ms seit 2026-11-27) · fremd: bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \" 4,1 CPU-s · LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 3,1 CPU-s · Explorer.EXE 2,7 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 30,1 CPU-s · svchost.exe 9,9 CPU-s · SearchIndexer.exe 1,5 CPU-s",
+     "grund": "ROT: Gehen 83 Bilder · max 108.35 ms · 15.66 % > 33 ms · Fahrt 49 Bilder · max 141.61 ms · 79.59 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 1 Bild(er) > 100 ms (max 108.35), 15.66 % > 33 ms | Fahrt: 4 Bild(er) > 100 ms (max 141.61), 79.59 % > 33 ms",
      "r6": "konsum"
     },
     {
@@ -3054,10 +3054,9 @@
      "id": "profiband.K4#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, klang-core.js +36) — zuletzt an e80f9c5d: Last: Referenz f 1,269 (Faden 1,269 · alle Kerne 1,064; vor 94,5/234,8 ms, nach 113,2/209,4 ms, Ruhe 89,2/220,7 ms seit 2026-11-27) · fremd: bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/",
-     "ungemessen": true,
+     "zahl": "Gehen 83 Bilder · max 108.35 ms · 15.66 % > 33 ms · Fahrt 49 Bilder · max 141.61 ms · 79.59 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 1 Bild(er) > 100 ms (max 108.35), 15.66 % > 33 ms | Fahrt: 4 Bild(er) > 100 ms (max 141.61), 79.59 % > 33 ms",
+     "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
+     "grund": "ROT: Gehen 83 Bilder · max 108.35 ms · 15.66 % > 33 ms · Fahrt 49 Bilder · max 141.61 ms · 79.59 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 1 Bild(er) > 100 ms (max 108.35), 15.66 % > 33 ms | Fahrt: 4 Bild(er) > 100 ms (max 141.61), 79.59 % > 33 ms",
      "r6": "konsum"
     }
    ]
@@ -16799,7 +16798,7 @@
   },
   "karte2.mensch.geist.gespraech": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.geist.gespraech#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/ausgabe-aufnahme.cjs +33) · karte2.mensch.geist.gespraech#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/ausgabe-aufnahme.cjs +33) · karte2.mensch.geist.gespraech#3 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#3 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#4 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#4 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#5 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#5 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#6 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#6 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#7 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.geist.gespraech#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/ausgabe-aufnahme.cjs +33) · karte2.mensch.geist.gespraech#2 gtx: ROT: S2 ROT an Umfang 0 < 10 sprechende Bewohner — Täter: stamm/feld-nexus.js maybeAnswerCreature → llmCallCreature — die Antwort ist der Lauf des Modells (ohne Schlüssel: „keine Stimme“); keine Antwort ist gegen den Lebenslauf geprüft, kein Gespräch erinnert die vorige Begegnung (der LLM-Lauf mit Schlüssel, Drehbuch-Schritt 18) · Faktentreue der Antworten — (Soll ≥ 0.95) · Anteil Gespräche mit Bezug auf die vorige Begegnung — (Soll ≥ 1) · Umfang 0 (Soll ≥ 10 sprechende Bewohner) · der Ruf trifft 30 von 30 gerufenen Bewohnern beim Vornamen (stamm/feld-nexus.js _findCreatureByName), 30 Personae tragen den Lebenslauf (_buildCreaturePersonaPrompt); Stimme der Welt aus (state.llm); 1357 Bewohner · [linse-gpu] nvidia/pascal an e80f9c5d · karte2.mensch.geist.gespraech#3 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#3 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#4 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#4 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#5 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#5 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#6 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#6 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#7 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.geist.gespraech#2",
@@ -16815,10 +16814,9 @@
      "id": "karte2.mensch.geist.gespraech#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/ausgabe-aufnahme.cjs +33)",
-     "ungemessen": true,
+     "zahl": "S2 ROT an Umfang 0 < 10 sprechende Bewohner — Täter: stamm/feld-nexus.js maybeAnswerCreature → llmCallCreature — die Antwort ist der Lauf des Modells (ohne Schlüssel: „keine Stimme“); keine Antwort ist gegen den Lebenslauf geprüft, kein Gespräch erinnert die vorige Begegnung (der LLM-Lauf mit Schlüssel, Drehbuch-Schritt 18) · Faktentreue der Antworten — (Soll ≥ 0.95) · Anteil Gespräche mit Bezug auf die vorige Begegnung — (Soll ≥ 1) · Umfang 0 (Soll ≥ 10 sprechende Bewohner) · der Ruf trifft 30 von 30 gerufenen Bewohnern beim Vornamen (stamm/feld-nexus.js _findCreatureByName), 30 Personae tragen den Lebenslauf (_buildCreaturePersonaPrompt); Stimme der Welt aus (state.llm); 1357 Bewohner · [linse-gpu] nvidia/pascal",
+     "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
+     "grund": "ROT: S2 ROT an Umfang 0 < 10 sprechende Bewohner — Täter: stamm/feld-nexus.js maybeAnswerCreature → llmCallCreature — die Antwort ist der Lauf des Modells (ohne Schlüssel: „keine Stimme“); keine Antwort ist gegen den Lebenslauf geprüft, kein Gespräch erinnert die vorige Begegnung (der LLM-Lauf mit Schlüssel, Drehbuch-Schritt 18) · Faktentreue der Antworten — (Soll ≥ 0.95) · Anteil Gespräche mit Bezug auf die vorige Begegnung — (Soll ≥ 1) · Umfang 0 (Soll ≥ 10 sprechende Bewohner) · der Ruf trifft 30 von 30 gerufenen Bewohnern beim Vornamen (stamm/feld-nexus.js _findCreatureByName), 30 Personae tragen den Lebenslauf (_buildCreaturePersonaPrompt); Stimme der Welt aus (state.llm); 1357 Bewohner · [linse-gpu] nvidia/pascal",
      "r6": "konsum"
     },
     {
@@ -23561,7 +23559,7 @@
   },
   "karte2.mensch.sport.kunst": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.sport.kunst#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, schmiede-core.js +4) · karte2.mensch.sport.kunst#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, schmiede-core.js +4) · karte2.mensch.sport.kunst#2 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#2 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#3 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#3 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#4 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#4 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#5 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#5 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#6 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.sport.kunst#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, schmiede-core.js +4) · karte2.mensch.sport.kunst#1 gtx: ROT: S1 auge: Bild karte2.mensch.sport.kunst_1-S1.png an Pose stadt-voll: arbeit pwalk/geselle, 3 m vor ihm, Augenhöhe gegen Vorbild Videos von Meister und Anfänger in 3 Künsten (Blindtest ≥ 80 %) · Meister {\"handwerk\":427,\"tanz\":8,\"kampf\":6,\"brett\":8} · Anfänger {\"handwerk\":576,\"tanz\":746,\"kampf\":1089,\"brett\":643} · handwerk pwalk/meister ↔ pwalk/lehrling: Züge 23 ↔ 11 · CV 0.0507 ↔ 0.1492 · Teile 1 ↔ 2 · Hüfte 7.071 ↔ 14.354 mrad · kampf fight/meister ↔ fight/lehrling: Züge 18 ↔ 12 · CV 0.05  — GRÜN erst mit dem Urteil am Gerät (Blindpaar) · [linse-gpu] nvidia/pascal an e80f9c5d · karte2.mensch.sport.kunst#2 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#2 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#3 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#3 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#4 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#4 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#5 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#5 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#6 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.sport.kunst#1",
@@ -23578,10 +23576,9 @@
      "id": "karte2.mensch.sport.kunst#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, schmiede-core.js +4)",
-     "ungemessen": true,
+     "zahl": "S1 auge: Bild karte2.mensch.sport.kunst_1-S1.png an Pose stadt-voll: arbeit pwalk/geselle, 3 m vor ihm, Augenhöhe gegen Vorbild Videos von Meister und Anfänger in 3 Künsten (Blindtest ≥ 80 %) · Meister {\"handwerk\":427,\"tanz\":8,\"kampf\":6,\"brett\":8} · Anfänger {\"handwerk\":576,\"tanz\":746,\"kampf\":1089,\"brett\":643} · handwerk pwalk/meister ↔ pwalk/lehrling: Züge 23 ↔ 11 · CV 0.0507 ↔ 0.1492 · Teile 1 ↔ 2 · Hüfte 7.071 ↔ 14.354 mrad · kampf fight/meister ↔ fight/lehrling: Züge 18 ↔ 12 · CV 0.05  — GRÜN erst mit dem Urteil am Gerät (Blindpaar) · [linse-gpu] nvidia/pascal",
+     "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
+     "grund": "ROT: S1 auge: Bild karte2.mensch.sport.kunst_1-S1.png an Pose stadt-voll: arbeit pwalk/geselle, 3 m vor ihm, Augenhöhe gegen Vorbild Videos von Meister und Anfänger in 3 Künsten (Blindtest ≥ 80 %) · Meister {\"handwerk\":427,\"tanz\":8,\"kampf\":6,\"brett\":8} · Anfänger {\"handwerk\":576,\"tanz\":746,\"kampf\":1089,\"brett\":643} · handwerk pwalk/meister ↔ pwalk/lehrling: Züge 23 ↔ 11 · CV 0.0507 ↔ 0.1492 · Teile 1 ↔ 2 · Hüfte 7.071 ↔ 14.354 mrad · kampf fight/meister ↔ fight/lehrling: Züge 18 ↔ 12 · CV 0.05  — GRÜN erst mit dem Urteil am Gerät (Blindpaar) · [linse-gpu] nvidia/pascal",
      "r6": "konsum",
      "beide": true
     },
@@ -37492,7 +37489,9 @@
    ]
   }
  },
- "rueckfall": [],
+ "rueckfall": [
+  "profiband.K4#1 gtx: Gehen 83 Bilder · max 108.35 ms · 15.66 % > 33 ms · Fahrt 49 Bilder · max 141.61 ms · 79.59 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 1 Bild(er) > 100 ms (max 108.35), 15.66 % > 33 ms | Fahrt: 4 Bild(er) > 100 ms (max 141.61), 79.59 % > 33 ms an e80f9c5d (grün gebucht an e80f9c5d)"
+ ],
  "r6": {
   "haelften": 3787,
   "konsum": 294,
@@ -37621,7 +37620,7 @@
   "ohne": 3373
  },
  "kopfVoll": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
- "zeit": "2026-11-28T06:12:14.526Z",
+ "zeit": "2026-11-28T06:29:49.433Z",
  "vorher": "e80f9c5d",
  "bilanz": {
   "gewinn": [],
