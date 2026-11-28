@@ -87,10 +87,10 @@
          seiteVon("k2-mensch-stadt.js", "mensch.stadt.groesse", "GIBTESNICHT");
 --- a/vision/pruefer/quellen.json
 +++ b/vision/pruefer/quellen.json
-@@ -12057,6 +12057,24 @@
+@@ -12189,6 +12189,24 @@
     "liegenGeblieben": [],
-    "stand": "geholt 40 von 40 · gesichtet am Bogen des Satzes (26.11., dritte Welle): 31 tragen das Motiv, 9 fielen (nicht)",
-    "ablage": "2afc/wikimedia-commons/haus-zehn-meter-2"
+    "stand": "ungeholt — geholt wird am Gerät (`--nur hang-schutt`), nie in der Sitzung des Machers · die Kategorie trägt 109 Dateien unmittelbar (Commons categoryinfo 28.11.)",
+    "ablage": "2afc/wikimedia-commons/hang-schutt"
 +  },
 +  {
 +   "id": "yellowstone-1988",
@@ -108,34 +108,34 @@
 +   },
 +   "dateien": [],
 +   "liegenGeblieben": [],
-+   "stand": "ungeholt · gesichtet in der Vorschau (360 px) am 28.11., Bild für Bild: von 46 Kandidaten (Titel aus 199 Treffern in Commons und NPGallery) tragen 25 das Motiv — eine Brandfläche im Lodgepole-Wald, die Jahre seit dem Brand am Foto lesbar (wahrheit): 1–2 a 8 · 9–13 a 9 · 18–31 a 8; die Stufe 5 a trägt kein freies Foto. Korpus 25 von 40"
++   "stand": "ungeholt · gesichtet in der Vorschau (360 px) am 28.11., Bild für Bild: von 46 Kandidaten (Titel aus 199 Treffern in Commons und NPGallery) und 8 der zweiten Suche (Commons, die späteren Brände des Parks) tragen 28 das Motiv — eine Brandfläche im Lodgepole-Wald, die Jahre seit dem Brand am Foto lesbar (wahrheit): 1–2 a 11 · 9–13 a 9 · 18–31 a 8; die Stufe 5 a trägt kein freies Foto. Korpus 28 von 40"
    }
   ],
   "liegenGebliebenQuellen": [
-@@ -12094,7 +12112,7 @@
+@@ -12226,7 +12244,7 @@
     ],
     "quelle": "NPS, Yellowstone-Feuer 1988, Fotoreihe (gemeinfrei)",
     "umfang": "≥ 40 Fotos in drei Zeitstufen",
 -   "grund": "nicht geholt: die Zeitstufe je Foto muss von Hand gelesen werden"
-+   "grund": "gelesen am 28.11. als Satz yellowstone-1988 (Liste, die Jahre je Foto): 25 von 40, die Stufe 5 a ohne freies Foto"
++   "grund": "gelesen am 28.11. als Satz yellowstone-1988 (Liste, die Jahre je Foto): 28 von 40, die Stufe 5 a ohne freies Foto"
    },
    {
     "art": "2afc",
-@@ -12297,7 +12315,7 @@
+@@ -12429,7 +12447,7 @@
    }
   ],
   "summe": {
 -  "saetze": 29,
-+  "saetze": 30,
++  "saetze": 36,
    "dateien": 976,
    "bytes": 269368450,
    "liegenGeblieben": 83
-@@ -12508,14 +12526,16 @@
+@@ -12647,14 +12665,16 @@
     "id": "leben.oeko.sukzession#2",
     "satz": "Bildpaar nach 1/5/25 Spieljahren gegen die Yellowstone-1988-Fotoreihe",
     "a": null,
 -   "fotos": 0,
-+   "fotos": 25,
++   "fotos": 28,
     "b": false,
 -   "c": "nicht-gelesen",
 -   "station": "k2-leben.js",
@@ -149,15 +149,15 @@
 +   ],
     "bereitBisAufDenFaecher": false,
 -   "fehlt": "a: keine Schwelle im Satz · b: Yellowstone-1988-Fotoreihe mit Zeitstufe je Foto (plan)"
-+   "fehlt": "a: keine Schwelle im Satz · b: 25 von 40 gesichtet (Satz yellowstone-1988), die Stufe 5 a trägt kein freies Foto"
++   "fehlt": "a: keine Schwelle im Satz · b: 28 von 40 gesichtet (Satz yellowstone-1988), die Stufe 5 a trägt kein freies Foto"
    },
    {
     "id": "leben.evolution.mikroben#1",
 --- /dev/null
 +++ b/vision/pruefer/listen/yellowstone-1988.csv
-@@ -0,0 +1,28 @@
-+# Yellowstone-Feuer 1988 (und zwei spätere Brände des Parks mit Jahr), Lodgepole-Wald, die Jahre seit dem Brand je Foto (wahrheit)
-+# gesichtet am 28.11. in der Vorschau 360 px, Bild für Bild: 25 tragen das Motiv; die Stufe 5 a trägt kein freies Foto
+@@ -0,0 +1,31 @@
++# Yellowstone-Feuer 1988 (und drei spätere Brände des Parks mit Jahr), Lodgepole-Wald, die Jahre seit dem Brand je Foto (wahrheit)
++# gesichtet am 28.11. in der Vorschau 360 px, Bild für Bild: 28 tragen das Motiv (3 davon in der zweiten Suche, Maple-Feuer 2016); die Stufe 5 a trägt kein freies Foto
 +url;lizenz;wahrheit;beleg
 +https://thumb.wikimedia.org/wikipedia/commons/thumb/3/34/Grass_growing_after_fire.jpg/1280px-Grass_growing_after_fire.jpg;gemeinfrei;1;https://commons.wikimedia.org/wiki/File:Grass_growing_after_fire.jpg (Feuer 1988, Foto Asche, erste Triebe (NPS-Reihe 1988, Stufe am Bild gelesen))
 +https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8f/Fireweed_after_fire.jpg/1280px-Fireweed_after_fire.jpg;gemeinfrei;1;https://commons.wikimedia.org/wiki/File:Fireweed_after_fire.jpg (Feuer 1988, Foto Weidenröschen zwischen schwarzen Stangen (NPS-Reihe 1988, Stufe am Bild gelesen))
@@ -167,6 +167,9 @@
 +https://thumb.wikimedia.org/wikipedia/commons/thumb/d/da/Burned_over_1990_Central_plateau_%28Pan%29.jpg/1280px-Burned_over_1990_Central_plateau_%28Pan%29.jpg;CC BY-SA 4.0;2;https://commons.wikimedia.org/wiki/File:Burned_over_1990_Central_plateau_(Pan).jpg (Feuer 1988, Foto 1990-07-30)
 +https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ac/Burnt_over_area.jpg/1280px-Burnt_over_area.jpg;CC BY-SA 4.0;2;https://commons.wikimedia.org/wiki/File:Burnt_over_area.jpg (Feuer 1988, Foto 1990-07-30)
 +https://thumb.wikimedia.org/wikipedia/commons/thumb/3/32/No_Canyon_Rd_-_Burned_area_-_regrouth_from_1988_fire.jpg/1280px-No_Canyon_Rd_-_Burned_area_-_regrouth_from_1988_fire.jpg;CC BY-SA 4.0;2;https://commons.wikimedia.org/wiki/File:No_Canyon_Rd_-_Burned_area_-_regrouth_from_1988_fire.jpg (Feuer 1988, Foto 1990-07-30)
++https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4e/Lodgepole_seedling_in_2016_Maple_Fire_scar_%2829098675047%29.jpg/1280px-Lodgepole_seedling_in_2016_Maple_Fire_scar_%2829098675047%29.jpg;gemeinfrei;2;https://commons.wikimedia.org/wiki/File:Lodgepole_seedling_in_2016_Maple_Fire_scar_(29098675047).jpg (Maple-Feuer 2016, Foto 2018-07-12 09:00)
++https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a6/Patterns_in_the_soil_left_by_burned_logs%2C_Maple_Fire_%2844036047851%29.jpg/1280px-Patterns_in_the_soil_left_by_burned_logs%2C_Maple_Fire_%2844036047851%29.jpg;gemeinfrei;2;https://commons.wikimedia.org/wiki/File:Patterns_in_the_soil_left_by_burned_logs,_Maple_Fire_(44036047851).jpg (Maple-Feuer 2016, Foto 2018-07-12 09:25)
++https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b1/Pinegrass_%28Calamagrostis_rubescens%29_growing_in_the_2016_Maple_Fire_scar_%2843317038574%29.jpg/1280px-Pinegrass_%28Calamagrostis_rubescens%29_growing_in_the_2016_Maple_Fire_scar_%2843317038574%29.jpg;gemeinfrei;2;https://commons.wikimedia.org/wiki/File:Pinegrass_(Calamagrostis_rubescens)_growing_in_the_2016_Maple_Fire_scar_(43317038574).jpg (Maple-Feuer 2016, Foto 2018-07-12 08:54)
 +https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6e/Lodgepole_pine_Yellowstone_1998_near_firehole.jpg/1280px-Lodgepole_pine_Yellowstone_1998_near_firehole.jpg;gemeinfrei;10;https://commons.wikimedia.org/wiki/File:Lodgepole_pine_Yellowstone_1998_near_firehole.jpg (Feuer 1988, Foto 1998-09)
 +https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e1/Lodgepole_pine_Yellowstone_1998.jpg/1280px-Lodgepole_pine_Yellowstone_1998.jpg;gemeinfrei;10;https://commons.wikimedia.org/wiki/File:Lodgepole_pine_Yellowstone_1998.jpg (Feuer 1988, Foto 2019-12-21 13:13:03)
 +https://upload.wikimedia.org/wikipedia/commons/1/1c/Yellowstone_N.P._1997_79.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original;CC BY-SA 4.0;9;https://commons.wikimedia.org/wiki/File:Yellowstone_N.P._1997_79.jpg (Feuer 1988, Foto 1997-07)

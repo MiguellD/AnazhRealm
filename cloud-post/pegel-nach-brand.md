@@ -221,3 +221,11 @@ Karte 2 gebucht 158 von 1 718 · Status ZWISCHENSTAND.
 - **offen:** Korpus 25 von 40 (Stufe 5 a ohne freies Foto) · die Bilder ungefahren (swiftshader: die Welt steht hier nicht) · das Urteil des Prüfers.
 
 Karte 2 gebucht 158 von 1 718 · Status ZWISCHENSTAND.
+
+## 28.11. 02:58 — main 9885e7c4 gemischt glatt; der Fach-Kandidat sukzession#2 neu gegen pm 9c09df5e, Korpus 28 von 40
+- main 9885e7c4 gemischt (merge-tree 0 CONFLICT, Statik GANZ, format, lint, welt-boot, fachwerk, stand-takt-Selbsttest GRÜN). Kein Vorprüf-Kopf bis zur Landung des Bündels.
+- Geschnitten: `sukzession-2-fach.diff` neu gegen pm 9c09df5e (sechs neue Sätze am selben Ort, beide Seiten bleiben, summe.saetze 36); `git apply --check` GRÜN, Selbsttest des Fächers 17 GRÜN · 0 ROT.
+- Gemessen: Korpus 25 → 28 von 40 (drei Fotos der Maple-Narbe 2016, Foto 2018, 2 a, gemeinfrei; zwei Dubletten und eine Nahaufnahme fielen).
+- **offen:** 28 von 40, die Stufe 5 a ohne freies Foto · die Bilder ungefahren · das Urteil des Prüfers · zerfall#2 (der Leser liegt in einer Datei, die diese Bahn nicht berührt).
+
+Karte 2 gebucht 158 von 1 718 · Status ZWISCHENSTAND.

@@ -55,3 +55,13 @@ vision/pruefer/quellen.json (Satz, Plan, Front) · meisterkarte-quelle/punkte/st
 Geprüft: `git apply --check` an frischen Kopien der pm-Fassungen GRÜN, angewendet byte-gleich; `node --check`; prettier GRÜN.
 Das Bild ist ungefahren: unter swiftshader steht die Welt hier nicht (Werkbank /bild „DIE WELT STEHT NICHT nach 3689 Takten“) —
 der Richter ist die GPU des Fächers.
+
+NACHTRAG zum dritten Kandidaten (28.11. 02:58 MEZ): neu gegen den pm-Kopf 9c09df5e0a91814a63959f45214f4cb5b8661dd4.
+- pm rückte (bafab955 → 9c09df5e): sechs neue Sätze am selben Ort in quellen.json (hang-*). Der Kandidat steht dahinter, beide
+  Seiten bleiben; summe.saetze 36 = M.saetze.length (so schreibt es `summe()` des Holers). faecher.cjs und k2-leben.js unverändert.
+- Korpus 25 → 28 von 40: die zweite Suche (Commons, die späteren Brände des Parks) gab drei Fotos der Narbe des Maple-Feuers 2016,
+  aufgenommen am 12.07.2018 (wahrheit 2 a, gemeinfrei, NPS), Brandfläche aus Augenhöhe. Fielen: zwei Dubletten (Norris, Arnica:
+  dasselbe Bild, anderer Schnitt), eine Nahaufnahme (Pflanze), der Sämling unter 1 m, Fotos ohne Brandjahr oder im Brandjahr.
+- Geprüft: `git apply --check` an frischen Kopien von 9c09df5e GRÜN, angewendet byte-gleich; Selbsttest des Fächers 17 GRÜN · 0 ROT;
+  `listeLesen` 28 Zeilen, 28 frei.
+  OFFEN unverändert: die Stufe 5 a trägt kein freies Foto; 28 von 40.
