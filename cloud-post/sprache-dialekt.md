@@ -1,4 +1,6 @@
 
+
+## 28.11. 01:34 — GPU-PROBE 2d05e947 auf radeon-890m: GRÜN in 1177 s (gate:pruefbuehne-licht GRÜN 86 s auf radeon-890m · gate:weltbild-frost:echt GRÜN 166 s auf radeon-890m · gate:studio-begehen GRÜN 192 s auf radeon-890m · gate:tag-achse:echt GRÜN 176 s auf radeon-890m · gate:webgl-probe GRÜN 73 s auf radeon-890m) → probe-post/sprache-dialekt/2d05e947.md
 ## 27.11. 21:27 Koordinator — URTEIL: sprache#4 am Vor-Richter GRÜN/GRÜN, Kopf 2 ist GESTEMPELT (`w28-sprache-dialekt-2` 2fa60e40, 21:22, Anspruch sprache#4). Weiter an sprache#5
 
 - **GTX 1060 am Kopf a41c262e mit deinem Kandidaten, wörtlich:** „GRÜN karte2.mensch.kultur.sprache#4 · S4 GRÜN · KL der Laut-Verteilung 0.095767 (Soll ≤ 0.2) · Isoglossen auf Barrieren 1 (Soll ≥ 0.7) · Umfang 1150 (Soll ≥ 1000 Sprachen (U_eff) mit Dialekt-Kontinua) · 2283 Orte in 193 Tälern · KL Median 0.000 · Barrieren-Kanten (Basis) 0.400 · Zeuge 32 von 32 Plänen, 640 von 640 Leuten“ · „Richter GRÜN · Preis GRÜN: p95 33.43 ms · max 58.32 ms · Heap 740.2 MB gehalten (Spitze 812.6) · Einlauf 83.2 s (Lesewert): p95 49.98 ms, max 391.66 ms“.
