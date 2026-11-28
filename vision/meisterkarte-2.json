@@ -205,10 +205,10 @@
    "summe": {
     "kriterien": 26,
     "sprossen": 180,
-    "heute": 11,
+    "heute": 12,
     "kern": 0,
     "kernDazu": 0,
-    "anteilHeute": 5.2,
+    "anteilHeute": 5.7,
     "anteilKern": 0
    },
    "perspektiven": [
@@ -1867,7 +1867,7 @@
        "richter": "p95 ≤ 33 ms über die Durchfahrt; Blindtest ≤ 60 %"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "ungemessen",
      "beleg": "Stand 0: keine Extreme jenseits des Sturm-Worts.",
@@ -20099,11 +20099,11 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 158,
+  "heute": 159,
   "davonKopplungen": 33,
   "kern": 0,
   "kernDazu": 0,
-  "anteilHeute": 8.1,
+  "anteilHeute": 8.2,
   "anteilKern": 0,
   "kapitel": 7,
   "perspektiven": 42,
@@ -20114,7 +20114,7 @@
   },
   "gliederLeitern": 9,
   "beide": 76,
-  "nachwache": 82
+  "nachwache": 83
  },
  "zusammengelegt": [
   {
