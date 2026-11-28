@@ -1,7 +1,7 @@
 {
  "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
  "geraet": "gtx",
- "zeit": "2026-11-28T06:24:14.657Z",
+ "zeit": "2026-11-28T06:26:03.146Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "profiband.K4#1": {
@@ -506,6 +506,76 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.mensch.sport.kunst#1": {
+   "gruen": false,
+   "zahl": "S1 auge: Bild karte2.mensch.sport.kunst_1-S1.png an Pose stadt-voll: arbeit pwalk/geselle, 3 m vor ihm, Augenhöhe gegen Vorbild Videos von Meister und Anfänger in 3 Künsten (Blindtest ≥ 80 %) · Meister {\"handwerk\":427,\"tanz\":8,\"kampf\":6,\"brett\":8} · Anfänger {\"handwerk\":576,\"tanz\":746,\"kampf\":1089,\"brett\":643} · handwerk pwalk/meister ↔ pwalk/lehrling: Züge 23 ↔ 11 · CV 0.0507 ↔ 0.1492 · Teile 1 ↔ 2 · Hüfte 7.071 ↔ 14.354 mrad · kampf fight/meister ↔ fight/lehrling: Züge 18 ↔ 12 · CV 0.05  — GRÜN erst mit dem Urteil am Gerät (Blindpaar) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.31,
+   "grund": "ROT: S1 auge: Bild karte2.mensch.sport.kunst_1-S1.png an Pose stadt-voll: arbeit pwalk/geselle, 3 m vor ihm, Augenhöhe gegen Vorbild Videos von Meister und Anfänger in 3 Künsten (Blindtest ≥ 80 %) · Meister {\"handwerk\":427,\"tanz\":8,\"kampf\":6,\"brett\":8} · Anfänger {\"handwerk\":576,\"tanz\":746,\"kampf\":1089,\"brett\":643} · handwerk pwalk/meister ↔ pwalk/lehrling: Züge 23 ↔ 11 · CV 0.0507 ↔ 0.1492 · Teile 1 ↔ 2 · Hüfte 7.071 ↔ 14.354 mrad · kampf fight/meister ↔ fight/lehrling: Züge 18 ↔ 12 · CV 0.05  — GRÜN erst mit dem Urteil am Gerät (Blindpaar) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k8f184be520cf",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k1ca930620453",
+   "s": 18.7,
+   "fremd": {
+    "s": 21.7,
+    "takte": 10,
+    "fremdS": 11.03,
+    "kerne": 0.507,
+    "fensterKerne": 0.63,
+    "namen": [
+     [
+      "Explorer.EXE",
+      2.39
+     ],
+     [
+      "bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \"",
+      1.2
+     ],
+     [
+      "node.exe dienst-omen/runde.cjs push-pfade AnazhRealm-OMEN/n0611-pm punkte-maschine gtx e80",
+      1.05
+     ]
+    ],
+    "dienerS": 5.06,
+    "diener": [
+     [
+      "System",
+      2.34
+     ],
+     [
+      "dwm.exe",
+      1.44
+     ]
+    ],
+    "geraetS": 11.63,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      7.55
+     ],
+     [
+      "svchost.exe",
+      3.52
+     ],
+     [
+      "SearchIndexer.exe",
+      0.33
+     ]
+    ],
+    "eigenS": 36.83,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-28T06:26:03.146Z",
+   "abdruck": "d891cf7d15f5",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -514,6 +584,7 @@
   "kdce08711971b": "bVXRbptAEPwXPzYlCz4Ix0l5OIe0sVRXySfswR5gY7DusKlc9d8rsHEMZB/ggVl2mJk9/i4OmOwwo8etrauFWHxbfF9YPJFjyZzIPG7tQiyixFsSE/JSIKV86WCJKQ6NhbJQgKrCfE/O0TRUlI9J36af0A2UgPZVZu8AGs4Qt8/P09ZSUVo7DWoaGl1iAScxBR5thoocPOp+2BWsQt/jiYC+eCw3MVwrA+BSrmNYwRYmL1NYpWO2nhfhUyhku36R8mPKMi2QGqcsKjvM9dIw0q4YhkG7mfUYbJ0zUl6SuTYR9zxfDWRXnZydNJNGXR6tHQ3jLA2WXABEU2xGtkjyxjmYWlE1aBItQw/Faq52djg6+p4RKoVcTbXOkaqMzIiDyxL95An4w6cv3eGeDDoV5ldo5LJwqT61AYC3OZeyJ96PGIj7jC+5N2rsTIVTJ3AqR/U+mHwp3Q4Pkhskk7OhNskLsx/LpX1aukz8mlO0OaZknF1tmxuaUei76rIN6xguXPhq2vn5cYOHiMjvAgMc5NtMS1vrpkVDTnY4DqHxKQgDIeV6Bm5wv7/RYhzZ1EjbdEG/p7GMdBD4AuDhsijzj76shXOmoqRbbpOQReIlllPwyeDeQZWZQuvBfRUkOvoqrC2VjaPquhm4MNdNAgEMqnvDf/dWru+8jrMPf/NDtq/jCKxndPoJtWlupwMq5vtCZzEH4HqKLkzjtJjkAzxkioiJLnMT6JlMSRmNpNSeh8tUQHtNXNwlIbweB/phFOLzzOlzQZ3IlT3aQeUEfRWIL2xpyewUVrvbKmLKgj6Cq418H4uyPXSrACcOY63iU3/f/Bzw8eVyOesOlMDB1LroTkbI8WhzLJvP38K//w==",
   "ka754606c38ad": "bVXRbqMwEPyXPN4dXcBQjKU+OKW6Rrqe0k9YwxpoCEQ2Caec7t9PkJAG6L4AYoYdz47N39UB0x3m9PBhm3olVt9WP1YWT+RYMicyDx92JVZx6vnEhLwUSCmfe1hqykNroSoVoKqx2JNzNC2V1UM60PQjuqES0L3IfAug4QxJ9/Q0p1aKssZpUdNIdImFnMQceLQ5KnLwqIdmV7CKAo+nAobiiXxL4Fr58LxJYA0fMPuYwjqbqvW8GB8jIbuNlPJ9rjIrkVqnKms79vWyKNauGJtB97bgGOycM1JRkbmSiHteoEax697O3poZUVdHayfNOMtCnwuAeI7NyZZp0ToH0yiqR09iP/JQrJdu54ejo+8VoVLI1dzrAqnOyUw0uCzVj56AP3z+0R3uyaBTY3GFxi6LfPXpDQC8LrVUg/ChxSg8YNzn3oTYD/FicCYntR2HfCndjS/SGyS/3SUXXLfQbtOiNPupfTog32Xi11KyLTAj4+wa297QjKLAVZfdsUngoo2v58zPxY4zRUR+FyDgIF+X+hrddmjIyQ/HMUQBhVEopNwswC3u9zdZjCObD9a2ffDvZfixDsNAAHy/2rxY9GWbOGcqK7rlOI1YLJ6TYA4+Gdw7qHJTaj2mQYWpjr8Kb0dV66imaUctzHXTUACD+j4Av4fRbu5mn+TvQVutu5dpJDZyLmfo0Jj2dlqgYkEgdJ5wAK7n6NK0TodpMcIjpoiY6DM4g57JVJTTxErteehnAjp90X3mUm6j6/Ggv09CfV5M+lxSb3Jtj3Z0OcVAheKLsXRkdgrr3W1rYsbCIYLrN7mdePLynPdbA04cpl4lp+H69nN79S6RMuH62uhAKRxMo8v+pIQCj7bAqv38Tfz7Dw==",
   "k1ca930620453": "lZXdcpswEIXfxZdNyfIbhGZyIZtM43TSpH2DFawAGwMj4dBxp+/e8Q/YQG66V1yc1R6+PYI/iwaTLWZ0vzF1teCLL4uvC4MfZBnSH6TvN2bBF1HiuORxcS4QQnw7yhJdNK2BspCAssJ8R9Zet1SU98mpTT2gHUgO3ZPI3gEUHCDuxFAr8fg4PaaUlNZWi4r6Q2zyAkZ8KtybDCVZuFenwRexDH2HJRxOxWLxGsOlMgAmxDqGJWxgcpjEKh07d5wIH0IuurUQ4ufUZVogtVZZVKaf66RhpGzeD4PuddajsbMOSHlJ+tJEzHF82ZtdHpEcMU0aVbk3ZjSMeWngMg4QTbUZmSLJW6vRtaSqZxK5oYN82c1oZ83eUreOUEpkcso6R6oy0iMPtpeoB4fDbzY9dIs70mhVmF+kke2FrryyAYDnuZfyZPw0ojfue8xlzqjxuNQz4FSM6r1f8rnUELNkkGTzuJkkL/RujEv55NrelIHJMSVtbWvTDkqPQt+W51uxjuHsgy2nndcX6/eHiOwmLMBAPM84mlq1HWqysmbfB8anIAy4yGbpMi3udoMtj+H8BdpjyG9tuJEKAp8D3F2QzvCcr4R1oKKkIbNJ6EV8FftT8YfGnYUy04VS/eZlkKjos6B2VLaWrOu29+LZdhJw8KC6XfaPTqyEeL2u+S0uf/lt+XL3NF7/d/Hy2YRat8OXAaXn+1x1MQNgaqoudGt1mOS9PPQk0QzigXRJGY0wKsdBN+XQXZMmYr9/uBuF9zDb8qGgI+DK7E1POEFfBud0XFK8Hie3I72VWG2Hq4ipF3Ah4ky8ivcbKm9CbBrVif+obHUc1FACja5VcfwyQo57k2PZXn8Rf/8B",
-  "k3a29b08f1ebb": "bVXBcpswFPwXH9uSBwiC0EwOckkbz9Sd5BOe4AmIMXgkbDru9N87YOMYiA72gX3aZXcl/q4OmO4wp4d329Qrsfqy+rayeCLHkjmReXi3K7GKU88nJvpHqSkPrYWqVICqxmJPztG0VFYP6QDVj+iGSkD3LPNXAA1nSLqnp/lopShrnBY1jYMusZDTguNoc1Tk4FEPZFewigKPpwKGxRO5TeC6cgAu5SaBNbzDbDOFdTZV63kxPkZCdhsp5dtcZVYitU5V1nbk9bIo1q4YyaDbLmYMds4ZqajIXIeIe16gRrFrKeVgzWxQV0drJ2ScZaHPBUA8x+Zky7RonYNpFNWjJ7EfeSjWS7fzw9HR94pQKeRq7nWBVOdkJhpclupHT8AfPt90h3sy6NRYXKGxyyJffXgDAC9LLdUgfKAYhQeM+9ybDPahwqk3OJOT9TqGfFm6Gx+kN0guF6Q2LUqzn9qlA/JdJn4tJdoCMzLOrrHtDc0oClwlBoJNAhctfD2f/Hi5MUNE5HeFAQ7yZeGlbXTboSEnPxzH0gQURqGQcrMAt7jf32QxjouDadu+6Pcy/FiHYSAAvl4OyvKlL8fCOVNZ0a23acTi+eYng3sHVW5KrcfkVZjq+LOidlS1jmqadtTBXDcNBTCo78P+PcS4ucs5yd+C7Q+ZP0/j38i57oGhMe3tZkDFgkDoPOEAXM/RpWmdDtNihEdMETHR920GPZOpKKeJjdrz0M8EdNe2JX0LoutVoL9OCnxepHwuqTe4tkc7OpxioELxSSQdmZ3Cenc7hpixcKjfeitfp6Z8z/tjACcOU6+S0/C//Tnik8vPhehAKRxMo8v+VoQCj7bAqv34DPz7Dw=="
+  "k3a29b08f1ebb": "bVXBcpswFPwXH9uSBwiC0EwOckkbz9Sd5BOe4AmIMXgkbDru9N87YOMYiA72gX3aZXcl/q4OmO4wp4d329Qrsfqy+rayeCLHkjmReXi3K7GKU88nJvpHqSkPrYWqVICqxmJPztG0VFYP6QDVj+iGSkD3LPNXAA1nSLqnp/lopShrnBY1jYMusZDTguNoc1Tk4FEPZFewigKPpwKGxRO5TeC6cgAu5SaBNbzDbDOFdTZV63kxPkZCdhsp5dtcZVYitU5V1nbk9bIo1q4YyaDbLmYMds4ZqajIXIeIe16gRrFrKeVgzWxQV0drJ2ScZaHPBUA8x+Zky7RonYNpFNWjJ7EfeSjWS7fzw9HR94pQKeRq7nWBVOdkJhpclupHT8AfPt90h3sy6NRYXKGxyyJffXgDAC9LLdUgfKAYhQeM+9ybDPahwqk3OJOT9TqGfFm6Gx+kN0guF6Q2LUqzn9qlA/JdJn4tJdoCMzLOrrHtDc0oClwlBoJNAhctfD2f/Hi5MUNE5HeFAQ7yZeGlbXTboSEnPxzH0gQURqGQcrMAt7jf32QxjouDadu+6Pcy/FiHYSAAvl4OyvKlL8fCOVNZ0a23acTi+eYng3sHVW5KrcfkVZjq+LOidlS1jmqadtTBXDcNBTCo78P+PcS4ucs5yd+C7Q+ZP0/j38i57oGhMe3tZkDFgkDoPOEAXM/RpWmdDtNihEdMETHR920GPZOpKKeJjdrz0M8EdNe2JX0LoutVoL9OCnxepHwuqTe4tkc7OpxioELxSSQdmZ3Cenc7hpixcKjfeitfp6Z8z/tjACcOU6+S0/C//Tnik8vPhehAKRxMo8v+VoQCj7bAqv34DPz7Dw==",
+  "k8f184be520cf": "bVXRbqMwEPyXPF6PGjAUY6kPTqnUnK5S+glrswYaApEN4ZTT/fsJEmiA7hvKrHc8M+v83ZxAHSDDx09bVxu++bH5ubFwRseiOaN5/LQbvomV5yPl4lpECPHSw5QpTo0lZSEJyAryIzqtabAoH9XQpp/ADSUn3avI9oRociFJJ6Z6Fc/Py2NKiWntNKBxPMRFGjLkS2BrM5DoQKuHwTewjAKPKU6GYol4T8itsuF7l5At+STD+I/VdAlVOr+B58XwFHHR7YaGBT4tABunLCo7zvfSKNYuH4eS7n3VY6BzLoB5iebWhMzzAjmS3vbcerkWjbpsrZ0NYzQNfcYJiZfYDG2h8sY5mVpiNWoT+5EHfNut7p2dWkffMwIpgcml5jlglaGZcXCp0k8eJ3/Y8tADHNGAU0F+g8YujXz5pQ0h5G3NpRyIDyNG4gFlPvNmjb2Z5NwLnIpZ7Uezr6WnuKkJkq1jZ1VemONcLh2g71L+e03R5pCicQ61bSY0xShw5XVDdsk1YHu2XXZ+XW70EADYXWAII+JtpaWtddOBQSc7tWNoAgyjkAuxW4EbOB4nWpQBXRppmz7o9zT8WIdhwAl5uC7M+tLXtXAuWJQ45VZFNF4efjZwdEBmptB6dF6GSsffBbXDsnFkXTcjD+q6KuzlqO7N3g827u58TrKPoCm33evc/p1Y8h4m1KaZXgiQNAi4zhJGCNNLdGEapwOVj/CISkTK+7wtoBc0JWY4k1F7HvgpJ52+8r4wIfbR7SnQD7MAX1YuXwrsBa5sa0eFFQQy5N9Y0qE5SKgO0xpCSkP+SwixfRf7mSavL1m/BsO6zOs8/G6P+5t2iRAJ07dBJ1TkZGpd9K8iyaG1OZTN19/Ev/8="
  }
 }
