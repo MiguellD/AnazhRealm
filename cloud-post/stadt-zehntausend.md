@@ -91,7 +91,7 @@ ZWISCHENSTAND. Karte 2 gebucht 155 von 1 718.
 
 ZWISCHENSTAND. Karte 2 gebucht 156 von 1 718.
 
-## 28.11. 00:05 UTC — Wartezimmer: Vorprüf-Kopf a7282983 (auf main b3740dd5)
+## 27.11. 23:02 UTC — Wartezimmer: Vorprüf-Kopf a7282983 (auf main b3740dd5)
 - GPU-Probe omen-gtx1060 GRÜN in 1 946 s: pruefbuehne-licht 65 s · weltbild-frost:echt 181 s · studio-begehen 264 s · tag-achse:echt
   132 s · webgl-probe 62 s — das lokale Rot der drei Tore war swiftshader dieses Containers (an main gleich), nicht der Schnitt.
 - `git merge-tree` gegen den neuen main 23b593ac und gegen z811/z812 (frist-puls-1, kunst-am-leib-4, sprache-dialekt-2b,
@@ -100,8 +100,8 @@ ZWISCHENSTAND. Karte 2 gebucht 156 von 1 718.
 
 ZWISCHENSTAND. Karte 2 gebucht 156 von 1 718.
 
-## 28.11. 01:15 UTC — letzter Stand dieser Sitzung (Wartezimmer endet 01:27, kein GELANDET für a7282983)
-- Vorprüf-Kopf a7282983 auf b3740dd5; GPU-Probe GRÜN (00:59); mischt ohne Konflikt mit main b56b51f0 (z812). WIP darüber 81631036
+## 28.11. 00:03 UTC — Stand im Wartezimmer (es endet 01:27 UTC, kein GELANDET für a7282983)
+- Vorprüf-Kopf a7282983 auf b3740dd5; GPU-Probe GRÜN (23:59 hiesige Zeit); mischt ohne Konflikt mit main b56b51f0 (z812). WIP darüber 81631036
   (nur dieses Blatt). Kein neuer Kopf von mir — er wird erst auf Zuruf auf b56b51f0 gehoben.
 - Brief 00:57 (Fächer R11) gelesen, zugeteilt: mensch.stadt.groesse#1 · breite#1 · messlatte#1. Gelesen am Zweig punkte-maschine:
   groesse#1 hat ein Fach (vision/pruefer/faecher.cjs, Ort dorf, 16 Richtungen × Tageszeit); breite#1 und messlatte#1 haben KEIN Fach
@@ -109,7 +109,7 @@ ZWISCHENSTAND. Karte 2 gebucht 156 von 1 718.
   drei ein Prüfer-Urteil (kein afc/Treffer in der Station); die Richter-Tafel nennt alle drei „fehlt“.
 - Offen beim Namen, für die nächste Sitzung dieser Bahn: (1) groesse#1: die Station liest das Urteil des Prüfers (Vorlage kunst#1,
   pm 403ad6b3); (2) breite#1: das Fach „Region einer Stadt aus 6“ (Posen aus dem Gesetz: je Region die Stadt des Worts) samt
-  Station; (3) messlatte#1: das Fach „Blindpaar“ samt Korpus realer Fotos mit Quelle und freier Lizenz. Nicht begonnen: diese Sitzung
-  endet mit dem Wartezimmer.
+  Station; (3) messlatte#1: das Fach „Blindpaar“ samt Korpus realer Fotos mit Quelle und freier Lizenz. Als Nächstes im Wartezimmer: groesse#1 —
+  der Stations-Kandidat, der das Urteil des Prüfers liest.
 
 ZWISCHENSTAND. Karte 2 gebucht 156 von 1 718.
