@@ -244,3 +244,13 @@ Karte 2 gebucht 158 von 1 718 · Status ZWISCHENSTAND.
 - **offen:** der Kopf mit dieser Heilung erst nach der Landung von z819 (Kopf 4 fährt dort) · zerfall#2: Quelle gefunden (Vet. Sci. 2020, Wildschwein-Kadaver, CC BY, 38 Felder in 0/3/10/30 Tagen: 2 · 4 · 14 · 18), der Holer liest weder den Wirt noch ein Feld einer Tafel — Korpus 0 von 40 an der Wand.
 
 Karte 2 gebucht 158 von 1 718 · Status ZWISCHENSTAND.
+
+## 28.11. 04:49 — Kopf 5 auf main bbb97563: die Heilung des Pendels, dazu die Wald-Uhr; der Fach-Kandidat sukzession#2 gegen pm 5e895684
+
+- Geschnitten: main bbb97563 gemischt (nur das Blatt und die Begründung trafen sich, beide Seiten bleiben); der Kopf trägt gegen den main die Linse stand-takt (der Pendel im Bett, Frist am Stand der Welt) und die Wald-Uhr nach dem Brand (`TAT_NARBE.brand.waldJahre`, `_tatBoden`), sonst nur das Blatt.
+- Gemessen am gemischten Stand: stand-takt ganz GRÜN mit `netz` mutante 24 (4 nasse Chunks × 6 Wechsel, derselbe Wert wie vor dem Mischen), `--narbe` GRÜN, `--selftest` GRÜN; welt-boot, fachwerk-contract, format, lint GRÜN, check:statik GRÜN (468 s).
+- Der Fach-Kandidat sukzession#2 neu gegen 5e895684 (die Felswand gebirge#1 steht am selben Ort im Fächer, beide bleiben): `git apply --check` GRÜN an 5e895684 und am pm-Kopf 1e388d30, Selbsttest des Fächers 20 → 21 GRÜN · 0 ROT. Zweite Lese des Korpus: 15 Kandidaten gesichtet — 10 Doppel schon gelesener Fotos, 2 ohne lesbares Brand-Jahr, 2 ohne das Motiv; der Korpus bleibt 28 von 40.
+- Probe-Ruf `gate:webgl-probe,bild:dorf@0.5,gate:stand-takt,gate:wetter-wache` (an Kopf 4 auf der GTX 1060: 57 · 102 · 292 · 128 s, je ≤ 480 s); `zug.sh probe-tag` ist von hier nicht erreichbar (koordination). merge-tree 0 CONFLICT gegen main und boden-korn 60d1bce3; wetter-lagen 2096673a trifft den main selbst an drei Dateien (studio-vertrag, gelaende-core, hoehlen-sicht), der Kopf berührt keine davon.
+- **offen:** sukzession#2 Korpus 28 von 40 (die Stufe 5 a trägt kein freies Foto) · zerfall#2 Korpus 0 von 40 an der Wand (Wirt und Feld einer Tafel) · stoerung#3 Kandidat ×1,134 gegen Soll ≥ 1,3.
+
+Karte 2 gebucht 158 von 1 718 · Status ZWISCHENSTAND.

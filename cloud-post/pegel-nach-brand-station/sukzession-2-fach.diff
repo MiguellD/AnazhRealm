@@ -12,11 +12,11 @@ index 0930b70..63edb39 100644
                          nicht: "kein 1-km²-Brand mit Überlebenden-Inseln",
                          leser: "stamm/vegetation-wiese.js:2120 _sukzession — EINE Rampe je Zelle, kein Feuer-Regime je Biom, keine Überlebenden",
 diff --git a/vision/pruefer/faecher.cjs b/vision/pruefer/faecher.cjs
-index efba949..37b916e 100644
+index 46b47c4..4918e8e 100644
 --- a/vision/pruefer/faecher.cjs
 +++ b/vision/pruefer/faecher.cjs
-@@ -141,6 +141,23 @@ function bodenGesetz() {
-     return { an: fn("BODEN_AN"), blick: fn("HANG_BLICK"), posen: t.slice(s, t.indexOf("\n", g)).replace("(Number(u1.posen) || 30)", "N") };
+@@ -153,6 +153,23 @@ function gebirgeGesetz() {
+     return fn;
  }
  
 +// DAS GESETZ DER FOLGE (k2-leben.js, Leiter leben.oeko.sukzession, Rumpf `folge`, kein `seite`-Export): am Wortlaut aus der Station
@@ -39,7 +39,7 @@ index efba949..37b916e 100644
  // JE SPROSSE: der Messort, die Zeile des Gesetzes, der Rumpf in der Seite (r = Welt, T = THREE) → { saat, posen: [{ pose, wort }], lage }
  const SPROSSEN = {
      // der Ortsrand: die Station nimmt von 8 Richtungen die mit den meisten Häusern im Kegel der Kamera (k2-mensch-stadt.js:224–236,
-@@ -515,6 +532,40 @@ const SPROSSEN = {
+@@ -550,6 +567,40 @@ const SPROSSEN = {
              "const N = [...namen], leser = N.filter((n) => /vulkan|volcan|magma|ausbruch|eruption|roehre/i.test(n)), schl = Object.keys(o).sort().join(',') + ' · delta ' + Object.keys(o.delta || {}).sort().join(',');" +
              "return { saat, posen: [], lage: 'der Planet-Faden trägt ' + (/vulkan/.test(schl) ? 'einen' : 'keinen') + ' Vulkan (' + schl + '), die Welt ' + leser.length + ' Leser eines Ausbruchs; Glut steht nur an einer gesetzten Lava-Tat' };",
      },
@@ -80,7 +80,7 @@ index efba949..37b916e 100644
  };
  
  // ───────────────────────── reine Teile (der Selbsttest fährt sie) ─────────────────────────
-@@ -823,6 +874,8 @@ function selbsttest() {
+@@ -859,6 +910,8 @@ function selbsttest() {
      t("die Rümpfe tragen die Seiten-Funktionen der Stationen und sind gültiger Text" + (rumpf.startsWith("FEHLER") ? " — " + rumpf : ""), !rumpf.startsWith("FEHLER") && /_bewohnerSiedlungen/.test(rumpf) && /aus\.alle/.test(rumpf) && /i < 16/.test(rumpf));
      const boden = rumpf.startsWith("FEHLER") ? "" : SPROSSEN["planet.relief.boden#1"].rumpf();
      t("der Boden am Hang liest das Gesetz der Station: BODEN_AN, HANG_BLICK und den Strom der Saat 12345 (100 Posen), nie eine eigene Formel", /BODEN_AN = async \(r, T, a, mit\) =>/.test(boden) && /HANG_BLICK = \(r, x, z\) =>/.test(boden) && /let sz = 12345;/.test(boden) && /p < N; p\+\+/.test(boden) && !/u1\.posen/.test(boden));
@@ -127,10 +127,10 @@ index 0000000..6d79f08
 +https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5b/Lodgepole_pine_regrowth_after_1988_fire_along_Gibbon_River_%2848794197667%29.jpg/1280px-Lodgepole_pine_regrowth_after_1988_fire_along_Gibbon_River_%2848794197667%29.jpg;gemeinfrei;31;https://commons.wikimedia.org/wiki/File:Lodgepole_pine_regrowth_after_1988_fire_along_Gibbon_River_(48794197667).jpg (Feuer 1988, Foto 2019-08-30 18:56)
 +https://thumb.wikimedia.org/wikipedia/commons/thumb/4/49/Lodgepole_pine_forest_along_the_Madison_river_%284baffe1a-666d-462a-b9ed-a2a5e3e0ca1e%29.jpg/1280px-Lodgepole_pine_forest_along_the_Madison_river_%284baffe1a-666d-462a-b9ed-a2a5e3e0ca1e%29.jpg;gemeinfrei;26;https://commons.wikimedia.org/wiki/File:Lodgepole_pine_forest_along_the_Madison_river_(4baffe1a-666d-462a-b9ed-a2a5e3e0ca1e).jpg (Feuer 1988, Foto 12 September 2014)
 diff --git a/vision/pruefer/quellen.json b/vision/pruefer/quellen.json
-index 2b40ef1..691acc0 100644
+index 0adab4d..099787c 100644
 --- a/vision/pruefer/quellen.json
 +++ b/vision/pruefer/quellen.json
-@@ -12273,6 +12273,25 @@
+@@ -12315,6 +12315,25 @@
     "liegenGeblieben": [],
     "stand": "ungeholt — geholt wird am Gerät (`--nur ricke`), nie in der Sitzung des Machers · die Suche trägt 30 freie JPEG ≥ 1 280 px (Commons 28.11.) · `hole.cjs --trocken` 28.11.: 25 von 25, liegen geblieben 0 — ungesichtet",
     "ablage": "2afc/wikimedia-commons/ricke"
@@ -156,7 +156,7 @@ index 2b40ef1..691acc0 100644
    }
   ],
   "liegenGebliebenQuellen": [
-@@ -12310,7 +12329,7 @@
+@@ -12352,7 +12371,7 @@
     ],
     "quelle": "NPS, Yellowstone-Feuer 1988, Fotoreihe (gemeinfrei)",
     "umfang": "≥ 40 Fotos in drei Zeitstufen",
@@ -165,7 +165,7 @@ index 2b40ef1..691acc0 100644
    },
    {
     "art": "2afc",
-@@ -12731,14 +12750,16 @@
+@@ -12773,14 +12792,16 @@
     "id": "leben.oeko.sukzession#2",
     "satz": "Bildpaar nach 1/5/25 Spieljahren gegen die Yellowstone-1988-Fotoreihe",
     "a": null,
