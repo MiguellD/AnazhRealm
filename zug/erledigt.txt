@@ -2993,3 +2993,4 @@ omen-gtx-gtx-27d2f60e-w042915-1-27d2f60e ROT 0 GRÜN / 1 ROT / 1 UNGEMESSEN · R
 2026-11-28 05:09 RUNDE 49 ALARM gtx: ohne Fortschritt seit 28 min (halt, 19/231, Station karte2.leben.oeko.netz#2, Kopf 27d2f60e) — gesehen von gtx (landung-dienst)
 2026-11-28 05:09 RUNDE 49 ALARM gtx: OMEN: 4 Messungen ungepusht seit 03:37 — halt 19/231, Station karte2.leben.oeko.netz#2, Kopf 27d2f60e; die Runde setzt an derselben Station fort — gesehen von gtx (landung-dienst)
 2026-11-28 05:09 landung Runde 49 am 27d2f60e: misst 9 von 231 Stationen (vorn; 22 tragen an diesem Kopf schon einen Eintrag), rohe Zahl je Zeile
+2026-11-28 05:14 RUNDE 49 ALARM radeon: ohne Fortschritt seit 17 min (laeuft, 23/31, Station -, Kopf 27d2f60e) — gesehen von gtx (landung-dienst)
