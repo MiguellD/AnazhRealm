@@ -1405,7 +1405,9 @@ async function vorratAmDorf(messort, alt) {
     r._dorfVorraete = new Map();
     const pm = st.playerMesh.position;
     pm.set(messort[0], r.getTerrainHeightAt(messort[0], messort[1]) + 1, messort[1]);
+    // still ist das Dorf erst, wenn nichts in ihm offen ist (`_dorfOffen`: auch die Nachbar-Runde, die auf Wasser wartet)
     const leer = () =>
+        !r._dorfOffen() &&
         !r._autoSettlementQueue &&
         !r._autoSettlementPendingKey &&
         !r._stlWegePending &&

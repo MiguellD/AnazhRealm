@@ -170,7 +170,15 @@ GRÜN; davor am Kopf mit dem Schnitt der Halle: gate:studio-begehen · gate:haus
   endet im Flur), die Treppe im Raum der Arbeit (Gang frei, Bild offen), die Bilder aus der Tür.
 - **huelle#1:** offen, nach innen#3.
 - **Mehrspieler-Rot (f):** an meinen Köpfen nicht gesehen; erscheint es, steht die Job-Nummer hier.
-- **C-K5b „NACH DEM ZUG STEHT DIE WELT“** am Merge-Kopf 93e4b83b im Mint-Lauf ROT (nachZug 3, Exporte 7) — derselbe Wettlauf wie
-  am Kopf 1 (1 von 4 Läufen); der zweite Lauf steht in der Batterie.
+- **C-K5b „NACH DEM ZUG STEHT DIE WELT“** an meinen Merge-Köpfen 3 von 3 ROT (93e4b83b zweimal, 9885e7c4 einmal: nachZug 3 · 2 · 2,
+  alle 7–8 gegen 6 grün) — kein Zufall. Die späten Rufe sind die Nachbar-Meldungen des erwachten Orts (`_bewohnerMelden` → `melde` →
+  `_ortMelden`): eine Runde, die auf das Wasser der Nachbar-Zelle wartet, zählte in keinem Offen. Schnitt 1: die wartende Runde
+  trägt sich in `_dorfOffen` ein (`_nachbarnWarten`), `leer()` der Linse liest `_dorfOffen` → nachZug 1 (ROT). Die Linse nennt jetzt
+  jeden Ruf nach dem Zug mit Same, Kopf und Rufer (`spaet`); frische Welt 3 von 3 grün, im Gate bleibt ein Ruf aus `melde` —
+  sein Rufer wird gemessen.
+- **C-K5 „DIE WELT HÄNGT“ und der Absturz (Job 140793998390, Kopf seegang-spiegel):** der Absturz an `k5.strecke13.vorrat` steht am
+  main 9885e7c4 geschnitten (stadt-zehntausend, `k5Luecke`, Selbsttest im Selbst-Test-Teil). Das Hängen: offen `wald 6295` (= Plan
+  3664 + Würfe 2631) und `dorf 1` 3 600 Takte unverändert, „Hunger … dorf 0/2“, nach der Frist dorf 180 ms — die zehn Läufe am
+  main folgen nach Kopf 2.
 
 Karte 2 gebucht 158 von 1 718 (Stand im Zweig `punkte-maschine`) · Status ZWISCHENSTAND

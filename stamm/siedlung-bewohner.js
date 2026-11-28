@@ -339,10 +339,15 @@ class AnazhRealm_siedlung_bewohner {
                     if (o === undefined) offen = true;
                     else if (o) melde(k, { seed: info.seed, nH: info.nH, ...this._zellEingang(k, info.seed), ort: { x: o.x, z: o.z } }, o); // prettier-ignore
                 }
-            // eine offene Stelle wartet auf ihr Wasser und fragt neu (wie `_wegenetzAnschluss`)
-            if (offen && runde < 8)
-                Promise.all([...this._hydroBestellt.values()].map((e) => e.zusage)).then(() => nachbarn(runde + 1));
-            else if (offen) this._bruchMelden(`ORT: die Nachbarn von ${key} bleiben offen — ihr Wasser kam nicht`);
+            // eine offene Stelle wartet auf ihr Wasser und fragt neu (wie `_wegenetzAnschluss`) — die wartende Runde ist offen im
+            // Dorf (`_nachbarnWarten`, `_dorfOffen`): bis bau-funktion zählte sie nirgends, die Welt hieß still, und die Runde fragte
+            // danach ihre Pläne (gate:settlement C-K5b am Messort dorf: nachZug 2–3 in 3 von 3 Läufen, alle 7–8 gegen 6)
+            if (offen && runde < 8) {
+                this._nachbarnWarten = (this._nachbarnWarten | 0) + 1;
+                Promise.all([...this._hydroBestellt.values()].map((e) => e.zusage))
+                    .then(() => nachbarn(runde + 1))
+                    .finally(() => this._nachbarnWarten--);
+            } else if (offen) this._bruchMelden(`ORT: die Nachbarn von ${key} bleiben offen — ihr Wasser kam nicht`);
         };
         nachbarn(0);
     }

@@ -1305,7 +1305,8 @@ class AnazhRealm_siedlung_ort {
             zug +
             (this._autoSettlementPendingKey ? 1 : 0) +
             (this._ortWachsFlug ? 1 : 0) +
-            (H ? H.size : 0)
+            (H ? H.size : 0) +
+            (this._nachbarnWarten | 0) // die Nachbar-Runde des erwachten Orts, die auf ihr Wasser wartet (`_bewohnerMelden`)
         );
     }
     // DIE WELT DES AKTS: ein Dorf gehört der Welt, in der es geworfen wurde. Der Welt-Wechsel tauscht den Zustand in der Seite
