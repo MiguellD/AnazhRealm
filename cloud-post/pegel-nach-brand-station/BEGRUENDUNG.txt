@@ -13,6 +13,7 @@ Zahlen am Zweig pegel-nach-brand (Eichung CN + Aue + Grund im Klima, `ABFLUSS_CN
 - Rumpf wie er steht (trocken): 0,558 → 0,558 m · ×1,000.
 - Kandidat (Sturm 20 mm): 0,558 → 0,633 m · ×1,134 — UNTER 1,3 (Kopf 3 las ×3,398 auf einem Fluss, der trocken auf 0,098 m fiel; seit Kopf 4 steht er trocken im Bett, 0,558 m, und der Brand von 49 Zellen hebt einen großen Einzugs-Fluss wenig); Gegenlauf (die Taten zurück) 0,558 m byte-gleich.
 - Derselbe Kandidat am main b3740dd5: 0,758 → 0,758 m · ×1,000 (der Boot-Stand bordvoll, die Krone deckelt).
+- Die Brand-Reihe am Mess-Bach (28.11., Kopf 4, derselbe Sturm; b am heißesten Knoten): 7×7 b 0,074 ×1,134 · 13×13 b 0,170 ×1,242 · 21×21 b 0,304 ×1,358. Die 1,3 trägt das Gesetz ab b ≈ 0,25 — der Block der Station (7×7) bleibt; der Kandidat wählt keinen größeren Brand.
 - Linse wetter-wache (A), Brand ±400 m (2 601 Zellen, b 0,981): 0,558 → 1,058 m · ×1,896 (die Aue trägt die Flut, in Stufen von 1 ft; der Hub über dem Grund, der Grund trägt bfi 0,7 des Klimas); am main b 0, ×1,000.
 
 Der Patch `k2-zusammenspiel-S3.diff` steht gegen den pm-Kopf 1522407ae4129f05c244e257eed07d11608958e7

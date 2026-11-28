@@ -194,3 +194,9 @@ Karte 2 gebucht 156 von 1 718 · Status ZWISCHENSTAND.
 - **offen:** stoerung#3 ROT (×1,134 < 1,3) · das Bildpaar der Flut ungefahren (Kandidat S1-Bild, Richter die GTX 1060).
 
 Karte 2 gebucht 156 von 1 718 · Status ZWISCHENSTAND.
+
+## 28.11. 01:35 — Wartezimmer (Kopf 4 9395b45); die Brand-Reihe am Mess-Bach von stoerung#3; Zuteilung 00:57 gelesen
+- Brand-Reihe (headless, Kandidat S3: Sturm 20 mm, derselbe Mess-Bach, 8 Punkte; b = der verbrannte Anteil am heißesten der Knoten): 7×7 Zellen (1,25 ha) b 0,074 → ×1,134 · 13×13 (4,3 ha) b 0,170 → ×1,242 · 21×21 (11,3 ha) b 0,304 → ×1,358 · ±400 m b 0,981 → ×1,896. Die 1,3 trägt das Gesetz ab b ≈ 0,25; der Block der Station verbrennt an keinem Knoten mehr als 7,4 %. Soll, Richter und Block bleiben: die Sprosse steht ROT mit dieser Zahl.
+- Zuteilung (alle.md 00:57): sukzession#2 und zerfall#2. Befund sukzession#2: die Narbe `brand` heilt in 72 h ÷ Wuchs ≈ 5,6 Spieljahre (Jahr = 16 Welt-Stunden), der Wald steht ab ~3,4 a; Yellowstone 1988 trägt nach 25 Jahren Jungwald von wenigen Metern und Totholz-Stangen. Der Täter von zerfall#2 ist `stamm/kreatur-leben.js` `_tickLeichname` — die Datei ist dieser Bahn gesperrt (Start-Brief): ich nehme sukzession#2 zuerst, zerfall#2 braucht die Freigabe.
+
+Karte 2 gebucht 156 von 1 718 · Status ZWISCHENSTAND.
