@@ -2,15 +2,30 @@ KANDIDAT der Station k2-zusammenspiel, Teil S3 (karte2.same.kopplung.stoerung#3)
 Soll („Pegel-Spitze ≥ 1,3×“) und Richter-Text bleiben unverändert; der Kandidat ändert nur die MESSUNG.
 
 Befund: der Rumpf liest die Flusstiefe vor und nach dem Brand bei dem Wetter des Boots (sunny) und ohne Regen-Lauf.
-Ein Abfluss nach Brand ist die Antwort des Einzugsgebiets auf REGEN (SCS-CN 95 gegen 60–64, BAER; Moody & Martin 2001):
-ohne Regen gibt es keinen Abflussbeiwert, den der Brand heben könnte — die Messung liest 1× an jedem Kern, auch an einem
-richtigen. Der Kandidat misst dieselbe Regen-Gabe vor und nach dem Brand (Stärke 0,004 über 1 800 s Kalender).
+Ein Abfluss nach Brand ist die Antwort des Einzugsgebiets auf REGEN (SCS-CN 95 gegen 58, BAER; Moody & Martin 2001):
+ohne Regen gibt es keinen Abfluss, den der Brand heben könnte — die Messung liest 1× an jedem Kern, auch an einem
+richtigen. Der Kandidat misst dieselbe Regen-Gabe vor und nach dem Brand: ein Sturm (Stärke 1 = 10 mm/h, gelaende-core
+`PEGEL.regen`) über 300 s Kalender = 2 Stunden, 20 mm — unter dem Anfangsverlust der Wiese (CN 58: 36,8 mm), über dem der
+Brandfläche (CN 95: 2,7 mm). Ein leichter Regen (0,004) fließt seit der Eichung nirgends ab (beide Decken ×1,000).
 
-Zahlen am Zweig pegel-nach-brand (Kopf über main 7e73426e), headless, 8 Punkte am Mess-Bach:
-- Rumpf wie er steht (trocken): 0,758 → 0,758 m · ×1,000 (am main wie am Zweig).
-- Regen 0,004, Brand ±400 m um den Bach (2 601 Zellen, Linse wetter-wache Teil A): 0,658 → 0,744 m · ×1,131 — am main ×1,000.
-- Der Block des Rumpfs (7×7 Zellen, 1,25 ha) ist ein kleiner Anteil des Einzugsgebiets eines Ebene-1-Bachs (81 Zellen hoben m nur auf 1,112);
-  die Spitze verlangt, dass der Brand das Einzugsgebiet DES gemessenen Bachs trägt (der Kandidat lässt den Block, wie er steht).
-Die Sprosse bleibt mit dem Kandidaten ROT (×1,16 < 1,3): unter der Krone des Betts (gelaende-core pegelHubVon, krone 0,2 m)
-folgt die Tiefe Manning q^0,6, der Brand hebt nur den Regen-Anteil — höchstens ×1,21 bei b = 1. Die Spitze ≥ 1,3× verlangt
-den Hub der Aue über der Krone; das ist offen und benannt (gelaende-core.js pegelHubVon).
+Zahlen am Zweig pegel-nach-brand (Eichung CN + Aue + Grund im Klima, `ABFLUSS_CN`, `AUE`, `PEGEL.bfi`, `pegelKlima`), Kopf 4 auf main b3740dd5, headless, 8 Punkte am Mess-Bach der Station
+(Block 7×7 Zellen 60 m vom Spieler, 49 Taten „brand“, wie der Rumpf steht):
+- Rumpf wie er steht (trocken): 0,558 → 0,558 m · ×1,000.
+- Kandidat (Sturm 20 mm): 0,558 → 0,633 m · ×1,134 — UNTER 1,3 (Kopf 3 las ×3,398 auf einem Fluss, der trocken auf 0,098 m fiel; seit Kopf 4 steht er trocken im Bett, 0,558 m, und der Brand von 49 Zellen hebt einen großen Einzugs-Fluss wenig); Gegenlauf (die Taten zurück) 0,558 m byte-gleich.
+- Derselbe Kandidat am main b3740dd5: 0,758 → 0,758 m · ×1,000 (der Boot-Stand bordvoll, die Krone deckelt).
+- Linse wetter-wache (A), Brand ±400 m (2 601 Zellen, b 0,981): 0,558 → 1,058 m · ×1,896 (die Aue trägt die Flut, in Stufen von 1 ft; der Hub über dem Grund, der Grund trägt bfi 0,7 des Klimas); am main b 0, ×1,000.
+
+Der Patch `k2-zusammenspiel-S3.diff` steht gegen den pm-Kopf 1522407ae4129f05c244e257eed07d11608958e7
+(meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js, Teil S3, 4 Hunks): `spitze()` nach `fluss`, `blockVor.fluss` und
+`aus.block.nach.fluss` lesen sie, `aus.zurueck.fluss` den Gegenlauf, die Aufruf-Argumente tragen `regen: 1, regenS: 300`.
+Geprüft: `node --check` am gepatchten Stand; `git apply --check` an einem frischen Baum aus dem pm-Kopf GRÜN, angewendet byte-gleich.
+Am pm-Kopf 429c6cf9 und am pm-Kopf ca4c8a2d6ccbe14a95a0b85ab05c12486ad2dd3f steht derselbe Patch: `git apply --check` GRÜN (28.11. 00:55); ebenso der Kandidat S1-Bild.
+
+ZWEITER KANDIDAT `k2-planet-S1-auge.diff` (karte2.planet.wetter.extreme#1, Teil S1, das Beleg-Bild), gegen den pm-Kopf
+429c6cf9e6ff2d25333cb23ef48b60d35083040b (meisterkarte-quelle/punkte/stationen/k2-planet.js, 1 Hunk): `M.auge` bekommt die Pose
+am Messort der Wiese (−280,4/−1045,6, Augenhöhe `py "+1.7"`) mit dem Blick auf ihren Fluss (−258,4/−1132,8, `ly "+0"`) — ohne px
+schoss das Auge an der Kamera des Spiels, wo der Spieler stand: „kein nahWiese im Bild: 0.0 % < 15.0 %“ (GTX 1060, Kopf 0d0e4c05).
+Gemessen (headless, Büschel der Nah-Wiese im Blickkegel ±30°, 1–25 m | 1–8 m): Messort-Blick 626 | 64 · diese Pose 620 | 62 ·
+die Aue des Bachs (−399,9/−847,5) 207 | 0 (die Aue trägt kein Nahfeld-Gras: verworfen). Soll, Richter und Zahl unverändert.
+Geprüft: `node --check` am gepatchten Stand, `git apply --check` an frischem pm-Baum GRÜN. Das Bild selbst ist ungefahren: unter
+swiftshader steht die Welt hier nicht (gpu-process, „DIE WELT STEHT NICHT nach 4300 Takten“) — der Richter ist die GTX 1060.

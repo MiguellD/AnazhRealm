@@ -517,7 +517,10 @@ radiusM muendungM`), dazu `guete { faktorVoll faktorLeer }` +
   `gueteFaktor(rezeptId, ov?)` — das Lehren-Urteil der Schmiede als
   Schadens-Faktor; `gueteAnteil(rezeptId, ov?)` (Welle L, additiv) — derselbe
   Lehren-Anteil ∈ [0, 1] als die EINE Güte eines Schmiede-Geräts (Leser
-  `computeBlueprintQuality` → Schaden `_heldGueteFaktor`, Werkstoff-Kraft, Equip-Fold). Alle
+  `computeBlueprintQuality` → Schaden `_heldGueteFaktor`, Werkstoff-Kraft, Equip-Fold);
+  `gueteAnteil(rezeptId, ov?, hand?)` (kunst#2, additiv) — mit der Hand (das Können des
+  Schmieds, 1 = das Band der Guten) mal 1 − `handFehler(hand)` (`HAND.gut` 0,052 / k,
+  Birkmeyer 2013); ohne Hand byte-gleich. Leser: der Zensus der Kette (`stuecke`). Alle
   Blöcke leben NUR im Gesetzbuch — der Stamm trägt keinen Zahlen-Zwilling
   mehr (ZWILLINGS-ABSENZ-WAND).
   Welle L: `trefferUrteil(m, treffer)` — die Treffer-Physik des Prüfstands
@@ -1060,11 +1063,17 @@ nach Herkunft `korn(L, x, z, aus)` (karte2.planet.relief.boden#2: Bett — Stern
 Hang, Wind; die Tafel `KORN`, die Wentworth-Klassen `KORN_KLASSEN` mit `kornKlasse`, die Farbe des Sediments `sedimentFarbe`, die
 Boden-Farbe am Fluss und `_terrainMaterialAt` lesen es; die Sohle des fließenden Wassers `flussSohle` mit der Tafel `SOHLE`, voll ab
 0,3 m unter dem Spiegel, und die Bank des Kanals `flussBank` bis zum Saum, den er schneidet, tragen sein Korn ins Bild) und den
-Klassen am Rechteck `pegelKlassen` (die Marke des Chunks), dem Abfluss nach Brand `BRAND_ABFLUSS`/`pegelBrand` (same.kopplung.stoerung#3:
-die Taten „brand“ des Wirts, gewogen mit ihrer Asche, stromab durch das Knoten-Netz; je Knoten hebt der verbrannte Anteil seines
-Einzugsgebiets den Abflussbeiwert des Regens 0,3 → 0,56 nach SCS-CN 95 — BAER; Moody & Martin 2001 —, die Tafel trägt je
-verbranntem Knoten ihre Reihe, der Kanal je Segment seinen Knoten; ohne Brand liest der Pegel byte-gleich), die
-Generation des Bodens `BODEN_GENERATION` und der Kachel-Schlüssel `kachelSchluessel`. DIE HYDROSPHÄRE (Karte hydro-faden): das
+Klassen am Rechteck `pegelKlassen` (die Marke des Chunks), die
+Generation des Bodens `BODEN_GENERATION` und der Kachel-Schlüssel `kachelSchluessel`. DER PEGEL IM REGEN: der Abflussanteil
+`ABFLUSS_CN` (planet.wetter.extreme: der schnelle Abfluss faltet den Regen jedes Ereignisses nach seinem Anfangsverlust,
+SCS-Curve-Number — NEH-4, TR-55 —, Wiese CN 58, Brandfläche CN 95, ein Ereignis höchstens ein Tag `tagH`; `PEGEL.regen` 10 mm/h des Regens selbst, der Hub über dem Grund des Flusses (trocken steht er im geschnitzten Bett, Hub 0), der Grund trägt im Klima
+den Anteil `PEGEL.bfi` 0,7 des Mittels — der Base-Flow-Index, `pegelKlima`, die Lage `abflussMittel` —: das Mittel bleibt im Bett, 100 mm treten über die Krone), die Aue `AUE`/`auenBreite` (über der Krone trägt der gegliederte Querschnitt
+Q = Q_Bett + R·Q_Aue, R = (2F − B)/B · n_Bett/n_Aue nach Chow 1959; die Tafel trägt `aueF` und, wo ihr höchster Hub über der
+Krone steht, `flut` — dann steht das Wasser in `flussAm` jenseits der Krone binnen F, der Boden entscheidet, die Marke des Chunks
+liest den Hub im Band ihres Wassers `band`, über der Krone in Stufen `AUE.stufe` von 1 ft; ohne Flut byte-gleich), der Abfluss nach Brand `pegelBrand` (same.kopplung.stoerung#3:
+die Taten „brand“ des Wirts, gewogen mit ihrer Asche, stromab durch das Knoten-Netz — je Knoten der verbrannte Anteil b seines
+Einzugsgebiets, der Lauf faltet die Brandfläche mit CN 95, BAER; Moody & Martin 2001 —, die Tafel trägt je verbranntem Knoten
+ihre Reihe, der Kanal je Segment seinen Knoten; ohne Brand liest der Pegel byte-gleich). DIE HYDROSPHÄRE (Karte hydro-faden): das
 Drainage-Netz einer Region `hydrosphaere(L, H, boden, origin)` (Flüsse, Seen, Fälle, der gepackte Kanal `kanal` mit
 `KANAL_FELDER` Zahlen je Segment, Wasser-Feld; `H` das Gesetz des Wirts, `boden` seine gebaute Fläche — der voxel-worker rechnet
 sie), die Bett-Tiefe `flussTiefe` und das Wasser-Band `hydroBand`. DER FELS-STOFF (K17): das Aussehen
