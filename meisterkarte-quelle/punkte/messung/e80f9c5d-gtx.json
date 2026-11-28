@@ -1,7 +1,7 @@
 {
  "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
  "geraet": "gtx",
- "zeit": "2026-11-28T08:36:18.991Z",
+ "zeit": "2026-11-28T08:38:16.470Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "profiband.K4#1": {
@@ -2100,6 +2100,76 @@
    },
    "zeit": "2026-11-28T08:36:18.991Z",
    "abdruck": "cec542111916",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.zeit.palimpsest#2": {
+   "gruen": false,
+   "zahl": "S2 ROT an Überdeckung je Slot 1320 → 1935 0.733 verfehlt ≥ 0.9 — Täter: fachwerk-core.js exportSettlement (das Wachstum am Jahr, `_ortWaechst` vorTausch): der neue Plan trägt den alten Slot nicht, das Haus fällt · Überdeckung je Slot 1320 → 1935 0.733 (Soll ≥ 0.9) · Umfang 5 (Soll ≥ 4 Jahresringe (Jahrhunderte mit neuen Häusern, 1320 → 1935)) · Slots 1400:13−2 1500:16+3 1600:18+2 1700:20+3−1 1800:23+5−2 1900:25+5−3 1935:27+2 · Jahresringe (Jahrhunderte mit neuen Häusern) 5 · von 15 Häusern 1320 stehen 1935 noch 11 · 3573 ms · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.14,
+   "grund": "ROT: S2 ROT an Überdeckung je Slot 1320 → 1935 0.733 verfehlt ≥ 0.9 — Täter: fachwerk-core.js exportSettlement (das Wachstum am Jahr, `_ortWaechst` vorTausch): der neue Plan trägt den alten Slot nicht, das Haus fällt · Überdeckung je Slot 1320 → 1935 0.733 (Soll ≥ 0.9) · Umfang 5 (Soll ≥ 4 Jahresringe (Jahrhunderte mit neuen Häusern, 1320 → 1935)) · Slots 1400:13−2 1500:16+3 1600:18+2 1700:20+3−1 1800:23+5−2 1900:25+5−3 1935:27+2 · Jahresringe (Jahrhunderte mit neuen Häusern) 5 · von 15 Häusern 1320 stehen 1935 noch 11 · 3573 ms · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k51fbab8084a7",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kd484c41761a8",
+   "s": 7.9,
+   "fremd": {
+    "s": 10.9,
+    "takte": 5,
+    "fremdS": 4.45,
+    "kerne": 0.41,
+    "fensterKerne": 0.41,
+    "namen": [
+     [
+      "git fetch -q origin runde/push-punkte-maschine",
+      1.13
+     ],
+     [
+      "Explorer.EXE",
+      0.91
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      0.5
+     ]
+    ],
+    "dienerS": 1.67,
+    "diener": [
+     [
+      "System",
+      0.84
+     ],
+     [
+      "WmiPrvSE.exe",
+      0.42
+     ]
+    ],
+    "geraetS": 4.64,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.22
+     ],
+     [
+      "svchost.exe",
+      1.08
+     ],
+     [
+      "SearchIndexer.exe",
+      0.2
+     ]
+    ],
+    "eigenS": 16.83,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-28T08:38:16.470Z",
+   "abdruck": "9434c985e7bb",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
