@@ -1,4 +1,4 @@
-# OMEN GTX 1060 — Messkette 28.11. (Wort des Schöpfers: bis 23:00), Stand 28.11.2026, 11:17:34
+# OMEN GTX 1060 — Messkette 28.11. (Wort des Schöpfers: bis 23:00), Stand 28.11.2026, 12:17:57
 
 Kopf main e80f9c5d (kunst#1 am b56b51f0), pm jeweils jüngster Kopf (vr2 holeStand). Akte NUR bei Richter GRÜN + Preis GRÜN geschoben (vr2 --akte).
 Je Slot: Exit/Sekunden, je Sprosse die Urteils-Zeile wörtlich (gekürzt auf 700 Zeichen) und die Akte-Kurzzeile. Werkzeug: sk/kette/{front,packe,blatt}.cjs.
@@ -29,17 +29,23 @@ Je Slot: Exit/Sekunden, je Sprosse die Urteils-Zeile wörtlich (gekürzt auf 700
 ### plattena — START 10:45:47 · Grenze 10:55:52 · plattena exit 124 nach 1203 s · Kopf d8cc1dd5 · pm d8cc1dd5
 - (keine a.out gefunden — Slot ohne Lauf a oder noch offen)
 
-### zyklusa — START 11:17:19 · Grenze - · (läuft / kein Exit) · pm ?
+### zyklusa — START 11:17:19 · Grenze 11:26:24 · zyklusa exit 0 nach 266 s · Kopf 8ecbb545 · pm 8ecbb545
+- ROT  karte2.leben.tiere.lebenszyklus#2 · S2 panel ungemessen gegen Soll ≥ 0,7 ✗ · jungProzent 7,143 % gegen Soll ≥ 10 % ✗ · auge: Pose {"ort":"wiese"} · Vorbild Foto Kitz/Hirsch; Panel ≥ 0,7 · Bild fehlt (/bild: {"ms":13501,"fehler":"ABNAHME ROT [kein nahWiese im Bild: 0.0 % < 15.0 %] · beweis · Sicht 0.0 % · Ziel Blickziel) — R11 Prüfer („Bildpaar Kitz/Hirsch Panel“): das Urteil spricht der Blind-Prüfer, die Station behauptet kein GRÜN · Umfang nicht erzeugbar: kein Leib wächst: klein und groß tragen dieselbe Gestalt (Höhe/Länge 0.924 ↔ 0.924) · Sitzung · Exit 0 · 1.62 min
+  - KARTE2 keine Akte leben.tiere.lebenszyklus S 2 (karte2.leben.tiere.lebenszyklus#2): der Richter fehlt in der Station: R11 Prüfer: „Bildpaar Kitz/Hirsch Panel“ — das Urteil spricht der Blind-Prüfer (eingefrorenes Modell, geeicht an 200 Ankern ≥ 0,8, ≥ 40 Paare: vision/pruefer/pruefer.cjs) an den Bild …
+
+### bedarf1 — START 11:32:24 · Grenze 11:41:30 · bedarf1 exit 0 nach 345 s · Kopf b7c54dc2 · pm b7c54dc2
+- ROT  karte2.mensch.bau.bedarf#1 · S1 auge: Bild karte2.mensch.bau.bedarf_1-S1.png an Pose dorf: die Mitte des nächsten Orts aus 30 m (21,2/18/21,2 m versetzt), Blick 2 m über Grund gegen Vorbild Luftbild eines realen Haufendorfs gleicher Kultur mit Kirche, Gasthaus, Schmiede und Wohnhäusern (Schwarzwald, Freilichtmuseum Vogtsbauernhof): 50 Bauten blind nach Funktion · Funktionen 5 (kirche, gasthaus, wohnhaus, scheune, schmiede) an 16 Häusern — GRÜN erst mit dem Urteil am Gerät (Blindpaar) · [linse-gpu] nvidia/pascal · Sitzung · Exit 0 · 1.05 min
+  - KARTE2 keine Akte mensch.bau.bedarf S 1 (karte2.mensch.bau.bedarf#1): der Richter fehlt in der Station: R11 Prüfer: „50 Bauten blind nach Funktion“ — das Urteil spricht der Blind-Prüfer (eingefrorenes Modell, geeicht an 200 Ankern ≥ 0,8, ≥ 40 Paare: vision/pruefer/pruefer.cjs) an den Bildern dieser  …
+
+### stoerunga — START 11:48:31 · Grenze 11:57:03 · stoerunga exit 124 nach 1202 s · Kopf d6d4f556 · pm d6d4f556
 - (keine a.out gefunden — Slot ohne Lauf a oder noch offen)
 
 ## Summe
 
-Urteils-Zeilen: GRÜN 0 · ROT 2 · OFFEN/UNGEMESSEN 0 · Slots mit Schub: keiner
+Urteils-Zeilen: GRÜN 0 · ROT 4 · OFFEN/UNGEMESSEN 0 · Slots mit Schub: keiner
 
 ## Offen (nicht gefahren, Reihenfolge der Reihe)
 
-- bedarf1 am 88bc3c51: karte2.mensch.bau.bedarf#1
-- stoerunga am e80f9c5d: karte2.same.kopplung.stoerung#3
 - seeganga am e80f9c5d: karte2.planet.wasser.seegang#1
 - k01 am e80f9c5d: karte2.mensch.stadt.form#2
 - k02 am e80f9c5d: karte2.planet.geologie.gebirge#1
