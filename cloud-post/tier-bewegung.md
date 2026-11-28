@@ -168,3 +168,43 @@ eher zu teuer):** ≈ 5 ms je Takt (main 4 200 Takte × 8 Saaten in 182 s ohne W
 kleinen Gau und gröberem Takt — jede Rate steht je Jahr und geht über taktJeJahr (Satz 1), der Takt ist Wirt-Zahl (`wirt.taktS`). Ich
 nenne die Zahl (ms je Generation, Δ ln M̄ mit/ohne Wolf) gegen die Uhr, sobald Lauf 4 der Uhr durch ist (Zeitfrist-Läufe nie parallel).
 erbe#2 (Herde 100, Individuum aus dem Erbgut): die Kosten-Zahl kommt vor dem Bau. Karte 2 gebucht 158 von 1 718.
+
+## STAND-BLATT 28.11. ~09:55 MEZ — gesichert auf Zuruf (keine Batterie, nichts Neues begonnen)
+**Geschnitten (alles geschoben):**
+- `tier-bewegung-uhr` d05b4f5 (WIP, auf main bbb97563): die EINE Uhr — gelaende-core `KALENDER.jahrS` 2400 ist das Jahr der Welt;
+  leben-core `refS` = JAHRE_REF 8 × jahrDerWelt() = 19 200 (vorher 2 100), `taktJeJahr` → TJ 240 (vorher 26,25); stamm/daten.js
+  `jahreJeTag` = Tag ÷ jahrS (1,5); kreatur-erbe `_gauWirt` und diag-kreatur-leben lesen TJ (erbe 82·TJ, muster 99·TJ, gau, --bestand 160·TJ).
+  KEIN Vorprüf-Kopf: die Kreatur-Linse sprengt ihre Frist (unten).
+- Stations-Kandidat „Fenster in Generationen“ (29e5dbb): `tier-bewegung-station/fenster-generationen.diff` + BEGRUENDUNG gegen pm
+  5e895684 (Blob 0930b70, git apply OK) — S7 · erbe · muster am EINEN Schreiter `__raffer` in n × lebensdauerS.
+- Berichtigung zu Post 04:46 (73cf44e): muster#1 über die Aufhol-Bahn fällt; die Größe erbt schon (`kind`, leben-core :200).
+- Mess-Werkzeug (nur Briefkasten, kein Repo-Code): `tier-bewegung-station/auslese-messung.cjs` — die Auslese der Größe im Gau-Kern,
+  `node auslese-messung.cjs <root> <W> <taktS|std> <generationen>`; Probe am main W 8, 1 Generation: 227 Takte, mit 0,051 s / ohne 0,044 s,
+  Wolf 0 (ein Gau von 8 × 8 trägt kein Rudel).
+
+**Letzte Zahl — `diag-kreatur-leben --bestand` main bbb97563 ↔ Uhr d05b4f5 (beide Läufe zugleich, 8 Saaten × 160 Jahre):**
+- Laufzeit: ohne Wolf 182 ↔ 1 414 s · mit Wolf 392 ↔ 3 082 s · S13-Zweige 629 ↔ 5 022 s (× 8,0). Takte 4 200 ↔ 38 400.
+- S11 (Zeit) 0,6762 ↔ 0,5884 — je Takt kostet die Uhr gleich, je Jahr × 9,14.
+- Beide 13 Zeilen UNGLEICH gegen die Vorlage ergebnis-zeit-4.json (main selbst ist nicht zahlengleich — die Vorlage ist älter als main);
+  die Uhr im Band von main: S2 3,9469 ↔ 4,0307 · S4 0,8592 ↔ 0,8634 · S7 0,4843 ↔ 0,482 · S12 0,9685 ↔ 0,9688 · S15 253,47 ↔ 248,16 ·
+  S13 Fall 45,3 % (8 von 8 ≥ 25 %) ↔ 34 % (6 von 8 ≥ 25 %).
+
+**Rote Zeilen wörtlich:**
+- Uhr `--bestand`: „❌ 13 Zeile(n) UNGLEICH · S13-Brüche 0 · Ende 28.11.2026, 04:39:23 · 5022 s“ — main: „❌ 13 Zeile(n) UNGLEICH · S13-Brüche 0 ·
+  Ende 28.11.2026, 03:24:30 · 629 s“.
+- Uhr Kreatur-Linse: „linse-uhr: EXIT=2 s=1142“ (erbe > 1 100 s; main 131 s) — die Frist ≤ 1 150 s je Teil reißt.
+- Uhr Lauf 4 (gate:kreatur-leben): zahlengleich ROT (Wolf 24 46 67 102 117 … gegen Vorlage 24 44 53 63 87 …) — Neumünzung oder Takt-Schnitt.
+- gate:wetter-wache „(A) KRONE“ ROT: geerbt von main (Post alle 05:01, Eigner pegel-nach-brand).
+- Selbsttest im Lauf (gewollt ROT): „leben-core selbsttest ROT: eichung 0.953572245737432“.
+
+**Nächster Schritt (wartet auf dein Wort zur gesprengten Linse):**
+1. Takt-Schnitt (Bestands-Takt = jahrS ÷ 26,25 = 91,43 s; dann zerfällt das Äsungs-Feld in Welt-Sekunden mit — `LIFE_FIELD.decayPerSec` ×
+   taktS — und braucht dieselbe Uhr) ODER Neumünzung von Lauf 4 an der Uhr; danach die Tore und der Vorprüf-Kopf `tier-bewegung-uhr`.
+2. muster#1: die Zahl der Auslese im Gau-Kern (W 16/24/48, Takt std ↔ Jahr ÷ 26,25, main ↔ Uhr) mit dem Mess-Werkzeug — vor jedem Bau.
+3. Setzzeit (gelesen, nicht gebaut): Gau-Kern leben-core — Beute-Geburt :1036 (rA/rJ je Takt gleichverteilt) × Dichte der Phase (Mittel 1),
+   Wolf-Wurf-Tag :855/:1101 (rng()·TJ) auf April/Mai. Die Phase muss als Akt in den Gau (`setSeason` setzt den Anker neu — sonst ist der
+   Gau keine reine Funktion). LÜCKE der Uhr: das Jahr der Welt steht in Kalender-Zeit (`_kalender().jahrK`), der Bestand altert in
+   Welt-Uhr-Sekunden — gleich nur am Standard-Tag; der Regler der Tag-Länge trennt sie.
+4. erbe#2: die Kosten einer Herde von 100 (Takt, Bild) vor dem Bau.
+Ehrlich offen im Kandidaten: bs der Regionen (cv/ek null), Hirsch im Gau (selektion null), S7 am neuen refS 17,2 s gegen Budget 15 s.
+Karte 2 gebucht 158 von 1 718.
