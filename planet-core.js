@@ -3192,6 +3192,33 @@
     wildnis.streichC = -m * (gx * gx - gz * gz) / g2; wildnis.streichS = -m * 2 * gx * gz / g2;
   }
 
+  // DER GROSS-TERM (Entscheid 28.11.: die Planeten-Höhe wird der Groß-Term der lokalen Welt — Karte 2 planet.geologie.platten#1 und
+  // gebirge#1 an EINER Wurzel): die Höhe des Planeten (planetPunktR, fuss 16 — dasselbe Band wie der Ort) auf einem Gitter um den Ort im
+  // Spiel-Rahmen (x Ost, z Süd; die winkeltreue Fläche 0 wie planetFlaeche: Richtung = auf + tan(x/R)·Ost + tan(z/R)·Süd), gegen die
+  // Mitte, in Spiel-Metern der Stauchung des Ort-Gesetzes (s_v · Erd-m — dieselbe Zahl, mit der das Meer des Orts reist). Gemessen
+  // (Saat anazh-realm-seed): Spanne der Region 100 × 100 km am Gebirgs-Kern 3,8–9,1 km Erd = 226–534 m Spiel; im Kreis 50 km um 51
+  // Land-Orte Hub über die Mitte P90 30 m, max 168 m, Senke P10 −109 m. Einmal je Geburt (65 × 65 Punkte zu 4 km = ±128 km; das Band
+  // ≥ 32 km trägt 8 Punkte je Welle), gelesen von gelaende-core `grossTerm` (bikubisch, C¹) — nie je Punkt im Takt. Die Werte auf
+  // 1 cm gerundet: das Feld reist als JSON, Wirt und Faden lesen dieselben Zahlen.
+  const GROSS = Object.freeze({ schrittKm: 4, halb: 32, fussKm: 16 });
+  const _grP = {};
+  function planetGrossFeld(S, breite, laenge, sv) {
+    pruefScheibe(S);
+    if (!(sv > 0) || !Number.isFinite(sv)) throw new Error('planetGrossFeld: die Stauchung des Ort-Gesetzes fehlt (' + sv + ') (K10)');
+    const R = S.R, sb = ksin(breite), cb = kcos(breite), sl = ksin(laenge), cl = kcos(laenge);
+    const ax = cb * cl, ay = sb, az = cb * sl, ox = -sl, oz = cl, sx = sb * cl, sy = -cb, sz = sb * sl;   // auf · Ost · Süd (= −Nord)
+    const n = 2 * GROSS.halb + 1, h = new Array(n * n), h0 = planetPunktR(S, ax, ay, az, GROSS.fussKm, _grP);
+    for (let j = 0; j < n; j++) {
+      const tv = tanK(((j - GROSS.halb) * GROSS.schrittKm) / R);
+      for (let i = 0; i < n; i++) {
+        const tu = tanK(((i - GROSS.halb) * GROSS.schrittKm) / R);
+        let x = ax + tu * ox + tv * sx, y = ay + tv * sy, z = az + tu * oz + tv * sz; const l = Math.sqrt(x * x + y * y + z * z); x /= l; y /= l; z /= l;
+        h[j * n + i] = Math.round((planetPunktR(S, x, y, z, GROSS.fussKm, _grP) - h0) * sv * 100) / 100;
+      }
+    }
+    return { schrittM: GROSS.schrittKm * 1000, n, h };
+  }
+
   // G3.2 die Terme des zuletzt gerechneten Punkts (planetPunktR davor), für die Linse, die den Täter eines Sprungs nennt
   function terme(o) { o.boden = PK.tBoden; o.profil = PK.tProfil; o.mantel = PK.tMantel; o.schablone = PK.tSchablone; o.trapp = PK.tTrapp; o.orogen = PK.tOro; o.gedaechtnis = PK.tMem; o.gebirge = PK.tGeb; o.kegel = PK.tKegel; o.nachklang = PK.tNk; return o; }
   // R3 der Ort desselben Krusten-Materials zur Zeit t1: Kruste (Profil-Gewicht > 0) fährt mit ihrer Scholle, Boden einer Kontinent-Platte mit
@@ -3227,7 +3254,7 @@
     planetPlan, planetScheibe, planetRichtung, planetBreiteLaenge, planetPunkt, planetPunktR, planetHuelle, planetMeer, planetVulkane, planetKarte, planetKarteAusschnitt,
     KLIMA, KOEPPEN, WHITTAKER, planetKlimaGlobal, planetKlima, planetKlimaR, planetBiom, planetPet: petMm,
     PLANET_WASSER_N: WASSER_N, planetWasserGitter, planetWasserR,
-    planetAnker, planetFlaeche, planetKarteVon, planetOrt, ortEisZeit, EIS_ZEITEN, planetOrtDerZeit, NACHKLANG_MA,
+    planetAnker, planetFlaeche, planetKarteVon, planetOrt, planetGrossFeld, GROSS, ortEisZeit, EIS_ZEITEN, planetOrtDerZeit, NACHKLANG_MA,
     _intern: Object.freeze({ terme, planBytes, scheibeBytes, abschnitt, acosF, gdh1, fib, biomFarbe, wasserZellen, wasserLauf, guertelP, scheibeKern, tempoAbl, abschnittIndex,
       bahnElemente, tagesEinstrahlung, bahnKoerper, eisZustand, eisMeerM, klimaStrahlung, EIS_BAHN }),
   });

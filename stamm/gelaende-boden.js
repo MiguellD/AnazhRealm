@@ -1662,11 +1662,12 @@ class AnazhRealm_gelaende_boden {
 
     // DIE SAAT DER REISE-WELT (K5, w28-reise-ort): die Reihe der Ort-Saaten des Gelände-Kerns (`ortSaatWahl`) am Teil `ort` mit
     // dem Erbgut, das die Geburt schreibt (`ortErbgut` aus dem Gelände der Heimat `heimGelaende`, der Teil `gelaende` ihres
-    // Gesetzes) — die erste Saat, deren Gesetz an der Ankunft Grund trägt. Leser: die Geburt (`_reiseBetreten`). → die Saat
-    _reiseSaat(ort, heimGelaende) {
+    // Gesetzes, mit dem Feld des Groß-Terms `gross`) — die erste Saat, deren Gesetz an der Ankunft Grund trägt. Leser: die Geburt
+    // (`_reiseBetreten`). → die Saat
+    _reiseSaat(ort, heimGelaende, gross) {
         const K = globalThis.__gelaendeCore;
         const erbgut = K.erbgutNormal(
-            K.ortErbgut(K.erbgutNormal(heimGelaende == null ? undefined : heimGelaende), ort.delta.wildnis)
+            K.ortErbgut(K.erbgutNormal(heimGelaende == null ? undefined : heimGelaende), ort.delta.wildnis, gross)
         );
         const w = K.ortSaatWahl(ort, erbgut, SimplexNoise);
         if (w.k) this.log(`Reise: die Saat ${w.k} der Reihe trägt Grund an der Ankunft (${w.saat})`, "INFO");

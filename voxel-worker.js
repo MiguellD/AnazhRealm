@@ -1540,6 +1540,9 @@ function planetOrtAuftrag(msg) {
         orogenAlterMa: p.orogenAlterMa,
         orogenStaerke: p.orogenStaerke,
         krusteAlterMa: o.krusteAlterMa,
+        // DER GROSS-TERM (gelaende-core `grossTerm`): das Feld der Planeten-Höhe um den Ort, nur auf Wunsch der Geburt (`gross: true`,
+        // die Reise) — 4 225 Punkte, kein Frager einer Station zahlt es
+        ...(msg.gross === true ? { gross: P.planetGrossFeld(S, msg.breite * RAD, msg.laenge * RAD, o.stauchung) } : {}),
         delta: {
             klima: {
                 sommer: d.klima.sommer,

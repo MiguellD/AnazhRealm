@@ -681,7 +681,8 @@ class AnazhRealm_netz_portal {
             if (!roh) return { ok: false, reason: `die Heimat ${heimId.slice(0, 8)}… liegt nicht im Speicher` };
             heim = AnazhRealm._weltGesetz(JSON.parse(roh).worldMeta);
         }
-        const saat = this._reiseSaat(ort, heim.gelaende); // die Reihe der Ort-Saaten: die erste mit Grund an der Ankunft (K5)
+        if (!o.gross) return { ok: false, reason: "der Planet-Faden trägt das Feld des Groß-Terms nicht (gross)" };
+        const saat = this._reiseSaat(ort, heim.gelaende, o.gross); // die Reihe der Ort-Saaten: die erste mit Grund an der Ankunft (K5)
         const worldId = `ort_${this._fastHash(saat + "|" + o.version)}${this._fastHash(heimId)}`;
         if (worldId === hier.worldId) return { ok: false, reason: "der Spieler steht schon an diesem Ort" };
         if (localStorage.getItem(this.worldStorageKey(worldId))) {
@@ -704,7 +705,7 @@ class AnazhRealm_netz_portal {
             schwere: heim.schwere,
             himmel: { rayleighTiefe: heim.himmel.rayleighTiefe.slice() },
             wetter: Object.assign({}, heim.wetter),
-            gelaende: K.ortErbgut(K.erbgutNormal(heim.gelaende == null ? undefined : heim.gelaende), o.delta.wildnis),
+            gelaende: K.ortErbgut(K.erbgutNormal(heim.gelaende == null ? undefined : heim.gelaende), o.delta.wildnis, o.gross),
             ort,
         };
         AnazhRealm._weltGesetz(snap.worldMeta);
