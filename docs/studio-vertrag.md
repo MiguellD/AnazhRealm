@@ -517,7 +517,10 @@ radiusM muendungM`), dazu `guete { faktorVoll faktorLeer }` +
   `gueteFaktor(rezeptId, ov?)` — das Lehren-Urteil der Schmiede als
   Schadens-Faktor; `gueteAnteil(rezeptId, ov?)` (Welle L, additiv) — derselbe
   Lehren-Anteil ∈ [0, 1] als die EINE Güte eines Schmiede-Geräts (Leser
-  `computeBlueprintQuality` → Schaden `_heldGueteFaktor`, Werkstoff-Kraft, Equip-Fold). Alle
+  `computeBlueprintQuality` → Schaden `_heldGueteFaktor`, Werkstoff-Kraft, Equip-Fold);
+  `gueteAnteil(rezeptId, ov?, hand?)` (kunst#2, additiv) — mit der Hand (das Können des
+  Schmieds, 1 = das Band der Guten) mal 1 − `handFehler(hand)` (`HAND.gut` 0,052 / k,
+  Birkmeyer 2013); ohne Hand byte-gleich. Leser: der Zensus der Kette (`stuecke`). Alle
   Blöcke leben NUR im Gesetzbuch — der Stamm trägt keinen Zahlen-Zwilling
   mehr (ZWILLINGS-ABSENZ-WAND).
   Welle L: `trefferUrteil(m, treffer)` — die Treffer-Physik des Prüfstands
