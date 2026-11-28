@@ -22490,7 +22490,7 @@
   },
   "karte2.mensch.netz.gestalt": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.netz.gestalt#1 radeon: ungemessen (R10) — zuletzt an 6066c757: Frist der Probe 79 s gerissen im /umstellen stadt-voll (der Ruf lief 78.8 s: der Messort trug die Frist) — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FR · karte2.mensch.netz.gestalt#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +24) · karte2.mensch.netz.gestalt#2 radeon: ungemessen (R10) · karte2.mensch.netz.gestalt#2 gtx: Station seit der Messung geändert · karte2.mensch.netz.gestalt#3 radeon: ungemessen (R10) · karte2.mensch.netz.gestalt#3 gtx: Station seit der Messung geändert · karte2.mensch.netz.gestalt#4 radeon: ungemessen (R10) · karte2.mensch.netz.gestalt#4 gtx: Station seit der Messung geändert · karte2.mensch.netz.gestalt#5 radeon: ungemessen (R10) · karte2.mensch.netz.gestalt#5 gtx: Station seit der Messung geändert · karte2.mensch.netz.gestalt#6 radeon: ungemessen (R10) · karte2.mensch.netz.gestalt#6 gtx: Station seit der Messung geändert · karte2.mensch.netz.gestalt#7 radeon: ungemessen (R10) · karte2.mensch.netz.gestalt#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.netz.gestalt#1 radeon: ungemessen (R10) — zuletzt an 6066c757: Frist der Probe 79 s gerissen im /umstellen stadt-voll (der Ruf lief 78.8 s: der Messort trug die Frist) — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FR · karte2.mensch.netz.gestalt#1 gtx: ROT: S1 ROT an Umfang 1 < 8 Saaten (Orte mit stehendem Plan) — Täter: Gefälle 30 % an d:7@836,438 (fachwerk STRASSENGRAPH) · Wand im Korridor: ortsdurchfahrt 39 (haus_marokkanisch bei 803.8,485.0 (d:7@836,438)); wohnstrasse 183 (haus_italienisch bei 844.4,474.5 (d:7@836,438)); gasse 1450 (haus_provenzalisch bei 868.2,455.4 (d:7@836,438)); feldweg 98 (haus_italienisch  · Gefälle p95 % (die steilste Saat) 30 (Soll ≤ 9.5) · Wegeklassen 4 (Soll ≥ 4) · Wand-Stellen im Fahrkorridor 1770 (Soll ≤ 0) · Netz des Orts km 7.13 (Soll ≥ 10) · Umfang 1 (Soll ≥ 8 Saaten (Orte mit stehendem Plan)) · Saaten d:7@836,438 30 % · je Klasse m ortsdurchfahrt 678, wohnstrasse 987, gasse 5035, feldweg 432 · der Korridor gelesen, nicht gefahren · [linse-gpu] nvidia/pascal an e80f9c5d · karte2.mensch.netz.gestalt#2 radeon: ungemessen (R10) · karte2.mensch.netz.gestalt#2 gtx: Station seit der Messung geändert · karte2.mensch.netz.gestalt#3 radeon: ungemessen (R10) · karte2.mensch.netz.gestalt#3 gtx: Station seit der Messung geändert · karte2.mensch.netz.gestalt#4 radeon: ungemessen (R10) · karte2.mensch.netz.gestalt#4 gtx: Station seit der Messung geändert · karte2.mensch.netz.gestalt#5 radeon: ungemessen (R10) · karte2.mensch.netz.gestalt#5 gtx: Station seit der Messung geändert · karte2.mensch.netz.gestalt#6 radeon: ungemessen (R10) · karte2.mensch.netz.gestalt#6 gtx: Station seit der Messung geändert · karte2.mensch.netz.gestalt#7 radeon: ungemessen (R10) · karte2.mensch.netz.gestalt#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.netz.gestalt#1",
@@ -22506,10 +22506,9 @@
      "id": "karte2.mensch.netz.gestalt#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +24)",
-     "ungemessen": true,
+     "zahl": "S1 ROT an Umfang 1 < 8 Saaten (Orte mit stehendem Plan) — Täter: Gefälle 30 % an d:7@836,438 (fachwerk STRASSENGRAPH) · Wand im Korridor: ortsdurchfahrt 39 (haus_marokkanisch bei 803.8,485.0 (d:7@836,438)); wohnstrasse 183 (haus_italienisch bei 844.4,474.5 (d:7@836,438)); gasse 1450 (haus_provenzalisch bei 868.2,455.4 (d:7@836,438)); feldweg 98 (haus_italienisch  · Gefälle p95 % (die steilste Saat) 30 (Soll ≤ 9.5) · Wegeklassen 4 (Soll ≥ 4) · Wand-Stellen im Fahrkorridor 1770 (Soll ≤ 0) · Netz des Orts km 7.13 (Soll ≥ 10) · Umfang 1 (Soll ≥ 8 Saaten (Orte mit stehendem Plan)) · Saaten d:7@836,438 30 % · je Klasse m ortsdurchfahrt 678, wohnstrasse 987, gasse 5035, feldweg 432 · der Korridor gelesen, nicht gefahren · [linse-gpu] nvidia/pascal",
+     "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
+     "grund": "ROT: S1 ROT an Umfang 1 < 8 Saaten (Orte mit stehendem Plan) — Täter: Gefälle 30 % an d:7@836,438 (fachwerk STRASSENGRAPH) · Wand im Korridor: ortsdurchfahrt 39 (haus_marokkanisch bei 803.8,485.0 (d:7@836,438)); wohnstrasse 183 (haus_italienisch bei 844.4,474.5 (d:7@836,438)); gasse 1450 (haus_provenzalisch bei 868.2,455.4 (d:7@836,438)); feldweg 98 (haus_italienisch  · Gefälle p95 % (die steilste Saat) 30 (Soll ≤ 9.5) · Wegeklassen 4 (Soll ≥ 4) · Wand-Stellen im Fahrkorridor 1770 (Soll ≤ 0) · Netz des Orts km 7.13 (Soll ≥ 10) · Umfang 1 (Soll ≥ 8 Saaten (Orte mit stehendem Plan)) · Saaten d:7@836,438 30 % · je Klasse m ortsdurchfahrt 678, wohnstrasse 987, gasse 5035, feldweg 432 · der Korridor gelesen, nicht gefahren · [linse-gpu] nvidia/pascal",
      "r6": "konsum",
      "beide": true
     },
@@ -37599,7 +37598,7 @@
   "ohne": 3351
  },
  "kopfVoll": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
- "zeit": "2026-11-28T09:56:53.386Z",
+ "zeit": "2026-11-28T10:24:07.263Z",
  "vorher": "e80f9c5d",
  "bilanz": {
   "gewinn": [],
