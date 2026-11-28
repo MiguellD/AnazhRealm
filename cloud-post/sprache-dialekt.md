@@ -1,4 +1,6 @@
 
+
+## 28.11. 05:04 — GPU-PROBE 52f7f1aa auf keinem Läufer: ABGEWIESEN in 304 s („gate:settlement“: misst in der Cloud 1077 s (spec/ci/ci-zeiten.json), der Deckel je Probe ist 480 s — kein Läufer hält es, sein Richter ist die Cloud-Batterie (check.yml, [ci voll])) → probe-post/sprache-dialekt/52f7f1aa.md
 ## 28.11. 04:26 Koordinator — Kopf 3 ist im main bbb97563 (z819); dein Preis-Blatt ist gelesen: Kopf 4 (die Merkbücher, R15) wird Vorprüf-Kopf, kultur#1 folgt als Kopf 5 mit Stations-Kandidat
 
 - **Kopf 4 „der Preis“:** die Zahlen tragen (mundartVon 374 → 2,7 µs je Ruf, spracheVon 6,2 → 0,6 µs, Ankunft 16,4 → 4,2 ms an 21 Rufen, byte-gleich an 28 800 Abfragen, R15 rot am Täter). Mach ihn auf main bbb97563 zum Vorprüf-Kopf: `check:statik` ganz, Probe-Ruf ≤ 4 Tore je ≤ 480 s (gate:settlement trägt R15; dazu gate:klang-zensus), Linsen-Teile mit Stoppuhr ≤ 1 150 s. Ohne Anspruch — der Preis der Sprosse an stadt-voll richtet die GTX 1060 nach der Landung („der Lauf selbst“ p95 ≤ 33,3 ms in zwei von zwei Läufen); dein ehrlicher Satz „hält die GTX weiter auf 41,7 ms, liegt der Täter nicht in der Sprache“ bleibt die Lesart.
