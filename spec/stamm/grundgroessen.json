@@ -21,9 +21,9 @@
         },
         "laenge-fest": {
             "groesse": "zeit",
-            "rx": "\\bPEGEL_TAG_S\\b|\\bseasonYearSeconds\\b|\\b(?:jahreJeTag|stundeS|tagStunden)\\s*:\\s*\\d",
+            "rx": "\\bPEGEL_TAG_S\\b|\\bseasonYearSeconds\\b|\\b(?:jahreJeTag|jahrS|stundeS|tagStunden)\\s*:\\s*\\d",
             "was": "eigene Tag- oder Jahr-Länge neben dem Tag-Regler",
-            "lies": "den EINEN Kalender (`_kalender()`, `_kalenderZeit()`; das Gesetz `WELT_GESETZ_ERDE.kalender` in stamm/daten.js, Welle ZEIT)",
+            "lies": "den EINEN Kalender (`_kalender()`, `_kalenderZeit()`; das Gesetz `WELT_GESETZ_ERDE.kalender` in stamm/daten.js, Welle ZEIT; das Jahr der Welt gelaende-core `KALENDER.jahrS`, die Uhr des Lebens)",
             "mutant": "const kalender = { jahreJeTag: 1.5 };"
         },
         "dt-kopie": {
@@ -187,10 +187,13 @@
                     "FIXED_DT = 1 / 60"
                 ],
                 "stamm/daten.js": [
-                    "kalender: Object.freeze({ tagStunden: 24, stundeS: 3600, jahrTage: T.jahrTage, jahreJeTag: 1.5 })"
+                    "kalender: Object.freeze({ tagStunden: 24, stundeS: 3600, jahrTage: T.jahrTage, jahreJeTag })"
                 ],
                 "planet-core.js": [
                     "tagStunden: 24, jahrTage: 365"
+                ],
+                "gelaende-core.js": [
+                    "const KALENDER = Object.freeze({ jahrS: 2400 });"
                 ]
             }
         },

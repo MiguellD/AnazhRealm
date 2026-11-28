@@ -228,7 +228,7 @@ class AnazhRealm_kreatur_erbe {
         const [B, L, zn] = [BG.B, AnazhRealm._lebenKern(), AnazhRealm.BESTAND_REGION.zellen];
         const diet = this._bestandDiet();
         const seite = this._bestandSeite();
-        const TJ = L.gesetz().refS / B.taktS / L.zeitJagd().jahreRef;
+        const TJ = L.taktJeJahr(B.taktS); // die EINE Uhr: Takte je Jahr der Welt (leben-core Satz 1)
         const M = kg || { [G.beute]: this._gattungKg(G.beute), [G.jaeger]: this._gattungKg(G.jaeger) };
         const wirt = {
             taktS: B.taktS,

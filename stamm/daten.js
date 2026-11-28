@@ -68,13 +68,19 @@ class AnazhRealm_daten {
     // und Jahr sind Funktionen von ihr durch die EINE Tag-Länge (`_kalender`: die Wahl des Spielers, `dayLengthMinutes`). Das Gesetz
     // trägt die Stunden des Tags und die Tage des Jahrs der Erde (planet-core `PLANET_ERDE.tagStunden` · `jahrTage`; im Haupt-Faden
     // liest es das Jahr des Ort-Gesetzes, gelaende-core `TEMPERATUR.jahrTage` — R5: derselbe Wert, gate:wetter-wache (K) prüft beide)
-    // und die RAFFUNG des Jahrs: `jahreJeTag` Jahre vergehen in einem Spieltag — am Standard-Tag (60 min) dauert ein Jahr 40 min
+    // und die RAFFUNG des Jahrs: `jahreJeTag` Jahre vergehen in einem Spieltag — der Standard-Tag ÷ das Jahr der Welt (gelaende-core
+    // `KALENDER.jahrS` 2 400 s, die EINE Uhr: das Leben rechnet in demselben Jahr): am Standard-Tag (60 min) dauert ein Jahr 40 min
     // wie vor dem Gesetz (die Saison-Drift der Bühne), an jedem anderen folgt es dem Tag. `stundeS`: die Sekunden einer Stunde
     // der Natur — ein Prozess, der in echter Zeit rechnet (das Erkalten der Lava im Kern), liest die Stunde des Tags der Prozesse so.
     static get WELT_GESETZ_ERDE() {
         const A = AnazhRealm.Gesetz("terrain:ATMO_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:ATMO_GESETZ");
         const T = globalThis.__gelaendeCore && globalThis.__gelaendeCore.TEMPERATUR;
         if (!(T && T.jahrTage > 0)) throw new Error("gelaende-core fehlt: TEMPERATUR.jahrTage (der Kalender der Welt)");
+        // das Jahr der Welt (die EINE Uhr): gelaende-core `KALENDER.jahrS` — dieselbe Zahl liest das Leben (leben-core refS)
+        const K = globalThis.__gelaendeCore.KALENDER;
+        if (!(K && K.jahrS > 0))
+            throw new Error("gelaende-core fehlt: KALENDER.jahrS (das Jahr der Welt, die Uhr des Lebens)");
+        const jahreJeTag = (AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES * 60) / K.jahrS;
         return this._einmal(
             "WELT_GESETZ_ERDE",
             Object.freeze({
@@ -82,7 +88,7 @@ class AnazhRealm_daten {
                 himmel: Object.freeze({ rayleighTiefe: Object.freeze(A.rayleighTiefe.slice()) }),
                 wetter: AnazhRealm.WETTER_WORT,
                 gelaende: null,
-                kalender: Object.freeze({ tagStunden: 24, stundeS: 3600, jahrTage: T.jahrTage, jahreJeTag: 1.5 }),
+                kalender: Object.freeze({ tagStunden: 24, stundeS: 3600, jahrTage: T.jahrTage, jahreJeTag }),
             })
         );
     }

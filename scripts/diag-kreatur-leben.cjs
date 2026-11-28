@@ -2028,6 +2028,9 @@ async function lebenBuehnen() {
     // (`node scripts/diag-kreatur-leben.cjs --akte`) dieselben Läufe an 30 Saaten; das Tor fährt eine ──
     const SAATEN = Math.max(1, Math.floor((opts && opts.saaten) || 1));
     const L0 = A._lebenKern();
+    // DIE EINE UHR: die Takte eines Jahrs des Gaus (leben-core `taktJeJahr` — das Jahr der Welt ÷ der Takt des Bestands); jede
+    // Probe, die in Jahren des Gaus zählt, liest diese Zahl, nie eine feste Takt-Zahl
+    const TJ = L0.taktJeJahr(A._bestandGesetz().B.taktS);
     const huelle = { mutante: false, eltern: new Map() };
     const lebenHuelle = () =>
         aufraeumen.push(
@@ -2108,7 +2111,7 @@ async function lebenBuehnen() {
         lebenHuelle();
         const keys = await lebenRegionen();
         // ≥ 10 Generationen: die Generation eines Kinds ist die seiner Mutter + 1 (ein Gründer 0)
-        const TAKTE = 2160; // 6 Spielstunden je Region (der Fuchs ist reif nach Minuten) — und 82 Jahre des Gaus (26,25 Takte je Jahr)
+        const TAKTE = Math.round(82 * TJ); // 82 Jahre des Gaus (die EINE Uhr: TJ Takte je Jahr der Welt)
         // je Tier sein Phänotyp und seine Generation (die Kennung der Mutter `m` nennt sie): die Paare Mutter → Kind
         // dazu die Scheu (zivilisation#1): ln der Fluchtdistanz am Leser des Spiels, Mutter → Kind, und die Fluchtdistanz der
         // Hirsche in m (die Streuung im Bild)
@@ -2242,7 +2245,7 @@ async function lebenBuehnen() {
         const riss = { n: 0, aeltest: 0, pAeltest: 0, vAeltest: 0, kg: 0, kgSoll: 0, kgVar: 0, scheu: 0, scheuSoll: 0, scheuVar: 0 };
         const keys = await lebenRegionen();
         const [H, W] = [A.GAU.beute, A.GAU.jaeger];
-        const TAKTE = 2600;
+        const TAKTE = Math.round(99 * TJ); // 99 Jahre des Gaus (die EINE Uhr)
         const lauf = async (saat, ohneWolf) => {
             const q = { hirsch: 0, woelfe: 0, proben: 0, mittel: 0, flucht: 0, reif: 0, ueber: 0, gen: 0, start: null };
             // die Generation je Hirsch im Bild: die seiner Mutter + 1, wenn sie im Bild lebte, sonst 0 (eine untere Grenze)
@@ -2421,12 +2424,12 @@ async function lebenBuehnen() {
             }
         };
         const z = { sicht: {} };
-        // G1 — die Spur von B4: Wolf und Beute nach den Takten 1, 106, …, 946 (je 4 Jahre)
+        // G1 — die Spur von B4: Wolf und Beute nach dem Takt 1 und je 4 Jahren (4 · TJ Takte) danach
         const zeit = { feldMs: 0, hydroMs: 0, kacheln: 0, rechenMs: 0, takte: 0 };
         const [wolf, reh] = [[], []];
         let a = null;
         for (let k = 0; k < 10; k++) {
-            a = await frage(1 + 105 * k);
+            a = await frage(1 + Math.round(4 * TJ) * k);
             wolf.push(a.jaeger);
             reh.push(a.beute);
             for (const f of ["rechenMs", "takte"]) zeit[f] += a.zeit[f];
@@ -2438,7 +2441,7 @@ async function lebenBuehnen() {
             feldS: rund(zeit.feldMs / 1000, 2),
             hydroS: rund(zeit.hydroMs / 1000, 2),
             kacheln: zeit.kacheln,
-            msJeJahr: rund((zeit.rechenMs / Math.max(1, zeit.takte)) * 26.25, 1),
+            msJeJahr: rund((zeit.rechenMs / Math.max(1, zeit.takte)) * TJ, 1),
         };
         // Z — EINE QUELLE (C2a2): das Feld des Fadens ist das des Stamms, Zelle für Zelle (Substrat der Äsung: gelaende-core
         // `weltFeld`; Lebensraum aus der Boden-Klasse: tetrapoda `bodenKlasseAm`), und EINE Änderung am Quelltext des Kerns —
@@ -2673,13 +2676,13 @@ async function lebenBuehnen() {
             z.aufholen = [];
             for (const j of O.jahre) {
                 await frage(0);
-                const t = Math.round(j * 26.25);
+                const t = Math.round(j * TJ);
                 const h = await frage(t);
                 z.aufholen.push({
                     jahre: j,
                     takte: h.zeit.takte,
                     s: rund(h.zeit.rechenMs / 1000, 2),
-                    msJeJahr: rund((h.zeit.rechenMs / t) * 26.25, 1),
+                    msJeJahr: rund((h.zeit.rechenMs / t) * TJ, 1),
                     beute: h.beute,
                     jaeger: h.jaeger,
                 });
@@ -3588,6 +3591,8 @@ if (V) {
 }
 // ── die Größe ist das Gesetz des Lebens (leben-core `__lebenCore`, leben-erbe): die Spanne des Gesetzes umschließt das Art-Mittel
 // (das Neugeborene unten, das größte Erwachsene bei +4σ oben) — bis leben-erbe vier Größen-Bänder im Buch der Tiere ──
+// das Jahr der Welt (gelaende-core `KALENDER`) ist die Uhr des Lebens: der Kern liest es wie Seite und Faden
+require(path.join(root, "gelaende-core.js"));
 require(path.join(root, "leben-core.js"));
 // der EINE Strom der Welt (samen-core `samenStrom`), den der Wirt dem Kern reicht — wie Seite und Faden
 require(path.join(root, "samen-core.js"));
@@ -3620,7 +3625,7 @@ check(
     const vm = require("vm");
     const quelle = fs.readFileSync(path.join(root, "leben-core.js"), "utf8");
     const stelle = "a[i] = (aM[i] + v[i]) / 2 + SD_SEG[i] * nSeg[i] + SD_MUT[i] * nMut[i];";
-    const ctx = vm.createContext({ Math, Object, Array, Number, String, Error, Map, Set, Float64Array, Uint8Array, Int32Array, Uint32Array, DataView, ArrayBuffer, JSON, TextEncoder, TextDecoder }); // prettier-ignore
+    const ctx = vm.createContext({ __gelaendeCore: global.__gelaendeCore, Math, Object, Array, Number, String, Error, Map, Set, Float64Array, Uint8Array, Int32Array, Uint32Array, DataView, ArrayBuffer, JSON, TextEncoder, TextDecoder }); // prettier-ignore
     vm.runInContext(quelle.split(stelle).join("a[i] = SD_A[i] * nSeg[i];"), ctx);
     const T = quelle.split(stelle).length === 2 && ctx.__lebenCore ? lauf(ctx.__lebenCore) : { st: "die Stelle fehlt" };
     check(
@@ -3631,7 +3636,7 @@ check(
     // der Täter der Rate (erbe-geburt): die Nische der Scheu absolut — die neue Achse drückt das Mittel der Geburten um ihr w̄
     // (Lauf-4-Gau: −5,7 %); die Eichung fällt ROT beim Namen
     const eich = "* EIGNUNG_EICH * t.Mw) / t.ww;";
-    const ctxE = vm.createContext({ Math, Object, Array, Number, String, Error, Map, Set, Float64Array, Uint8Array, Int32Array, Uint32Array, DataView, ArrayBuffer, JSON, TextEncoder, TextDecoder }); // prettier-ignore
+    const ctxE = vm.createContext({ __gelaendeCore: global.__gelaendeCore, Math, Object, Array, Number, String, Error, Map, Set, Float64Array, Uint8Array, Int32Array, Uint32Array, DataView, ArrayBuffer, JSON, TextEncoder, TextDecoder }); // prettier-ignore
     vm.runInContext(quelle.split("const EIGNUNG_EICH = ").join("const EIGNUNG_EICH = 1 || "), ctxE);
     const E = quelle.split(eich).length === 2 && ctxE.__lebenCore ? lauf(ctxE.__lebenCore) : { st: "die Stelle fehlt" };
     check(
@@ -3715,7 +3720,7 @@ function bestandTreiber(T, L, gesetz) {
     // „jagt mit“ ist das Temperament „wild“ des Tier-Buchs: für den Fleischfresser genau kg ≥ jagdKg (temperamentDerGattung)
     if (!(DIET.wolf >= TG.fleischDiet))
         throw new Error("bestand: der Wolf ist kein Fleischfresser — jagdKg trägt sein Temperament nicht");
-    const TJ = L.gesetz().refS / B.taktS / L.zeitJagd().jahreRef;
+    const TJ = L.taktJeJahr(B.taktS); // die EINE Uhr (leben-core Satz 1): Takte je Jahr der Welt
     const SEITE = B.revierM * Math.sqrt(Math.PI);
     const M_ART = { deer: 94.24042032034154, wolf: 64.01114942302421 }; // die Masse des Gusses, wie Lauf 4 sie trug
     const HA = (SEITE / 4) ** 2 / 1e4;
@@ -3794,7 +3799,7 @@ function bestandTreiber(T, L, gesetz) {
         for (const R of z.rudel) w += R.tiere.length;
         return [d, w];
     };
-    // die Spur eines Laufs: Wolf und Beute nach jedem 105. Takt (4 Jahre), wie die Vorlage sie schreibt
+    // die Spur eines Laufs: Wolf und Beute je 4 Jahre (4 · TJ Takte; 105 bei 26,25 Takten je Jahr), wie die Vorlage sie schreibt
     function spur(saat, takte, W = 48) {
         const feld = welt(W, W);
         let z = K.anfang({ W, H: W, saat }, feld);
@@ -3803,7 +3808,7 @@ function bestandTreiber(T, L, gesetz) {
             feld.takt();
             z = K.schritt(z, saat, k, feld);
             feld.aesen(z.frass);
-            if (!(k % 105)) {
+            if (!(k % Math.round(4 * TJ))) {
                 const [d, w] = zaehl(z);
                 aus.wolf.push(w);
                 aus.reh.push(d);
@@ -3816,10 +3821,10 @@ function bestandTreiber(T, L, gesetz) {
 function bestandUrteil(L, gesetz) {
     if (!L || typeof L.bestand !== "function" || typeof L.zeitJagd !== "function")
         return "leben-core trägt keinen Bestand (bestand · zeitJagd fehlen)";
-    const { spur } = bestandTreiber(core, L, gesetz);
+    const { spur, TJ } = bestandTreiber(core, L, gesetz);
     const fehl = [];
     for (const saat of [1, 2]) {
-        const [ist, soll] = [spur(saat, 1051), LAUF4.spur[saat]];
+        const [ist, soll] = [spur(saat, Math.round(40 * TJ) + 1), LAUF4.spur[saat]];
         for (const f of ["wolf", "reh"])
             if (ist[f].join(" ") !== soll[f].join(" "))
                 fehl.push("Saat " + saat + " " + f + ": Kern " + ist[f].join(" ") + " ≠ Vorlage " + soll[f].join(" "));
@@ -3948,7 +3953,7 @@ if (process.argv.includes("--bestand-welt")) {
                 ms += performance.now() - t0;
                 feld.aesen(z.frass);
                 const [d, w] = zaehl(z);
-                if (!(k % 105)) (spur.wolf.push(w), spur.reh.push(d));
+                if (!(k % Math.round(4 * TJ))) (spur.wolf.push(w), spur.reh.push(d));
                 if (k >= TAKTE / 2) [wS, dS, m] = [wS + w, dS + d, m + 1];
             }
             const [d, w] = zaehl(z);
@@ -4048,7 +4053,7 @@ if (process.argv.includes("--bestand")) {
     const fs = require("fs");
     const arg = (name, sonst) => (process.argv.includes(name) ? process.argv[process.argv.indexOf(name) + 1] : sonst);
     const { K, TJ, M_ART, welt, zaehl } = bestandTreiber(core, LK);
-    const [W, TAKTE, SAATEN] = [48, 4200, [1, 2, 3, 4, 5, 6, 7, 8]];
+    const [W, TAKTE, SAATEN] = [48, Math.round(160 * TJ), [1, 2, 3, 4, 5, 6, 7, 8]]; // 160 Jahre des Gaus (die EINE Uhr)
     const [n, AB, E] = [W * W, TAKTE / 2, Math.round(40 * TJ)];
     const rund = (x, d = 3) => (Number.isFinite(x) ? +x.toFixed(d) : x);
     const sum = (v) => v.reduce((a, b) => a + b, 0);
@@ -4230,7 +4235,7 @@ if (process.argv.includes("--bestand")) {
             m.rehS += d;
             m.rehS2 += d * d;
             m.wolfS += w;
-            const probe = !((k - AB) % 105);
+            const probe = !((k - AB) % Math.round(4 * TJ));
             for (const i of habitat) {
                 const l = z.beute[i];
                 if (z.besitz[i] >= 0) (m.besetztHab++, !l.length && m.leerIm++);

@@ -52,6 +52,7 @@
 //                                            der Strom eines Takts bleibt byte-gleich, wie viele Achsen das Gesetz auch trägt
 //   ── additiv (Schritt B, das Gesetz der Zeit und der Jagd — §2 unten trägt die Sätze und den Leser `welt`) ──
 //   zeitJagd()                             → ZEIT_JAGD         die Werte der sieben Sätze, jede Rate je Jahr mit Quelle
+//   taktJeJahr(taktS, jahreRef?)           → Takte je Jahr der Welt (refS ÷ taktS ÷ jahreRef, Satz 1 — die EINE Uhr)
 //   anker(f, D, tafel = ZEIT_JAGD.anker)   → die Anker-Tafel des Satzes 4 an der Deckung D (faehen · welpen · welpeJaehrling · ueberleben)
 //   strom(saat, takt, art, i, samen)       → () => u ∈ [0, 1)  der am Samen verankerte Strom des Bestands (samen: der Strom des Wirts, `wirt.samen`)
 //   bestand(wirt, gesetz = ZEIT_JAGD)      → { ZEIT, RAUM, FENSTER, anfang(opt, welt), schritt(z, saat, takt, welt), klon(z),
@@ -72,7 +73,7 @@
 //       masseMonoton masseZurZeit steigt streng über das Leben (0 … lebensdauerS), danach nie fallend, nie über M∞ (vier Massen)
 //       reifeTreffer masseZurZeit(M, 0) = q·M und masseZurZeit(M, reifeS(M)) = 0,9·M auf 1e−9 (relativ), die Umkehr
 //                    alterZurMasse(M, 0,9·M) = reifeS(M) ebenso, erbeAusLeib(P): a + e = P und a = h²·P
-//       lebenWolf    lebensdauerS(64) (Soll 2100)
+//       lebenWolf    lebensdauerS(64) (Soll refS = jahreRef · das Jahr der Welt)
 //       streifTelemetrie  π·streifRadiusM² der Fleischfresser gegen Wolf und Rotfuchs der Telemetrie (Lindstedt 1986, Tab. 1), Soll Faktor ≤ 2
 //     Verfehlt eine Zahl ihr Soll, wirft selbsttest() mit dem Namen des Felds (fail-closed); sonst liefert es die Zahlen.
 //
@@ -84,6 +85,22 @@
     "use strict";
 
     const VERSION = 1;
+
+    // ── 1.0 DIE EINE UHR (tier-bewegung 28.11.): das Leben rechnet im Jahr der Welt ─────────────────────────────────────────────
+    // jahreRef: Jahre des Anker-Wolfs (ZEIT_JAGD Satz 1, gesetzt; Spanne der Quellen 4,5 a Yellowstone ↔ 26,6 a t_max). Das Jahr
+    // liest der Kern beim ersten Gebrauch aus gelaende-core `KALENDER.jahrS` (der Kern-Satz lädt das Leben vor dem Gelände) —
+    // fehlt es, bricht er beim Namen, nie mit einem eigenen Jahr.
+    const JAHRE_REF = 8;
+    let jahrS = null;
+    function jahrDerWelt() {
+        if (jahrS === null) {
+            const K = root.__gelaendeCore && root.__gelaendeCore.KALENDER;
+            if (!(K && typeof K.jahrS === "number" && Number.isFinite(K.jahrS) && K.jahrS > 0))
+                throw new Error("leben-core: das Jahr der Welt fehlt (gelaende-core KALENDER.jahrS) — die Uhr des Lebens ist das Jahr der Welt");
+            jahrS = K.jahrS;
+        }
+        return jahrS;
+    }
 
     // ── 1.1 DIE KONSTANTEN — jede mit Anker; „unsicher“ = Wert gewählt im Band der Literatur ──────────────────────────────────
     const LEBEN_GESETZ = Object.freeze({
@@ -113,11 +130,17 @@
         reifeMasse: 0.9, // reif ⇔ m ≥ 0,9·M∞ (Definition der Reife auf der WBE-Kurve)
         reifeAnteil: 0.2, // Eichung: der Anker-Wolf ist reif bei 0,2·t_max (Charnov 1993, α/t_max 0,1–0,25) — unsicher
         refKg: 64, // DER Zeit-Anker der Welt: der Wolf (KAMPF.refKg, tetrapoda-core.js) …
-        refS: 2100, // … lebt die bisherige Spiel-Spanne (35 min, bis leben-erbe der eine Alterstod jeder Art). Die eine Raffung der Welt — unsicher
+        // … lebt jahreRef Freiland-Jahre der Welt (ZEIT_JAGD Satz 1): refS = jahreRef · das Jahr der Welt (gelaende-core
+        // KALENDER.jahrS, die EINE Uhr — Laub, Schnee und Pegel sind das sichtbare Jahr). Bis zur EINEN Uhr stand hier die eigene
+        // Raffung 2 100 s (35 min, die Spiel-Spanne bis leben-erbe): 262,5 s je Lebens-Jahr gegen 2 400 s je Welt-Jahr.
+        get refS() {
+            return JAHRE_REF * jahrDerWelt();
+        },
     });
 
     // Abgeleitet (kein eigener Stellwert): je Achse VA = h2·sdP², VE = (1−h2)·sdP²; die Wachstums-Konstante q^¼ und das
-    // Reife-Maß ln((1−q^¼)/(1−reifeMasse^¼)); τ_ref = reifeAnteil·refS / Reife-Maß (= 420 s / 2,967 = 141,6 s).
+    // Reife-Maß ln((1−q^¼)/(1−reifeMasse^¼)); τ_ref = reifeAnteil·refS / Reife-Maß (= 3 840 s / 2,967 = 1 294 s; das Jahr der Welt
+    // liest erst der Gebrauch, `tauRef`).
     const G = LEBEN_GESETZ;
     const ACHSEN = G.achsen.length;
     const VA = G.achsen.map((x) => x.h2 * x.sdP * x.sdP);
@@ -137,7 +160,7 @@
     const EIGNUNG_EICH = G.achsen.reduce((f, x, i) => (i === LN_M ? f : f * Math.sqrt(1 + (x.sdP * x.sdP) / OMEGA2[i])), 1);
     const Q_W = Math.pow(G.geburtAnteil, G.wachsExp); // q^¼
     const REIFE_MASS = Math.log((1 - Q_W) / (1 - Math.pow(G.reifeMasse, G.wachsExp)));
-    const TAU_REF = (G.reifeAnteil * G.refS) / REIFE_MASS;
+    const tauRef = () => (G.reifeAnteil * G.refS) / REIFE_MASS;
 
     function zahl(x, wer) {
         if (typeof x !== "number" || !Number.isFinite(x)) throw new Error("leben-core: " + wer + " ist keine endliche Zahl (" + x + ")");
@@ -203,7 +226,7 @@
     }
 
     function tau(M) {
-        return TAU_REF * Math.pow(masse(M, "M∞") / G.refKg, G.wachsExp);
+        return tauRef() * Math.pow(masse(M, "M∞") / G.refKg, G.wachsExp);
     }
 
     // DAS STREIFGEBIET (wander-spieltag, additiv; leben.tiere.wanderung#2): die Fläche, die ein Tier der Masse M zum Leben
@@ -355,7 +378,7 @@
         return Object.freeze(o);
     };
     const ZEIT_JAGD = tief({
-        jahreRef: 8, // Jahre je refS — Satz 1 (gesetzt; Spanne der Quellen 4,5 a Yellowstone ↔ 26,6 a t_max)
+        jahreRef: JAHRE_REF, // Jahre je refS — Satz 1 (die EINE Uhr: `JAHRE_REF`, refS = jahreRef · das Jahr der Welt)
         // DIE BEUTE (Weißwedel-Äquivalent) — jede Zahl je Jahr
         beute: {
             // Kitze je reifer Kuh je Jahr [karg, gut] — Verme 1969, J. Wildl. Manage. 33:881 (Abstract); zwischen karg und gut
@@ -400,6 +423,11 @@
     });
     function zeitJagd() {
         return ZEIT_JAGD;
+    }
+    // DIE TAKTE EINES JAHRS (Satz 1, die EINE Uhr): ein Takt von taktS Sekunden der Welt-Uhr, das Jahr der Welt = refS ÷ jahreRef —
+    // der Bestand (`bestand` ZEIT), der Wirt des Gaus (`_gauWirt`) und jede Probe, die in Jahren des Gaus zählt, lesen diese EINE Zahl
+    function taktJeJahr(taktS, jahreRef) {
+        return G.refS / masse(taktS, "taktS") / masse(jahreRef === undefined ? ZEIT_JAGD.jahreRef : jahreRef, "jahreRef");
     }
     const ANKER_ANTEIL = { faehen: true, welpeJaehrling: true, ueberleben: true };
     function anker(f, D, tafel) {
@@ -469,8 +497,8 @@
         // DIE EINE UHR (Satz 1)
         const ZEIT = (() => {
             const jahreRef = ZJ.jahreRef;
-            const taktJeJahr = G.refS / TAKT_S / jahreRef;
-            return Object.freeze({ jahreRef, taktJeJahr, tageJeTakt: 365.25 / taktJeJahr, jahrS: taktJeJahr * TAKT_S });
+            const tj = taktJeJahr(TAKT_S, jahreRef);
+            return Object.freeze({ jahreRef, taktJeJahr: tj, tageJeTakt: 365.25 / tj, jahrS: tj * TAKT_S });
         })();
         const TJ = ZEIT.taktJeJahr;
         const TAGE = ZEIT.tageJeTakt;
@@ -1621,6 +1649,7 @@
         artId: artId,
         indId: indId,
         zeitJagd: zeitJagd,
+        taktJeJahr: taktJeJahr,
         anker: anker,
         strom: strom,
         bestand: bestand,

@@ -1676,6 +1676,12 @@
         tagGipfel: 0.625,
         jahrTage: 365,
     });
+    // DAS JAHR DER WELT (die EINE Uhr, tier-bewegung 28.11.): Sekunden der Welt-Uhr je Jahr am Standard-Tag — die Raffung des
+    // Jahrs. Der Kalender des Stamms liest sie (`WELT_GESETZ_ERDE.kalender`: jahreJeTag = Standard-Tag ÷ jahrS — Laub, Schnee,
+    // Pegel, Saison) und das Leben (leben-core: refS = jahreRef · jahrS — jede Lebensspanne und jede Rate je Jahr). Bis zur EINEN
+    // Uhr trug das Leben ein eigenes Jahr (refS 2 100 s ≙ 8 Jahre → 262,5 s), der Kalender 2 400 s: Faktor 9,14, der Hirsch lebte
+    // 0,86 Welt-Jahre.
+    const KALENDER = Object.freeze({ jahrS: 2400 });
     function temperaturFeld(L, y, traegTage) {
         if (!Number.isFinite(y)) throw new Error("gelaende-core temperaturFeld: die Höhe fehlt");
         // das Klima des Orts (Reise, `ortGesetz`): in der Heimat die Konstanten `TEMPERATUR`, am Ziel Heimat + Δ; die Kühlung je
@@ -9631,6 +9637,7 @@
         schnee: schnee,
         waldStufe: waldStufe, // biome-hoehenstufen — die Höhe am Ort im Maß der Waldgrenze (0 Meer · 1 Schnee-Beginn)
         TEMPERATUR: TEMPERATUR,
+        KALENDER: KALENDER, // die EINE Uhr (additiv): das Jahr der Welt — Kalender des Stamms und Uhr des Lebens lesen es
         temperatur: temperatur,
         temperaturFeld: temperaturFeld,
         temperaturAus: temperaturAus,
