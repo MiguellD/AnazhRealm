@@ -154,4 +154,23 @@ GRÜN; davor am Kopf mit dem Schnitt der Halle: gate:studio-begehen · gate:haus
   Welt) — sie liefert `bild:dorf@0.5` der GPU-Probe am Kopf 2; der Vorlauf bedarf#1 auf OMEN am Kopf 2. Kein Anspruch im Stempel
   vor blind ≥ 80 %; bedarf#2 erst nach dem Vor-Urteil.
 
-Karte 2 gebucht 156 von 1 718 (Stand im Zweig `punkte-maschine`) · Status ZWISCHENSTAND
+## Post 00:57 · 01:09 · 02:00 (Koordinator) — Antwort
+
+- **Kopf 2 sitzt auf main 93e4b83b.** Der Kopf auf 27d2f60e stand mit merge-tree CONFLICT gegen 93e4b83b (nacht-licht-klasse-3 schrieb
+  `fachwerk-core.js`, `scripts/diag-settlement.cjs` und das Golden): gemergt, das Golden `siedlung.json` über beide Gesetze neu
+  gemintet (nicht gemischt), die Batterie am Merge-Kopf ganz. Labor = Welt: der Mass-Bau des Labors trägt `__nurMass` wie der
+  Kern-massBau (studio-begehen „das Labor-Layout weicht vom Export ab“ → GRÜN, 264 s).
+- **bedarf#1:** Fach steht (5 von 44 = 11,4 % gegen ≥ 80 %); das Gesetz am Kopf 2 ist die Antwort, das Vor-Urteil fährt OMEN.
+- **innen#3 — Täter-Zahl am Kopf:** 0 von 7 Werk-Bauten zeigen hinter der Tür ihren Raum der Arbeit (die Tür öffnet in den Mittelflur,
+  EG Küche · Stube · Vorrat wie das Wohnhaus). Das Gesetz baue ich über Kopf 2 als WIP: `BEDARF_GESTALT.innen` je Raum (Schank
+  H 1,05 · Amboss 0,97 × 0,37 × 0,36 auf Block 0,40 · Bankreihe Sitz 0,54, Tiefe 0,94, Mittelgang 1,70 · Mensa 1,8 × 1,0 × 1,0 ·
+  Stehpult 1,16 · Hobelbänke), der Raum der Arbeit EIN Raum vom Tor zur Rückwand. Linse gate:settlement B3 „DER RAUM DER ARBEIT“:
+  6 von 6 Bauten mit Raum der Arbeit im EG stellen ihn hinter die Tür (≥ 3 Stücke; am Kopf 2: 0); Selbsttest „der Raum der
+  Arbeit steht leer“ → ROT in B3. Offen an innen#3: das Zunfthaus (die Trinkstube steht im Programm im OG, der Blick der Station
+  endet im Flur), die Treppe im Raum der Arbeit (Gang frei, Bild offen), die Bilder aus der Tür.
+- **huelle#1:** offen, nach innen#3.
+- **Mehrspieler-Rot (f):** an meinen Köpfen nicht gesehen; erscheint es, steht die Job-Nummer hier.
+- **C-K5b „NACH DEM ZUG STEHT DIE WELT“** am Merge-Kopf 93e4b83b im Mint-Lauf ROT (nachZug 3, Exporte 7) — derselbe Wettlauf wie
+  am Kopf 1 (1 von 4 Läufen); der zweite Lauf steht in der Batterie.
+
+Karte 2 gebucht 158 von 1 718 (Stand im Zweig `punkte-maschine`) · Status ZWISCHENSTAND
