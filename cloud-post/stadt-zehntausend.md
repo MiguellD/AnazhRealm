@@ -113,3 +113,19 @@ ZWISCHENSTAND. Karte 2 gebucht 156 von 1 718.
   der Stations-Kandidat, der das Urteil des Prüfers liest.
 
 ZWISCHENSTAND. Karte 2 gebucht 156 von 1 718.
+
+## 28.11. 00:35 UTC — Sicherung (Zuruf: sichern, nichts Neues)
+- Geschnitten (Stand des Zweigs): der Export der Großstadt am EINEN Werk-Faden — stehende Häuser nach 60 s 211 → 1 664 (dorf 7 9310 am
+  Messort stadt-voll), Vorprüf-Kopf a7282983 auf b3740dd5, GPU-Probe GRÜN; WIP darüber nur Blatt und Stations-Ordner.
+- Neu im Wartezimmer: der Stations-Kandidat der drei Prüfer-Sprossen im Ordner `cloud-post/stadt-zehntausend-station/` (Diff +
+  Begründung). breite#1: Fach gebaut (Klasse = Region des Plans, Wahl über alle sechs), Selbsttest 16 GRÜN · 0 ROT, Mutant ROT;
+  Korpus 14 Sätze Commons, gesichtet: Mitteleuropa 38 · Alpen 49 · Mittelmeer 70 · Norden 28 · Fernost 33 · Antike 46.
+- Letzte Zahl: das Fach am Messort stadt-voll — 156 Häuser mit Tür in 2 Orten, im Wechsel 37 Posen (Mitteleuropa 15 · Mittelmeer 22),
+  Regionen 2 von 6.
+- Rote Zeilen wörtlich: „Umfang nicht erzeugbar: 37 von 40“ (breite#1 am Messort) · „S2 ROT: Umfang nicht erzeugbar … 307 stehende
+  Häuser in 7 Vierteln; dorf 7 9310 steht erst nach ~154 s, über dem Deckel von 60 s“ (form#2 am main, offen: 1 664 von 9 310 nach 60 s)
+  · messlatte#1: „Korpus fehlt“ (Schirmbilder kommerzieller Titel bleiben draußen, Entscheid 26.11.).
+- Nächster Schritt: breite#1 — der Fächer reist an Orte der vier fehlenden Klimabänder (Alpen, Norden, Fernost, Antike); dann der Lauf
+  am Gerät. groesse#1: nur der Fächer-Lauf am Gerät. form#2: der Export je Kachel (70,7 ms je Haus) aus dem EINEN Werk-Faden.
+
+ZWISCHENSTAND. Karte 2 gebucht 156 von 1 718.

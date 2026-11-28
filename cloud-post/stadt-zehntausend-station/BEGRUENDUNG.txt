@@ -1,0 +1,29 @@
+Stations-Kandidat der Bahn stadt-zehntausend (Brief des Koordinators 28.11. 00:57, Vorlage kunst#1 pm 403ad6b3)
+Basis: Zweig punkte-maschine, Stand 28.11. ~00:05 UTC. kandidat.diff fasst drei Dateien (vision/pruefer/faecher.cjs, paare.cjs,
+quellen.json) und wendet sich mit patch -p1 byte-gleich an (geprüft).
+
+1. mensch.stadt.breite#1 „Region einer Stadt aus 6 erkannt" — GEBAUT, HALB
+ - Fach „mensch.stadt.breite#1": Ort stadt-voll, Gesetz k2-mensch-stadt.js:659; Klasse = plan.region (fachwerk-core regionImKlima: die
+   Bauweise folgt dem Klima des Orts); Posen: jedes stehende Haus mit Tür jedes Orts der Sitzung, 14 m vor der Tür, Auge 1,7 m, Blick
+   auf 3 m, je 22 im Wechsel, Mittag. Die Wahl steht über allen sechs Regionen (`optionen`); paare.cjs liest sie und wirft, wenn eine
+   Klasse nicht in der Wahl steht. Ohne das wählte der Prüfer aus den Klassen der Bilder: 2 statt 6, das Soll fiele.
+ - Selbsttest faecher.cjs: 16 GRÜN · 0 ROT; Mutant (Wahl nur Mittelmeer + Mitteleuropa): die neue Zeile ROT.
+ - Konsum-Probe am Messort stadt-voll (Zweig stadt-zehntausend, Null-Welt): 156 Häuser mit Tür in 2 Orten (Lödungren mitteleuropa 15,
+   Lausi mediterran 141), im Wechsel 37 Posen (Mitteleuropa 15 · Mittelmeer 22) → Umfang nicht erzeugbar: 37 von 40, Regionen 2 von 6.
+ - Station: Sprosse 1 trägt schon ein Auge ohne erwartet:"nicht", die Zeile der Klasse P steht — keine Änderung nötig.
+ - Korpus: 14 Sätze „altstadt-<region>" von Wikimedia Commons, geholt mit hole.cjs (Lizenz je Datei: gemeinfrei · CC0 · CC BY ·
+   CC BY-SA; Urheber, sha256, Bytes je Datei; Ablage 2afc/wikimedia-commons/altstadt-*, außerhalb jedes Repos). Gesichtet am
+   Kontaktbogen (28.11.), was KEIN Stadt- oder Straßenbild der Region trägt, steht unter `nicht`. Es tragen das Stadtbild:
+   Mitteleuropa 38 · Alpen 49 · Mittelmeer 70 · Norden 28 · Fernost 33 · Antike 46.
+ - OFFEN: (a) die Region folgt dem Klima — stadt-voll trägt 2 von 6; die übrigen vier brauchen Orte anderer Klimabänder (REGION_KLIMA:
+   Alpen Winter −12..0 / Sommer 8..20 °C, Norden −20..−3 / 10..20, Fernost −10..8 / 20..30; Antike teilt das Band des Mittelmeers, nur
+   der Wurf trennt) — der Fächer muss reisen (REISE wie relief.formschatz#1), ungebaut; (b) Mitteleuropa 38 und Norden 28 < 40;
+   (c) die Antike gibt es real nur als Ruine (Pompeji, Ostia): der Prüfer sieht Ruinen gegen eine lebende Stadt; (d) der Lauf am Gerät.
+
+2. mensch.stadt.groesse#1 — Fach steht, 44 Fotos (weiler…weiler-4), die Station legt das Bild am Ortsrand, die Zeile P steht. Offen ist
+   allein der Fächer-Lauf am Gerät (Manifest: „läuft: 0 von 40", die gealterte Sitzung zeichnet schwarze Punkte). Nichts zu bauen.
+
+3. mensch.stadt.messlatte#1 — NICHT gebaut. Das Vorbild ist „dieselbe Kameralage im Vergleichstitel"; Schirmbilder kommerzieller Titel
+   bleiben nach dem Entscheid vom 26.11. draußen (liegenGebliebenQuellen) — ohne freies Vergleichswerk hat das Blindpaar keine zweite
+   Seite. Die Zahl der Station am Zweig: Straße 58,23 m statt 100 m (wohnstrasse), Fassaden 9 · Gewerbe 8 · Menschen 0 · Wagen 0
+   (Null-Welt), Block 5 Häuser, 5 mit Tür.
