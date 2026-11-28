@@ -1470,8 +1470,11 @@ function neigungZeile(Q, og, ohneHeimat) {
 // 254ce1f7 / 23f9c8d9. Neu sind NUR die zwei Wildnis-Felder streichC · streichS (der Tensor des Streichens aus drei Hüllen-Punkten); jede
 // andere Zahl jeder Antwort steht bit-gleich (300 Orte ohne die zwei Felder: SHA 8b04f9bf alt = neu), die Relief-Punkte je Ort bleiben 2,00
 // (die Hülle 2,26 → 5,26), die Gipfel-Suche 2 804 Gipfel, 99,0 % an konvergenter Grenze wie vorher.
+// Neu eingefroren (Karte 2 planet.geologie.gebirge#1): 254ce1f7 / 23f9c8d9 → 45badbca / 218d7630. Neu sind NUR das Wildnis-Feld faltung
+// (glatt(0,01, 0,08, orogenStaerke)) und krusteAlterMa (das Alter der Scholle, das `tafel` schon las); ohne die zwei steht jede Antwort
+// bit-gleich (300 Orte: SHA c49f3460 alt = neu), keine Punkt-Frage mehr, die Gipfel-Suche 2 804 Gipfel, 99,0 % wie vorher.
 const FRAGE_SAATEN = 100, FRAGE_PUNKTE_JE_ORT = 2;
-const FRAGE_SHA = { alle: '254ce1f79195706564d6f7fc39698c4bb85f613bd82de214600c5f2281192173', erste: '23f9c8d9ebff23c3feef801d3a8dd4ac5c4037d3f7a380d74387c5796f96f7b7' };
+const FRAGE_SHA = { alle: '45badbca1f77d6e5168de48f8caa11c452a75932f7a3a3b65d93957c58c881c4', erste: '218d7630419ddb3384a6e678c69e5c143a144d5257f603baaccee68f3092c864' };
 const frageSaat = (i) => (i === 0 ? 'anazh-realm-seed' : 'zsp-' + (i - 1));
 const FRAGE_ORTE = (() => { const L = []; for (let b = -66; b <= 66; b += 6) for (let l = -180; l < 180; l += 6) L.push([b, l]); return L; })();
 // die Antwort des Fadens als Zahlen in fester Folge (wörtlich planetOrtAuftrag) — bit-genau gehasht, nie über JSON (−0, NaN)

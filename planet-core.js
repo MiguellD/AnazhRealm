@@ -3136,7 +3136,12 @@
       trog: klemm(rTr, glatt(16, -2, tJs)),
       ks: klemm(rKs, 3 + 12 * konv),
       tafel: klemm(rTa, glatt(400, 1500, _orP.randAbstandKm) * glatt(1500, 3500, schAlter)),
+      // DIE FALTUNG (Karte 2 planet.geologie.gebirge#1): die Bänke falten, wo die Kruste gestaucht wurde — orogenStaerke trägt das aktive
+      // Gebirge UND das Gedächtnis der Nähte (eine Falte bleibt gefaltet, wenn das Gebirge erlischt); ab 400 m Gebirgs-Hub (st 0,08) die
+      // volle Faltung, unter 50 m (st 0,01) keine. Der Kraton ohne Orogen trägt 0: flach lagernde Tafel wie die Heimat.
+      faltung: klemm(reglerZeile(og, 'faltung'), glatt(0.01, 0.08, st)),
     };
+    o.krusteAlterMa = schAlter;   // das Alter der Scholle — der Kraton der Station gebirge#1 (> 1 500 Ma, wie `tafel`)
     // das Meer der Zeit: das Becken (meerKm, 10-Ma-Fächer) und das Eis der Bahn (planetKlimaGlobal meerGlazialM, Erd-Meter) — beide in der
     // Stauchung des Ort-Gesetzes; heute ist das Eis 0 (dieselben Bytes)
     const G = planetKlimaGlobal(plan, S.zeitMa);

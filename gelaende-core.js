@@ -401,6 +401,9 @@
         { id: "pedimentWinkel", gruppe: "kliffs", einheit: "°", min: 0.5, max: 7, step: 0.5, def: 2.5, law: "Neigung des Pediments" },
         { id: "schichtDicke", gruppe: "kliffs", einheit: "m", min: 8, max: 60, step: 1, def: 26, law: "Mächtigkeit einer Schicht" },
         { id: "hartAnteil", gruppe: "kliffs", einheit: "1", min: 0.3, max: 0.7, step: 0.05, def: 0.55, law: "Anteil der harten (kliffbildenden) Lage" },
+        // DIE FALTUNG (Karte 2 planet.geologie.gebirge#1): 0 = flach lagernde Bänke (die Heimat, das Kraton), 1 = die Schenkel der
+        // Falten fallen bis `FALTUNG.grad` — planetOrt setzt sie aus der Gebirgs-Stärke, der Fels-Stoff liest sie (`felsGeologie`).
+        { id: "faltung", gruppe: "kliffs", einheit: "1", min: 0, max: 1, step: 0.05, def: 0, law: "Faltung der Bänke (Schenkel bis 60°)" },
         // RAUHEIT
         { id: "rinnen", gruppe: "rauheit", einheit: "1", min: 0, max: 1.5, step: 0.05, def: 1, law: "Rinnen-Netz (Ebene 2) — Einschnitt" },
         { id: "detail", gruppe: "rauheit", einheit: "1", min: 0, max: 1, step: 0.05, def: 0.6, law: "hang-begrenztes Detail" },
@@ -4055,6 +4058,47 @@
     const FELS_CS = Math.cos(FELS.streichen),
         FELS_SN = Math.sin(FELS.streichen),
         FELS_TE = Math.tan(FELS.einfall);
+    // DIE GEOLOGIE DER LAGE (Karte 2 planet.geologie.gebirge#1): die Bank-Fläche s = y + tan(einfall)·h1 + a·sin(k·h1), h1 quer
+    // zum Streichen des Orts (`streichC`/`streichS`, ohne Streichen die Richtung `FELS.streichen`) — ein Faltenzug der Wellenlänge
+    // `FALTUNG.lambda`, dessen Schenkel bis faltung × `FALTUNG.grad` fallen (a·k = tan). Real: Schichten in Falten-Überschiebungs-
+    // Gürteln fallen meist 20–60°, die Tafel-Deckschichten der Kratone < 5° (Ramsay & Huber 1987; Twiss & Moores 2007). Die Heimat
+    // (faltung 0, ohne Streichen) trägt `FELS_GEO_HEIMAT`: dieselbe Fläche wie vorher, bis aufs Bit. Wer keine Lage hat (die
+    // Fels-Gestalten der Foundry, das Gelände-Studio), liest die Heimat; jeder Leser der Welt liest seine Lage.
+    const FALTUNG = Object.freeze({ grad: 60, lambda: 400 });
+    const FELS_GEO_HEIMAT = Object.freeze({ te: FELS_TE, cs: FELS_CS, sn: FELS_SN, amp: 0, k: 0 });
+    const _felsGeoMemo = new WeakMap();
+    function felsGeologie(L) {
+        if (!L || !L.erbgut) throw new Error("felsGeologie: ohne Lage keine Geologie (K10)");
+        let G = _felsGeoMemo.get(L.erbgut);
+        if (G) return G;
+        const P = landformRegler(L);
+        const m = Math.hypot(P.streichC, P.streichS);
+        if (!(P.faltung > 0) && !(m > 0)) G = FELS_GEO_HEIMAT;
+        else {
+            const fall = m > 0 ? Math.atan2(P.streichS, P.streichC) / 2 + Math.PI / 2 : FELS.streichen;
+            const k = TAU / FALTUNG.lambda;
+            G = Object.freeze({
+                te: FELS_TE,
+                cs: Math.cos(fall),
+                sn: Math.sin(fall),
+                amp: Math.tan((P.faltung * FALTUNG.grad * Math.PI) / 180) / k,
+                k,
+            });
+        }
+        _felsGeoMemo.set(L.erbgut, G);
+        return G;
+    }
+    // Die Bank-Höhe über der Lage (y) an h1 — die Heimat ohne Falte rechnet genau die alte Summe.
+    const bankYO = (o, G, y, h1) => {
+        const s0 = o.add(y, o.mul(G.te, h1));
+        return G.amp === 0 ? s0 : o.add(s0, o.mul(G.amp, o.sin(o.mul(G.k, h1))));
+    };
+    // DAS EINFALLEN an (x, z) der Lage L (rad): die Neigung der Bank-Fläche, |∂s/∂h1| — der Leser der Station (gebirge#1).
+    function felsEinfall(L, x, z) {
+        const G = felsGeologie(L);
+        const h1 = x * G.cs + z * G.sn;
+        return Math.atan(Math.abs(G.te + G.amp * G.k * Math.cos(G.k * h1)));
+    }
     const fz = (a, b, c) => zufall(FELS_SAAT, a, b, c);
     // Trägt ein Netz der Kante `fuss` die Wellenlänge λ? 1 = ganz (fuss ≤ λ/4), 0 = nur ihr Mittel (fuss ≥ λ/2).
     const traegt = (lambda, fuss) => 1 - glatt(0.25 * lambda, 0.5 * lambda, fuss > 0 ? fuss : 0);
@@ -4244,11 +4288,11 @@
     // DIE LAGE IM FELS an (x, y, z) mit der großen Welle `welle` (± 1, Bänke × `fein.welle`): Paket, Bank, die Mächtigkeit der
     // Bank hier und der Abstand zur Fuge unten und oben (m). Die Bank zwischen den Grenzen j − 1 … j + 2 (die Grenzen wandern
     // um weniger als 0,65 Bänke): die oberste darunter, die unterste darüber — wo sich zwei Fugen kreuzen, keilt die Bank aus.
-    function felsLageO(o, x, y, z, welle, aus) {
+    function felsLageO(o, x, y, z, welle, aus, G) {
         const F = FELS;
-        const h1 = o.fest(o.add(o.mul(x, FELS_CS), o.mul(z, FELS_SN))),
-            h2 = o.fest(o.sub(o.mul(z, FELS_CS), o.mul(x, FELS_SN)));
-        const s = o.fest(o.add(o.add(y, o.mul(FELS_TE, h1)), o.mul(o.mul(welle, F.fein.welle), F.bank)));
+        const h1 = o.fest(o.add(o.mul(x, G.cs), o.mul(z, G.sn))),
+            h2 = o.fest(o.sub(o.mul(z, G.cs), o.mul(x, G.sn)));
+        const s = o.fest(o.add(bankYO(o, G, y, h1), o.mul(o.mul(welle, F.fein.welle), F.bank)));
         const p = o.fest(paketAnO(o, s));
         const pa = o.fest(paketGrenzeO(o, p));
         const d = o.fest(paketBankO(o, p));
@@ -4283,7 +4327,7 @@
         aus.oben = o.fest(o.mul(o.sub(hi, u), d));
         return aus;
     }
-    const felsLage = (x, y, z, welle, aus) => felsLageO(ZAHL, x, y, z, welle || 0, aus);
+    const felsLage = (x, y, z, welle, aus, G) => felsLageO(ZAHL, x, y, z, welle || 0, aus, G);
     const _lage = { s: 0, h1: 0, h2: 0, paket: 0, bank: 0, d: 0, dicke: 0, unten: 0, oben: 0 };
     // In der Kluft (0..1, 1 = Mitte): u in Kluft-Abständen, b die halbe Breite.
     const inKluftO = (o, u, b) => o.clamp01(o.sub(1, o.div(o.abs(o.sub(u, o.floor(o.add(u, 0.5)))), b)));
@@ -4323,19 +4367,19 @@
     // Bank relativ zum Grundton). Die große Welle ist DASSELBE Gradienten-Rauschen wie im Vertex (`felsFarbe`, `rausch`) —
     // `felsWelle` an (x, y, z); wer sie schon trägt, reicht sie als `w` (der Shader liest sie EINMAL im Rausch-Atlas, außerhalb
     // der Fels-Funktion: K17-3).
-    function felsWelleO(o, x, y, z) {
+    function felsWelleO(o, x, y, z, G) {
         const F = FELS;
-        const sy = o.add(y, o.mul(FELS_TE, o.add(o.mul(x, FELS_CS), o.mul(z, FELS_SN))));
+        const sy = bankYO(o, G, y, o.add(o.mul(x, G.cs), o.mul(z, G.sn)));
         return o.mul(F.fein.rausch, o.rausch(o.mul(x, F.fein.xz), o.div(o.mul(sy, F.fein.y), F.bank), o.mul(z, F.fein.xz)));
     }
-    function felsFeinO(o, B, x, y, z, welle) {
+    function felsFeinO(o, B, x, y, z, welle, G) {
         const F = FELS;
         const FM = felsMittelWerte();
         const Yl = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
         const aRel = 0.6 * (Yl(B.akzent) / Yl(B.basis) - 1);
         const dRel = 1 - Yl(B.dunkel) / Yl(B.basis);
-        const w = welle === undefined ? felsWelleO(o, x, y, z) : welle;
-        const L = felsLageO(o, x, y, z, w, {});
+        const w = welle === undefined ? felsWelleO(o, x, y, z, G) : welle;
+        const L = felsLageO(o, x, y, z, w, {}, G);
         const K = felsKantenO(o, L, {});
         const hell = o.div(o.add(1, o.mul(F.bankKontrast, o.sub(o.mul(2, fzO(o, L.paket, L.bank, 3)), 1))), FM.hell);
         const akz = o.div(o.add(1, o.mul(aRel, o.sub(1, o.step(F.akzentAnteil, fzO(o, L.paket, L.bank, 5))))), 1 + aRel * FM.akzent);
@@ -4409,7 +4453,7 @@
             he = 0;
         for (let i = 0; i < 64; i++)
             for (let j = 0; j < 64; j++) {
-                const L = felsLage(i * 2.71 + j * 0.37, (i * 64 + j) * 0.0617, j * 1.93 - i * 0.71, 0, _lage);
+                const L = felsLage(i * 2.71 + j * 0.37, (i * 64 + j) * 0.0617, j * 1.93 - i * 0.71, 0, _lage, FELS_GEO_HEIMAT);
                 felsKanten(L, _kanten);
                 ke += _kanten.kehle;
                 ra += _kanten.rand;
@@ -4492,14 +4536,15 @@
         _affinMemo.set(B, A);
         return A;
     }
-    function felsFarbe(B, x, y, z, nx, ny, nz, krumm, himmel, feucht, fuss, out) {
+    function felsFarbe(B, x, y, z, nx, ny, nz, krumm, himmel, feucht, fuss, out, G) {
+        if (!G) throw new Error("felsFarbe: die Geologie fehlt (felsGeologie(L) oder FELS_GEO_HEIMAT, K10)");
         const F = FELS;
         const T = traegtSatz(fuss);
-        const sy = y + FELS_TE * (x * FELS_CS + z * FELS_SN);
+        const sy = bankYO(ZAHL, G, y, x * G.cs + z * G.sn);
         let L = null;
         if (T.tb > 0 || T.tf > 0 || T.tj > 0) {
             const w = F.fein.rausch * rauschRaum(x * F.fein.xz, (sy * F.fein.y) / F.bank, z * F.fein.xz);
-            L = felsLage(x, y, z, w, _lage);
+            L = felsLage(x, y, z, w, _lage, G);
         }
         // Bank-Pakete (grob) — ihr Mittel ist 1.
         const m = T.tp > 0 ? 1 + T.tp * F.paketKontrast * (2 * fz(L ? L.paket : paketAn(sy), 11, 0) - 1) : 1;
@@ -4645,7 +4690,7 @@
         let s = 0.013;
         let guard = 0;
         while (dicken.length < 2000 && guard++ < 20000) {
-            const L = felsLage(0, s, 0, 0, _lage);
+            const L = felsLage(0, s, 0, 0, _lage, FELS_GEO_HEIMAT);
             if (L.dicke > 1e-3) dicken.push(L.dicke);
             s += L.oben + 1e-4;
         }
@@ -4716,7 +4761,7 @@
         const fe = o && o.feucht != null ? o.feucht : 0.3;
         const tmp = [0, 0, 0];
         for (let i = 0; i < n; i++) {
-            felsFarbe(B, P[3 * i], P[3 * i + 1], P[3 * i + 2], N[3 * i], N[3 * i + 1], N[3 * i + 2], K[i], him, fe, fuss, tmp);
+            felsFarbe(B, P[3 * i], P[3 * i + 1], P[3 * i + 2], N[3 * i], N[3 * i + 1], N[3 * i + 2], K[i], him, fe, fuss, tmp, FELS_GEO_HEIMAT);
             C[3 * i] = tmp[0];
             C[3 * i + 1] = tmp[1];
             C[3 * i + 2] = tmp[2];
@@ -4725,7 +4770,7 @@
     }
     // Das Mittel des Stoffs (die Ferne, wo kein Netz eine Bank trägt): ein senkrechter Fels unter dem Himmel.
     function felsMittel(B, feucht) {
-        return felsFarbe(B, 0, 0, 0, 0, 0, 1, 0, 1, feucht != null ? feucht : 0.3, 1e9, [0, 0, 0]);
+        return felsFarbe(B, 0, 0, 0, 0, 0, 1, 0, 1, feucht != null ? feucht : 0.3, 1e9, [0, 0, 0], FELS_GEO_HEIMAT);
     }
 
     // DAS ZIEL DER GRÖBEREN STUFE (K51-2, der Geomorph der Boden-Stufen nach dem CDLOD-Prinzip): je Vertex des feinen Netzes
@@ -6019,6 +6064,7 @@
     // feuchte(x, z, y) die Feuchte des Wirts. → { schutt: Float32Array(n) (das Gewicht des Schutts, der Detail-Term legt sein
     // Korn auf), feuchte (womit das Moos gerechnet wurde; undefined ohne Fels) }.
     function felsStoff(L, B, o, P, N, I, H, C, n, feuchte) {
+        const G = felsGeologie(L);
         const SW = new Float32Array(n);
         let gx0 = Infinity,
             gx1 = -Infinity,
@@ -6110,7 +6156,7 @@
             if (!(w > 0)) continue;
             const h = H ? H[i] : 1;
             const kr = K && KM[i] ? K[i] : 0;
-            felsFarbe(B, P[3 * i], P[3 * i + 1], P[3 * i + 2], N[3 * i], N[3 * i + 1], N[3 * i + 2], kr, h, h > 0 ? fe : 0, o.fuss, t);
+            felsFarbe(B, P[3 * i], P[3 * i + 1], P[3 * i + 2], N[3 * i], N[3 * i + 1], N[3 * i + 2], kr, h, h > 0 ? fe : 0, o.fuss, t, G);
             C[3 * i] += (t[0] - C[3 * i]) * w;
             C[3 * i + 1] += (t[1] - C[3 * i + 1]) * w;
             C[3 * i + 2] += (t[2] - C[3 * i + 2]) * w;
@@ -6146,7 +6192,7 @@
         const ew = L.erdbau && !(st < o.schuttKandidat) ? erdbauWand(L, x, y, z, ny) : 0;
         const w = wr + felsSchutt(o, wr, ew, sw);
         if (!(w > 0)) return 0;
-        const t = felsFarbe(B, x, y, z, 0, ny, 0, 0, 1, feuchte(x, z, y), o.fuss, _felsPunkt);
+        const t = felsFarbe(B, x, y, z, 0, ny, 0, 0, 1, feuchte(x, z, y), o.fuss, _felsPunkt, felsGeologie(L));
         C[0] += (t[0] - C[0]) * w;
         C[1] += (t[1] - C[1]) * w;
         C[2] += (t[2] - C[2]) * w;
@@ -8933,6 +8979,10 @@
         felsBankung: felsBankung,
         felsFein: felsFeinO,
         felsWelle: felsWelleO,
+        felsGeologie,
+        felsEinfall,
+        FELS_GEO_HEIMAT,
+        FALTUNG,
         schuttKorn: schuttKornO,
         schuttMittel: schuttMittel,
         FELS_SAAT: FELS_SAAT,

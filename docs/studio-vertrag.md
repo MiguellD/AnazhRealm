@@ -1070,7 +1070,8 @@ sie), die Bett-Tiefe `flussTiefe` und das Wasser-Band `hydroBand`. DER FELS-STOF
 des Felsens `FELS` mit seiner Saat `FELS_SAAT` — `felsStoff` (der Welt-Boden je Chunk im Worker), `felsStoffPunkt` (w28-pop-treue: derselbe Stoff an EINEM Punkt der obersten Fläche — der Wurf der Nah-Wiese liest sein Grün am Gesetz statt am Netz einer Stufe), `felsNetz` (die Gestalten),
 `felsBasis`, `felsFarbe`, `felsKruemmung`, `felsLage`, `felsMittel`/`felsMittelWerte` (die Ferne), `felsFein` (der
 Detail-Term des Shaders) mit seiner Welle `felsWelle` (K17-3: der Shader liest sie EINMAL im Rausch-Atlas und reicht sie
-in die Fels-Funktion), `felsZahl` (das Rechenwerk des Gesetzes, mit `falte` und `fest`), `felsBankung` (die Messung der Bänke), der Schutt
+in die Fels-Funktion), die Geologie der Lage `felsGeologie` (Karte 2 planet.geologie.gebirge#1: Streichen und `FALTUNG` der Bänke aus den
+Reglern `streichC`/`streichS`/`faltung`; `FELS_GEO_HEIMAT` die flach lagernde Heimat, bit-gleich) mit ihrem Einfallen `felsEinfall`, `felsZahl` (das Rechenwerk des Gesetzes, mit `falte` und `fest`), `felsBankung` (die Messung der Bänke), der Schutt
 `schuttKorn`/`schuttMittel`, die Himmels-Sicht der Höhle `HIMMELS_SICHT`/`himmelsSicht`, die Mulde des Bodens `MULDE`/`muldeEcken`
 (wetter.K2: die Senke des Gesetzes je Vertex, in der der Regen als Pfütze steht — der voxel-worker rechnet sie je Chunk), die Boden-Karte des gerenderten
 Bodens `bodenKarte` (w4-b-boden: der voxel-worker rastert sie je Chunk, Sync-Bau und Naht-Morph rufen dieselbe Funktion), DER BODEN IM
