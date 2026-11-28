@@ -1,0 +1,14 @@
+$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
+[linse-gpu] nvidia/pascal
+@@ 0 s · Zensus Getümmel: {"bew":0,"maxS":0,"sied":0,"wagen":0,"schwelle":-64,"deckel":7,"stimmen":["wind","laub","ufer","fluss","fall","regen","glut","vogel","grille"],"neu":[]}
+@@ 0 s · erleben.klang.getuemmel S2 umfang {"art":"umfang","erzeugt":0,"was":"die größte Siedlung trägt 0 Bewohner — kein Dorfplatz mit 10² Quellen; und kein zugewandter Sprecher: Bewohner sprechen nicht, der Begleiter spricht über speechSynthesis außerhalb des K
+@@ 0 s · erleben.klang.getuemmel S3 umfang {"art":"umfang","erzeugt":0,"was":"die Sitzung trägt 0 Bewohner und 0 Wagen — keine Großstadtstraße mit 10⁴ Quellen; und kein zugewandter Sprecher: Bewohner sprechen nicht, der Begleiter spricht über speechSynthesis auße
+@@ 0 s · erleben.klang.getuemmel S4 leser {"art":"leser","fehlt":"keine Vertäubung: die Hörschwelle steht fest bei -64 dB (klang-core.js:415 UMWELT.hoerschwelleDb), kein Klingeln, kein 130-dB-Ereignis","t":0}
+@@ 0 s · erleben.klang.getuemmel S5 umfang {"art":"umfang","erzeugt":0,"was":"die größte Siedlung trägt 0 Bewohner — kein Stadion mit 10⁵ Stimmen; und kein zugewandter Sprecher: Bewohner sprechen nicht, der Begleiter spricht über speechSynthesis außerhalb des Kla
+@@ 0 s · erleben.klang.getuemmel S6 leser {"art":"leser","fehlt":"kein zugewandter Sprecher: Bewohner sprechen nicht, der Begleiter spricht über speechSynthesis außerhalb des Klang-Graphen (stamm/werkstatt-hud.js:73); keine Warn-Stimme in UMWELT (wind · laub · u
+@@ 37.6 s · Getümmel am Ohr: {"ms":14094,"proben":344,"spitzeDbfs":-12.82,"stimmenMax":2,"namen":{"wind":324,"regen":322},"verletzt":0,"deckel":7,"duck":{"ok":true,"tonHz":15000,"l0":-72,"l1":-83.45,"g0":1,"g1":0.3162},"wetter":"rainy"}
+@@ 37.6 s · erleben.klang.getuemmel S1 gemessen {"art":"gemessen","werte":{"spitze_dbfs":-12.82,"dauer_min":0.235,"duck_db":11.45,"duck_db_bis":11.45},"erzeugt":2,"welt":{"proben":344,"duck_wechsel_db":11.45},"taeter":"nur 2 Stimmen zugleich an der Wiese im Regen (win
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal
