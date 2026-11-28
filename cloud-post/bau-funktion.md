@@ -104,7 +104,7 @@ nicht mehr; Fixture dazu das Dorf 35/24 (Gesetz 0, Snap 1: Los 5 kaufhaus −5 c
 - `gate:weltbild-frost:echt` lokal ohne Urteil (Station nicht gefahren: GPU): swiftshader unter xvfb auf 4 Kernen baut je Programm
   4–7 min (Stall-Akte: 41 Pipelines, nach 1 800 s `URTEIL AWAIT` an `createRenderPipelineAsync #41`, der Haupt-Thread lebt). Das Urteil
   fällt die GPU-Probe des Kopfs: **88bc3c51 auf omen-gtx1060 GRÜN in 1 353 s** — pruefbuehne-licht 58 s · weltbild-frost:echt 167 s ·
-  studio-begehen 263 s · bild:dorf@0.5 94 s · webgl-probe 54 s (`probe-post/bau-funktion/88bc3c51.md`).
+  studio-begehen 263 s · bild:dorf@0.5 94 s · webgl-probe 54 s (Akte 88bc3c51 im Zweig `probe-post`).
 - `gate:settlement` C-K5b „NACH DEM ZUG STEHT DIE WELT“: in EINEM von vier Läufen ROT (nachZug 2 — dieselben 6 Exporte wie grün,
   2 davon nach dem Ruhe-Fenster 20 × 20 ms der Linse); allein wiederholt und am Merge-Kopf mit main b3740dd5 GRÜN (nachZug 0).
 
@@ -117,11 +117,11 @@ GRÜN; davor am Kopf mit dem Schnitt der Halle: gate:studio-begehen · gate:haus
 
 - **Station bedarf#1:** braucht KEINE Änderung der Station. Die Rolle zeichnet im Kern (`HAUS` liest `BEDARF_GESTALT` über die
   bestehende Naht P.rolle → slot.ov → buildInstance); jedes Dorf-Haus am Kopf trägt sie, die Station legt nur die Bilder, der Prüfer
-  (`vision/pruefer/pruefer.cjs`, Art klasse, 9 Optionen) liest sie unverändert.
+  (der Prüfer im Zweig `punkte-maschine`, Art klasse, 9 Optionen) liest sie unverändert.
 - **Die unterste rote Sprosse von mensch.bau ohne Blindurteil:** `karte2.mensch.bau.bauen#1` · 1 Spieler-Haus aus der Werkstatt ·
   gleiche Tiefe wie im Labor · Richter: Bildpaar Labor ↔ Welt gleiche Kamera: kein Unterschied. (bedarf#1, huelle#1 und innen#3
-  tragen den R11-Prüfer, `vision/richter-tafel.json`.)
-  - **Täter-Zahl:** 98,0 % Differenz gegen Soll ≤ 2,1 % (`vision/richter/mensch.bau.bauen.1.31ea3847-gtx.json`, GTX 1060, 21.11.,
+  tragen den R11-Prüfer, die Richter-Tafel im Zweig `punkte-maschine`.)
+  - **Täter-Zahl:** 98,0 % Differenz gegen Soll ≤ 2,1 % (Richter-Akte bauen.1 am Kopf 31ea3847 im Zweig `punkte-maschine`, GTX 1060, 21.11.,
     am Kopf 31ea3847 vom 20.11.; ebenso f68dbf09 am 19.11.: 98,0 %). Die Silhouetten decken sich zu 99,4 %, der Rest ist Luma
     (`cloud-post/haus-gestalt.md` OFFEN K4).
   - **Die Zahl ist älter als der Schnitt:** `fachwerk-buehne` (483b3c2e, 24.11.) zeichnet das Labor seither auf der EINEN Bühne der
@@ -154,4 +154,4 @@ GRÜN; davor am Kopf mit dem Schnitt der Halle: gate:studio-begehen · gate:haus
   Welt) — sie liefert `bild:dorf@0.5` der GPU-Probe am Kopf 2; der Vorlauf bedarf#1 auf OMEN am Kopf 2. Kein Anspruch im Stempel
   vor blind ≥ 80 %; bedarf#2 erst nach dem Vor-Urteil.
 
-Karte 2 gebucht 156 von 1 718 (`vision/karte-2-stand.json`) · Status ZWISCHENSTAND
+Karte 2 gebucht 156 von 1 718 (Stand im Zweig `punkte-maschine`) · Status ZWISCHENSTAND
