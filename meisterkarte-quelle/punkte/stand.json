@@ -32460,7 +32460,7 @@
   },
   "karte2.same.entfaltung.abwesenheit": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.entfaltung.abwesenheit#1 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#1 gtx: Station seit der Messung geändert — zuletzt an e80f9c5d: die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 182 s von karte2.same.entfaltung.abwesenheit#1) — offen, UNGEMESSEN · karte2.same.entfaltung.abwesenheit#2 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#2 gtx: Station seit der Messung geändert · karte2.same.entfaltung.abwesenheit#3 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#3 gtx: Station seit der Messung geändert · karte2.same.entfaltung.abwesenheit#4 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#4 gtx: Station seit der Messung geändert · karte2.same.entfaltung.abwesenheit#5 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#5 gtx: Station seit der Messung geändert · karte2.same.entfaltung.abwesenheit#6 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#6 gtx: Station seit der Messung geändert · karte2.same.entfaltung.abwesenheit#7 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.same.entfaltung.abwesenheit#1 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#1 gtx: Station seit der Messung geändert — zuletzt an e80f9c5d: Frist der Probe 176 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter same.entfaltung.abwesenheit) · Täter: @@ 173 s · same.entfaltung.abwesenheit  · karte2.same.entfaltung.abwesenheit#2 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#2 gtx: Station seit der Messung geändert · karte2.same.entfaltung.abwesenheit#3 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#3 gtx: Station seit der Messung geändert · karte2.same.entfaltung.abwesenheit#4 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#4 gtx: Station seit der Messung geändert · karte2.same.entfaltung.abwesenheit#5 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#5 gtx: Station seit der Messung geändert · karte2.same.entfaltung.abwesenheit#6 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#6 gtx: Station seit der Messung geändert · karte2.same.entfaltung.abwesenheit#7 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.entfaltung.abwesenheit#1",
@@ -32478,7 +32478,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an e80f9c5d: die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 182 s von karte2.same.entfaltung.abwesenheit#1) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an e80f9c5d: Frist der Probe 176 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter same.entfaltung.abwesenheit) · Täter: @@ 173 s · same.entfaltung.abwesenheit ",
      "ungemessen": true,
      "beide": true
     },
@@ -37596,7 +37596,7 @@
   "ohne": 3346
  },
  "kopfVoll": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
- "zeit": "2026-11-28T11:44:11.829Z",
+ "zeit": "2026-11-28T12:00:55.941Z",
  "vorher": "e80f9c5d",
  "bilanz": {
   "gewinn": [],
