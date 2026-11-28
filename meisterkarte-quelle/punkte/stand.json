@@ -5759,7 +5759,7 @@
   },
   "karte2.erleben.klang.getuemmel": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.klang.getuemmel#1 radeon: ungemessen (R10) · karte2.erleben.klang.getuemmel#1 gtx: Station seit der Messung geändert — zuletzt an e80f9c5d: die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 70 s von karte2.erleben.klang.getuemmel#1) — offen, UNGEMESSEN · karte2.erleben.klang.getuemmel#2 radeon: ungemessen (R10) · karte2.erleben.klang.getuemmel#2 gtx: Station seit der Messung geändert · karte2.erleben.klang.getuemmel#3 radeon: ungemessen (R10) · karte2.erleben.klang.getuemmel#3 gtx: Station seit der Messung geändert · karte2.erleben.klang.getuemmel#4 radeon: ungemessen (R10) · karte2.erleben.klang.getuemmel#4 gtx: Station seit der Messung geändert · karte2.erleben.klang.getuemmel#5 radeon: ungemessen (R10) · karte2.erleben.klang.getuemmel#5 gtx: Station seit der Messung geändert · karte2.erleben.klang.getuemmel#6 radeon: ungemessen (R10) · karte2.erleben.klang.getuemmel#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.klang.getuemmel#1 radeon: ungemessen (R10) · karte2.erleben.klang.getuemmel#1 gtx: ROT: S1 · ROT ✅ spitze_dbfs -12,82 (Soll ≤ 0) · ❌ dauer_min 0,235 (Soll ≥ 10) · ✅ duck_db 11,45 (Soll ≥ 8) · ✅ duck_db_bis 11,45 (Soll ≤ 12) · ❌ Umfang verlangt 7 Stimmen zugleich, die Welt erzeugte 2 — Täter: nur 2 Stimmen zugleich an der Wiese im Regen (wind, regen) · die Leiter hört 0.235 min — 10 min übersteigen den Deckel einer Leiter (60 s) · dauer_min 0,235 statt ≥ 10 · gemessen unter dem Umfang (verlangt 7 Stimmen zugleich, die Welt erzeugte 2) an e80f9c5d · karte2.erleben.klang.getuemmel#2 radeon: ungemessen (R10) · karte2.erleben.klang.getuemmel#2 gtx: Station seit der Messung geändert · karte2.erleben.klang.getuemmel#3 radeon: ungemessen (R10) · karte2.erleben.klang.getuemmel#3 gtx: Station seit der Messung geändert · karte2.erleben.klang.getuemmel#4 radeon: ungemessen (R10) · karte2.erleben.klang.getuemmel#4 gtx: Station seit der Messung geändert · karte2.erleben.klang.getuemmel#5 radeon: ungemessen (R10) · karte2.erleben.klang.getuemmel#5 gtx: Station seit der Messung geändert · karte2.erleben.klang.getuemmel#6 radeon: ungemessen (R10) · karte2.erleben.klang.getuemmel#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.erleben.klang.getuemmel#1",
@@ -5775,10 +5775,10 @@
      "id": "karte2.erleben.klang.getuemmel#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an e80f9c5d: die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 70 s von karte2.erleben.klang.getuemmel#1) — offen, UNGEMESSEN",
-     "ungemessen": true,
+     "zahl": "S1 · ROT ✅ spitze_dbfs -12,82 (Soll ≤ 0) · ❌ dauer_min 0,235 (Soll ≥ 10) · ✅ duck_db 11,45 (Soll ≥ 8) · ✅ duck_db_bis 11,45 (Soll ≤ 12) · ❌ Umfang verlangt 7 Stimmen zugleich, die Welt erzeugte 2 — Täter: nur 2 Stimmen zugleich an der Wiese im Regen (wind, regen) · die Leiter hört 0.235 min — 10 min übersteigen den Deckel einer Leiter (60 s) · dauer_min 0,235 statt ≥ 10 · gemessen unter dem Umfang (verlangt 7 Stimmen zugleich, die Welt erzeugte 2)",
+     "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
+     "grund": "ROT: S1 · ROT ✅ spitze_dbfs -12,82 (Soll ≤ 0) · ❌ dauer_min 0,235 (Soll ≥ 10) · ✅ duck_db 11,45 (Soll ≥ 8) · ✅ duck_db_bis 11,45 (Soll ≤ 12) · ❌ Umfang verlangt 7 Stimmen zugleich, die Welt erzeugte 2 — Täter: nur 2 Stimmen zugleich an der Wiese im Regen (wind, regen) · die Leiter hört 0.235 min — 10 min übersteigen den Deckel einer Leiter (60 s) · dauer_min 0,235 statt ≥ 10 · gemessen unter dem Umfang (verlangt 7 Stimmen zugleich, die Welt erzeugte 2)",
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -35830,7 +35830,7 @@
   },
   "karte2.same.physik.koerper": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.physik.koerper#1 radeon: ungemessen (R10) · karte2.same.physik.koerper#1 gtx: Station seit der Messung geändert — zuletzt an e80f9c5d: die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 145 s von karte2.same.physik.koerper#1) — offen, UNGEMESSEN · karte2.same.physik.koerper#2 radeon: ungemessen (R10) · karte2.same.physik.koerper#2 gtx: Station seit der Messung geändert · karte2.same.physik.koerper#3 radeon: ungemessen (R10) · karte2.same.physik.koerper#3 gtx: Station seit der Messung geändert · karte2.same.physik.koerper#4 radeon: ungemessen (R10) · karte2.same.physik.koerper#4 gtx: Station seit der Messung geändert · karte2.same.physik.koerper#5 radeon: ungemessen (R10) · karte2.same.physik.koerper#5 gtx: Station seit der Messung geändert · karte2.same.physik.koerper#6 radeon: ungemessen (R10) · karte2.same.physik.koerper#6 gtx: Station seit der Messung geändert · karte2.same.physik.koerper#7 radeon: ungemessen (R10) · karte2.same.physik.koerper#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.same.physik.koerper#1 radeon: ungemessen (R10) · karte2.same.physik.koerper#1 gtx: Station seit der Messung geändert — zuletzt an e80f9c5d: Frist der Probe 139 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter same.physik.koerper) · Täter: @@PUNKTE@@ FRIST 139 s der Probe gerissen — Abb · karte2.same.physik.koerper#2 radeon: ungemessen (R10) · karte2.same.physik.koerper#2 gtx: Station seit der Messung geändert · karte2.same.physik.koerper#3 radeon: ungemessen (R10) · karte2.same.physik.koerper#3 gtx: Station seit der Messung geändert · karte2.same.physik.koerper#4 radeon: ungemessen (R10) · karte2.same.physik.koerper#4 gtx: Station seit der Messung geändert · karte2.same.physik.koerper#5 radeon: ungemessen (R10) · karte2.same.physik.koerper#5 gtx: Station seit der Messung geändert · karte2.same.physik.koerper#6 radeon: ungemessen (R10) · karte2.same.physik.koerper#6 gtx: Station seit der Messung geändert · karte2.same.physik.koerper#7 radeon: ungemessen (R10) · karte2.same.physik.koerper#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.physik.koerper#1",
@@ -35848,7 +35848,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an e80f9c5d: die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 145 s von karte2.same.physik.koerper#1) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an e80f9c5d: Frist der Probe 139 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter same.physik.koerper) · Täter: @@PUNKTE@@ FRIST 139 s der Probe gerissen — Abb",
      "ungemessen": true,
      "beide": true
     },
@@ -37461,7 +37461,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 311,
+  "konsum": 312,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37593,10 +37593,10 @@
    "karte2.same.kopplung.terraform#1 gtx",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3347
+  "ohne": 3346
  },
  "kopfVoll": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
- "zeit": "2026-11-28T11:32:32.891Z",
+ "zeit": "2026-11-28T11:44:11.829Z",
  "vorher": "e80f9c5d",
  "bilanz": {
   "gewinn": [],
