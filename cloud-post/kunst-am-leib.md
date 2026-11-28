@@ -1,4 +1,4 @@
-# Stand-Blatt kunst-am-leib (Bahn der Welle 27.11., Sprosse `karte2.mensch.sport.kunst#1`) — ZWISCHENSTAND
+# Stand-Blatt kunst-am-leib (Bahn der Welle 27.11., Sprosse `karte2.mensch.sport.kunst#1`, dann `#2`) — ZWISCHENSTAND
 
 ## Wartezimmer nach Kopf 3 (033ff310 auf main b3740dd5)
 
@@ -14,6 +14,16 @@
   Koordinator (Kandidat 2 setzen, Blatt an der OMEN).
 
 ## kunst#2 — das Werkstück trägt die Hand: Kopf 5 fc0958fb auf main b3740dd5 (trägt Kopf 4 adc95977 des Koordinators)
+
+- **Kopf 7 auf main b56b51f0 (Post 00:27, z811 + z812 darin):** der Zweig über adc95977 mischt den main zweimal (23b593ac, dann
+  b56b51f0 — Konflikte nur in Linse und Blatt: der Selbsttest-Satz 73 ↔ 75, die Vereinigung trägt beide). Am Baum des Kopfs:
+  check:statik GANZ 512 s · format:check · gate:daten-contract · gate:welt-boot · gate:fachwerk-contract · gate:asset-contract ·
+  gate:koerper-kern 75/75 (HAND 12 Stücke 6/6, Güte 0,8643 ↔ 0,9191, R² 1,000) — alle Exit 0; Kreatur mit Stoppuhr 859 · 757 ·
+  667 s, je SELBST-TEST GRÜN. merge-tree Exit 0 gegen main 27d2f60e (z813), w28-tier-bewegung-3, w28-sprache-dialekt-2b,
+  w28-wurf-mit-luft-3, sprache-dialekt, werk-am-ort-2-kopf5; gegen `werk-am-ort-2` Exit 1 nur in `.github/workflows/check.yml` und `spec/ci/ci-zeiten.json` —
+  dieser Zweig mischt schon mit main selbst nicht (Exit 1 ohne meinen Kopf), meine Dateien sind frei.
+- **Post 00:57 gelesen:** nach Kopf 7 die Fächer `mensch.leib.verschieden#1` · `mensch.leib.tracht#1` · `mensch.leib.ausdruck#1`
+  (Vorlage kunst#1: Fach, Station liest das Prüfer-Urteil, Klassen-Zeile P — die drei Zeilen stehen schon in der Klassen-Datei).
 
 - **Post 23:45:** Kopf 6 a1a2cff6 mischt nicht mit dem Stempel `w28-kunst-am-leib-4` (Kopf 4 adc95977): mein flacher Kopf stammt nicht
   von adc95977 ab, beide schreiben dieselben Zeilen der Linse und des Blatts über b3740dd5 — Batterie abgebrochen (nicht neu
