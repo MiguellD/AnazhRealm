@@ -18,7 +18,7 @@ Kosten: die zweite Seite MUNDART ohne Fächer ≈ 1–2 s, HOERBAR < 1 s.
 
 ── kandidat-6.diff: karte2.mensch.kultur.sprache#6 „Sprachstufen über Epochen“ (ÜBER kandidat.diff, also über dem #5-Kandidaten) ──
 Soll, Maße und Richter-Text bleiben unberührt: Umfang 100 000, Swadesh-Retention 0,70–0,86, Ursprache rekonstruiert ≥ 0,6.
-Am main ist #6 „nicht“ (`erwartet: "nicht"`, „die Silben-Tafel ist zeitlos“). Der Kopf 4 der Bahn macht die Sprache zur Funktion ihres
+Am main ist #6 „nicht“ (`erwartet: "nicht"`, „die Silben-Tafel ist zeitlos“). Der Kopf 5 der Bahn (sprache#6, geparkt in 347a5c2) macht die Sprache zur Funktion ihres
 Jahrs: fachwerk `spracheVon(region, mundart, jahr)`, der Leser des Spiels `spracheDesOrts(plan)` (Name, Rede, Klang, Ortsname).
 Der Kandidat:
   · ZEIT (neue Seite): je Sprache einer Stichprobe der Welt (4² Orte, 25,6 km, 6 Familien) die verschiedenen Stufen von der
@@ -26,7 +26,7 @@ Der Kandidat:
     der Grundliste je 1 000 J an den Blättern (Kognat = folgt durch die Lautgesetze dazwischen). Ursprache: die häufigste Form der
     32 Töchter je Bedeutung gegen das Wort der Ursprache. Der Jahreswechsel am Spiel: die Leute der geladenen Siedlung sprechen
     `_bewohnerLauf` „rede“ im Jahr ihres Plans und 1 000 J davor — gezählt nur, wenn Sätze sich ändern und der Wechsel ≤ 1 s bleibt.
-  · die Zeugen von #3/#4 (NAMEN, MUNDART) lesen die Sprache über `spracheDesOrts` mit dem Jahr des Plans — PFLICHT mit Kopf 4:
+  · die Zeugen von #3/#4 (NAMEN, MUNDART) lesen die Sprache über `spracheDesOrts` mit dem Jahr des Plans — PFLICHT mit Kopf 5 (NICHT mit Kopf 4, der nur den Preis trägt):
     ohne den Kandidaten rechnen sie die zeitlose Gegenwart, der Ort spricht aber die Stufe seines Jahrs → ihre Namen fallen auseinander.
   `erwartet: "nicht"` fällt bei #6. Ohne `spracheDesOrts` (main) gibt ZEIT `leer` → „nicht“ wie vorher.
 Gemessen in node (welt-1, die Leser 1:1): 96 Sprachen × 49,5 Stufen → n ≈ 500 637 (Soll ≥ 100 000) · Ursprache 0,759 (≥ 0,6 ✅) ·

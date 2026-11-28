@@ -165,9 +165,9 @@ verlangt einen Stations-Kandidaten (die Station bestellt ohne Eingang). Er folgt
 ## Kopf 3 (2d05e947, sprache#5) — GPU-Probe GRÜN (Post 28.11. 01:34), Urteil offen
 
 Die vier Tore plus webgl-probe auf radeon-890m GRÜN in 1 177 s (das Probe-Blatt zu 2d05e947 im Zweig koordination). Ich warte auf das Urteil
-bzw. GELANDET; Kopf 4 baue ich erst auf dem main danach.
+bzw. GELANDET; Kopf 4 baue ich erst auf dem main danach. Nachtrag 03:05: gelandet im Bündel w28-buendel-nacht (main bbb97563).
 
-## `karte2.mensch.kultur.sprache#6` „Sprachstufen über Epochen“ — gebaut als WIP (b5dd1f9 + Station), Kopf 4 nach der Landung
+## `karte2.mensch.kultur.sprache#6` „Sprachstufen über Epochen“ — gebaut als WIP (b5dd1f9 + Station), geparkt in 347a5c2, Kopf 5
 
 **Täter (am main):** `fachwerk-core.js` `spracheVon(region, mundart)` kennt kein Jahr. Die Sprache eines Orts im Jahr −1500 ist byte-gleich
 der von 1900, und die Station sagt „die Silben-Tafel ist zeitlos“ (`erwartet: "nicht"`).
@@ -200,7 +200,7 @@ der Epochen sprechen ihre Stufe). Täter im Selbsttest: „die Sprache kennt kei
 Namen R14, Selbsttest GRÜN in 715 s (probeUrteil GRÜN). Hauptlauf GRÜN 656 s.
 
 **Station:** `cloud-post/sprache-dialekt-station/kandidat-6.diff` (ÜBER `kandidat.diff`): die Seite ZEIT und die #6-Zeile als Zahl.
-**PFLICHT:** Kopf 4 und kandidat-6 landen ZUSAMMEN. Ohne ihn lesen die Zeugen von #3/#4 die zeitlose Gegenwart, die Orte sprechen aber
+**PFLICHT:** Kopf 5 (sprache#6) und kandidat-6 landen ZUSAMMEN; Kopf 4 trägt nur den Preis und braucht keinen Kandidaten. Ohne ihn lesen die Zeugen von #3/#4 die zeitlose Gegenwart, die Orte sprechen aber
 ihr Jahr, und ihre Namen fallen auseinander.
 
 ## Die nächste rote Sprosse: `karte2.mensch.kultur.sprache#5` „hörbare Sprachen“ (Täter-Zahl am main b3740dd5, Post 20:57)
