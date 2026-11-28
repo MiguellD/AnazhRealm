@@ -7979,6 +7979,28 @@ async function selbsttest(o = {}) {
                     ms < 6000 && ue.gruen === false && /^der Raffer trug lauf \d+ von 10000000000000 Takten in [\d,]+ s/.test(ue.ohneUrteil || "") && !kurz.leitern["x.y"].raffer && uk.gruen === true,
                     JSON.stringify([ms, ue, kurz.leitern["x.y"], uk]));
             }
+            // (h) DER STAND DER SITZUNG (28.11., boden#1 an der GTX 1050: formschatz trug den Spieler mit seinem fernen Auge 9 387 m
+            // nach −7683/−6818, das Boden-Auge stand danach im kalten Ring, „DIE WELT STEHT NICHT“ sechsmal): der Rumpf der Probe stellt
+            // den Spieler vor jeder Leiter an den Stand der Sitzung zurück (`/umstellen`, außerhalb ihres Deckels, gezählt in `heim`);
+            // kommt er nicht an, wirft die Leiter mit dem Grund „der Stand der Sitzung“ und die Probe am Ende, nie misst sie im fremden Ring.
+            // Die Seite: ein Sandkasten mit Spieler und Chunk-Spanne; die Leiter a.b trägt ihn fort, c.d misst seinen Abstand zum Stand
+            {
+                const KP = require("./stationen/k2-planet.js").kern;
+                const stand = async (kaputt) => {
+                    const datei = path.join(tmp, "stand-" + kaputt + ".json"), win = {}, R = { state: { playerMesh: { position: { x: -280.4, z: -1045.6 } } }, _voxelChunkConfig: () => ({ span: 43.2 }) }, rufe = [];
+                    const H = { aus: datei, frist: async () => 0, schritt: () => {}, seite: async (code) => new Function("window", "r", code)(win, R),
+                        ruf: async (weg, b) => { rufe.push(weg); if (kaputt) throw new Error("DIE WELT STEHT NICHT nach 1800 Takten"); R.state.playerMesh.position = { x: b.x, z: b.z }; return {}; } };
+                    const LEITERN = { "a.b": { sek: 18, mess: async () => ((R.state.playerMesh.position = { x: -7683, z: -6818 }), { sprossen: { 1: { werte: { n: 1 } } } }) },
+                        "c.d": { sek: 18, mess: async (H2) => ({ sprossen: { 1: { werte: { weg: await H2.seite("const p = r.state.playerMesh.position; return Math.round(Math.hypot(p.x + 280.4, p.z + 1045.6));") } } } }) } };
+                    const wurf = await eval("(" + KP.knapp(KP.probeRumpf) + ")")(H, {}, LEITERN, null).then(() => null, (e) => String(e.message));
+                    return { j: JSON.parse(fs.readFileSync(datei, "utf8")), rufe, wurf };
+                };
+                const heil = await stand(false), bruch = await stand(true);
+                pruef("KEIN URTEIL (h) DER STAND DER SITZUNG: trägt eine Leiter den Spieler fort (a.b nach −7683/−6818), misst die nächste am Stand (c.d: 0 m, EIN Ruf /umstellen, heim vor c.d 9 387 m von der Wiese); steht die Welt dort nicht, wirft c.d „der Stand der Sitzung: der Spieler stand 9387 m daneben“ und die Probe am Ende",
+                    heil.j.leitern["c.d"].sprossen[1].werte.weg === 0 && heil.rufe.length === 1 && heil.j.heim.length === 1 && heil.j.heim[0].vor === "c.d" && heil.j.heim[0].m === 9387 && heil.wurf === null &&
+                        /^der Stand der Sitzung: der Spieler stand 9387 m daneben und kam nicht zurück \(DIE WELT STEHT NICHT/.test(bruch.j.leitern["c.d"].warf || "") && !bruch.j.leitern["c.d"].sprossen[1] && /^der Stand der Sitzung/.test(bruch.wurf || ""),
+                    JSON.stringify([heil.j.leitern["c.d"], heil.j.heim, heil.rufe, heil.wurf, bruch.j.leitern["c.d"], bruch.wurf]));
+            }
         }
         const id = schluessel(at);
         const lauf = (sha, e) => {
