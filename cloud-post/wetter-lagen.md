@@ -1,5 +1,13 @@
 # Stand-Blatt wetter-lagen (Sprossen `karte2.planet.wetter.lagen#2`, `karte2.planet.wetter.extreme#1`) — oberster Abschnitt = jüngster Stand
 
+## 28.11. 01:25 MEZ — Auftrag 00:57: platten#1 zuerst — die Frage an die Station beantwortet, mit Zahl
+
+- **Die Station misst an der Gebirgsfläche der Saat, nicht an der Region 10⁴ km²** (Flut auf dem Gitter 80 km um jeden Stichpunkt > 2 km, Rand ±50 Zellen). Ihre Messung B in node nachgebaut (der Faden = `planetPunkt` fuss 16, wie der Auftrag `planet-ort` des voxel-worker) trifft die Radeon-Zahl **genau**: achseP30 **1,35**, guertelProzent **5,29 %** (Radeon 5,295).
+- **Zwei Fehler im Maß, beide mit Zahl:** (1) der Deckel 350 gefragte Zellen je Komponente kappt **77,7 %** der Fläche zu einer BFS-Kugel um den höchsten Gipfel (Achse einer Kugel ≈ 1,3); (2) die Achse aus der Kovarianz macht jeden gebogenen oder verzweigten Gürtel rund. **Die echte Erde durch dasselbe Maß** (ETOPO1 0,5°, NOAA NGDC, Eisschilde ausgenommen): Deckel 350 → Gürtel **0 %**, achseP30 1,20; ohne Deckel kovariant **2,1 %**, P30 2,50. Das Soll ≥ 70 % fällt mit diesem Maß an der Erde selbst — ein Stations-Befund, kein Gesetz-Befund.
+- **Das Erd-Maß:** die geodätische Achse D²/A (D = der längste kürzeste Weg IN der Komponente, A = ihre Fläche; Rechteck L × B → L/B, Kreis → 1,27, gebogener Gürtel bleibt lang). Erde: Gürtel **95,5 %**, P30 **6,11** (Anden 14,3:1 auf 4 069 km, Himalaya–Tibet 6,2:1 auf 4 878 km). Spiel, 30 Saaten, ohne Deckel: **92,3 %**, P30 **6,08**; Deckel 2 000 / Saat 3 000: 81,5 % · P30 5,34; Deckel 1 000 / 1 500: 74,3 % · 4,39. Das Gesetz trägt die Gürtel; die Linse `gebirge.guertel` in `scripts/diag-planet.cjs` (kovariant, > 1,5 km) steht aus demselben Grund ROT (lang 6 %, Erde dort 1,5 %).
+- **Ehrlich offen am Gesetz:** die Fläche > 2 km ist im Spiel ≈ 2× die der Erde ohne Eis (13 gegen 6,6 Mio km²), die Breite der Gürtel P80 1 347 km gegen 811 km (Tibet) — die Kontinent-Kontinent-Schablone (5,0 · s · gauss(x − 110, 200)) ist breit. Gemessen, nicht geschnitten: die Sprosse trägt sie.
+- **Weiter:** der Kandidat aus drei Dateien (das Maß der Station mit der Erd-Eichung; das Fach der Schummerung; die Klassen-Zeile), dann gebirge#1.
+
 ## 28.11. 00:31 MEZ — Lebenszeichen: Briefkasten unverändert seit dem Post von 23:45 MEZ; Kopf 7 fc063dcf wartet auf den Zug, lagen#3 (a) wartet auf das Maß der Lage (Abschnitt unten)
 
 ## 27.11. 23:58 MEZ — Kopf 7 (Probe-Ruf mit tag-achse:echt)
