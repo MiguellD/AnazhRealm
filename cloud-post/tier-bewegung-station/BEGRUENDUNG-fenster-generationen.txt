@@ -1,0 +1,54 @@
+STATIONS-KANDIDAT „Fenster in Generationen“ (Post 28.11. 04:26, Reihenfolge Punkt 1) — Bahn tier-bewegung
+Basis: punkte-maschine 5e895684 — meisterkarte-quelle/punkte/stationen/k2-leben.js Blob 0930b70 (gleich 9b4b3c91);
+`git apply` von fenster-generationen.diff auf diesen Blob OK, Ergebnis byte-gleich dem Kandidaten. EINE Datei, drei Proben.
+
+Kein Soll, kein Richter-Text, kein Umfang der Karte wird geändert.
+
+DAS GESETZ DES FENSTERS (Post 04:26 „Entschieden“): ein Fenster, das „n Generationen“ meint, rechnet n × lebensdauerS des Gesetzes —
+nie eine feste Sekundenzahl, nie die Wand-Zeit. Gefahren wird am EINEN Schreiter der Leiter (`window.__raffer`, k2-planet.js): Takt für
+Takt `_bestandSchritt`, Budget = sek × TAKT − 15 s; reißt es, steht der Rest UNGEMESSEN mit Zahl („n von m Takten“), nie ein Wert.
+
+1. BEFUND — DIE AUFHOL-BAHN TRÄGT KEINE SYNCHRONE PROBE (gemessen, Werkbank wiese)
+   erbe und muster liefen über `_bestandRegion` mit vorgestellter Spiel-Uhr: R.t springt auf jetzt − aufholS (3 600 s), und die Takte
+   davor laufen nur, solange `_bestandGauSteht` gilt — das liest `_gauBeuteAm`, die Spur des Gaus, die ein synchroner Ruf nie trägt.
+   Ergebnis: 0 von 660 Takten je Ruf, keine Geburt, kein Altern; „generationen 9,99“ stand nur als gesetzte Zahl. S7 prüfte ich zuerst
+   (Post: „ob S7 dieselbe Aufhol-Bahn nehmen kann wie erbe“): S7 schreitet schon selbst, ihm fehlte nur der Schreiter der Leiter — es
+   trug einen eigenen Deckel in Wand-Zeit (msDeckel 9 000 ms).
+
+2. DIE DREI SCHNITTE
+   - lebenszyklus S7 (:2908): die private Schleife mit msDeckel fällt, das Ziel ceil((generationen · maxS − aufholS) / taktS) läuft über
+     `__raffer` („lebenszyklus S7: 100 Generationen“). msDeckel fällt aus den Optionen.
+   - lebenszyklus S2 jungProzent: das Mittel über das Fenster (Post: „das Jahr streut … nenne, über wie viele Tiere und Jahre“):
+     je Jahr der Welt (`_kalender().jahrK` / taktS Takte) EINE Zählung der Region, ab der ersten Lebensdauer (das Einschwingen aus dem
+     Leeren) und nur in Jahren mit Bestand. aus.jung = { jung, alle, jahre, prozent, moment } — `alle` = Summe der gezählten Tiere,
+     `jahre` = die gezählten Welt-Jahre, `moment` = die frühere Momentaufnahme als Zeuge. S2 urteilt an `prozent` wie bisher.
+   - evolution.erbe (:7138): `lauf` über `__raffer` am Takt des Bestands (`_bestandGesetz().B.taktS`); die Generationen = gelaufene
+     Sekunden / lebensS; die Eltern-Generation liest die Reife des Gesetzes (`_bestandErbe(x).reif`) statt der festen 300 s; die
+     Selektion läuft antwortGenerationen × lebensS. Aufruf { generationen: 10, antwortGenerationen: 5 }.
+   - evolution.muster (:7390): `lauf(ort, 8 × lebensdauerS(Hirsch))` — die Lebensdauer am Gesetz (`_lebenKern().lebensdauerS(
+     _gattungKg("deer"))`), über `__raffer` mit gezählten Takten; generationen = min(Takte mit, ohne) · taktS / lebensdauerS. Aufruf
+     { generationen: 8 }.
+
+3. GEMESSEN (Werkbank wiese, swiftshader; Budget wie die Leiter: S7 15 s, erbe/muster 45 s)
+   Die Wand am alten refS (main bbb97563, leben-core refS 2 100 s): DIESELBEN Zahlen wie heute, wo heute Zahlen stehen.
+   - S7 Basis ↔ Kandidat: Region -2,-2 · schritte 26 153 ↔ 26 153 · generationen 100,003 ↔ 100,003 · genGetragen 1,362 ↔ 1,362 ·
+     leereTakte 234 ↔ 234 · Würfe 24 ↔ 24 · wurfFaktor 5,057 ↔ 5,057 · Gegenprobe 0→0 ↔ 0→0 — zahlengleich, kurz leer, 4,3 ↔ 3,6 s.
+   - S2 jungProzent: Basis Moment 0 von 6 (0 %) ↔ Kandidat 24 von 210 Tieren über 107 Welt-Jahre = 11,43 % (Soll ≥ 10 %), Moment 0 von 6.
+   - erbe: Basis 0 Geburten, 3 ms (der Lauf lief nicht) ↔ Kandidat 21 Geburten, generationen 10,0014, 280 ms.
+   - muster: Basis wirft „die Region 0,0 trägt keinen Hirsch — keine Generation“ ↔ Kandidat generationen 8,0004, 24 Geburten, 3,15 s.
+   Am neuen refS (Kopf tier-bewegung-uhr, die EINE Uhr: refS 19 200 s):
+   - erbe: Basis 0 Geburten, 5 ms ↔ Kandidat 177 Geburten, generationen 10,00006, 1,72 s, kurz leer.
+   - muster: Basis wirft ↔ Kandidat generationen 8,00002, 221 Geburten, 4,7 s.
+   - S7: 17,2 s gegen das Budget 15 s (sek 30) — reißt; die Leiter meldet UNGEMESSEN „n von m Takten“ mit Zahl, bis die Uhr den Takt
+     schneidet oder sek steigt (Post 04:26 S7: msDeckel = 2 × die gemessene Arbeit am langsamsten Richter-Gerät — das wäre ein Soll der
+     Leiter und steht hier NICHT; der Kandidat ändert kein sek).
+
+4. EHRLICH OFFEN
+   - Die Regionen tragen kein bs: cvProzent und ekRegression in erbe bleiben null (die Größe liest das Alter, `_bestandBs`).
+   - Die Selektion des Hirschs (muster selektion, erbe S3) braucht den Hirsch in der Region; Rotwild und Wolf leben seit C2b im Gau —
+     selektion bleibt null, bis die Probe den Gau fragt.
+   - S7 am neuen refS: das Budget reißt (17,2 ↔ 15 s), Zahl oben.
+   - verhalten S5 (spieltage) liest weiter die langlebigste Gattung — als Anspruch steht er im Satz des Kopfs tier-bewegung-uhr, wenn
+     er Front wird, nicht in diesem Kandidaten.
+   - Die Wand `punkte.cjs liste` Basis ↔ Kandidat ist hier nicht gefahren (der Zweig punkte-maschine lädt in diesem Container nicht in
+     Frist); die Zahlen oben stammen aus den Proben selbst, an der Werkbank gefahren (Probe-Rumpf + grund der Leiter, __raffer wie k2-planet).

@@ -142,3 +142,13 @@ Bestand 9,14-mal seltener; gemessen trägt Lauf 4 damit NICHT zahlengleich (Wolf
 Äsungs-Feld in Welt-Sekunden zerfällt (`LIFE_FIELD.decayPerSec` × taktS) — das Feld bräuchte dieselbe Uhr. Ohne den Schnitt bleibt der
 Kopf WIP: die Linse fährt in CI nicht in ihrer Frist (Teil ≤ 1 150 s).
 Daneben baue ich (1) den Stations-Kandidaten „Fenster in Generationen“ (er hängt nicht an der Uhr).
+
+## ZWISCHENSTAND 28.11. ~04:55 MEZ — Stations-Kandidat „Fenster in Generationen“ (Post 04:26, Punkt 1) liegt
+**Geschnitten:** `cloud-post/tier-bewegung-station/fenster-generationen.diff` + `BEGRUENDUNG-fenster-generationen.txt` gegen pm 5e895684
+(k2-leben.js Blob 0930b70, `git apply` OK): S7 · erbe · muster schreiten am EINEN Schreiter `__raffer` in n × lebensdauerS; S7 ohne
+msDeckel; jungProzent = Mittel je Welt-Jahr ab der ersten Lebensdauer, Tiere und Jahre im Zeugen.
+**Gemessen (Werkbank wiese):** Wand am alten refS — S7 Basis ↔ Kandidat zahlengleich (26 153 Schritte, 100,003 Generationen, 24 Würfe);
+jungProzent 0 von 6 (Moment) → 24 von 210 Tieren über 107 Welt-Jahre = 11,43 %; erbe 0 → 21 Geburten (10,0014 Generationen), muster
+wirft → 8,0004 Generationen. Am neuen refS: erbe 177 Geburten, muster 221, S7 17,2 s gegen Budget 15 s (UNGEMESSEN mit Zahl).
+**Ehrlich offen:** bs der Regionen (cv/ek null), Hirsch im Gau (selektion null), S7-Budget am neuen refS. Karte 2 gebucht 158 von 1 718.
+Der Kopf `tier-bewegung-uhr` bleibt WIP bis dein Wort zur gesprengten Linse (Takt-Schnitt oder anders).

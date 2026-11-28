@@ -1,0 +1,199 @@
+diff --git a/meisterkarte-quelle/punkte/stationen/k2-leben.js b/meisterkarte-quelle/punkte/stationen/k2-leben.js
+--- a/meisterkarte-quelle/punkte/stationen/k2-leben.js
++++ b/meisterkarte-quelle/punkte/stationen/k2-leben.js
+@@ -2908,17 +2908,30 @@
+                         const R = r._bestandRegion(key, true, 0, Infinity, tode);
+                         const nachAufholen = R.tiere.length;
+                         let [schritte, minN, leerBei, leer] = [0, Infinity, null, 0];
+-                        const t0 = performance.now();
++                        // DAS FENSTER IN GENERATIONEN (tier-bewegung 28.11.): das Ziel steht in Lebensdauern des Gesetzes, gefahren am
++                        // EINEN Schreiter der Leiter (`window.__raffer`, k2-planet.js) — kein eigener Deckel in Wand-Zeit: reißt das Budget,
++                        // steht der Rest UNGEMESSEN mit Zahl („n von m Takten“), nie ein Wert
+                         const ziel = Math.ceil((a.generationen * maxS - A.BESTAND_REGION.aufholS) / B.taktS);
+-                        while (schritte < ziel && performance.now() - t0 < a.msDeckel) {
++                        // DER JUNGTIER-ANTEIL ÜBER DAS FENSTER (Post 28.11. 04:26: „das Jahr streut“ — ~5 Tiere, 0–34 % je Jahr): je Jahr der
++                        // Welt (`_kalender().jahrK`) EINE Zählung der Region, ab der ersten Lebensdauer (das Einschwingen aus dem Leeren);
++                        // S2 urteilt am Mittel über alle Zählungen, Tiere und Jahre stehen im Zeugen — die Momentaufnahme bleibt Zeuge
++                        const jahrT = Math.max(1, Math.round(r._kalender().jahrK / B.taktS));
++                        const jungJ = { jung: 0, alle: 0, jahre: 0 };
++                        window.__raffer(ziel, () => {
+                             r._bestandSchritt(key, R, true, tode);
+                             schritte++;
++                            if (schritte % jahrT === 0 && schritte * B.taktS >= maxS && R.tiere.length) {
++                                jungJ.jung += R.tiere.filter(istJung).length;
++                                jungJ.alle += R.tiere.length;
++                                jungJ.jahre++;
++                            }
+                             minN = Math.min(minN, R.tiere.length);
+                             if (!R.tiere.length) {
+                                 leer++;
+                                 if (leerBei === null) leerBei = schritte;
+                             }
+-                        }
++                        }, "lebenszyklus S7: " + a.generationen + " Generationen");
++                        aus.jung = { jung: jungJ.jung, alle: jungJ.alle, jahre: jungJ.jahre, prozent: jungJ.alle ? r3((100 * jungJ.jung) / jungJ.alle) : null, moment: aus.jung };
+                         const gen = (A.BESTAND_REGION.aufholS + schritte * B.taktS) / maxS;
+                         // getragen: die Generationen bis zum ersten leeren Takt (danach wirft das Gesetz die Region aus dem Leeren neu)
+                         const genGetragen = (A.BESTAND_REGION.aufholS + (leerBei === null ? schritte : leerBei) * B.taktS) / maxS;
+@@ -2947,7 +2960,7 @@
+                         aus.lebensdauerS = maxS;
+                         return aus;
+                     };
+-                    const z = await lauf(probe, { jungBruch: 0.1, saisonTakte: 200, brunftMonat: 10, weltTakte: 20, generationen: 100, msDeckel: 9000, gegenLeben: 3, wurfRef: { deer: 1, wolf: 5, fox: 4.5, bear: 2.2 } });
++                    const z = await lauf(probe, { jungBruch: 0.1, saisonTakte: 200, brunftMonat: 10, weltTakte: 20, generationen: 100, gegenLeben: 3, wurfRef: { deer: 1, wolf: 5, fox: 4.5, bear: 2.2 } });
+                     const augeNoetig = Object.keys(U).some((nr) => U[nr].auge);
+                     const auge = augeNoetig ? await M.auge("tiere-lebenszyklus", U[Object.keys(U).find((nr) => U[nr].auge)].auge) : undefined;
+                     const zeuge = { antworten: z.region.schritte + z.jung.alle, streuung: z.region.ende !== z.region.nachAufholen || z.region.wuerfe > 1 ? Math.abs(z.region.ende - z.region.nachAufholen) + z.region.wuerfe : 0, vor: z.gegen.vor, nach: z.gegen.nach };
+@@ -7125,24 +7138,25 @@
+                             return T0.reduce((x, t) => x + r._bestandErbe(t).tod, 0) / T0.length;
+                         };
+                         const lebensS = lebenR(hier);
++                        // DER EINE SCHREITER (Fenster in Generationen, tier-bewegung 28.11.): Takt für Takt `_bestandSchritt` am Budget der
++                        // Leiter (`window.__raffer`) — bis hier lief die Probe über die Aufhol-Bahn (`_bestandRegion` mit vorgestellter
++                        // Spiel-Uhr): `R.t` sprang auf jetzt − aufholS, und die letzten Takte warteten auf die Spur des Gaus, die ein
++                        // synchroner Ruf nie trägt — 0 Takte je Ruf, keine Geburt, kein Altern (Werkbank wiese: 0 von 660)
++                        const B = C._bestandGesetz().B;
++                        let gelaufenS = 0;
+                         const lauf = (key, dauer) => {
+                             const R = F[key];
+                             const geb = [];
+                             const tode = [];
+-                            for (let t = 0; t < dauer;) {
+-                                const dt = Math.min(3000, dauer - t);
++                            const z = window.__raffer(Math.ceil(dauer / B.taktS), () => {
+                                 const vor = new Set(R.tiere.map((x) => x.id));
++                                // die Eltern-Generation: wer reif ist (leben-core `reifeS`, `_bestandErbe(t).reif`) — nie eine feste Sekundenzahl
+                                 const alte = {};
+-                                for (const x of R.tiere) if (x.alterS > 300) (alte[x.g] = alte[x.g] || []).push(x.bs);
+-                                t += dt;
+-                                s.spielZeit = jetzt + t;
+-                                try {
+-                                    r._bestandRegion(key, true, 0, Infinity, tode);
+-                                } finally {
+-                                    s.spielZeit = jetzt;
+-                                }
++                                for (const x of R.tiere) if (x.alterS >= r._bestandErbe(x).reif) (alte[x.g] = alte[x.g] || []).push(x.bs);
++                                r._bestandSchritt(key, R, true, tode);
+                                 for (const x of R.tiere) if (!vor.has(x.id)) geb.push({ g: x.g, bs: x.bs, v: x.v, eltern: ELTERN.some((k) => x[k] !== undefined), m: alte[x.g] ? mittel(alte[x.g]) : null });
+-                            }
++                            }, "evolution.erbe " + key);
++                            gelaufenS += z.n * B.taktS;
+                             return geb;
+                         };
+                         try {
+@@ -7201,6 +7215,7 @@
+                             aus.verbleibErklaert = [...marke.keys()].filter((id) => da.has(id) || tod.has(id)).length;
+                             aus.todAlter = [...marke.keys()].filter((id) => tod.get(id) === "alter").length;
+                             aus.nachher = nachTag.length;
++                            gelaufenS = 0;
+                             const lang = lauf(hier, A.generationen * lebensS - tagS);
+                             const geb = lang.filter((b) => b.m !== null);
+                             aus.geburten = lang.length;
+@@ -7217,7 +7232,7 @@
+                             }
+                             aus.ekRegression = geb.length >= 5 ? steigung(xs, ys) : undefined;
+                             aus.gebStreuung = sd(lang.map((b) => b.bs));
+-                            aus.generationen = (A.generationen * lebensS) / lebensS;
++                            aus.generationen = (gelaufenS + tagS) / lebensS; // gerechnet, nicht gesetzt: die gelaufenen Takte in Lebensdauern
+                             stand.forEach(zurueck);
+                             const R = F[hier];
+                             const hirsche = R.tiere.filter((t) => t.g === "deer");
+@@ -7226,7 +7241,7 @@
+                                 const grenze = hirsche.map((t) => t.bs).sort((a, b) => a - b)[Math.floor(hirsche.length / 2)];
+                                 R.tiere = R.tiere.filter((t) => t.g !== "deer" || t.bs >= grenze);
+                                 const S0 = mittel(R.tiere.filter((t) => t.g === "deer").map((t) => t.bs)) - m0;
+-                                const nach = lauf(hier, 3 * 3600).filter((b) => b.g === "deer");
++                                const nach = lauf(hier, A.antwortGenerationen * lebensS).filter((b) => b.g === "deer");
+                                 aus.selektion = { m0, S: S0, n: nach.length, R: nach.length ? mittel(nach.map((b) => b.bs)) - m0 : undefined, sd: sd(nach.map((b) => b.bs)) };
+                                 const h2 = aus.ekRegression;
+                                 const soll = Number.isFinite(h2) ? h2 * S0 : NaN;
+@@ -7249,7 +7264,7 @@
+                         aus.zurueck = keys.map((k) => F[k].tiere.length).join(",");
+                         return aus;
+                     };
+-                    const a = await H.seite("return await (" + P.toString() + ")(r, T, " + JSON.stringify({ generationen: 10 }) + ");");
++                    const a = await H.seite("return await (" + P.toString() + ")(r, T, " + JSON.stringify({ generationen: 10, antwortGenerationen: 5 }) + ");");
+                     // Sprosse 1 (erbe-geburt): die Probe erbe — Mutter → Kind am echten Takt (Altlast und Gau, 2 160 Takte), die
+                     // Eltern-Kind-Regression als h² = 2·b (Falconer: das Kind auf EIN Elter trägt h²/2; der Vater steht im Gau nicht
+                     // im Bild), die Mutante „Erbe aus“ (kind → gruender) daneben
+@@ -7375,38 +7390,33 @@
+                         };
+                         const stand = keys.map((k) => sichern(F[k]));
+                         const ELTERN = ["eltern", "mutter", "vater", "ahn", "elter"];
++                        // DER EINE SCHREITER (Fenster in Generationen, tier-bewegung 28.11.): Takt für Takt `_bestandSchritt` am Budget der
++                        // Leiter (`window.__raffer`) — die Aufhol-Bahn mit vorgestellter Spiel-Uhr rechnete 0 Takte (siehe evolution.erbe)
++                        const B = C._bestandGesetz().B;
+                         const lauf = (key, dauer) => {
+                             const R = F[key];
+-                            let eltern = 0, geb = 0;
++                            let eltern = 0, geb = 0, takte = 0;
+                             const tode = [];
+-                            for (let t = 0; t < dauer;) {
+-                                const dt = Math.min(3000, dauer - t);
++                            window.__raffer(Math.ceil(dauer / B.taktS), () => {
+                                 const vor = new Set(R.tiere.map((x) => x.id));
+-                                t += dt;
+-                                s.spielZeit = jetzt + t;
+-                                try {
+-                                    r._bestandRegion(key, true, 0, Infinity, tode);
+-                                } finally {
+-                                    s.spielZeit = jetzt;
+-                                }
++                                r._bestandSchritt(key, R, true, tode);
++                                takte++;
+                                 for (const x of R.tiere)
+                                     if (!vor.has(x.id)) {
+                                         geb++;
+                                         if (ELTERN.some((k) => x[k] !== undefined)) eltern++;
+                                     }
+-                            }
+-                            return { geb, eltern };
++                            }, "evolution.muster " + key);
++                            return { geb, eltern, takte };
+                         };
+                         try {
+                             r._depositLife = function () {};
+                             r._depositEmotion = function () {};
+                             // die Generation des Hirschs aus dem Gesetz des Spiels: das Mittel der Lebensdauern der Hirsche der Region
+                             // (leben-core `lebensdauerS(M∞)`, `_bestandErbe(t).tod`) — `C.FAUNA_MAX_AGE_MS` fiel mit c6038905 (NaN)
+-                            const lebenHirsch = (k) => {
+-                                const D = F[k].tiere.filter((t) => t.g === "deer");
+-                                if (!D.length) throw new Error("die Region " + k + " trägt keinen Hirsch — keine Generation");
+-                                return D.reduce((x, t) => x + r._bestandErbe(t).tod, 0) / D.length;
+-                            };
++                            // die Generation des Hirschs aus dem Gesetz: leben-core `lebensdauerS` am Art-Mittel (`_gattungKg`) — der Hirsch lebt
++                            // seit Leben C2b im Gau, die Region der Altlast trägt keinen (das Mittel der Region warf „keine Generation“)
++                            const lebenHirsch = () => C._lebenKern().lebensdauerS(r._gattungKg("deer"));
+                             const raeuber =(k) => F[k].tiere.filter((t) => t.g === "wolf" || t.g === "bear").length;
+                             const kandidat = keys.filter((k) => F[k].tiere.filter((t) => t.g === "deer").length >= 2).sort((a, b) => raeuber(b) - raeuber(a));
+                             const ort = kandidat[0] || hier;
+@@ -7414,16 +7424,17 @@
+                             const R = F[ort];
+                             const hirsch = () => R.tiere.filter((t) => t.g === "deer").map((t) => t.bs);
+                             const m0 = mittel(hirsch());
+-                            const mit = lauf(ort, A.dauerS);
++                            const dauerS = A.generationen * lebenHirsch();
++                            const mit = lauf(ort, dauerS);
+                             const m1 = mittel(hirsch());
+                             const nMit = hirsch().length;
+                             stand.forEach(zurueck);
+                             R.tiere = R.tiere.filter((t) => t.g !== "wolf" && t.g !== "bear");
+-                            const ohne = lauf(ort, A.dauerS);
++                            const ohne = lauf(ort, dauerS);
+                             const m2 = mittel(hirsch());
+                             stand.forEach(zurueck);
+                             aus.selektion = { m0, mit: m1, ohne: m2, dMit: m1 - m0, dOhne: m2 - m0, nMit, geb: mit.geb + ohne.geb, eltern: mit.eltern + ohne.eltern };
+-                            aus.generationen = A.dauerS / lebenHirsch(ort);
++                            aus.generationen = (Math.min(mit.takte, ohne.takte) * B.taktS) / lebenHirsch(); // gerechnet: die gelaufenen Takte
+                             const inseln = keys.map((k) => F[k].tiere.filter((t) => t.g === "deer").map((t) => t.bs)).filter((l) => l.length >= 2).sort((a, b) => a.length - b.length);
+                             aus.inseln = inseln.map((l) => l.length);
+                             aus.auc = inseln.length >= 2 ? auc(inseln[0], inseln[inseln.length - 1]) : undefined;
+@@ -7480,7 +7491,7 @@
+                         }
+                         return aus;
+                     };
+-                    const a = await H.seite("return await (" + P.toString() + ")(r, T, " + JSON.stringify({ dauerS: 6 * 3600 }) + ");");
++                    const a = await H.seite("return await (" + P.toString() + ")(r, T, " + JSON.stringify({ generationen: 8 }) + ");");
+                     // Sprosse 1 (erbe-geburt): die Probe muster — der Gau um den Spieler 2 600 Takte mit Wolf und im Gau ohne Wolf
+                     // (das Gesetz ohne Jäger), Δ ln M̄ der reifen Hirsche gegen den Gründer-Bestand am Takt 0, die Generationen im Bild
+                     const Mu = (await M.kreaturProbe(["muster"])).muster;
