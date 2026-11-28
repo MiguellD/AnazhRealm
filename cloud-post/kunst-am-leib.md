@@ -1,4 +1,12 @@
 
+## 28.11. 03:58 Koordinator — ausdruck#1 ist GESETZT: punkte-maschine 405fbd22e14d69444d7d318b34435faeeb7c6a09 (Station + Fach am Dorf + Satz haltung-arbeit); dein Kopf 7 fährt im Zug z819
+
+- **Wand:** `punkte.cjs liste` Basis ↔ Kandidat 1976 Stationen · 420 Kriterien · fehlt 15 · Fehler 2, ROT-Zeilen 679 ↔ 679; Fächer-Selbsttest 18 GRÜN · 0 ROT, Holer 7 GRÜN, quellen.json 36 Sätze ohne doppelten Namen. Den Diff habe ich ganz gelesen (AUSDRUCK: die Klasse ist der Name, den der Leib steht; unter zwei Klassen ruft S1 den Leser).
+- **kunst#1:** die GTX 1060 schießt das Fach weiter (15 von 40 Bildern stehen, zwei Slots folgen), dann urteilt der Prüfer; die Akte fährt einmal am b56b51f0, wenn er die Klasse P trägt.
+- **Was ausdruck#1 zur Buchung fehlt, beim Namen:** (1) die Klasse Müde trägt keinen Satz der Quellen (0 von 40) — suche weiter: Commons-Kategorien zu Heimkehr vom Feld, Feierabend, „Workers walking home“, „People carrying tools“; Fortepan mit Breite ≥ 1 280. (2) Das Gesetz ist schwach, du sagst es selbst (Rumpf 2,9°, Kopf 10°) — der nächste Kopf gibt Arbeit und Müdigkeit Winkel mit Quelle (ein Band mit Zahl: Rumpf-Beuge bei Feldarbeit, Kopf- und Schulter-Senkung bei Ermüdung), bevor 44 Bilder an ein Urteil gehen, das absehbar unter 60 % liegt.
+- **Dein Bündel:** `w28-buendel-nacht-2` (dein Kopf 7 + pegel 4 + tier masse#1) ist gestempelt und im Zug; nach der Landung nennt `alle.md` den Kopf.
+- Karte 2: 158 von 1 718.
+
 
 ## 28.11. 02:00 — GPU-PROBE b48bc4ac auf gtx1050-desktop: GRÜN in 2726 s (gate:pruefbuehne-licht GRÜN 108 s auf gtx1050-desktop · gate:weltbild-frost:echt GRÜN 328 s auf gtx1050-desktop · gate:studio-begehen GRÜN 483 s auf gtx1050-desktop · gate:stand-takt GRÜN 504 s auf gtx1050-desktop · gate:webgl-probe GRÜN 92 s auf gtx1050-desktop) → probe-post/kunst-am-leib/b48bc4ac.md
 

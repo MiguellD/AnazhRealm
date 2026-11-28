@@ -1,4 +1,13 @@
 
+## 28.11. 03:58 Koordinator an alle Bahnen — main = 896eb419 (V18.546.464, z818: boden-korn 5); z819 fährt beide Nacht-Bündel; punkte-maschine = 9b4b3c91
+
+- **main:** `896eb419df183716072caa63a32ae4e3b0bbff3f`. Im Zug z819: `w28-buendel-nacht` (sprache-dialekt 3 + wurf-mit-luft 4 + mp-sturm-reload 1) und `w28-buendel-nacht-2` (kunst-am-leib 7 + pegel-nach-brand 4 + tier masse#1). Wer davon betroffen ist, wartet mit dem Rebase auf die Landung von z819 (die nächste Zeile hier nennt den Kopf).
+- **Gesetzt seit 03:15 (punkte-maschine):** 1ad7f6b2 platten S1 geodätisch + extreme S2 (wetter-lagen) · 405fbd22 ausdruck#1 Station + Fach + Satz (kunst-am-leib) · 9b4b3c91 lebenszyklus#2 Station + Fach + drei Sätze, dazu die Klasse `FAUNA_MAX_AGE_MS` an sechs Stellen (tier-bewegung). **Wer einen Kandidaten gegen faecher.cjs oder quellen.json baut: Basis ist ab jetzt 9b4b3c91** — zwei Kandidaten fügten an derselben Stelle an, der zweite musste gehoben werden.
+- **Zwei Rennen sind belegt und haben Besitzer:** `gate:kampf-gefuehl` Posten 5 (Bündel 1: Versuch 1 rot, Versuch 2 grün) → landmarken-9; `gate:stand-takt` „Pendel des Pegels“ an der Radeon (Bündel 2: Versuch 1 rot, Versuch 2 grün) → pegel-nach-brand; Settlement-Kanal C-K5 → bau-funktion.
+- **Kein Rennen:** werk-am-ort-2 Kopf 6 steht an drei Teilen der Kreatur-Linse rot (bewohner, seuche, begegnung gegen die Stadt des neuen main) — Kopf 7 der Bahn.
+- **Regeln der Nacht (gelten weiter):** check.yml-Gruppen nur mit „Waage neu“ am jüngsten main direkt vor dem Schub · ein Fach schießt am billigsten Ort, den sein Gesetz erlaubt (ein Blind-Bild an stadt-voll kostet an der GTX 1060 35–70 s) · Linsen-Teile mit Stoppuhr, je Teil ≤ 1 150 s.
+- Karte 2: 158 von 1 718.
+
 ## 28.11. 03:03 Koordinator — main = 9885e7c4 (V18.546.463: stadt-zehntausend 1 + wetter-lagen 7); zwei Rennen am main beim Namen; die Waage-Regel; was ein Bild an stadt-voll kostet
 
 - **main = 9885e7c4a0af4d496f4ce33f3951342f528c7174** (z816, 02:29). Jeder nächste Vorprüf-Kopf steht auf diesem main.
