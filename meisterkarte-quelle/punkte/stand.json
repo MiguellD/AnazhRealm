@@ -19607,7 +19607,7 @@
   },
   "karte2.mensch.leib.stoff": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.leib.stoff#1 radeon: ungemessen (R10) · karte2.mensch.leib.stoff#1 gtx: Station seit der Messung geändert · karte2.mensch.leib.stoff#2 radeon: ungemessen (R10) · karte2.mensch.leib.stoff#2 gtx: Station seit der Messung geändert · karte2.mensch.leib.stoff#3 radeon: ungemessen (R10) · karte2.mensch.leib.stoff#3 gtx: Station seit der Messung geändert · karte2.mensch.leib.stoff#4 radeon: ungemessen (R10) · karte2.mensch.leib.stoff#4 gtx: ungemessen (R10) · karte2.mensch.leib.stoff#5 radeon: ungemessen (R10) · karte2.mensch.leib.stoff#5 gtx: Station seit der Messung geändert · karte2.mensch.leib.stoff#6 radeon: ungemessen (R10) · karte2.mensch.leib.stoff#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.leib.stoff#1 radeon: ungemessen (R10) · karte2.mensch.leib.stoff#1 gtx: Station seit der Messung geändert — zuletzt an e80f9c5d: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 54.2 s · S1 warf: werkbank eval: ALTER: die Epoche ohne Jahr (fail-closed) [\"at  ( at page. · karte2.mensch.leib.stoff#2 radeon: ungemessen (R10) · karte2.mensch.leib.stoff#2 gtx: Station seit der Messung geändert · karte2.mensch.leib.stoff#3 radeon: ungemessen (R10) · karte2.mensch.leib.stoff#3 gtx: Station seit der Messung geändert · karte2.mensch.leib.stoff#4 radeon: ungemessen (R10) · karte2.mensch.leib.stoff#4 gtx: ungemessen (R10) · karte2.mensch.leib.stoff#5 radeon: ungemessen (R10) · karte2.mensch.leib.stoff#5 gtx: Station seit der Messung geändert · karte2.mensch.leib.stoff#6 radeon: ungemessen (R10) · karte2.mensch.leib.stoff#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.leib.stoff#1",
@@ -19625,7 +19625,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Station seit der Messung geändert — zuletzt an e80f9c5d: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 54.2 s · S1 warf: werkbank eval: ALTER: die Epoche ohne Jahr (fail-closed) [\"at  ( at page.",
      "ungemessen": true,
      "beide": true
     },
@@ -22759,7 +22759,7 @@
   },
   "karte2.mensch.netz.stoffwechsel": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.netz.stoffwechsel#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +23) · karte2.mensch.netz.stoffwechsel#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +22) · karte2.mensch.netz.stoffwechsel#2 radeon: ungemessen (R10) · karte2.mensch.netz.stoffwechsel#2 gtx: Station seit der Messung geändert · karte2.mensch.netz.stoffwechsel#3 radeon: ungemessen (R10) · karte2.mensch.netz.stoffwechsel#3 gtx: Station seit der Messung geändert · karte2.mensch.netz.stoffwechsel#4 radeon: ungemessen (R10) · karte2.mensch.netz.stoffwechsel#4 gtx: Station seit der Messung geändert · karte2.mensch.netz.stoffwechsel#5 radeon: ungemessen (R10) · karte2.mensch.netz.stoffwechsel#5 gtx: Station seit der Messung geändert · karte2.mensch.netz.stoffwechsel#6 radeon: ungemessen (R10) · karte2.mensch.netz.stoffwechsel#6 gtx: Station seit der Messung geändert · karte2.mensch.netz.stoffwechsel#7 radeon: ungemessen (R10) · karte2.mensch.netz.stoffwechsel#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.netz.stoffwechsel#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +23) · karte2.mensch.netz.stoffwechsel#1 gtx: ROT: S1 ROT: fehlender Leser: die Laterne brennt ohne Leitung: keine Trennung, von der ein Licht abhinge (1228 Laternen in der Szene, 0 Leitungen) (stamm/siedlung-ort.js:562) · gemessen 1228 · [linse-gpu] nvidia/pascal an e80f9c5d · karte2.mensch.netz.stoffwechsel#2 radeon: ungemessen (R10) · karte2.mensch.netz.stoffwechsel#2 gtx: Station seit der Messung geändert · karte2.mensch.netz.stoffwechsel#3 radeon: ungemessen (R10) · karte2.mensch.netz.stoffwechsel#3 gtx: Station seit der Messung geändert · karte2.mensch.netz.stoffwechsel#4 radeon: ungemessen (R10) · karte2.mensch.netz.stoffwechsel#4 gtx: Station seit der Messung geändert · karte2.mensch.netz.stoffwechsel#5 radeon: ungemessen (R10) · karte2.mensch.netz.stoffwechsel#5 gtx: Station seit der Messung geändert · karte2.mensch.netz.stoffwechsel#6 radeon: ungemessen (R10) · karte2.mensch.netz.stoffwechsel#6 gtx: Station seit der Messung geändert · karte2.mensch.netz.stoffwechsel#7 radeon: ungemessen (R10) · karte2.mensch.netz.stoffwechsel#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.netz.stoffwechsel#1",
@@ -22776,10 +22776,9 @@
      "id": "karte2.mensch.netz.stoffwechsel#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +22)",
-     "ungemessen": true,
+     "zahl": "S1 ROT: fehlender Leser: die Laterne brennt ohne Leitung: keine Trennung, von der ein Licht abhinge (1228 Laternen in der Szene, 0 Leitungen) (stamm/siedlung-ort.js:562) · gemessen 1228 · [linse-gpu] nvidia/pascal",
+     "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
+     "grund": "ROT: S1 ROT: fehlender Leser: die Laterne brennt ohne Leitung: keine Trennung, von der ein Licht abhinge (1228 Laternen in der Szene, 0 Leitungen) (stamm/siedlung-ort.js:562) · gemessen 1228 · [linse-gpu] nvidia/pascal",
      "r6": "konsum",
      "beide": true
     },
@@ -37597,7 +37596,7 @@
   "ohne": 3349
  },
  "kopfVoll": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
- "zeit": "2026-11-28T10:42:17.030Z",
+ "zeit": "2026-11-28T10:59:06.192Z",
  "vorher": "e80f9c5d",
  "bilanz": {
   "gewinn": [],
