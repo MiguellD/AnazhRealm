@@ -1,7 +1,7 @@
 {
  "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
  "geraet": "gtx",
- "zeit": "2026-11-28T07:48:22.189Z",
+ "zeit": "2026-11-28T07:55:12.211Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "profiband.K4#1": {
@@ -1962,6 +1962,190 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.mensch.fahrzeug.lenker#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 181.1 s · S1 warf: eine Spielstunde Verkehr nicht erreicht: 73.8 von 2500000000000 s in 8080 Takten, 171.3 s Wand (21.2 ms je Takt)",
+   "exit": 0,
+   "minuten": 3.03,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 181.1 s · S1 warf: eine Spielstunde Verkehr nicht erreicht: 73.8 von 2500000000000 s in 8080 Takten, 171.3 s Wand (21.2 ms je Takt)",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 181.5,
+   "fremd": {
+    "s": 183.4,
+    "takte": 85,
+    "fremdS": 50.88,
+    "kerne": 0.277,
+    "fensterKerne": 0.555,
+    "namen": [
+     [
+      "bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \"",
+      11.11
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      6.23
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-e80f9c5d-w071931 x listen/kandidat-gtx-e80f9c5d-w071931.txt",
+      6.19
+     ]
+    ],
+    "dienerS": 41.19,
+    "diener": [
+     [
+      "System",
+      18.75
+     ],
+     [
+      "dwm.exe",
+      11.81
+     ]
+    ],
+    "geraetS": 76.58,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      56.25
+     ],
+     [
+      "svchost.exe",
+      18.03
+     ],
+     [
+      "SearchIndexer.exe",
+      0.94
+     ]
+    ],
+    "eigenS": 279.77,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-28T07:52:07.225Z",
+   "abdruck": "1fee50cfa72d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.planet.wetter.extreme#2": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 78 s unter dem Grund-Deckel 321 s von karte2.planet.wetter.extreme#2) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 78 s unter dem Grund-Deckel 321 s von karte2.planet.wetter.extreme#2) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-28T07:55:10.454Z",
+   "abdruck": "1677e01dae46",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "12780@mx036p22"
+  },
+  "karte2.erleben.kopplung.wahrnehmung#2": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 78 s unter dem Grund-Deckel 513 s von karte2.erleben.kopplung.wahrnehmung#2) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 78 s unter dem Grund-Deckel 513 s von karte2.erleben.kopplung.wahrnehmung#2) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-28T07:55:10.487Z",
+   "abdruck": "d8c2ed5d09ce",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "12780@mx036p22"
+  },
+  "karte2.leben.wasser.bild#1": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 78 s unter dem Grund-Deckel 387 s von karte2.leben.wasser.bild#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 78 s unter dem Grund-Deckel 387 s von karte2.leben.wasser.bild#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-28T07:55:10.669Z",
+   "abdruck": "67a516002422",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "12780@mx036p22"
+  },
+  "karte2.erleben.spieler.hand#1": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 78 s unter dem Grund-Deckel 193 s von karte2.erleben.spieler.hand#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 78 s unter dem Grund-Deckel 193 s von karte2.erleben.spieler.hand#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-28T07:55:10.696Z",
+   "abdruck": "94ecb21f3b9a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "12780@mx036p22"
+  },
+  "karte2.same.physik.feuer#2": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 78 s unter dem Grund-Deckel 93 s von karte2.same.physik.feuer#2) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 78 s unter dem Grund-Deckel 93 s von karte2.same.physik.feuer#2) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-28T07:55:10.886Z",
+   "abdruck": "7b30f40cd9b8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "12780@mx036p22"
+  },
+  "karte2.leben.kopplung.stadt-im-netz#2": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 77 s unter dem Grund-Deckel 539 s von karte2.leben.kopplung.stadt-im-netz#2) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 77 s unter dem Grund-Deckel 539 s von karte2.leben.kopplung.stadt-im-netz#2) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-28T07:55:11.458Z",
+   "abdruck": "6efec1f01d65",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "12780@mx036p22"
+  },
+  "karte2.planet.relief.grossform#1": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 76 s unter dem Grund-Deckel 355 s von karte2.planet.relief.grossform#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 76 s unter dem Grund-Deckel 355 s von karte2.planet.relief.grossform#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-28T07:55:12.179Z",
+   "abdruck": "562950e4c769",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "12780@mx036p22"
+  },
+  "karte2.same.entfaltung.schirm#1": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 76 s unter dem Grund-Deckel 139 s von karte2.same.entfaltung.schirm#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 76 s unter dem Grund-Deckel 139 s von karte2.same.entfaltung.schirm#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-28T07:55:12.211Z",
+   "abdruck": "0b389cec986f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "12780@mx036p22"
   }
  },
  "sitzung": {
