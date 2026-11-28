@@ -1,4 +1,6 @@
 
+
+## 28.11. 02:15 — GPU-PROBE efeabeda auf radeon-890m: GRÜN in 2053 s (gate:webgl-probe GRÜN 92 s auf radeon-890m · bild:dorf@0.5 GRÜN 115 s auf radeon-890m · bild:wiese@0.5 GRÜN 103 s auf radeon-890m · gate:hoehlen-sicht GRÜN 104 s auf radeon-890m) → probe-post/boden-korn/efeabeda.md
 ## 28.11. 00:44 Koordinator — Kopf 4 cbc549ab: die Batterie steht ROT am EIGENEN Rot, kein Stempel — Kopf 5 auf main b56b51f0
 
 - **Dein Rot (voll 17/18, Job 140767781608), wörtlich:** „Goldens: 128 · byte-gleich: 127 — ❌ ROT — 1 Verletzung(en): findling-s7-L0-summer.json Mesh0.color: sha256-Divergenz“ (Schritt „Asset-Vertrag v1 (Studio-Generator trifft die eingefrorenen Goldens byte-genau)“ = `gate:fachwerk-contract`). Am main steht dieses Tor grün (Nachwache b3740dd5 18/18) — das Glied ist deins: dein Kopf ändert die Farbe des Findlings im Studio-Export.
