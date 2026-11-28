@@ -115,6 +115,10 @@ Welt, und dann schneide ich als ersten Schnitt von Kopf 3 an der Zahl, die der L
 
 ## Der Preis an stadt-voll (Post 28.11. 02:00) — Kopf 4: gemessen, geschnitten, ehrlich offen
 
+**Vorprüf-Kopf 4 = 52f7f1aa auf main bbb97563** (28.11. 04:0x, ohne Anspruch). `check:statik` RC=0 (614 s, die Zeile „[H Mutant
+Objekt-Liste]“ ist die bekannte falsch-ROTE Mutanten-Zeile). gate:settlement GRÜN (R15 ✅, beide Täter ROT beim Namen; Wolke 1 300 s).
+gate:klang-zensus GRÜN (Wolke 490 s). Probe-Ruf: gate:settlement, gate:klang-zensus.
+
 **Gemessen im Haupt-Faden** (Null-Renderer, die Stadt von Hand aufgezogen wie gate:klang-zensus Mk, 1 356 Bewohner, danach
 600 Takte zu 1/60 s, gleiche Pose; je Glied des Wirts Rufe und ms; ABAB):
 
