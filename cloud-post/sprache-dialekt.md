@@ -113,6 +113,42 @@ Auch das Merkbuch der Sprachen ist gemessen. Die Seite MUNDART ruft `spracheVon`
 dort bei 505–540 MB, trägt sie die Sitzung der Station (die Seiten #2, #3 und #4 in EINER Sitzung). Steht er ≥ 700 MB, trägt sie die
 Welt, und dann schneide ich als ersten Schnitt von Kopf 3 an der Zahl, die der Lauf nennt.
 
+## Der Preis an stadt-voll (Post 28.11. 02:00) — Kopf 4: gemessen, geschnitten, ehrlich offen
+
+**Gemessen im Haupt-Faden** (Null-Renderer, die Stadt von Hand aufgezogen wie gate:klang-zensus Mk, 1 356 Bewohner, danach
+600 Takte zu 1/60 s, gleiche Pose; je Glied des Wirts Rufe und ms; ABAB):
+
+| Stand | Takt Mittel | Takt p95 | `_tickBewohner` je Takt | `_bewohnerLautTakt` je Takt | `_mundartAm` | Heap gehalten |
+|---|---|---|---|---|---|---|
+| main 27d2f60e (3 Läufe) | 8,35 · 8,54 · 7,42 ms | 15,18 · 14,09 · 11,65 ms | 1,51 · 1,57 · 1,30 ms | 0,25 · 0,27 · 0,24 ms | Ankunft 21×, 16,4 ms · Takt 0× | 116,7 · 116,3 · 116,4 MB |
+| Kopf + Merkbücher (3 Läufe) | 7,34 · 7,66 · 7,77 ms | 11,22 · 12,40 · 11,90 ms | 1,31 · 1,37 · 1,40 ms | 0,24 · 0,24 · 0,23 ms | Ankunft 21×, 4,2 ms · Takt 0× | 115,9 · 115,9 · 116,0 MB |
+| sprache#6 OHNE Merkbuch | 8,95 ms | **19,38 ms** | 1,78 ms | 0,24 ms | Ankunft 20×, 24,5 ms | 116,0 MB |
+
+**Befund, ehrlich:** am main rechnet die Mundart im Takt **nie** (`_mundartAm` 0× in 600 Takten), bei der Ankunft 21× (16 ms
+gesamt). Der Heap mit und ohne meine Schnitte ist gleich (±0,8 MB). Die Rede der Menge kostet 0,24 ms je Takt. Die Mundart im
+Haupt-Faden trägt die vsync-Kante an der GTX nicht; die Streuung main ↔ Kopf liegt im Rauschen der Läufe. Woher 41,7 ↔ 33,4 ms
+an derselben Version und 730 MB gegen 505–540 MB kommen, sagt dieser Lauf nicht: Renderer und GPU fehlen der Wolke (Lehre 16).
+
+**Täter beim Namen (geschnitten, byte-gleich, 28 800 Abfragen 0 verschieden, sha 1204006b = Kopf 3):**
+1. `fachwerk-core.js` `mundartVon` rechnete JEDEN Ruf neu (105 Wörter × 5 Ebenen × 9 Herde): **374 µs je Ruf, auch warm**, an jedem
+   Eingang einer Zelle (`stamm/siedlung-ort.js` `_zellEingang` → `_mundartAm`: Export, Gedächtnis, Melden der Nachbarn in 720 m).
+   Jetzt EINMAL je Senke (`_MUNDART_SENKE`, ≤ 4 096): **2,7 µs**, dasselbe Objekt je Tal.
+2. `fachwerk-core.js` `spracheVon` baute je Ruf den Schlüssel aus 105 Wörtern (6,2 µs je Name, je Satz). Jetzt EINMAL je Ort
+   (`_ORTSPRACHE`, WeakMap am Mundart-Objekt des Plans): **0,6 µs**. Mit sprache#6 hätte derselbe Ruf **702 µs** gekostet (p95 19,4 ms
+   im Lauf oben) — der Preis-Schnitt fängt das, bevor #6 kommt.
+
+**Linse:** gate:settlement **R15** „die Mundart rechnet einmal je Senke und Ort“ (Familie R, neben R13): zwei Rufe an derselben Senke
+geben dasselbe Objekt; die Sprache des Orts warm unter der Hälfte des alten Schlüssels allein (relativ, die Wand hängt nicht an der
+Maschine). Kern 64/64, 0,05 µs gegen 4,6 µs. Täter „die Mundart rechnet je Ruf neu“ 0/64 → ROT, „die Sprache rechnet je Bewohner
+neu“ 5,07 µs → ROT.
+
+**sprache#6 parkt bis Kopf 5** (Commit 347a5c2): mit #6 spricht jeder Ort die Stufe seines Jahrs, die Zeugen von #3/#4 an der
+Station rechnen ohne kandidat-6 die Gegenwart — der Preis-Schnitt soll diese zwei gebuchten Punkte halten, nicht gefährden.
+
+**Offen mit Messname:** „der Lauf selbst“ p95 ≤ 33,3 ms an der GTX 1060 in zwei von zwei Läufen, Heap unter dem Stand vor
+sprache#3 — Station nicht gefahren: GPU. Erwartung ehrlich: die Merkbücher senken die Ankunft und den Bewohner-Takt um wenige Prozent;
+hält die GTX danach weiter auf der Stufe 41,7 ms, liegt der Täter nicht in der Sprache.
+
 ## Kopf 3 (2d05e947, sprache#5) — GPU-Probe GRÜN (Post 28.11. 01:34), Urteil offen
 
 Die vier Tore plus webgl-probe auf radeon-890m GRÜN in 1 177 s (das Probe-Blatt zu 2d05e947 im Zweig koordination). Ich warte auf das Urteil
