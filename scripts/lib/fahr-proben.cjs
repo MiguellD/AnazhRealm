@@ -3146,6 +3146,167 @@ async function probeLeben(expected) {
             };
             S.frei.ballOhneZerfall = ball();
             delete r._freiLuftPacken;
+            // (4d) DAS TAUCHEN (same.physik.flug#3): Würfel 0,3 m aus Holz (ρ 720), Eis (917) und Stein (2650) fallen aufrecht aus
+            // 0,2 m in stilles Wasser mit ≥ 1,5 m Säule am See der Welt (`__wasserOrte`, gesucht um seine Mitte), 10 s Sim-Schritt:
+            // ihre Tauchtiefe (Spiegel der EINEN Wasser-Wahrheit − Unterkante, gemittelt über die letzten 4 s) gegen ρ / ρ_Wasser ·
+            // Kante (die Stoff-Tafel); der Stein liegt auf dem Grund. Die Mutante: der Löser ohne Wasser (`_freiWasserPacken`: 44
+            // leer) — der Holz-Würfel sinkt wie main b3740dd5 auf den Grund.
+            const tauch = async () => {
+                const see = (await window.__wasserOrte({ mess: mo })).see;
+                let ort = null;
+                for (let ring = 0; see && ring <= 60 && !ort; ring++)
+                    for (let k = 0; k < Math.max(1, ring * 6) && !ort; k++) {
+                        const w = (k / Math.max(1, ring * 6)) * Math.PI * 2;
+                        const [x, zz] = [see.x + Math.cos(w) * ring * 3, see.z + Math.sin(w) * ring * 3];
+                        const tief = (d) => r._koerperWasser(x + d, zz + d, hh(x + d, zz + d)) - hh(x + d, zz + d);
+                        if ([-1, 0, 1].every((d) => tief(d) >= 1.5 && !r._waterFlowAt(x + d, zz + d))) ort = { x, z: zz, g: hh(x, zz), sp: r._koerperWasser(x, zz, hh(x, zz)) };
+                    }
+                if (!ort) return { fehlt: see ? `kein stilles Wasser mit ≥ 1,5 m Säule um den See ${Math.round(see.x)}/${Math.round(see.z)}` : "kein See in der Welt (`__wasserOrte`)" };
+                const [kante, dt, rhoW] = [0.3, A.FIXED_DT, r._stoff("wasser").rho];
+                const R3 = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
+                const wurf = (stoff) => {
+                    const name = "k3_tauch_" + stoff;
+                    st.blueprints[name] = { name, label: name, frei: true, builtIn: false, parts: [{ shape: "box", material: stoff, size: { x: kante, y: kante, z: kante }, position: { x: 0, y: kante / 2, z: 0 } }] }; // prettier-ignore
+                    const e = r.spawnArchitecture(name, { x: ort.x, y: ort.sp + 0.2, z: ort.z }, { precise: true, silent: true });
+                    try {
+                        const K = e._frei;
+                        [K.p[0], K.p[1], K.p[2]] = [ort.x, ort.sp + 0.2 + kante / 2, ort.z];
+                        K.v.fill(0);
+                        K.w.fill(0);
+                        r._freiWecken(K);
+                        K.grund = null;
+                        r._freiLage(K);
+                        let [summe, n] = [0, 0];
+                        for (let i = 0; i < Math.round(10 / dt); i++) {
+                            r._freiSchritt(dt);
+                            if (i >= Math.round(6 / dt)) [summe, n] = [summe + r._koerperWasser(K.p[0], K.p[2], ort.g) - (K.p[1] - kante / 2), n + 1];
+                        }
+                        const [tiefe, soll] = [summe / n, (r._stoff(stoff).rho / rhoW) * kante];
+                        return { tiefe: R3(tiefe), soll: R3(soll), abwPct: R3((100 * Math.abs(tiefe - soll)) / soll), ueberGrund: R3(K.p[1] - kante / 2 - ort.g) };
+                    } finally {
+                        r.removeArchitecture(e, { still: true });
+                        delete st.blueprints[name];
+                    }
+                };
+                return { saeule: R3(ort.sp - ort.g), holz: wurf("holz"), eis: wurf("eis"), stein: wurf("stein") };
+            };
+            S.frei.tauch = await tauch();
+            r._freiWasserPacken = (K, X, x) => (X[x + 44] = -Infinity);
+            S.frei.tauchOhneWasser = await tauch();
+            delete r._freiWasserPacken;
+            // (4e) DAS SEGEL (same.physik.flug#3 „Segelboot fährt am Wind, nicht gegen ihn (Polar-Form)“): das Boot des Anlegers mit
+            // Segel (`ANLEGER.boot`, Stempel welle 0,1 · last · segel 1) liegt am Ort des Tauchens im Wasser, wie der Wirt es legt
+            // (`_fahrBoden`: die Wasserlinie seines Rumpfs) und fährt den EINEN Fahr-Schritt des Wagens (`_wagenSchritt`: Tiefe,
+            // Haftung und Wind des Wirts; der Wind ist für die Probe fest 3 m/s aus +x — `_fahrWind` geliehen); die Lage bleibt
+            // (das Laufband: der Ort trägt dasselbe Wasser), die Fahrt läuft. Gerudert ohne Wind 40 s, gesegelt je Kurs zum Wind
+            // 0 · 45 · 90 · 135 · 180° 60 s aus dem Stand, der Steuermann hält den Kurs (Ruder −3 × Abweichung): das Tempo gemittelt
+            // über die letzten 15 s. Die Mutante: der Fahr-Satz ohne Rumpf (`_fahrSatz` von main) — das Boot gleitet auf Reifen.
+            const segel = async (ohneRumpf) => {
+                const see = (await window.__wasserOrte({ mess: mo })).see;
+                const t = S.frei.tauch;
+                if (!t || t.fehlt || !see) return { fehlt: "kein Ort des Tauchens" };
+                const A2 = A.ANLEGER,
+                    { vc } = A._fahrSchrittGesetz();
+                let ort = null;
+                for (let ring = 0; ring <= 60 && !ort; ring++)
+                    for (let k = 0; k < Math.max(1, ring * 6) && !ort; k++) {
+                        const w = (k / Math.max(1, ring * 6)) * Math.PI * 2;
+                        const [x, zz] = [see.x + Math.cos(w) * ring * 3, see.z + Math.sin(w) * ring * 3];
+                        if (r._koerperWasser(x, zz, hh(x, zz)) - hh(x, zz) >= 1.5 && !r._waterFlowAt(x, zz)) ort = { x, z: zz };
+                    }
+                if (!ort) return { fehlt: "kein Wasser mit 1,5 m Säule" };
+                const e = r.spawnArchitecture(A2.boot, { x: ort.x, y: hh(ort.x, ort.z) + 0.5, z: ort.z }, { precise: true, silent: true, studioOv: { welle: 0.1, last: A2.last, segel: 1 } }); // prettier-ignore
+                try {
+                    const prof = r._vehicleProfile(e);
+                    if (ohneRumpf) prof.rumpf = null;
+                    e._fahrSatz = null;
+                    const G = r._fahrSatz(e, prof);
+                    const boden = r._fahrBoden(e);
+                    let U = 0;
+                    r._fahrWind = () => ({ x: -U, z: 0 });
+                    const fahrt = (yaw0, wind, gas) => {
+                        U = wind;
+                        const fz = (e._fahr = vc.fahrZustand(ort.x, ort.z, yaw0));
+                        let [summe, n] = [0, 0];
+                        for (let i = 0; i < Math.round(60 / A.FIXED_DT); i++) {
+                            [fz.x, fz.z] = [ort.x, ort.z];
+                            vc.fahrStand(fz, G, boden, A.FIXED_DT);
+                            const ab = Math.atan2(Math.sin(fz.yaw - yaw0), Math.cos(fz.yaw - yaw0));
+                            r._wagenSchritt(e, { throttle: gas, brake: 0, steer: Math.max(-1, Math.min(1, -3 * ab)), hand: false }, A.FIXED_DT, false, false);
+                            if (i >= Math.round(45 / A.FIXED_DT)) [summe, n] = [summe + fz.vlong, n + 1];
+                        }
+                        return Math.round((1000 * summe) / n) / 1000;
+                    };
+                    const polar = {};
+                    for (const kurs of [0, 45, 90, 135, 180]) polar[kurs] = fahrt((kurs * Math.PI) / 180, 3, 0);
+                    // die Polare im starken Wind (8 m/s): der Wellen-Widerstand bremst den Rumpf, kein Deckel plättet die Kurse
+                    const sturm = {};
+                    for (const kurs of [45, 90, 180]) sturm[kurs] = fahrt((kurs * Math.PI) / 180, 8, 0);
+                    // die Krängung am Wind bei 6 m/s (`fahrRumpf` z.krang → die Wank-Feder `fWank`, die das Bild liest), je Bug
+                    const kraeng = {};
+                    for (const kurs of [45, 315]) {
+                        fahrt((kurs * Math.PI) / 180, 6, 0);
+                        kraeng[kurs] = Math.round(e._fahr.fWank * 572.958) / 10;
+                    }
+                    const fz = e._fahr;
+                    return { rumpf: !!(G && G.rumpf), segelA: G && G.rumpf && G.rumpf.segel ? Math.round(G.rumpf.segel.A * 10) / 10 : null, tiefe: Math.round(r._fahrTiefe(fz) * 1000) / 1000, rudern: fahrt(0, 0, 1), polar, sturm, kraeng, kippGrad: G && G.rumpf ? Math.round(G.rumpf.kraeng.kipp * 572.958) / 10 : null }; // prettier-ignore
+                } finally {
+                    delete r._fahrWind;
+                    r.removeArchitecture(e, { still: true });
+                }
+            };
+            S.frei.segel = await segel(false);
+            S.frei.segelOhneRumpf = await segel(true);
+            // (4f) DIE STRÖMUNG AM RUMPF (same.physik.flug#3 „Auftrieb und Widerstand in Wasser“): das Ruderboot des Anlegers liegt
+            // im Fluss der Welt (`__wasserOrte`.fluss, gesucht um ihn: Strömung ≥ 0,3 m/s, Säule ≥ 0,5 m) und treibt 15 s ohne
+            // Ruder und ohne Wind (`_fahrWind` geliehen) den EINEN Fahr-Schritt (`_wagenSchritt`, ohne Hülle): seine Drift über Grund (Weg ÷ Zeit) gegen die Strömung,
+            // gemittelt längs seines Wegs (`_waterFlowAt`, dieselbe Quelle, die Spieler und Tier trägt). Die Mutante: die Welt ohne
+            // Strömung (`_waterFlowAt` null) — das Boot liegt still wie main b3740dd5.
+            const strom = async (ohne) => {
+                const fl = (await window.__wasserOrte({ mess: mo })).fluss;
+                if (!fl) return { fehlt: "kein Fluss in der Welt (`__wasserOrte`)" };
+                await __weltDa(() => !r._ensureHydroTilesAround(fl.x, fl.z, 0));
+                let ort = null;
+                for (let ring = 0; ring <= 40 && !ort; ring++)
+                    for (let k = 0; k < Math.max(1, ring * 6) && !ort; k++) {
+                        const w = (k / Math.max(1, ring * 6)) * Math.PI * 2;
+                        const [x, zz] = [fl.x + Math.cos(w) * ring * 2, fl.z + Math.sin(w) * ring * 2];
+                        const f = r._waterFlowAt(x, zz);
+                        if (f && Math.hypot(f.x, f.z) >= 0.3 && r._koerperWasser(x, zz, hh(x, zz)) - hh(x, zz) >= 0.5) ort = { x, z: zz };
+                    }
+                if (!ort) return { fehlt: `kein Fluss mit 0,3 m/s und 0,5 m Säule um ${Math.round(fl.x)}/${Math.round(fl.z)}` };
+                const A2 = A.ANLEGER,
+                    { vc } = A._fahrSchrittGesetz();
+                const e = r.spawnArchitecture(A2.boot, { x: ort.x, y: hh(ort.x, ort.z) + 0.5, z: ort.z }, { precise: true, silent: true, studioOv: { welle: 0.1, last: A2.last } }); // prettier-ignore
+                try {
+                    e._fahrSatz = null;
+                    const G = r._fahrSatz(e, r._vehicleProfile(e));
+                    const boden = r._fahrBoden(e);
+                    const fz = (e._fahr = vc.fahrZustand(ort.x, ort.z, 0));
+                    let [sx, sz, n, tief] = [0, 0, 0, 0];
+                    const N = Math.round(15 / A.FIXED_DT);
+                    const echt = r._waterFlowAt;
+                    if (ohne) r._waterFlowAt = () => null;
+                    r._fahrWind = () => ({ x: 0, z: 0 }); // die Drift misst das Wasser, nicht den Wind auf der Flanke
+                    for (let i = 0; i < N; i++) {
+                        const f = echt.call(r, fz.x, fz.z) || { x: 0, z: 0 };
+                        [sx, sz, n] = [sx + f.x, sz + f.z, n + 1];
+                        vc.fahrStand(fz, G, boden, A.FIXED_DT);
+                        r._wagenSchritt(e, { throttle: 0, brake: 0, steer: 0, hand: false }, A.FIXED_DT, false, false);
+                        tief = Math.max(tief, r._fahrTiefe(fz));
+                    }
+                    const R3 = (v) => Math.round(v * 1000) / 1000;
+                    const t = N * A.FIXED_DT;
+                    const [dx, dz, mx, mz] = [(fz.x - ort.x) / t, (fz.z - ort.z) / t, sx / n, sz / n];
+                    return { rumpf: !!(G && G.rumpf), tiefe: R3(tief), drift: [R3(dx), R3(dz)], strom: [R3(mx), R3(mz)], abwPct: R3((100 * Math.hypot(dx - mx, dz - mz)) / Math.max(1e-6, Math.hypot(mx, mz))) }; // prettier-ignore
+                } finally {
+                    delete r._waterFlowAt;
+                    delete r._fahrWind;
+                    r.removeArchitecture(e, { still: true });
+                }
+            };
+            S.frei.strom = await strom(false);
+            S.frei.stromOhne = await strom(true);
             // (5) DER FLACHE KÖRPER (same.physik.reaktion#2: der Trümmer, die Scherbe — dünner als der Spalt des Lösers, Ober- und
             // Unterseite sind zugleich Kontakt): ein Brett 25 × 5 × 25 cm fällt 20 cm und liegt, zwei Scheiben 25 × 0,4 × 25 cm
             // fallen halb übereinander. Bis alle drei schlafen (null: nach 4 s wach, `wach` ihre Zahl) und wie das Brett liegt

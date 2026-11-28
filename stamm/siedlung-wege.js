@@ -2152,6 +2152,7 @@ class AnazhRealm_siedlung_wege {
         const V = this._dorfVorraete;
         let darf = ++F.takt % A.jeTakte === 0;
         let weg = F.takt % A.jeTakte === 3; // EINE Kachel je Takt-Runde legt oder löst ihre Straßen
+        let [planNah, bahn] = [null, null]; // die Kachel ohne Plan, die der Bahn am nächsten liegt (der EINE Rang)
         for (const s of staedte) {
             if (Math.hypot(s.x - playerPos.x, s.z - playerPos.z) > A.reichM + s.ringe * M) continue;
             for (let k = -s.ringe; k <= s.ringe; k++)
@@ -2162,15 +2163,27 @@ class AnazhRealm_siedlung_wege {
                     // bereit (`_dorfBereiten`: der Plan v2 am Ort der Kachel, im Vorlauf des Erwachens): die Massen stehen an
                     // ihren Losen, ehe die Kachel erwacht, und das Erwachen stellt kein Haus um
                     const w = V && V.get(key);
+                    const S0 = B && B.get(key);
+                    // DIE FERNE STEHT AUS IHREM PLAN (stadt-zehntausend): auch die gemeldete Kachel (`_ortMelden`: der Plan ihres
+                    // Exports, kein Haus, kein Grund) trägt jedes Haus als Hülle an seinem ECHTEN Los — die Massen des Worts
+                    // (Stufe 1) stehen nur, bis ihr Plan kommt. Der Plan des Erlebnisses (wach, im Zug, im Vorrat) geht vor.
                     const S2 =
-                        (B && B.get(key) && !B.get(key).gemeldet ? B.get(key) : null) ||
+                        (S0 && !S0.gemeldet ? S0 : null) ||
                         (imZug ? { plan: q.plan, ox: q.origin.x, oz: q.origin.z } : null) ||
-                        (w && w.da && w.v2 && Array.isArray(w.v2.slots) ? { plan: w.v2, ox: w.x, oz: w.z } : null);
+                        (w && w.da && w.v2 && Array.isArray(w.v2.slots) ? { plan: w.v2, ox: w.x, oz: w.z } : null) ||
+                        (S0 && S0.gemeldet && S0.plan && Array.isArray(S0.plan.slots) ? S0 : null);
                     let e = F.je.get(key);
-                    if (S2 && !(e && e.los)) {
-                        // STUFE 2: dieselben Massen an den ECHTEN Losen — sofort, ehe das erste Haus des Zugs steht
+                    if (!S2 && !w && !F.flug && (i || k) && !F.ohneOrt.has(key)) {
+                        // DER NÄCHSTE PLAN DER FERNE: die Kachel ohne Plan, die der Bahn am nächsten liegt, bestellt ihn (unten)
+                        const d = this._bedarfWeg(s.x + i * M, s.z + k * M, bahn || (bahn = this._bedarfBahn()));
+                        if (!(planNah && planNah.d <= d)) planNah = { d, key, s, i, k };
+                    }
+                    if (S2 && !(e && e.los && e.plan === S2.plan && e.ox === S2.ox && e.oz === S2.oz)) {
+                        // STUFE 2: dieselben Massen an den ECHTEN Losen — sofort, ehe das erste Haus des Zugs steht; kommt ein
+                        // anderer Plan (der Export des Meldens → der Plan v2 des Erwachens), steht die Kachel neu an seinen Losen
                         const alt = e;
                         if (alt) this._stadtFerneLoesen(F, alt);
+                        if (alt && alt.los) this._stadtFerneLoseFallen(F, alt);
                         e = this._stadtFerneBauen(
                             F,
                             AnazhRealm.Gesetz("fachwerk:planMassen")(S2.plan),
@@ -2232,7 +2245,52 @@ class AnazhRealm_siedlung_wege {
                     }
                 }
         }
+        // EIN PLAN DER FERNE ZUR ZEIT (stadt-zehntausend): die nächste Kachel ohne Plan meldet sich (`_ortMelden`, der Export im
+        // Faden im EINEN Rang am Ort der Kachel: der nahe Wald und der Export des Erwachens gehen vor) — EINER im Flug.
+        // Das Band: die City Sample (Epic, Big_City_LLV der Matrix Awakens) streamt ihre Stadt in Zellen der World Partition, jedes
+        // Gebäude aus 2–3 Akteuren mit Dutzenden instanzierter Teile (ISM; Unreal-Forum, Beobachtung, keine Doku) — hier EINE Instanz je Haus. Die Stelle der
+        // Kachel ist ihr Platz im Raster (`_zellOrt`, offen solange ihr Wasser bestellt ist); trägt sie keinen Ort, steht sie leer.
+        if (planNah) {
+            const { key, s } = planNah;
+            const info = this._viertelInfo(s.cx + planNah.i, s.cz + planNah.k);
+            const o = info ? this._zellOrt(key) : null;
+            if (!o) {
+                if (o === null) F.ohneOrt.add(key);
+            } else
+                F.flug = this._ortMelden(key, { seed: info.seed, nH: info.nH, ...this._zellEingang(key, info.seed), ort: { x: o.x, z: o.z } }, o, `die Kachel ${key} der Stadt ${s.key}`, { x: o.x, z: o.z }).finally(() => (F.flug = null)); // prettier-ignore
+        }
         this._stadtMasseStand();
+    }
+    // die Lose einer Kachel, deren Plan wechselt (`_stadtFerneTakt`), fallen aus dem Register: ihre Häuser binden sich am neuen Plan
+    _stadtFerneLoseFallen(F, alt) {
+        for (const [k, m] of F.los) if (m.e === alt) F.los.delete(k);
+        for (const [entry, m] of F.von)
+            if (m.e === alt) {
+                F.von.delete(entry);
+                entry._masse = undefined;
+            }
+    }
+    // EIN ORT WIRD GEMELDET (der Nachbar eines erwachten Orts, `_bewohnerMelden`, und die ferne Kachel einer Stadt,
+    // `_stadtFerneTakt`): der Plan seines Exports (Region, Name, Häuser; im Faden, Lehre 14) steht im Register der Orte
+    // (`_bewohnerSiedlungen`) — Plan und Namen, keine Leiber, kein Weg, kein Grund, bis er selbst erwacht. `wer` nennt ihn im
+    // Bruch. → Promise (erfüllt, sobald der Ort gemeldet ist oder laut brach). EIN EXPORT JE ORT IM FLUG (`flug`, je Register): wer einen Ort meldet, dessen Plan schon
+    // unterwegs ist, wartet auf DIESEN Export — headless an `dorf 7 9310` bestellten Nachbar und Ferne die Kachel 627/419 (nH 166)
+    // zweimal, der zweite Export stand 40 s hinter 139 Leibern in der Schlange.
+    _ortMelden(k, dp, ort, wer, wo) {
+        const [welt, B] = [this.state, this._bewohnerSiedlungen || (this._bewohnerSiedlungen = new Map())];
+        if (B.has(k)) return Promise.resolve();
+        const flug = B.flug || (B.flug = new Map());
+        if (flug.has(k)) return flug.get(k);
+        const zug = this._foundryRequestSettlement(dp, false, wo) // Region und Name: Same, Epoche, Klima (fachwerk DORF), nie der Ort
+            .then((p) => {
+                if (this.state !== welt || this._bewohnerSiedlungen !== B || B.has(k)) return;
+                if (!p || !Array.isArray(p.slots)) return void this._bruchMelden(`ORT: ${wer} trägt keinen Plan — die Foundry gab keinen`); // prettier-ignore
+                B.set(k, { key: k, plan: p, ox: ort.x, oz: ort.z, liste: null, gestalten: null, wirt: this, gemeldet: true }); // prettier-ignore
+            })
+            .catch((e) => this._stoffBruch(`der Plan: ${wer}`, e))
+            .finally(() => flug.delete(k));
+        flug.set(k, zug);
+        return zug;
     }
     // der Stand der Ferne (je Welt): die zwei Pools, je Kachel ihr Eintrag, die Lose der Stufe 2 nach ihrem Ort (`los`), je
     // gebundenem Haus seine Masse (`von`) und die Häuser, deren Bild wechselte (`schmutz`)
@@ -2249,6 +2307,8 @@ class AnazhRealm_siedlung_wege {
                 los: new Map(),
                 von: new Map(),
                 schmutz: new Set(),
+                flug: null, // der Plan der Ferne im Flug (`_ortMelden`)
+                ohneOrt: new Set(), // die Kacheln, deren Platz keinen Ort trägt (`_zellOrt` null)
             })
         );
     }
@@ -2379,7 +2439,7 @@ class AnazhRealm_siedlung_wege {
     _stadtFerneBauen(F, m, ox, oz, plan) {
         const A = AnazhRealm.STADT_FERNE;
         const n = m ? m.n : 0;
-        const e = { wand: null, dach: null, band: null, ox, oz, strassen: null, box: null, los: !!plan, steht: false, anH: new Uint8Array(n), gebunden: new Uint8Array(n) }; // prettier-ignore
+        const e = { wand: null, dach: null, band: null, ox, oz, plan, strassen: null, box: null, los: !!plan, steht: false, anH: new Uint8Array(n), gebunden: new Uint8Array(n) }; // prettier-ignore
         if (!n) return e;
         const [L, T] = [m.lage, m.ton];
         const [mat, quat, pos, mass, auf] = [new THREE.Matrix4(), new THREE.Quaternion(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(0, 1, 0)]; // prettier-ignore

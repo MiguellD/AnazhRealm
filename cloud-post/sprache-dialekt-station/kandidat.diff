@@ -1,0 +1,72 @@
+diff --git a/meisterkarte-quelle/punkte/stationen/k2-mensch-kultur.js b/meisterkarte-quelle/punkte/stationen/k2-mensch-kultur.js
+index 97c5e23..feaa6d0 100644
+--- a/meisterkarte-quelle/punkte/stationen/k2-mensch-kultur.js
++++ b/meisterkarte-quelle/punkte/stationen/k2-mensch-kultur.js
+@@ -611,6 +611,26 @@ async function sprachBaum(r, T, arg) {
+ // DER ZEUGE DES KONSUMS: die Pläne des Fächers (Zellen der Welt, `_ortDp` → die Gießerei) tragen die Mundart, die `_mundartAm` an der Mitte
+ // ihrer Zelle liest (`plan.mundart`), und ihre Leute heißen in ihr (`_bewohnerLauf` „name“ gleich dem Namen aus `spracheVon(region,
+ // _mundartAm)`) — sonst misst das Kontinuum eine Sprache, die kein Bewohner spricht.
++// DIE HÖRBARE SPRACHE (sprache#5): je Familie ein Satz (fachwerk `sprachSatz` → `sprachSilben`) durch die Dauern und die Stimme des
++// Spiels (klang `stimmRede` → `stimmPuffer`, derselbe Puffer, den die Rede der Menge spricht, klang.js `_bewohnerLautTakt`): hörbar
++// ist eine Sprache, deren Laute im Puffer klingen — Konsonanten als eigene Segmente (Verschluss, Reibung, Nasal), nicht nur Vokale.
++async function hoerbareRede(r, T, arg) {
++    const FC = globalThis.__fachwerkCore, KC = globalThis.__klangCore;
++    if (!FC || typeof FC.sprachSilben !== "function" || !KC || typeof KC.stimmRede !== "function")
++        return { leer: "die Rede klingt nur in ihren Vokalen: fachwerk sprachSilben / klang stimmRede fehlt" };
++    const aus = { familien: 0, hoerbar: 0, segmente: 0, konsonanten: 0, beleg: [] };
++    for (const g of Object.keys(FC.SPRACHE_GESETZ)) {
++        const L = FC.spracheVon(g, null), satz = FC.sprachSatz(L, "hoerbar:" + arg.saat);
++        const p = KC.stimmPuffer({ leib: KC.STIMME.bezug, laut: "plaudern", saat: 7, rede: KC.stimmRede(FC.sprachSilben(satz, L), L.gesetz.einsatz), einsatz: L.gesetz.einsatz });
++        const k = (p.segmente || []).filter((s) => s.art !== "vokal" && s.art !== "pause").length;
++        aus.familien++;
++        aus.segmente += (p.segmente || []).length;
++        aus.konsonanten += k;
++        if (k > 0) aus.hoerbar++;
++        if (aus.beleg.length < 2) aus.beleg.push(g + " „" + satz + "“ " + k + " Konsonanten");
++    }
++    return aus;
++}
+ async function mundartRaum(r, T, arg) {
+     const FC = globalThis.__fachwerkCore, GC = globalThis.__gelaendeCore;
+     if (typeof r._mundartAm !== "function" || !FC || typeof FC.mundartVon !== "function" || !GC || typeof GC.talWeg !== "function")
+@@ -719,7 +739,7 @@ module.exports = (F) => [
+     F.leiter("mensch.kultur.sprache", {
+         sek: 45,
+         pfad: [...ORT, "stamm/feld-leben.js", "index.html", "gelaende-core.js", "stamm/klang.js", "klang-core.js"],
+-        seite: { ZENSUS: zensus, STUFEN: stufen, ZAEHLE: SPRACHE_LESER, NAMEN: namenFaecher, BAUM: sprachBaum, REDE: redeZeuge, MUNDART: mundartRaum },
++        seite: { ZENSUS: zensus, STUFEN: stufen, ZAEHLE: SPRACHE_LESER, NAMEN: namenFaecher, BAUM: sprachBaum, REDE: redeZeuge, MUNDART: mundartRaum, HOERBAR: hoerbareRede },
+         messe: async (H, K) => {
+             await K.messort("stadt-voll");
+             const z = await K.welt("return await (" + H.seite.ZENSUS + ")(r, T, " + JSON.stringify({}) + ");", 30000);
+@@ -846,6 +866,13 @@ module.exports = (F) => [
+             const MUNDART_GITTER = { gitter: 48, schrittM: 1600, stich: 8 };
+             z.dialekt = await K.welt("return await (" + H.seite.MUNDART + ")(r, T, " + JSON.stringify({ ...MUNDART_GITTER, faecher: F.orte.map((o) => ({ zelle: o.zelle, region: o.region, seed: o.seed, mundart: o.mundart, haeuser: o.haeuser, personenNamen: o.personenNamen })) }) + ");", 60000);
+             if (!z.dialekt) throw new Error("das Dialekt-Kontinuum: ohne Antwort");
++            // DIE SPRACHEN DER WELT, HÖRBAR (sprache#5, Umfang 7 000): dieselbe Seite MUNDART über 48² Orte im Abstand 6,4 km (307 km
++            // — die Welt ist eine Funktion, der Umfang zählt sie, nicht das Fenster des Dialekts); gezählt nur, wenn jede Familie klingt
++            const WELT_GITTER = { gitter: 48, schrittM: 6400, stich: 8 };
++            z.sprachWelt = z.dialekt.leer ? z.dialekt : await K.welt("return await (" + H.seite.MUNDART + ")(r, T, " + JSON.stringify(WELT_GITTER) + ");", 60000);
++            z.hoerbar = await K.welt("return await (" + H.seite.HOERBAR + ")(r, T, " + JSON.stringify({ saat: 1 }) + ");", 30000);
++            if (!z.sprachWelt || !z.hoerbar) throw new Error("die hörbaren Sprachen der Welt: ohne Antwort");
++            if (!z.sprachWelt.leer && !z.hoerbar.leer) H.zeile("Welt: " + z.sprachWelt.orte + " Orte (" + WELT_GITTER.gitter + "² je " + WELT_GITTER.schrittM + " m) in " + z.sprachWelt.senken + " Tälern, U_eff " + z.sprachWelt.ueff + " (" + z.sprachWelt.ms + " ms) · hörbar " + z.hoerbar.hoerbar + " von " + z.hoerbar.familien + " Familien, " + z.hoerbar.konsonanten + " von " + z.hoerbar.segmente + " Segmenten Konsonanten · " + z.hoerbar.beleg.join(" · "));
+             if (!z.dialekt.leer) {
+                 const Z = z.dialekt.zeuge;
+                 if (!(Z.plaene >= 20 && Z.gleich === Z.plaene && Z.leute >= 20 * 20 && Z.leuteGleich === Z.leute))
+@@ -874,7 +901,7 @@ module.exports = (F) => [
+                     : { n: 2, art: "zahl", wert: (z) => trennung(z).n, zahl: trennung, wo: "fachwerk-core.js sprachSatz · stamm/siedlung-bewohner.js _bewohnerLauf „rede“" },
+                 z.baum.leer ? { n: 3, art: "nicht", wert: () => 0, fehlt: z.baum.leer } : { n: 3, art: "zahl", wert: (z) => z.baum.ueff, zahl: baum, wo: "fachwerk-core.js spracheVon · sprachWort" },
+                 z.dialekt.leer ? { n: 4, art: "nicht", wert: sprachen, fehlt: "Sprachen mit Dialekt-Kontinuum: " + z.dialekt.leer } : { n: 4, art: "zahl", wert: (z) => z.dialekt.ueff, zahl: dialekt, wo: "fachwerk-core.js mundartVon · stamm/siedlung-ort.js _mundartAm" },
+-                { n: 5, art: "auge", um: 7000, wert: sprachen, fehlt: "hörbare Sprachen: kein Laut einer Sprache in der Welt" },
++                { n: 5, art: "auge", um: 7000, wert: (z) => (z.sprachWelt.leer || z.hoerbar.leer || z.hoerbar.hoerbar < z.hoerbar.familien ? 0 : z.sprachWelt.ueff), mass: (z) => "Umfang " + z.sprachWelt.ueff + " hörbare Sprachen (" + z.hoerbar.konsonanten + " von " + z.hoerbar.segmente + " Segmenten Konsonanten)", fehlt: "hörbare Sprachen: " + (z.sprachWelt.leer || z.hoerbar.leer || "kein Laut einer Sprache in der Welt") },
+                 { n: 6, art: "nicht", wert: sprachen, fehlt: "Sprachstufen über Epochen: die Silben-Tafel ist zeitlos (dieselbe in jedem Jahr)" },
+                 { n: 7, art: "nicht", wert: sprachen, fehlt: "Sprachen über Planeten und fremde Medien: eine Welt, keine fremde Art spricht" },
+             ]);
+@@ -884,7 +911,7 @@ module.exports = (F) => [
+             2: { umfang: { soll: 10, wort: "Sprachen (U_eff)" }, masse: [{ key: "getrennt", wort: "Sprachen an Sätzen getrennt", soll: 0.85, richtung: "≥" }, { key: "saetze", wort: "Sätze", soll: 20, richtung: "≥" }] },
+             3: { umfang: { soll: 100, wort: "Sprachen (U_eff)" }, masse: [{ key: "rf", wort: "Robinson-Foulds des Stammbaums", soll: 0.3, richtung: "≤" }, { key: "anteil", wort: "Anteil der Bäume mit RF ≤ 0,3", soll: 0.7, richtung: "≥" }, { key: "familien", wort: "Sprachfamilien", soll: 5, richtung: "≥" }] },
+             4: { umfang: { soll: 1000, wort: "Sprachen (U_eff) mit Dialekt-Kontinua" }, masse: [{ key: "kl", wort: "KL der Laut-Verteilung", soll: 0.2, richtung: "≤" }, { key: "isoglossen", wort: "Isoglossen auf Barrieren", soll: 0.7, richtung: "≥" }] },
+-            5: { auge: { pose: POSE, vorbild: "Tonaufnahme einer realen, den Hörern unbekannten Sprache (Linguisten-Blindtest 2AFC ≤ 60 %); Satz ↔ Handlung ≥ 80 %" }, erwartet: "nicht", fehlt: "hörbare Sprachen: kein Laut einer Sprache" },
++            5: { auge: { pose: POSE, vorbild: "Tonaufnahme einer realen, den Hörern unbekannten Sprache (Linguisten-Blindtest 2AFC ≤ 60 %); Satz ↔ Handlung ≥ 80 %" } },
+             6: { umfang: { soll: 100000, wort: "Sprachstufen über Epochen" }, masse: [{ key: "swadesh", wort: "Swadesh-Retention je 1 000 J", von: 0.7, bis: 0.86 }, { key: "ursprache", wort: "Ursprache rekonstruiert", soll: 0.6, richtung: "≥" }], erwartet: "nicht", fehlt: "Sprachstufen: die Silben-Tafel ist zeitlos" },
+             7: { umfang: { soll: 1000000, wort: "Sprachen über Planeten" }, masse: [{ key: "treffen", wort: "Treffen am genannten Ort", soll: 0.8, richtung: "≥" }, { key: "zipf", wort: "Zipf-Exponent", von: 0.8, bis: 1.2 }], erwartet: "nicht", fehlt: "Sprachen über Planeten: eine Welt" },
+         },

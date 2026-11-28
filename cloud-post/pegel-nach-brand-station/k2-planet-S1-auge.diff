@@ -1,0 +1,16 @@
+diff --git a/meisterkarte-quelle/punkte/stationen/k2-planet.js b/meisterkarte-quelle/punkte/stationen/k2-planet.js
+index 3c4d1ee..3e8d281 100644
+--- a/meisterkarte-quelle/punkte/stationen/k2-planet.js
++++ b/meisterkarte-quelle/punkte/stationen/k2-planet.js
+@@ -6093,7 +6093,10 @@ return { n: d.length, p95: d.length ? d[Math.min(d.length - 1, Math.floor(0.95 *
+             aus[1] = {
+                 werte: { regenMaxMm: R(RF.werte.regenMaxMm), ueberAueM: RF.werte.ueberAueM == null ? null : R(RF.werte.ueberAueM), kroneM: R(RF.werte.kroneM) },
+                 zeuge: { adressen: RF.werte.adressen, saaten: RF.werte.saaten, stark: RF.werte.stark, bordvoll: RF.werte.bordvoll, streu: R(RF.werte.streuMm), hubMaxM: R(RF.werte.hubMaxM), gerissen: RF.gerissen, akte: RF.akte },
+-                auge: await M.auge("wetter-extreme-s1", { ort: "wiese" }, { wetter: "stormy" }),
++                // die Pose am Messort der Wiese (spec/profiband/haushalt.json, −280,4/−1045,6, Augenhöhe 1,7 m), der Blick auf ihren Fluss
++                // (−258,4/−1132,8, 90 m): ohne px schoss das Auge an der Kamera des Spiels, wo der Spieler stand — „kein nahWiese im
++                // Bild: 0.0 % < 15.0 %“ (GTX 1060, Kopf 0d0e4c05); hier zählt der Blickkegel 1–25 m 620 Büschel der Nah-Wiese, 1–8 m 62
++                auge: await M.auge("wetter-extreme-s1", { ort: "wiese", px: -280.4, py: "+1.7", pz: -1045.6, lx: -258.4, ly: "+0", lz: -1132.8 }, { wetter: "stormy" }),
+                 taeter: (RF.fehler.length && !RF.gemessen ? "Leser fehlt: " + RF.fehler[0].fehler + " · " : "") + "gelaende-core.js:1627 pegelHubVon deckelt den Hub an der Krone (Math.min(krone, h)), " + RF.werte.bordvoll + " von " + RF.gemessen + " Adressen bordvoll, " + RF.werte.stark + " mit ≥ " + stark + " mm — die Aue trägt den Überschuss „nicht gerechnet“ (gelaende-core.js:1569) · " + RF.akte,
+             };
+             // S2 die Hitzewelle: die längste Strecke klarer Worte (Spieltage) und der Überschuss der Temperatur des klaren Worts über

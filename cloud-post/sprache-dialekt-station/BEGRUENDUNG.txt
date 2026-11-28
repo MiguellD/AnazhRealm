@@ -1,0 +1,17 @@
+Kandidat der Bahn sprache-dialekt für karte2.mensch.kultur.sprache#5 „hörbare Sprachen“ (gegen punkte-maschine 8492fa85; der Kandidat für #4 ist dort gesetzt, ac8e987).
+Soll, Art „auge“ und Richter-Text bleiben unberührt: Umfang 7 000, Vorbild „Tonaufnahme … 2AFC ≤ 60 %; Satz ↔ Handlung ≥ 80 %“.
+
+Am main liest #5 den Umfang über `sprachen = z.regionen`, also die Regionen der geladenen Stadt (gemessen 2 < 7 000) → „nicht“.
+Der Kandidat liest zwei Dinge, beide aus dem Spiel:
+  · HOERBAR (neue Seite): je Familie ein Satz (fachwerk sprachSatz → sprachSilben) durch die Dauern und die Stimme des Spiels
+    (klang stimmRede → stimmPuffer, derselbe Puffer, den die Rede der Menge spricht). Hörbar heißt: Konsonanten als eigene Segmente.
+  · die Sprachen der Welt: dieselbe Seite MUNDART wie #4, über 48² Orte im Abstand 6,4 km (307 km) statt 1,6 km (77 km). Der
+    Umfang zählt die Welt (eine Funktion), nicht das Fenster des Dialekts.
+  Umfang = U_eff der Welt, wenn jede Familie hörbar ist, sonst 0. Bei n ≥ 7 000 macht die Station das Bild (Klasse P, das Blindpaar
+  urteilt). `erwartet: "nicht"` fällt bei #5 wie bei #4.
+
+Gemessen in node (Lage „welt-1“, 48² Orte, 6 Familien): U_eff 1 097 bei 1,6 km · 10 116 bei 6,4 km · 13 243 bei 25,6 km.
+HOERBAR: am Kopf 6 von 6 Familien, 98 von 157 Segmenten Konsonanten; am main b56b51f0 leer („fachwerk sprachSilben / klang
+stimmRede fehlt“) → Umfang 0 → „nicht“ (vorher ROT, nachher auge).
+Satz ↔ Handlung (Vorbild): gate:klang-zensus Mk 38 von 38 Sätzen tragen das Verb ihres Akts (SATZ_GESETZ.handlung), frei beim Zufall 0,05–0,17.
+Kosten: die zweite Seite MUNDART ohne Fächer ≈ 1–2 s, HOERBAR < 1 s.

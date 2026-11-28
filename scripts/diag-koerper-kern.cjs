@@ -238,6 +238,9 @@ function satzUrteil(mutante = null) {
         if (mutante === "tatOhneKunst") { const th = K.tagesHaltung, taten = Object.values(K.TAGES_GESETZ.rollen).map((R) => R.tat).filter(Boolean); K.tagesHaltung = (akt, rolle, s) => th(akt, rolle, s && taten.includes(akt) ? { krank: s.krank, uebung: { haupt: null } } : s); } // prettier-ignore
         // (kunst-am-leib) der Leib liest die Stufe nicht: Tun und Profil des Namens ohne das Wort der Stufe (der Stand vor dem Gesetz des Könnens)
         if (mutante === "leibOhneKunst") { const stufen = K.LEIB_SATZ.stufe.map((s) => s.wort), ohne = (nm) => nm.split(K.LEIB_SATZ.trenner).filter((w) => !stufen.includes(w)).join(K.LEIB_SATZ.trenner), tun = K.leibStandTun, pr = K.leibSatzProfil; K.leibStandTun = (nm) => tun(typeof nm === "string" ? ohne(nm) : nm); K.leibSatzProfil = (M, nm) => pr(M, typeof nm === "string" ? ohne(nm) : nm); } // prettier-ignore
+        // (kunst-am-leib 3) das Brett im Leib des Werks: der Spieler am Brett steht wie der Handwerker (der Stand von Kopf 2)
+        if (mutante === "standbildWieMeister") { const pr = K.leibSatzProfil, keys = Object.keys(K.LEIB_SATZ.koennen.pose), merk = new Map(); K.leibSatzProfil = (M, nm) => { const p = pr(M, nm); if (typeof nm !== "string" || !p || !/lehrling|geselle/.test(nm)) return p; if (!merk.has(p)) { const q = pr(M, nm.replace(/lehrling|geselle/, "meister")); merk.set(p, Object.freeze(Object.assign({}, p, Object.fromEntries(keys.map((k) => [k, q[k]]))))); } return merk.get(p); }; } // prettier-ignore
+        if (mutante === "brettWieWerk") { const th = K.tagesHaltung; K.tagesHaltung = (akt, ro, satz) => th(akt === "brett" ? "arbeit" : akt, ro, satz); } // prettier-ignore
         // (kunst-am-leib 2) die Kunst hängt am Tor der Rolle: die Rolle ohne Haltung steht in jedem Akt neutral, auch im Zweikampf (der Stand vor Kopf 2)
         if (mutante === "kunstAmTor") { const th = K.tagesHaltung; K.tagesHaltung = (akt, ro, satz) => { const R = K.TAGES_GESETZ.rollen[ro]; return R && R.haltung === false ? (satz && satz.krank === true ? "idle" + K.LEIB_SATZ.trenner + "krank" : null) : th(akt, ro, satz); }; } // prettier-ignore
     };
@@ -392,13 +395,58 @@ function satzUrteil(mutante = null) {
     const faelle = [["arbeit", null], ["zweikampf", null], ["brett", null], ["hieb", null]];
     for (const ro of tor) for (const akt of ["zweikampf", "brett", "hieb"]) faelle.push([akt, ro]);
     let gleich = true;
+    const leib = {}; // (kunst-am-leib 3) je Kunst der Leib des Meisters: der Grund seines Namens und seine Spur
     for (const [akt, ro] of faelle) {
         const [m, l] = [zeige(akt, 1.05, ro), zeige(akt, 0.3, ro)];
+        if (!ro) leib[akt] = { grund: String(m.name).split(K.LEIB_SATZ.trenner)[0], spur: m.spur };
         gleich = gleich && zeige(akt, 0.3, ro).spur === l.spur;
         const f = (x) => x.toFixed(3);
         const z = `${akt}${ro ? " (" + ro + ")" : ""} ${m.name} ↔ ${l.name}: Züge ${m.zuege} ↔ ${l.zuege} · CV ${f(m.cv)} ↔ ${f(l.cv)} · Teile ${f(m.teile)} ↔ ${f(l.teile)} · Hüfte ${(1000 * m.schwanken).toFixed(2)} ↔ ${(1000 * l.schwanken).toFixed(2)} mrad`; // prettier-ignore
         kunst.push(z);
         if (!(m.zuege > 0 && l.zuege > 0 && l.zuege < m.zuege && l.cv >= 2 * m.cv && m.teile <= 1.05 && l.teile >= m.teile + 0.5 && l.schwanken >= 1.5 * m.schwanken)) rot.push(`L7 der Leib zeigt sein Können nicht: ${z} (Soll: beide greifen, der Lehrling seltener, CV ≥ 2×, Teile Meister ≤ 1,05 und Lehrling ≥ +0,5, Hüfte ≥ 1,5×) — Täter: koerper leibKunst · leibStandTun · leibTunWert · leibSatzProfil`); // prettier-ignore
+    }
+    // drei Künste, drei Leiber: Werk, Zweikampf und Brett tragen je ihr eigenes Profil und ihre eigene Spur — sonst trennt der Blick
+    // am Blindpaar zwei Künste nicht (der Meister der OMEN, kunst#1 am Bündel-Kopf 08098b8f: handwerk und brett „pwalk ↔ pwalk“)
+    const drei = ["arbeit", "zweikampf", "brett"].map((a) => leib[a] || { grund: null, spur: a });
+    aus.leiber = drei.map((x, i) => `${["arbeit", "zweikampf", "brett"][i]} ${x.grund}`).join(" · ");
+    if (new Set(drei.map((x) => x.grund)).size < 3 || new Set(drei.map((x) => x.spur)).size < 3) rot.push(`L7 der Leib zeigt sein Können nicht als drei Künste: ${aus.leiber} — zwei Künste tragen denselben Leib — Täter: koerper TAGES_GESETZ.haltung · MOTION · STAND.tun`); // prettier-ignore
+    // (kunst-am-leib 3, Post des Koordinators 18:10) DAS STANDBILD: der blinde Prüfer sieht EIN Bild, nicht den Takt. Je Kunst an 20
+    // Phasen (fest gelost über 3 Zyklen) die Winkel des Leibs der Welt (Guss + `_animateHumanoidRig`, die Wurzel der Hüfte mit) —
+    // Rumpf (Becken → Mitte der Schultern gegen das Lot), Blick unter der Waagrechten, Schultern gegen das Lot, Ellbogen, Knie, die
+    // rechte Hand über dem Becken. Ein Merkmal ZÄHLT, wenn |Meister − Lehrling| an ≥ 80 % der Phasen über seiner Streuung liegt (die
+    // größere SD der Phase von beiden) UND über der Schwelle des Sichtbaren (5° · 5 cm, ANGENOMMEN — die kleinste Zahl der Quelle,
+    // Takayasu 2019, sind 7°); eine Phase ist trennbar, wenn ein zählendes Merkmal dort darüber liegt. Soll: ≥ 16 von 20 je Kunst.
+    {
+        const qM = (a, b) => [a[3] * b[0] + a[0] * b[3] + a[1] * b[2] - a[2] * b[1], a[3] * b[1] - a[0] * b[2] + a[1] * b[3] + a[2] * b[0], a[3] * b[2] + a[0] * b[1] - a[1] * b[0] + a[2] * b[3], a[3] * b[3] - a[0] * b[0] - a[1] * b[1] - a[2] * b[2]]; // prettier-ignore
+        const qR = (q, v) => qM(qM(q, [v[0], v[1], v[2], 0]), [-q[0], -q[1], -q[2], q[3]]).slice(0, 3);
+        const lage = (J, nm) => { let p = [0, 0, 0]; for (let j = J[nm]; j; j = J[j.parent]) { p = qR(j.quat, p.map((x, i) => x * j.scale[i])); p = p.map((x, i) => x + j.pos[i]); } return p; }; // prettier-ignore
+        const sub = (a, b) => a.map((v, i) => v - b[i]), mit = (a, b) => a.map((v, i) => (v + b[i]) / 2); // prettier-ignore
+        const wk = (a, b) => (Math.acos(Math.max(-1, Math.min(1, (a[0] * b[0] + a[1] * b[1] + a[2] * b[2]) / (Math.hypot(...a) * Math.hypot(...b))))) * 180) / Math.PI; // prettier-ignore
+        const J0 = Object.fromEntries(K.leibGussGestellt(guss, (rig) => K.leibRigNeutral(rig)).userData.__skelett.joints.map((j) => [j.name, j])); // prettier-ignore
+        const cm = (100 * 1.8 * 0.83) / (lage(J0, "head")[1] - lage(J0, "ankle1")[1]);
+        const bild = (gem, t) => {
+            let hx = 0, hz = 0; // prettier-ignore
+            const J = Object.fromEntries(K.leibGussGestellt(guss, (rig) => { r._animateHumanoidRig(rig, t, 0, false, false, gem); hx = rig.hips.rotation.x; hz = rig.hips.rotation.z; }).userData.__skelett.joints.map((j) => [j.name, j])); // prettier-ignore
+            const P = {};
+            for (const nm of ["mensch", "head", "eyeL", "eyeR", "arm1", "arm-1", "elbow1", "elbow-1", "hand1", "hand-1", "hip1", "hip-1", "knee1", "knee-1", "ankle1", "ankle-1"]) { let [x, y, z] = lage(J, nm); [y, z] = [y * Math.cos(hx) - z * Math.sin(hx), y * Math.sin(hx) + z * Math.cos(hx)]; [x, y] = [x * Math.cos(hz) - y * Math.sin(hz), x * Math.sin(hz) + y * Math.cos(hz)]; P[nm] = [x, y, z]; } // prettier-ignore
+            const nase = mit(P.eyeL, P.eyeR), gl = (s) => 180 - wk(sub(P["arm" + s], P["elbow" + s]), sub(P["hand" + s], P["elbow" + s])), kn = (s) => 180 - wk(sub(P["hip" + s], P["knee" + s]), sub(P["ankle" + s], P["knee" + s])); // prettier-ignore
+            return { rumpf: wk(sub(mit(P.arm1, P["arm-1"]), P.mensch), [0, 1, 0]), blick: Math.sign(P.head[1] - nase[1] || 1) * wk(sub(nase, P.head), [0, 0, 1]), schulterL: wk(sub(P.elbow1, P.arm1), [0, -1, 0]), schulterR: wk(sub(P["elbow-1"], P["arm-1"]), [0, -1, 0]), ellbogenL: gl("1"), ellbogenR: gl("-1"), knieL: kn("1"), knieR: kn("-1"), handCm: cm * (P["hand-1"][1] - P.mensch[1]) }; // prettier-ignore
+        };
+        let los = 12345;
+        const PH = [...Array(20)].map(() => ((los = (los * 1103515245 + 12345) % 2147483648) / 2147483648) * 3 * K.STAND.zyklus);
+        aus.standbild = [];
+        for (const akt of ["arbeit", "zweikampf", "brett"]) {
+            const [WM, WL] = [1.05, 0.3].map((k) => { const gem = r._bewohnerGemuet({ akt, rolle: null, krank: false, uebung: gut(k), leib: null }); return PH.map((t) => bild(gem, t)); }); // prettier-ignore
+            const je = PH.map(() => false), zaehlt = [];
+            for (const n of Object.keys(WM[0])) {
+                const m = WM.map((x) => x[n]), l = WL.map((x) => x[n]), s = Math.max(sdv(m), sdv(l), 5); // die Schwelle: 5° je Winkel, 5 cm die Hand
+                const ueber = m.map((x, i) => Math.abs(x - l[i]) > s);
+                if (ueber.filter(Boolean).length >= 16) (zaehlt.push(`${n} ${(mw(l) - mw(m)).toFixed(1)}${n === "handCm" ? " cm" : "°"}`), ueber.forEach((u, i) => u && (je[i] = true))); // prettier-ignore
+            }
+            const n = je.filter(Boolean).length;
+            aus.standbild.push(`${akt} ${n} von 20 [${zaehlt.join(" · ") || "kein Merkmal"}]`);
+            if (n < 16) rot.push(`L7 der Leib zeigt sein Können nicht im Standbild: ${akt} trennbar an ${n} von 20 Phasen [${zaehlt.join(" · ") || "kein Merkmal über Streuung und Schwelle"}] (Soll ≥ 16) — Täter: koerper LEIB_SATZ.koennen.pose · leibSatzProfil`); // prettier-ignore
+        }
     }
     const posten = [];
     for (const ro of tor) for (const k of [1.05, 0.3]) for (const krank of [false, true]) { const h = r._bewohnerGemuet({ akt: "arbeit", rolle: ro, krank, uebung: gut(k), leib: null }).haltung; if (h !== (krank ? "idle" + K.LEIB_SATZ.trenner + "krank" : null)) posten.push(`${ro} ${k}${krank ? " krank" : ""}: ${h}`); } // prettier-ignore
@@ -905,6 +953,12 @@ function verbenUrteil(C0, mutante = null) {
 // die Reduktion (Kohle je kg Erz ≥ ihr Kohlenstoff der Verhüttung) und seine Energie ist die Zeile der Kohle (Kohlenstoff × ΔfH
 // CO₂). Täter: „Barren ohne Kohle" (der Ofen brennt ohne Stapel — der Stand vor rennofen: 34 Barren aus 941,7 kg Erz bei 0 kg
 // Kohle), „der Stapel sinkt nicht".
+// DAS WERKSTÜCK TRÄGT DIE HAND (Meisterkarte 2 mensch.sport.kunst#2, schmiede `gueteAnteil(…, hand)` · `handFehler`, koerper
+// `stoffstromFassen` · `bestandHalter.koennen`): D11 die zwei Öfen tragen die Hände 0,55 (der Lehrling) und 1,4 (der Meister); jedes
+// Werkzeug in der Hand trägt das Können seines Schmieds (je Stück eine der zwei Hände, beide geben), seine Güte ist die der Gestalt
+// mal (1 − Fehler der Hand), und über ≥ 10 Stücke erklärt die Hand die Güte (R² ≥ 0,7, der Meister über dem Lehrling); das Band
+// der Hand ist die Quelle (Birkmeyer 2013: der Fehler am Band der Guten 5,2 %, 14,5 % ↔ k 0,36). Täter: „die Güte ohne die Hand"
+// (der Stand vor kunst#2: die Güte las Rezept und Prägung, R² 0), „das Stück vergisst seinen Schmied" (die Kette zählt nur).
 function stoffstromUrteil(C0, S0, mutante = null) {
     const C = Object.assign({}, C0);
     const ST = S0 && S0.STOFFSTROM ? Object.assign({}, S0.STOFFSTROM) : null;
@@ -941,6 +995,13 @@ function stoffstromUrteil(C0, S0, mutante = null) {
             K.kohleKg = K.kohle0;
             return n;
         };
+    if (mutante === "stueckOhneSchmied")
+        C.stoffstromFassen = (K, h) => {
+            const n = C0.stoffstromFassen(K, h);
+            if (K.hand) K.hand.fill(1); // die Kette zählt Werkzeuge, ihr Schmied fällt
+            return n;
+        };
+    const gueteAnteil = S0 && (mutante === "gueteOhneHand" ? (id, ov) => S0.gueteAnteil(id, ov) : S0.gueteAnteil);
     if (mutante === "bilanz" && ST)
         ST.verhuettung = (kg, erz) => Object.assign({}, S0.STOFFSTROM.verhuettung(kg, erz), { eisen: S0.STOFFSTROM.verhuettung(kg, erz).eisen * 1.1 });
     const h0 = 3 * 24 + 6;
@@ -968,8 +1029,10 @@ function stoffstromUrteil(C0, S0, mutante = null) {
     if (!F || !(F.kohle >= F.reduktion) || !(F.energie > 0))
         rot.push(`D10 das Feuer trägt die Reduktion nicht: Kohle je kg Erz ${F ? F.kohle : "—"} kg, ihr Kohlenstoff der Verhüttung ${F ? F.reduktion.toFixed(4) : "—"} kg, Energie ${F ? F.energie : "—"} J (schmiede STOFFSTROM.feuer)`);
     const kohleJeErz = F ? F.kohle : 0;
+    const HAENDE = [0.55, 1.4];
     const lauf = (schritt, leer = false) => {
         const oefen = [ofen(4242), ofen(12345)];
+        [oefen[0].koennen, oefen[1].koennen] = HAENDE; // der Lehrling und der Meister (D11)
         let K = null;
         try {
             K = C.stoffstromHalter(oefen, h0, ausbeute, werkzeugKg, 12, 7, kohleJeErz);
@@ -1027,7 +1090,23 @@ function stoffstromUrteil(C0, S0, mutante = null) {
     const M = lauf(0.37);
     const gleich = !M.fehler && Math.abs(M.K.haldeKg - K.haldeKg) < 1e-9 && Math.abs(M.K.kohleKg - K.kohleKg) < 1e-9 && M.K.reisen === K.reisen && M.K.werkzeug === K.werkzeug && M.K.haende === K.haende && M.K.barren === K.barren;
     if (!gleich) rot.push(`D7 die Kette hängt am Rufmuster: in 0,37-h-Rufen Halde ${M.K ? M.K.haldeKg.toFixed(3) : "—"} kg, ${M.K ? M.K.werkzeug : "—"} Werkzeuge gegen ${K.haldeKg.toFixed(3)} kg, ${K.werkzeug}`);
-    return { rot, halde0: K.halde0, halde: K.haldeKg, barren, haende: K.haende, werkzeug: K.werkzeug, gegossen: K.barren, erz: K.erz, eisen: K.eisen, ausbeute, werkzeugKg, kohle0: K.kohle0, kohleKg: K.kohleKg, kohle: K.kohle, reisen: K.reisen, kalt: K.kalt, mj: F ? F.energie / 1e6 : 0, gegen: O.K ? O.K.barren : null };
+    // D11 das Werkstück trägt die Hand
+    const st = (K.hand || []).map((k) => ({ k, g: typeof gueteAnteil === "function" ? gueteAnteil(ST.werkzeug, null, k) : null }));
+    const xs = st.map((p) => p.k), ys = st.map((p) => p.g);
+    const r2 = (() => {
+        if (st.length < 3 || ys.some((y) => typeof y !== "number")) return 0;
+        const mx = xs.reduce((a, x) => a + x, 0) / xs.length, my = ys.reduce((a, y) => a + y, 0) / ys.length;
+        let [sxx, sxy, syy] = [0, 0, 0];
+        for (let i = 0; i < st.length; i++) [sxx, sxy, syy] = [sxx + (xs[i] - mx) ** 2, sxy + (xs[i] - mx) * (ys[i] - my), syy + (ys[i] - my) ** 2];
+        return sxx > 1e-12 && syy > 1e-12 ? (sxy * sxy) / (sxx * syy) : 0;
+    })();
+    const gVon = (k) => (st.find((p) => p.k === k) || {}).g;
+    const [gL, gM] = HAENDE.map(gVon);
+    const band = S0 && typeof S0.handFehler === "function" ? [S0.handFehler(1), S0.handFehler(0.36)] : [null, null];
+    const hand = { stuecke: st.length, lehrling: st.filter((p) => p.k === HAENDE[0]).length, meister: st.filter((p) => p.k === HAENDE[1]).length, gL, gM, r2, band };
+    if (st.length !== K.haende || st.length < 10 || !hand.lehrling || !hand.meister || st.some((p) => !HAENDE.includes(p.k)) || !(r2 >= 0.7) || !(gM > gL) || !(Math.abs(band[0] - 0.052) < 1e-9) || !(Math.abs(band[1] - 0.145) < 0.002))
+        rot.push(`D11 das Werkstück trägt nicht die Hand: ${st.length} Stücke in ${K.haende} Händen (Lehrling ${hand.lehrling} · Meister ${hand.meister}), Güte ${gL == null ? "—" : gL.toFixed(4)} ↔ ${gM == null ? "—" : gM.toFixed(4)}, R² Güte ↔ Hand ${r2.toFixed(3)} (Soll ≥ 0,7 über ≥ 10), Fehler der Hand am Band der Guten ${band[0]} · bei k 0,36 ${band[1]} (Soll 0,052 · 0,145) — schmiede gueteAnteil(…, hand) · koerper stoffstromFassen`);
+    return { rot, halde0: K.halde0, halde: K.haldeKg, barren, haende: K.haende, werkzeug: K.werkzeug, gegossen: K.barren, erz: K.erz, eisen: K.eisen, ausbeute, werkzeugKg, kohle0: K.kohle0, kohleKg: K.kohleKg, kohle: K.kohle, reisen: K.reisen, kalt: K.kalt, mj: F ? F.energie / 1e6 : 0, gegen: O.K ? O.K.barren : null, hand };
 }
 
 // TEIL E — DIE REGEL-GRAMMATIK (Meisterkarte 2 mensch.sport.regeln#1 · mannschaft#1 · arena#1 · geistspiel#1; koerper
@@ -1563,7 +1642,7 @@ if (SELBSTTEST) {
     // die Stoffstrom-Kette: das Gesetz hält, jeder Täter fällt ROT beim Namen
     const sc = globalThis.__schmiedeCore;
     const sGut = !stoffstromUrteil(core, sc).rot.length;
-    const stoffTaeter = [["ohneKette", "D0 die Esse schmilzt kein Erz"], ["ausNichts", "D6 das Eisen entsteht aus dem Nichts"], ["erzeugt", "D4 die Kette erzeugt Eisen"], ["haldeVoll", "D1 die Halde schrumpft nicht"], ["ohneHand", "D3 kein Werkzeug in der Hand"], ["bilanz", "D5 die Verhüttung erzeugt Masse"], ["ohneKohle", "D8 Barren ohne Kohle"], ["stapelVoll", "D9 der Stapel sinkt nicht"]].map(([m, z]) => [sGut && stoffstromUrteil(core, sc, m).rot.some((r) => r.startsWith(z)), z]);
+    const stoffTaeter = [["ohneKette", "D0 die Esse schmilzt kein Erz"], ["ausNichts", "D6 das Eisen entsteht aus dem Nichts"], ["erzeugt", "D4 die Kette erzeugt Eisen"], ["haldeVoll", "D1 die Halde schrumpft nicht"], ["ohneHand", "D3 kein Werkzeug in der Hand"], ["bilanz", "D5 die Verhüttung erzeugt Masse"], ["ohneKohle", "D8 Barren ohne Kohle"], ["stapelVoll", "D9 der Stapel sinkt nicht"], ["gueteOhneHand", "D11 das Werkstück trägt nicht die Hand"], ["stueckOhneSchmied", "D11 das Werkstück trägt nicht die Hand"]].map(([m, z]) => [sGut && stoffstromUrteil(core, sc, m).rot.some((r) => r.startsWith(z)), z]);
     // die Verben aus der Gestalt: das Gesetz hält, jeder Täter fällt ROT beim Namen
     const vGut = !verbenUrteil(core).rot.length;
     const verbenTaeter = [["Literal", "V1 Gehen"], ["Literal", "V3 Sprung"], ["refKg", "V6 die Masse kürzt sich nicht"], ["gleitet", "V5 der Sprint ist kein Punkt des Gangs"], ["Tafel", "V7 die Verb-Tafel"], ["Prosa", "V7 die Verb-Tafel"], ["Stufe", "V8 die Gang-Pose"]].map(([m, z]) => [vGut && verbenUrteil(core, m).rot.some((r) => r.startsWith(z)), `Verben ${m} ${z}`]);
@@ -1575,7 +1654,7 @@ if (SELBSTTEST) {
     const eTaeter = [[jederMorgenVon(core.tagesPlan), null, "M1", "jederMorgen"], [ausWerkVon(core.tagesPlan), null, "M1", "ausWerk"], [fuerSichVon(core.tagesPlan), null, "M1", "fuerSich"], [spaeterMarktVon(core, core.tagesPlan), null, "M2", "spaeterMarkt"], [core.tagesPlan, kindKauftVon(core.tagesEinkaeufer), "M5", "kindKauft"]].map(([P, E, m, name]) => [!ekGut.length && einkaufRot(einkaufUrteil(core, P, E || core.tagesEinkaeufer)).some((z) => z.startsWith(m + " ")), `Einkauf ${name} ${m}`]); // prettier-ignore
     // der Satz des Leibs: das Gesetz hält, jeder Täter fällt ROT beim Namen (leib-liest-satz)
     const saGut = !satzUrteil().rot.length;
-    const satzTaeter = [["alt", "L1 der Kranke steht wie der Gesunde"], ["ohneStufe", "L2 der Lehrling steht wie der Meister"], ["einmalRate", "L3 die Güte steht über der Übung still"], ["ohneWetter", "L4 die Tracht liest das Wetter nicht"], ["ohneZeile", "L5 der ferne Satz trägt die Namen des Satzes nicht"], ["tatOhneKunst", "L6 die Tat der Rolle liest den Satz nicht"], ["leibOhneKunst", "L7 der Leib zeigt sein Können nicht"], ["kunstAmTor", "L7 der Leib zeigt sein Können nicht"]].map(([m, z]) => { const rr = satzUrteil(m).rot; console.log(`  ${saGut && rr.some((x) => x.startsWith(z)) ? "✅" : "⛔"} Satz-Täter „${m}“ → ROT an ${z.split(" ")[0]}`); return [saGut && rr.some((x) => x.startsWith(z)), "Satz " + m + " " + z]; }); // prettier-ignore
+    const satzTaeter = [["alt", "L1 der Kranke steht wie der Gesunde"], ["ohneStufe", "L2 der Lehrling steht wie der Meister"], ["einmalRate", "L3 die Güte steht über der Übung still"], ["ohneWetter", "L4 die Tracht liest das Wetter nicht"], ["ohneZeile", "L5 der ferne Satz trägt die Namen des Satzes nicht"], ["tatOhneKunst", "L6 die Tat der Rolle liest den Satz nicht"], ["leibOhneKunst", "L7 der Leib zeigt sein Können nicht"], ["kunstAmTor", "L7 der Leib zeigt sein Können nicht"], ["brettWieWerk", "L7 der Leib zeigt sein Können nicht als drei Künste"], ["standbildWieMeister", "L7 der Leib zeigt sein Können nicht im Standbild"]].map(([m, z]) => { const rr = satzUrteil(m).rot; console.log(`  ${saGut && rr.some((x) => x.startsWith(z)) ? "✅" : "⛔"} Satz-Täter „${m}“ → ROT an ${z.split(" ")[0]}`); return [saGut && rr.some((x) => x.startsWith(z)), "Satz " + m + " " + z]; }); // prettier-ignore
     const ankGut = ankunftUrteil(core, 0.4), ankWende = ankunftUrteil(core, 0.4, "zurWende");
     const uGut = eigeneUhr(stammTexte()), uTaeter = eigeneUhr([["stamm/probe.js", "        const soll = KC.tagesPlan(b.same, b.rolle, stunde, o, regen, b.krank);"]]);
     // die Rolle und ihr Tages-Angebot: das Gesetz hält, jeder Täter fällt ROT beim Namen
@@ -1587,7 +1666,7 @@ if (SELBSTTEST) {
             console.log(`⛔ Selbsttest: ${n}-Injektion NICHT erkannt`);
             fails++;
         }
-    urteilEnde(fails, "❌ ROT — die Linse ist blind.", `✅ Selbsttest: alle neunundsechzig injizierten Abweichungen erkannt (${t1.diffs}/${t2.diffs}/${t3.diffs} Treffer, die Wache, das Verb, fünf Täter des Stoßes, drei Täter des Bestands, drei Täter der Acker-Kette, fünf Täter des Könnens, acht Täter der Stoffstrom-Kette, sieben Täter der Verben aus der Gestalt, neun Täter der Regel-Grammatik, sieben Täter des Einkaufs und der Ankunft zur Stunde, elf Täter der Rolle und ihres Tages-Angebots, sechs Täter des Satzes des Leibs).`);
+    urteilEnde(fails, "❌ ROT — die Linse ist blind.", `✅ Selbsttest: alle fünfundsiebzig injizierten Abweichungen erkannt (${t1.diffs}/${t2.diffs}/${t3.diffs} Treffer, die Wache, das Verb, fünf Täter des Stoßes, drei Täter des Bestands, drei Täter der Acker-Kette, fünf Täter des Könnens, zehn Täter der Stoffstrom-Kette, sieben Täter der Verben aus der Gestalt, neun Täter der Regel-Grammatik, sieben Täter des Einkaufs und der Ankunft zur Stunde, elf Täter der Rolle und ihres Tages-Angebots, zehn Täter des Satzes des Leibs).`);
 }
 
 const r = runVergleich(neuMorph, core.labProportionen, core.labLandmarks);
@@ -1598,7 +1677,7 @@ if (verb.length < 2) st.rot.push(`VERB die Stadt um 12 Uhr steht in ${verb.lengt
 console.log(`  VERB die Stadt um 12 Uhr: ${verb.join(" · ")}`);
 const sa = satzUrteil();
 for (const z of sa.rot) st.rot.push("SATZ " + z);
-console.log(`  SATZ des Leibs: L1 ${sa.krank.anders} von ${sa.krank.n} Kranken stehen anders · L2 ${sa.paare.length} von 3 Künsten trennen Meister und Lehrling [${sa.paare.join(" · ")}] · L3 R² ${sa.uebung.r2 == null ? "—" : sa.uebung.r2.toFixed(3)} über ${sa.uebung.spanne.toFixed(0)} h (Steigung ${sa.uebung.steigung == null ? "—" : sa.uebung.steigung.toFixed(4)}, Band ${Number.isFinite(sa.uebung.soll) ? sa.uebung.soll.toFixed(4) : "—"}) · L4 Lagen am Dorf Sommer ${sa.lagen.sommer.toFixed(3)} · Winter ${sa.lagen.winter.toFixed(3)} · Regen ${sa.lagen.regen.toFixed(3)} · L5 ${sa.namen} Namen im Satz · L6 ${sa.tat.length} Rollen mit Tat lesen den Satz [${sa.tat.join(" · ")}] · L7 der Leib zeigt sein Können [${sa.kunst.join(" · ")}] · ${sa.posten}`);
+console.log(`  SATZ des Leibs: L1 ${sa.krank.anders} von ${sa.krank.n} Kranken stehen anders · L2 ${sa.paare.length} von 3 Künsten trennen Meister und Lehrling [${sa.paare.join(" · ")}] · L3 R² ${sa.uebung.r2 == null ? "—" : sa.uebung.r2.toFixed(3)} über ${sa.uebung.spanne.toFixed(0)} h (Steigung ${sa.uebung.steigung == null ? "—" : sa.uebung.steigung.toFixed(4)}, Band ${Number.isFinite(sa.uebung.soll) ? sa.uebung.soll.toFixed(4) : "—"}) · L4 Lagen am Dorf Sommer ${sa.lagen.sommer.toFixed(3)} · Winter ${sa.lagen.winter.toFixed(3)} · Regen ${sa.lagen.regen.toFixed(3)} · L5 ${sa.namen} Namen im Satz · L6 ${sa.tat.length} Rollen mit Tat lesen den Satz [${sa.tat.join(" · ")}] · L7 der Leib zeigt sein Können [${sa.kunst.join(" · ")}] · ${sa.posten} · Leiber ${sa.leiber} · Standbild ${(sa.standbild || []).join(" · ")}`);
 const be = bestandUrteil(core);
 for (const z of be.rot) st.rot.push("BESTAND " + z + " — Täter: koerper BESTAND_GESETZ");
 const ak = typeof core.scheuneFassen === "function" && typeof globalThis.__phytoCore.ackerStand === "function"
@@ -1608,7 +1687,7 @@ for (const z of ak.rot) st.rot.push("ACKER " + z + " — Täter: koerper scheune
 if (!ak.rot.length) console.log(`  ACKER Scheune: ${ak.ernten} Ernten in 5 Tagen, steigt an ${ak.steigt}, fällt an ${ak.faellt} Tagen, am Ende ${ak.voll.toFixed(2)} · Frucht bis ${ak.hoch.toFixed(2)} m`);
 const sk = stoffstromUrteil(core, globalThis.__schmiedeCore);
 for (const z of sk.rot) st.rot.push("STOFFSTROM " + z + " — Täter: koerper stoffstromHalter · stoffstromFassen · schmiede STOFFSTROM");
-if (!sk.rot.length) console.log(`  STOFFSTROM Halde ${sk.halde0.toFixed(1)} → ${sk.halde.toFixed(1)} kg in 7 Tagen (Erz ${sk.erz.toFixed(1)} kg, Ausbeute ${sk.ausbeute.toFixed(4)}, Eisen ${sk.eisen.toFixed(2)} kg) · ${sk.gegossen} Barren gegossen, ${sk.barren} am Ofen · ${sk.werkzeug} Werkzeuge zu je ${sk.werkzeugKg.toFixed(3)} kg Eisen, ${sk.haende} in der Hand · RENNOFEN ${sk.reisen} Ofenreisen, Kohle-Stapel ${sk.kohle0.toFixed(1)} → ${sk.kohleKg.toFixed(1)} kg (${sk.kohle.toFixed(1)} kg verbrannt, ${(sk.kohle * sk.mj).toFixed(0)} MJ, ${((sk.kohle * sk.mj) / Math.max(1e-9, sk.eisen)).toFixed(1)} MJ je kg Luppe), ${sk.kalt.toFixed(1)} h kalt · Gegenlauf ohne Kohle ${sk.gegen} Barren`);
+if (!sk.rot.length) console.log(`  STOFFSTROM Halde ${sk.halde0.toFixed(1)} → ${sk.halde.toFixed(1)} kg in 7 Tagen (Erz ${sk.erz.toFixed(1)} kg, Ausbeute ${sk.ausbeute.toFixed(4)}, Eisen ${sk.eisen.toFixed(2)} kg) · ${sk.gegossen} Barren gegossen, ${sk.barren} am Ofen · ${sk.werkzeug} Werkzeuge zu je ${sk.werkzeugKg.toFixed(3)} kg Eisen, ${sk.haende} in der Hand · RENNOFEN ${sk.reisen} Ofenreisen, Kohle-Stapel ${sk.kohle0.toFixed(1)} → ${sk.kohleKg.toFixed(1)} kg (${sk.kohle.toFixed(1)} kg verbrannt, ${(sk.kohle * sk.mj).toFixed(0)} MJ, ${((sk.kohle * sk.mj) / Math.max(1e-9, sk.eisen)).toFixed(1)} MJ je kg Luppe), ${sk.kalt.toFixed(1)} h kalt · Gegenlauf ohne Kohle ${sk.gegen} Barren · HAND ${sk.hand.stuecke} Stücke in der Hand (Lehrling 0,55: ${sk.hand.lehrling} · Meister 1,4: ${sk.hand.meister}), Güte ${sk.hand.gL.toFixed(4)} ↔ ${sk.hand.gM.toFixed(4)}, R² Güte ↔ Hand ${sk.hand.r2.toFixed(3)}, Fehler der Hand ${sk.hand.band[0]} am Band der Guten · ${sk.hand.band[1].toFixed(4)} bei k 0,36`);
 const sp = spielUrteil(core);
 for (const z of sp.rot) st.rot.push("SPIEL " + z + " — Täter: koerper SPIEL_GESETZ · spielProgramm · spielKampf · spielBrett · spielGeschehen · tagesPlan");
 if (!sp.rot.length) console.log(`  SPIEL ${sp.laeufe} Läufe (${sp.laeufer} Läufer): ρ Laufzeit ↔ Leib ${sp.rho.toFixed(3)} (je Lauf ${sp.rhoLauf.toFixed(3)}) · ${sp.kaempfe} Gänge des Zweikampfs: der Stärkere siegt ${(100 * sp.quote).toFixed(1)} % · ${sp.partien} Partien am Brett, ${sp.zuege} Züge, ${sp.widrig} regelwidrig, ${sp.siege} mit Reihe · Ring bis ${sp.zuschauerMax} Zuschauer, Blick am Geschehen ${(100 * sp.blick).toFixed(1)} % von ${sp.proben} (seitab ${(100 * sp.seitab).toFixed(1)} % von ${sp.seit}) · der Tag stellt ${sp.e5}/${sp.e5n} Auftritte · der Raum des Stands: ${sp.raumN} Paare ≥ ${sp.standM} m, das nächste ${sp.raumMin.toFixed(2)} m · der Abend trägt den Weg: ${sp.wegeN} Gäste an ${sp.wegeAbende} Abenden, höchstens ${sp.wegeMax} Wege (${sp.wegeKurz}× sah der Kern ein Stück unter 0,05 h)`); // prettier-ignore

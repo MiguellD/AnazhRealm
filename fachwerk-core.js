@@ -4774,31 +4774,43 @@
     //    Lenisierung zwischen Vokalen, Apokope, Hebung, die zweite Lautverschiebung, Rhotazismus, Monophthongierung, Affrizierung vor
     //    i/u, h-Schwund. Die Anteile der Silben (Cluster, Koda, Endung) dreht das Blatt um ±25 %.
     // Leser: `ORTSNAME`, der Wirt (`_bewohnerLauf`: Vor- und Familienname), die Station (der Zweier-Laut-Leser ordnet je Name die Region zu).
+    //  · DIE SCHRIFT UND DER EINSATZ (sprache#5, die Lautung des Satzes `sprachSilben`): `schrift` der Lautwert der Buchstaben, die
+    //    die Familie anders liest als die Tafel `SPRACH_LAUTE` (z als [ts] im Deutschen und Italienischen, w als [v] im Deutschen und
+    //    Nordischen); `einsatz` die Stimmhaftigkeit am Verschluss (Lisker & Abramson 1964, Word 20: die Sprachen mit zwei Plosiv-Reihen
+    //    trennen sie entweder als behaucht gegen kurz verzögert — Englisch — oder als unbehaucht gegen vorstimmhaft — Niederländisch,
+    //    Spanisch); die Zuordnung der Familien folgt ihren Vorbildern (QUELLE UNGEPRUEFT für das Deutsche, Nordische, Japanische und
+    //    Lateinische: dort nicht gemessen). Leser: klang `stimmPuffer` (`STIMME.einsatz`).
     // prettier-ignore
     var SPRACHE_GESETZ = {
       // komplex (12A), groß (1A), 7 Vokale + Zwielaute (2A): Cluster im An- und Auslaut, die Folgesilbe auf e (die Schwa-Silbe)
       mitteleuropa: { anlaut:['b','d','s','h','w','g','m','k','f','l','r','n','t','sch','z','p'], cluster:['br','gr','fr','st','kr','tr','dr','bl','fl','gl','kl','schl','schw','schm','schn','schr','sp'], pCluster:0.25,
         vokale:['e','a','i','o','u','ei','au','ä','ü','ö'], koda:['n','r','l','s','t','ch','nd','rt','ld','st','ng','rg','lf'], pKoda:0.4, pEnde:0.85, doppel:[], neben:'e',
+        schrift:{ z:'ts', w:'v' }, einsatz:'behaucht',
         wandel:['verschiebung','spirans','fortis','apokope','monophthong','diphthong','rhotazismus','hebung','senkung','entrundung','umlaut','schwund','lenis'] },
       // komplex, mittel, 5 Vokale + Zwielaute ia/ua/oa: die Koda auf g/ck/ch, die Folgesilbe auf i
       alpin: { anlaut:['b','g','s','t','d','m','l','r','w','k','n','f','h','z','tsch'], cluster:['gr','br','tr','kr','fl','gl','st','schn','schw','schl'], pCluster:0.2,
         vokale:['a','i','o','u','e','ia','ua','ei','oa'], koda:['g','ch','l','n','r','ck','tz','ss','gg'], pKoda:0.45, pEnde:0.7, doppel:[], neben:'i',
+        schrift:{ z:'ts', w:'v' }, einsatz:'behaucht',
         wandel:['verschiebung','spirans','fortis','monophthong','diphthong','apokope','hebung','senkung','entrundung','umlaut','affrikat','schwund','lenis'] },
       // einfach (12A), mittel (1A), 5 Vokale: offene Silben, das Wort endet auf einem Vokal, der Laut zwischen Vokalen verdoppelt sich
       mediterran: { anlaut:['m','c','s','b','p','t','l','r','g','f','v','d','n','gi','ci'], cluster:['pr','tr','br','gr','fr','cr','st','sc'], pCluster:0.12,
         vokale:['a','o','e','i','u'], koda:['n','l','r','s'], pKoda:0.15, pEnde:0, doppel:['ll','tt','nn','rr','ss','cc'], neben:'',
+        schrift:{ z:'ts' }, einsatz:'unbehaucht',
         wandel:['lenis','rhotazismus','spirans','hebung','senkung','diphthong','schwund','apokope','affrikat'] },
       // komplex, mittel, 9 Vokale (y ø å æ): s-Cluster und j-Cluster im Anlaut, die Koda auf d/nd/rk
       nordisch: { anlaut:['h','s','b','g','v','k','t','f','l','r','m','n','d','j'], cluster:['sk','st','sv','sn','fj','kj','hj','bj','br','dr','fr','gr','kr','tr','bl','fl','gl','kl'], pCluster:0.3,
         vokale:['a','e','i','o','u','y','ø','å','æ'], koda:['d','n','r','k','t','s','nd','rd','rk','ld','ng','rn','lm'], pKoda:0.5, pEnde:0.8, doppel:['nn','ll','kk','tt'], neben:'',
+        schrift:{ w:'v' }, einsatz:'behaucht',
         wandel:['lenis','spirans','apokope','hebung','senkung','monophthong','diphthong','entrundung','umlaut','schwund','fortis'] },
       // einfach (12A): (C)(j)V(N) — die Koda ist nur der Nasal, 5 Vokale
       fernost: { anlaut:['k','t','s','n','m','h','y','r','w','g','z','d','b','p'], cluster:['ky','ry','ny','hy','my','gy'], pCluster:0.1,
         vokale:['a','i','u','o','e'], koda:['n'], pKoda:0.25, pEnde:0.35, doppel:[], neben:'',
+        schrift:{}, einsatz:'unbehaucht',
         wandel:['affrikat','hebung','senkung','lenis','schwund','monophthong','apokope'] },
       // mäßig (12A), 6 Vokale + Zwielaute: die Koda auf s/m/n/r/x, Behauchte im Anlaut
       antik: { anlaut:['c','p','t','m','s','l','d','n','r','v','f','g','qu'], cluster:['pr','tr','cr','pl','cl','br','gr','fl','st','sc','ph','th'], pCluster:0.2,
         vokale:['a','e','i','o','u','ae','au','y'], koda:['s','m','n','r','x','ns','l','t'], pKoda:0.4, pEnde:0.9, doppel:[], neben:'',
+        schrift:{}, einsatz:'unbehaucht',
         wandel:['rhotazismus','monophthong','diphthong','hebung','senkung','lenis','spirans','schwund','apokope','affrikat'] },
     };
     // DER STAMMBAUM UND DIE BEDEUTUNGEN DER URSPRACHE. `bedeutungen`: die Grundliste nach Swadesh (1971, die 100 Bedeutungen, die in jeder
@@ -4912,11 +4924,89 @@
           frei.sort(function (a, b) { return zahl[a] - zahl[b] || _sprachU("knoten|" + R + "|" + t + "|" + q, a) - _sprachU("knoten|" + R + "|" + t + "|" + q, b); });
           for (var c = 0; c < 2; c++) { zahl[frei[c]]++; K[t][2 * q + c] = ahnen.concat([frei[c]]); } } }
       return K[T]; }
-    // die Sprache des Orts: das Blatt des Stammbaums seiner Familie, das sein Same wählt (ohne Region: die Familie Mitteleuropas,
-    // wie der Wurf ohne Klima); `zweig` ist der Weg von der Wurzel (Bits), `wandel` die Lautgesetze der Knoten auf dem Weg („typ:laut“)
-    function spracheVon(region, seed) {
-      var R = SPRACHE_GESETZ[region] ? region : "mitteleuropa", T = SPRACH_BAUM.tiefe;
-      var blatt = Math.floor(_sprachU("sprache|" + R + "|" + (seed >>> 0), "blatt") * (1 << T)), key = R + "|" + blatt, m = _SPRACHEN.get(key);
+    // DIE MUNDART DES ORTS (Karte 2 mensch.kultur.sprache#4): das Blatt des Stammbaums ist eine FUNKTION von Welt-Saat und Ort, nie
+    // ein Wurf des Samens. Bis sprache-dialekt wählte der Same das Blatt — zwei Nachbar-Orte und zwei Orte am anderen Ende der Welt
+    // trugen mit derselben Wahrscheinlichkeit dieselbe Sprache (0,0255 über 2 000 Paare), kein Kontinuum, keine Isoglosse.
+    // Das Gesetz (das Band: Burridge 2017, Phys. Rev. X 7, 031008 — die Sprecher gleichen sich im Pendel-Radius σ an, 5 km < σ < 15 km;
+    // die Isoglossen sammeln sich an den Einschnitten der Küste, an Flüssen und Mündungen; Séguy 1971, Nerbonne 2010: der Abstand der
+    // Mundarten wächst mit dem Logarithmus des Wegs): der Ort spricht, was sein TAL spricht — die Senke seines Einzugsgebiets
+    // (gelaende-core `talWeg`, der Weg des Wassers bis zum See oder Meer; der Wirt liest sie, `_mundartAm`). Ein Tal ist eine
+    // Sprachgemeinschaft, die Wasserscheide die Grenze (die Mundart-Räume der Alpen und des Schwarzwalds folgen den Tälern).
+    // Je Ebene t des Stammbaums (1 … tiefe) entscheidet ein Feld von Neuerungs-Herden das Bit des Zweigs — der nächste Herd im
+    // Maßstab σ·2^(tiefe − t): die alten Spaltungen sind groß (Familie → Hauptzweige über 80 km), die jungen klein (die Mundart, σ).
+    // DER FÄCHER (die lexikalische Diffusion, Wang 1969; der Rheinische Fächer: ik/ich, maken/machen, dat/das enden an verschiedenen
+    // Linien): jedes Wort liest das Feld seiner Ebene an einem eigenen Punkt, `faecher`·Maßstab um die Senke versetzt — die
+    // Isoglossen der Wörter bündeln sich, wo die Herde wechseln, und fächern im Grenzsaum. `kern`: das Blatt an der Senke selbst (der
+    // Zweig, die Lautgesetze, die Namen), `worte`: je Bedeutung das Blatt, dessen Wort der Ort spricht.
+    // Leser: `spracheVon` (die Sprache des Plans), der Wirt (`_mundartAm` → `_zellEingang` → `DP.mundart`), die Station (sprache#4).
+    var SPRACH_RAUM = { sigma: 5000, faecher: 0.3 };
+    var _FAECHER = new Map();
+    // prettier-ignore
+    function mundartVon(saat, x, z) {
+      if (!(Number.isFinite(x) && Number.isFinite(z))) throw new Error("fachwerk mundartVon: die Senke (" + x + ", " + z + ") ist kein Ort");
+      var T = SPRACH_BAUM.tiefe, NB = SPRACH_BAUM.bedeutungen.length, S = String(saat), herde = new Map();
+      var F = _FAECHER.get(S);
+      if (!F) { F = [];
+        for (var t = 1; t <= T; t++) for (var i = 0; i < NB; i++) { var k = S + "|f|" + t + "|" + i, a = 2 * Math.PI * _sprachU(k, "a"), r = SPRACH_RAUM.faecher * _sprachU(k, "r");
+          F.push(r * Math.cos(a), r * Math.sin(a)); }
+        if (_FAECHER.size >= 16) _FAECHER.delete(_FAECHER.keys().next().value);
+        _FAECHER.set(S, F); }
+      // das Bit der Ebene t am Punkt (px, pz): das Bit des nächsten Herds (je Zelle des Maßstabs EIN Herd, gehasht aus Saat, Ebene, Zelle)
+      var bit = function (t, px, pz) { var s = SPRACH_RAUM.sigma * Math.pow(2, T - t), cx = Math.floor(px / s), cz = Math.floor(pz / s), d0 = Infinity, b = 0;
+        for (var di = -1; di <= 1; di++) for (var dj = -1; dj <= 1; dj++) { var hk = t + "|" + (cx + di) + "," + (cz + dj), h = herde.get(hk);
+          if (!h) { var q = S + "|" + hk; h = [(cx + di + _sprachU(q, "x")) * s, (cz + dj + _sprachU(q, "z")) * s, _sprachU(q, "b") < 0.5 ? 0 : 1]; herde.set(hk, h); }
+          var d = (h[0] - px) * (h[0] - px) + (h[1] - pz) * (h[1] - pz); if (d < d0) { d0 = d; b = h[2]; } }
+        return b; };
+      var kern = 0, worte = new Array(NB);
+      for (var t2 = 1; t2 <= T; t2++) kern = kern * 2 + bit(t2, x, z);
+      for (var j = 0; j < NB; j++) { var w = 0;
+        for (var t3 = 1; t3 <= T; t3++) { var m = SPRACH_RAUM.sigma * Math.pow(2, T - t3), o = 2 * ((t3 - 1) * NB + j); w = w * 2 + bit(t3, x + F[o] * m, z + F[o + 1] * m); }
+        worte[j] = w; }
+      return Object.freeze({ kern: kern, worte: Object.freeze(worte) });
+    }
+    // die Mundart, die ganz ein Blatt spricht (jedes Wort aus dem Blatt `b`): der Leser des Stammbaums (die Station sprache#3, gate:settlement R11)
+    function mundartBlatt(b) {
+      var T = SPRACH_BAUM.tiefe;
+      if (!(b === (b | 0) && b >= 0 && b < 1 << T)) throw new Error("fachwerk mundartBlatt: das Blatt " + b + " steht nicht im Baum der Tiefe " + T);
+      return Object.freeze({ kern: b, worte: Object.freeze(SPRACH_BAUM.bedeutungen.map(function () { return b; })) });
+    }
+    // DIE SPRACHE DES PLANS: die Familie ist die Region (ohne Region die Familie Mitteleuropas, wie der Wurf ohne Klima), die Mundart
+    // der Ort (`mundartVon`) — der Zweig, die Lautgesetze und die Namen aus dem Kern-Blatt, jedes Wort der Grundliste aus SEINEM Blatt.
+    // Ohne Ort keine Drift: ein Plan ohne Mundart (das Labor, das Wort, die Kachel einer Stadt des Worts) spricht die Ursprache seiner
+    // Familie — wie der Plan ohne Klima ohne Ort baut. Ein Same an der Stelle der Mundart ist der Täter von sprache#4 und bricht laut.
+    var _MUNDARTEN = new Map();
+    // prettier-ignore
+    function spracheVon(region, mundart) {
+      var R = SPRACHE_GESETZ[region] ? region : "mitteleuropa", NB = SPRACH_BAUM.bedeutungen.length;
+      if (mundart == null) return _urSprache(R);
+      if (!(mundart.worte && mundart.worte.length === NB && mundart.kern === (mundart.kern | 0)))
+        throw new Error("fachwerk spracheVon: der Ort trägt keine Mundart ({kern, worte}, fachwerk mundartVon), sondern " + JSON.stringify(mundart));
+      var K = _blattSprache(R, mundart.kern), gleich = true;
+      for (var i = 0; i < NB && gleich; i++) gleich = mundart.worte[i] === mundart.kern;
+      if (gleich) return K;
+      var key = R + "|" + mundart.kern + "|" + Array.prototype.join.call(mundart.worte, ","), m = _MUNDARTEN.get(key);
+      if (m) return m;
+      var L = Object.assign({}, K, { worte: Object.freeze(Array.prototype.slice.call(mundart.worte)) });
+      L.lex = L.worte.map(function (b, j) { return _blattSprache(R, b).lex[j]; });
+      if (_MUNDARTEN.size >= 4096) _MUNDARTEN.delete(_MUNDARTEN.keys().next().value);
+      _MUNDARTEN.set(key, Object.freeze(L));
+      return L;
+    }
+    // die Ursprache als Sprache (kein Zweig, kein Lautgesetz, kein Ersatz): der Plan ohne Ort
+    // prettier-ignore
+    function _urSprache(R) {
+      var key = R + "|ur", m = _SPRACHEN.get(key);
+      if (m) return m;
+      var U = _ursprache(R), L = { region: R, blatt: null, zweig: "", wandel: [], gesetz: U.gesetz, ursprache: U, anteil: U.anteil };
+      L.lex = U.lex.map(function (w) { return _ocp(L, w); });
+      L.grund = U.grund.slice();
+      L.haus = U.haus;
+      _SPRACHEN.set(key, Object.freeze(L));
+      return L;
+    }
+    // die Sprache eines Blatts des Stammbaums: `zweig` ist der Weg von der Wurzel (Bits), `wandel` die Lautgesetze der Knoten auf dem Weg („typ:laut“)
+    function _blattSprache(R, blatt) {
+      var T = SPRACH_BAUM.tiefe, key = R + "|" + blatt, m = _SPRACHEN.get(key);
       if (m) return m;
       var U = _ursprache(R), G = U.gesetz, saat = "sprache|" + key;
       var dreh = function (p, k) { return p * (0.75 + 0.5 * _sprachU(saat, k)); };
@@ -4988,7 +5078,7 @@
       throw new Error("fachwerk sprachName: unbekannte Art " + art);
     }
     // prettier-ignore
-    function ORTSNAME(region, seed){ return sprachName(spracheVon(region, seed), "ort", seed >>> 0); }
+    function ORTSNAME(region, seed, mundart){ return sprachName(spracheVon(region, mundart), "ort", seed >>> 0); }
     // DER SATZ in der Sprache L (Karte 2 mensch.kultur.sprache#2): ein Bewohner spricht aus den Wörtern SEINER Sprache (`sprachWort`,
     // die Grundliste nach Swadesh: Laute und Silben aus dem Gesetz der Familie, gewandelt nach den Lautgesetzen des Zweigs) in der
     // Folge seiner Familie. Die Folge ist ein Erbe der Ursprache (ein Wurf je Familie, nach dem Rang der Typologie gewogen — Dryer 2013,
@@ -5000,7 +5090,7 @@
     // Der Rahmen ist ein Verb der Grundliste mit dem, was es trägt (`verben`: wer es tut, woran — ein Hund fliegt nicht, man trinkt
     // Wasser, nie Stein); die Glieder sind Wörter derselben Liste. `anteil` (QUELLE UNGEPRUEFT im Wert): die Hälfte der Nomen trägt
     // ein Adjektiv, ein Achtel der Sätze ist verneint. Leser: der Wirt (`_bewohnerLauf` „rede“), die Rede der Menge (klang.js
-    // `_bewohnerLautTakt`: die Silben-Kerne des Satzes `sprachKerne` sind die Vokale der Stimme), die Station (die Sätze getrennt).
+    // `_bewohnerLautTakt`: die Silben des Satzes `sprachSilben` sind die Laute der Stimme), die Station (die Sätze getrennt).
     // prettier-ignore
     var SATZ_GESETZ = {
       folge: ['SOV', 'SVO', 'VSO', 'VOS', 'OVS', 'OSV'], folgeZahl: [564, 488, 95, 25, 11, 4],
@@ -5033,6 +5123,13 @@
       adjektive: ['groß', 'klein', 'lang', 'rot', 'grün', 'gelb', 'weiß', 'schwarz', 'warm', 'kalt', 'voll', 'neu', 'gut', 'rund', 'trocken'],
       // die Fürwörter tragen kein Adjektiv (*„großer ich“)
       fuerwort: ['ich', 'du', 'wir', 'wer'],
+      // DER SATZ AM AKT (sprache#5 „Satz ↔ Handlung“): wer spricht, spricht von dem, was er tut — je Akt des Tags (koerper
+      // `tagesPlan`, die Tat der Rolle, das Spiel des Abends, der Hieb der Wache) das Verb der Grundliste, das ihm am nächsten liegt;
+      // wer es tut, sind Leute. Ein Akt ohne Zeile bricht laut (`sprachSatz`); ohne Akt spricht der Satz frei.
+      // QUELLE UNGEPRUEFT im Wert: die Zuordnung (die Grundliste nach Swadesh kennt weder arbeiten noch spielen noch kämpfen).
+      handlung: { schlaf: 'schlafen', morgen: 'trinken', mittag: 'essen', abend: 'sitzen', einkauf: 'geben', besuch: 'kommen',
+        streife: 'gehen', arbeit: 'stehen', hilft: 'geben', spiel: 'sehen', zuschauen: 'sehen', wettkampf: 'gehen', zweikampf: 'beißen',
+        brett: 'wissen', jagd: 'töten', fischfang: 'töten', hieb: 'töten' },
     };
     // der Wurf nach den Zahlen der Typologie (Gewicht = Zahl der Sprachen)
     function _zahlZug(A, Z, u) { var H = 0, i; for (i = 0; i < Z.length; i++) H += Z[i]; var a = u * H; for (i = 0; i < A.length; i++) if ((a -= Z[i]) < 0) return A[i]; return A[A.length - 1]; }
@@ -5048,10 +5145,12 @@
         gram: { zeit: _urWort(U, z + "|zeit", 1, true), ort: _urWort(U, z + "|ort", 1, true) } });
       _SATZBAU.set(region, g); return g; }
     // prettier-ignore
-    function sprachSatz(L, saat) {
+    function sprachSatz(L, saat, akt) {
       var G = SATZ_GESETZ, B = _satzBau(L.region), z = "satz|" + saat, u = function (k) { return _sprachU(z, k); };
       var aus = function (liste, k) { var W = []; liste.forEach(function (x) { W = W.concat(G.klassen[x] || [x]); }); return W[Math.floor(u(k) * W.length) % W.length]; };
-      var V = Object.keys(G.verben), verb = V[Math.floor(u("verb") * V.length) % V.length], R = G.verben[verb];
+      var V = Object.keys(G.verben), verb = akt == null ? V[Math.floor(u("verb") * V.length) % V.length] : G.handlung[akt], R = G.verben[verb];
+      if (!R) throw new Error("fachwerk sprachSatz: der Akt „" + akt + "“ trägt kein Verb in SATZ_GESETZ.handlung");
+      if (akt != null) R = [['leute'], R[1]];
       var nominal = function (b, k) { var w = sprachWort(L, b);
         if (G.fuerwort.indexOf(b) >= 0 || !(u(k + "-adj") < G.anteil.adjektiv)) return w;
         var a = sprachWort(L, G.adjektive[Math.floor(u(k + "-adj-zug") * G.adjektive.length) % G.adjektive.length]);
@@ -5067,12 +5166,86 @@
       var glied = { S: S, O: O, V: v }, teile = [], ov = B.folge.indexOf("O") < B.folge.indexOf("V");
       B.folge.split("").forEach(function (c) { if (c === "V" && ort && ov) teile.push(ort); if (glied[c]) teile.push(glied[c]); if (c === "V" && ort && !ov) teile.push(ort); });
       return _gross(teile.join(" ")) + "."; }
-    // die Silben-Kerne eines Satzes (die Vokal-Folgen, `_SILBE`: ein Zwielaut ist EIN Kern) — die Vokale, die die Stimme trägt
-    function sprachKerne(satz) { return String(satz).toLowerCase().match(_SILBE) || []; }
+    // DIE LAUTUNG DES SATZES (sprache#5): bis hier las die Stimme nur die Kerne (die Vokal-Folgen) — im Ohr klangen 0,346 der Laute,
+    // kein Konsonant. Nun ist der Satz eine Folge von SILBEN { an, k, ab }: der Kern `k` (die Vokal-Folge, `_SILBE`: ein Zwielaut ist
+    // EIN Kern — sein erster Buchstabe wählt die Qualität, klang `STIMME.kern`), An- und Abglied als LAUTE der Tafel `SPRACH_LAUTE`
+    // (Art, Ort, Stimme). Die Schrift → Laut: die längste Folge zuerst (tsch, sch, ch, ck, ph, th, qu, ng, tz, pf, x), dann der
+    // Buchstabe; die Familie liest z und w nach ihrer `schrift`. Ein Doppel-Buchstabe ist zwei Laute: die Geminate gehört beiden
+    // Silben (Ende der einen, Anfang der nächsten). DIE GRENZE der Silben: das Prinzip des maximalen Anlauts unter der Sonoritäts-
+    // Folge (Clements 1990; Selkirk 1984): zwischen zwei Kernen gehört dem Anlaut der längste Rest, dessen Laute zum Kern hin an
+    // Sonorität steigen (Plosiv 1 < Frikativ 2 < Nasal 3 < Liquid 4 < Gleitlaut 5), dazu ein s/sch vor dem Plosiv (das s-Cluster,
+    // die Ausnahme jeder Sprache mit st, sp, sk); der Rest ist der Abglied der Silbe davor. Ein Wort ohne Kern hängt am Abglied.
+    // Je Silbe ihr Ort im Wort und im Satz (die Dauer-Regeln der Stimme lesen ihn, Klatt 1979): `w` das Wort, `anfang` / `ende` die
+    // erste / letzte Silbe des Worts, `nWort` seine Silbenzahl, `satzEnde` die letzte des Satzes.
+    // prettier-ignore
+    var SPRACH_LAUTE = {
+      p: ['plosiv', 'labial', 0], b: ['plosiv', 'labial', 1], t: ['plosiv', 'alveolar', 0], d: ['plosiv', 'alveolar', 1],
+      k: ['plosiv', 'velar', 0], g: ['plosiv', 'velar', 1],
+      pf: ['affrikat', 'labiodental', 0], ts: ['affrikat', 'alveolar', 0], 'tʃ': ['affrikat', 'postalveolar', 0], 'dʒ': ['affrikat', 'postalveolar', 1],
+      f: ['frikativ', 'labiodental', 0], v: ['frikativ', 'labiodental', 1], 'θ': ['frikativ', 'dental', 0], s: ['frikativ', 'alveolar', 0],
+      z: ['frikativ', 'alveolar', 1], 'ʃ': ['frikativ', 'postalveolar', 0], x: ['frikativ', 'velar', 0], h: ['hauch', 'glottal', 0],
+      m: ['nasal', 'labial', 1], n: ['nasal', 'alveolar', 1], 'ŋ': ['nasal', 'velar', 1],
+      l: ['liquid', 'alveolar', 1], r: ['liquid', 'uvular', 1], j: ['gleit', 'palatal', 1], w: ['gleit', 'labial', 1]
+    };
+    var _SONOR = { plosiv: 1, affrikat: 1, frikativ: 2, hauch: 2, nasal: 3, liquid: 4, gleit: 5 };
+    var _LAUT = {};
+    Object.keys(SPRACH_LAUTE).forEach(function (l) { var a = SPRACH_LAUTE[l]; _LAUT[l] = Object.freeze({ l: l, art: a[0], ort: a[1], stimme: a[2] }); });
+    // die Schrift: Buchstabenfolge → Laute (die längste zuerst); c und q sind k, x ist k + s, ng vor dem Vokal ŋ + g
+    // prettier-ignore
+    var _SCHRIFT = [['tsch', ['tʃ']], ['sch', ['ʃ']], ['ch', ['x']], ['ck', ['k']], ['ph', ['f']], ['th', ['θ']], ['qu', ['k', 'w']],
+      ['tz', ['ts']], ['pf', ['pf']], ['x', ['k', 's']], ['c', ['k']], ['q', ['k']]];
+    function _schriftLaute(w, G) {
+      var aus = [], i = 0, S = (G && G.schrift) || {};
+      while (i < w.length) {
+        var c = w.charAt(i);
+        if (_V.indexOf(c) >= 0) { var m = w.slice(i).match(_SILBE)[0]; aus.push(m); i += m.length; continue; }
+        if (w.substr(i, 2) === 'ng') { aus.push(_LAUT['ŋ']); if (_V.indexOf(w.charAt(i + 2)) >= 0) aus.push(_LAUT.g); i += 2; continue; }
+        var hit = null;
+        for (var s = 0; s < _SCHRIFT.length && !hit; s++) if (w.substr(i, _SCHRIFT[s][0].length) === _SCHRIFT[s][0]) hit = _SCHRIFT[s];
+        if (hit) { hit[1].forEach(function (l) { aus.push(_LAUT[l]); }); i += hit[0].length; continue; }
+        var l = S[c] || c;
+        if (!_LAUT[l]) throw new Error('fachwerk sprachSilben: der Buchstabe „' + c + '“ hat keinen Laut in SPRACH_LAUTE');
+        aus.push(_LAUT[l]);
+        i++;
+      }
+      return aus;
+    }
+    // der Anlaut aus der Konsonanten-Folge C zwischen zwei Kernen: der längste steigende Rest (+ s/sch vor dem Plosiv)
+    function _anlautAb(C) {
+      var a = C.length - 1;
+      if (a < 0) return 0;
+      while (a > 0 && _SONOR[C[a - 1].art] < _SONOR[C[a].art]) a--;
+      if (a > 0 && (C[a - 1].l === 's' || C[a - 1].l === 'ʃ') && C[a].art === 'plosiv') a--;
+      return a;
+    }
+    function sprachSilben(satz, L) {
+      var G = L && L.gesetz, silben = [], vor = [], wort = 0;
+      String(satz).toLowerCase().split(/[^a-zäöüøåæß]+/).forEach(function (w) {
+        if (!w) return;
+        var teile = _schriftLaute(w.replace(/ß/g, 'ss'), G), C = vor, erste = true, eigene = [];
+        vor = [];
+        teile.forEach(function (t) {
+          if (typeof t !== 'string') { C.push(t); return; }
+          var a = erste ? 0 : _anlautAb(C);
+          if (!erste) eigene[eigene.length - 1].ab = C.slice(0, a);
+          eigene.push({ an: C.slice(a), k: t, ab: [] });
+          C = [];
+          erste = false;
+        });
+        if (eigene.length) eigene[eigene.length - 1].ab = C;
+        else if (silben.length) silben[silben.length - 1].ab = silben[silben.length - 1].ab.concat(C);
+        else vor = C;
+        eigene.forEach(function (e, i) { e.w = wort; e.anfang = i === 0; e.ende = i === eigene.length - 1; e.nWort = eigene.length; e.satzEnde = false; });
+        if (eigene.length) wort++;
+        silben.push.apply(silben, eigene);
+      });
+      if (silben.length) silben[silben.length - 1].satzEnde = true;
+      return silben;
+    }
     // prettier-ignore
     // VERTRAGS-AKT 18.07.: LOD1SKIP ist GESTRICHEN (0 Leser — der tote LOD1F-Zwilling).
     // prettier-ignore
-    const DORF_NORM={ gap:2.5, strasseW:5.0, laneW:3.2, gehweg:1.2, budget:170000, laneiv:17 };   // VERTRAGS-AKT 18.07.: gapStadt gestrichen (0 Leser, matchte kein lebendes Layout-Literal)
+    const DORF_NORM={ gap:2.5, strasseW:5.0, laneW:3.2, gehweg:1.2, budget:170000 };   // VERTRAGS-AKT 18.07.: gapStadt gestrichen; laneiv (13–17 m der Laternen) fiel mit nacht-licht-klasse an LICHT_KLASSE (0 Leser, matchte kein lebendes Layout-Literal)
     // ── SPIEGEL-ZENSUS 17.07. — DAS SIEDLUNGS-EXISTENZ-GESETZ (rein additive
     // DATEN-Zeile): WO/WIEVIEL Doerfer die Welt traegt ist Siedlungs-Wissen
     // (Praezedenzfall: die Wald-Dichte lebt in phyto-core forestStandDensity).
@@ -6016,7 +6189,7 @@
     alle.forEach((b,ai)=>{ deck(b); for(const f of za[ai].fr) deck(f.v); }); }
   // DER GEHALTENE HIMMEL HEBT DAS DACH (`himmelNeigung`): nach dem Ort der Himmel, den der Spieler hält — jeder Bau und jede Fassung
   if(DP.himmel!=null){ const hebe=b=>{ b.pitchDeg=himmelNeigung(b, b.pitchDeg, DP.himmel); }; alle.forEach((b,ai)=>{ hebe(b); for(const f of za[ai].fr) hebe(f.v); }); }
-  return {seed:DP.seed||1, name:ORTSNAME(region, DP.seed||1), region, groesse, kernel, jahr, spanne, staedtisch, houses, lose, nGestalt:alle.length-nBurg-(herr&&!muenze?1:0), grammatik, zugHandwerk, chronik:C,
+  return {seed:DP.seed||1, name:ORTSNAME(region, DP.seed||1, DP.mundart), mundart:DP.mundart||null, region, groesse, kernel, jahr, spanne, staedtisch, houses, lose, nGestalt:alle.length-nBurg-(herr&&!muenze?1:0), grammatik, zugHandwerk, chronik:C,
           schnitt:{jahr:j0, spanne:chronik?T-j0:spanne, groesse:gS, staedtisch:staedtischVon(gS)},
           kleidung:{top:tracht.top, bottom:tracht.bottom, shoes:tracht.shoes, farben:tracht.farben.slice()},
           technik:{stand:stand.slice(), fehlt:Object.keys(TS.fehlt), vorkommen:Object.assign({},TS.vorkommen), epoche:traegt(stand,EPOCHEN[eT].technik)?eT:null},   /*der Stand der Saat (TECHNIK; Leser: der Export, die Station, gate:settlement T)*/
@@ -7721,27 +7894,24 @@
   const laterneQuer=(rd,q,fl)=>{ const lo=wegRand(rd)+LATERNE_FUSS; for(let o=Math.max(lo,rd.w/2+gehwegVon(plan,rd)+0.35); ; o=Math.max(lo,o-0.25)){ const x=q.x+fl*q.nx*o, z=q.z+fl*q.nz*o; if(laterneFrei(x,z)) return {x,z}; if(o<=lo) return null; } };   /*DER STAND QUER ZUR GASSE (K66): vom alten Stand 0,35 m hinter dem Gehweg in 0,25-m-Schritten bis an den Bordstein (der Fuss am Wegrand), nie in die Fahrbahn — bis K66-n4 rueckte er bis rd.w/4 an die Achse, 123/292 Laternen standen im Weg (der Spieler lief gegen den Mast); wo die Wand keinen Stand traegt, sucht der Weg weiter*/
   let R9L=30; for(const rd9 of roads) for(const q9 of rd9.pts){ const d9=Math.hypot(q9.x,q9.z); if(d9>R9L)R9L=d9; }   /*ZEITREISE-Referenz: der ECHTE Stadtradius (Strassen-Max), nicht Mauer-Rw — GEMESSEN 0 Gas*/
   const zeit=plan.schnitt||plan;                                                               /*das Licht gehoert dem Jahr des Schnitts: 1320 brennt keine Gaslaterne*/
-  if(zeit.staedtisch&&zeit.jahr>1850){ for(const rd of roads){ if(rd.gen>=2)continue;
-    for(let u=6, fl=1; u<(rd.len||0)-4; u+=DORF_NORM.laneiv-4+((u*7)%5), fl=-fl){ const q=at(rd,u);   /*laneiv KONSUMIERT: 13..17 byte-gleich (laneiv-4 == 13)*/
-      const lq=laterneQuer(rd,q,fl), lx2=lq?lq.x:0, lz2=lq?lq.z:0;
-      let ok=!!lq;
-      if(!ok) marken.push({x:q.x,z:q.z});   /*WO DIE WAND KEINEN MAST TRAEGT, TRAEGT SIE DAS LICHT (w28-stadt-grammatik): hinter dem Gehweg der Fahrstrasse (`wegRand`) fehlt dem Mast vor der Bauflucht der Abstand zur Wand (LATERNE_WAND) — sein Stand faellt, und bis hier fiel sein Licht mit: die Stadt legte keine Marke (nur das Dorf), `wandLaternen` hing nichts auf. O-Akt gate:settlement „dorf 7 18 gruenderzeit“: 10 brennende Quellen -> 5, in der Gasse 5 sichtbar -> 2 (Soll 4). Jetzt ist der gefallene Stand eine Marke des Lichts: die naechste Hauswand traegt dort die Wandlaterne (LICHT_MARKE_M wie im Dorf), der Takt der Strasse bleibt*/
-      if(ok&&laternen.some(l=>Math.hypot(lx2-l.x,lz2-l.z)<9))ok=false;
-      if(ok){ const dL=Math.min(1, Math.hypot(lx2,lz2)/(R9L*0.80));                          /*LATERNEN-ZEITREISE: jede Laterne liest das JAHR ihres Rings — Gas im Altkern, Elektro am Saum*/
-        const R0=globalThis.__ring; const rj=(R0&&R0.ringe)? (R0.gr0+(plan.jahr-R0.gr0)*Math.pow(dL,0.82)) : plan.jahr;
-        const gasB=(rj<1895) && (plan.jahr<1930 || dL<0.45);                                /*NACHRUEST-WELLE: ab 1930 elektrifiziert die Moderne von AUSSEN herein — der Altkern behaelt sein Gaslicht (Berlin-Wahrheit)*/
-        laternen.push({x:lx2,z:lz2,th:Math.atan2(-fl*q.nz,-fl*q.nx),gas:gasB}); } } } }
-  else { /*DAS DORF-LICHT (K10, Auge 13.10.: das Start-Dorf trug 0 Laternen, die Nacht war ohne ein Licht): jede Laterne vor einer Wand wie in der Stadt (kein Grundriss, 9 m Abstand, nicht am Brunnen) — eine am Platz, eine an jedem Weg-Knoten (Grad ≥ 3), laengs jedes Wegs eine je DORF_LICHT_WEG m*/
-    const DORF_LICHT_WEG=25;
-    const setz=(x,z,th)=>{ if(!laterneFrei(x,z)) return false;
-      if(laternen.some(l=>Math.hypot(x-l.x,z-l.z)<9)||brunnen.some(b2=>Math.hypot(x-b2.x,z-b2.z)<2)) return false; laternen.push({x,z,th,gas:true}); return true; };
-    const amWeg=(rd,u,fl)=>{ const q=at(rd,u), lq=laterneQuer(rd,q,fl); return !!lq&&setz(lq.x, lq.z, Math.atan2(-fl*q.nz,-fl*q.nx)); };
-    if(platz) [[0.25,0],[-0.25,0],[0,0.7],[0,-0.7]].some(([fx,fz])=>setz(platz.cx+fx*platz.ex, platz.cz+fz*platz.ez, 0));
-    const grad=new Array(G.nodes.length).fill(0); for(const rd of roads){ grad[rd.a]++; grad[rd.b]++; }
-    for(const rd of roads){ const L=rd.len||0; for(const [ende,k] of [[0,rd.a],[1,rd.b]]){ if(grad[k]<3) continue; for(let du=2; du<=Math.max(2,Math.min(8,L/2)); du+=1){ const u0=ende?Math.max(0,L-du):Math.min(L,du); if(amWeg(rd,u0,1)||amWeg(rd,u0,-1)) break; } } }   /*der Knoten sucht seinen Stand bis 8 m in den Weg hinein (K66: vor der Wand fand er ihn 2 m vom Knoten selten)*/
-    for(const rd of roads){ const L=rd.len||0; for(let um=0; um<=L; um+=1){ const mq=at(rd,um); marken.push({x:mq.x,z:mq.z}); }   /*DIE MARKE (K66-2 N1): JEDER Meter des Wegs — wandLaternen haengt nach dem Snap eine Laterne an die naechste Hauswand, wo kein Licht in LICHT_MARKE_M brennt (die dichte Gasse: beidseits Wand naeher als LATERNE_WAND, nur der Bordstein frei, und die Luecke zwischen zwei Masten); bis N1 je 25 m eine Marke, zwischen ihnen blieb die Wand der Gasse schwarz (nacht-wand 69 %)*/
-      for(let u=DORF_LICHT_WEG/2, fl=1; u<L; u+=DORF_LICHT_WEG, fl=-fl){
-      for(let du=0; du<=DORF_LICHT_WEG/2-1; du+=1){ if((u+du<L&&(amWeg(rd,u+du,fl)||amWeg(rd,u+du,-fl)))||(du&&u-du>0&&(amWeg(rd,u-du,fl)||amWeg(rd,u-du,-fl)))) break; } } } }
+  const lichtKlasse=zeit.staedtisch?LICHT_KLASSE.stadt:LICHT_KLASSE.dorf, LGl=LICHT_GESETZ.laterne;   /*DIE KLASSE DES ORTS (nacht-licht-klasse, EN 13201-2): die Klasse folgt dem Gebrauch des Wegs, nie dem Jahr — die Stadt P2, das Dorf P5 (`lichtFlaecheM2`); das Jahr waehlt nur Gas oder Strom (`gasAm`). Bis hier lief die Stadt vor 1850 (stadt-voll, „dorf 7 300“: 1238) den Pfad des Dorfs*/
+  for(const rd of roads){ const w=2*wegRand(rd), s=lichtFlaecheM2(LGl,lichtKlasse,LATERNE_FUSS,LATERNE_FUSS+w)/w; rd.licht=s; }   /*DER ABSTAND JE WEG (nacht-licht-klasse): der Mast steht mit dem Fuss am Wegrand, sein Streifen reicht ueber die Breite des Wegs (`wegRand` beidseits, an der Trasse samt Gehweg): s = Φ·U·MF ÷ (Ē·w). Bis hier 13–17 m in der Stadt (nur Trasse und Hauptweg), 25 m im Dorf*/
+  const gasAm=(x,z)=>{ if(!(zeit.staedtisch&&zeit.jahr>1850)) return true; const dL=Math.min(1, Math.hypot(x,z)/(R9L*0.80));   /*LATERNEN-ZEITREISE: jede Laterne liest das JAHR ihres Rings — Gas im Altkern, Elektro am Saum*/
+    const R0=globalThis.__ring; const rj=(R0&&R0.ringe)? (R0.gr0+(plan.jahr-R0.gr0)*Math.pow(dL,0.82)) : plan.jahr;
+    return (rj<1895) && (plan.jahr<1930 || dL<0.45); };                                         /*NACHRUEST-WELLE: ab 1930 elektrifiziert die Moderne von AUSSEN herein — der Altkern behaelt sein Gaslicht (Berlin-Wahrheit)*/
+  const MSl=AUSSTATTUNG.marktstand.tritt, standR=Math.hypot(MSl.ex,MSl.ez)+LATERNE_FUSS;
+  const setz=(x,z,th,frei)=>{ if(!laterneFrei(x,z)) return false;   /*DER STAND (Stadt und Dorf): vor der Wand, neben dem Weg, nicht am Brunnen, nicht im Marktstand, und keine Laterne naeher als die halbe Weite ihres Lichts (`frei`; bis hier 9 m fuer jede)*/
+    if(laternen.some(l=>Math.hypot(x-l.x,z-l.z)<frei)||brunnen.some(b2=>Math.hypot(x-b2.x,z-b2.z)<2)||staende.some(s2=>Math.hypot(x-s2.x,z-s2.z)<standR)) return false; laternen.push({x,z,th,gas:gasAm(x,z)}); return true; };
+  const amWeg=(rd,u,fl)=>{ const q=at(rd,u), lq=laterneQuer(rd,q,fl); return !!lq&&setz(lq.x, lq.z, Math.atan2(-fl*q.nz,-fl*q.nx), rd.licht/2); };
+  if(platz){ const sP=Math.sqrt(lichtFlaecheM2(LGl,lichtKlasse,-Infinity,Infinity)), nx=Math.ceil(2*platz.ex/sP), nz=Math.ceil(2*platz.ez/sP), gx=2*platz.ex/nx, gz=2*platz.ez/nz, rZ=Math.min(gx,gz)/2;   /*DAS RASTER DES PLATZES (nacht-licht-klasse): je Zelle der Flaeche einer Leuchte (U der Ebene, die Haelfte ihres Stroms) EINE Laterne, ihr Stand der freie naechst der Mitte der Zelle — bis hier trug das Dorf eine am Platz, die Stadt keine (stadt-voll 34 × 22 m: Ē 4,2 lx)*/
+    for(let i=0;i<nx;i++) for(let k=0;k<nz;k++){ const x0=platz.cx-platz.ex+gx*(i+0.5), z0=platz.cz-platz.ez+gz*(k+0.5); let ok=false;
+      for(let r=0; !ok&&r<=rZ; r+=0.5) for(let a=0; !ok&&a<(r?8:1); a++) ok=setz(x0+r*Math.cos(a*Math.PI/4), z0+r*Math.sin(a*Math.PI/4), 0, rZ); } }
+  const grad=new Array(G.nodes.length).fill(0); for(const rd of roads){ grad[rd.a]++; grad[rd.b]++; }
+  for(const rd of roads){ const L=rd.len||0; for(const [ende,k] of [[0,rd.a],[1,rd.b]]){ if(grad[k]<3) continue; for(let du=2; du<=Math.max(2,Math.min(8,L/2)); du+=1){ const u0=ende?Math.max(0,L-du):Math.min(L,du); if(amWeg(rd,u0,1)||amWeg(rd,u0,-1)) break; } } }   /*der Knoten sucht seinen Stand bis 8 m in den Weg hinein (K66: vor der Wand fand er ihn 2 m vom Knoten selten)*/
+  for(const rd of roads){ const L=rd.len||0, s=rd.licht;   /*DAS FELD DES WEGS (nacht-licht-klasse): je Abstand s EIN Licht — der Mast in der Mitte seines Felds (die Seiten wechseln, ± bis s ÷ 2 − 1 laengs), und wo keiner steht (die dichte Gasse: beidseits Wand naeher als LATERNE_WAND), EINE Marke in der Mitte des Felds: wandLaternen haengt dort die Laterne an die naechste Hauswand, wo kein Licht naeher als s ÷ 2 brennt (`r`). Bis hier lag jeder Meter als Marke mit 10 m Weite (K66-2 N1), am Plan 7 300 brannte die Gasse in P5 auf 6,2 lx statt 3*/
+    for(let u=s/2, fl=1; u<L; u+=s, fl=-fl){ const mq=at(rd,u); let ok=laternen.some(l=>Math.hypot(l.x-mq.x,l.z-mq.z)<=s/2);   /*das Feld, in dessen Mitte schon ein Licht naeher als s ÷ 2 brennt (der Platz, der Knoten, der kreuzende Weg), traegt kein zweites*/
+      for(let du=0; !ok&&du<=s/2-1; du+=1) ok=(u+du<L&&(amWeg(rd,u+du,fl)||amWeg(rd,u+du,-fl)))||(du>0&&u-du>0&&(amWeg(rd,u-du,fl)||amWeg(rd,u-du,-fl)));
+      if(!ok) marken.push({x:mq.x,z:mq.z,r:s/2}); } }
   const sp=at(roads[0],Math.min(roads[0].len||8,8));
   const nzyk=roads.length-(G.nodes.length+sack-1);                                           // Zyklen = E − V + 1 (zusammenhängend)
   let viertel=null, lage=null;
@@ -7751,7 +7921,7 @@
     plan.houses.forEach((h,i)=>{ const q=pl[i]; if(h.viertel&&q&&q.obb&&Math.abs(q.obb.cz)<5000) (V[h.viertel]=V[h.viertel]||[]).push(q.obb); });
     viertel=Object.keys(V).map(rolle=>{ const L=V[rolle], x=L.reduce((a,o)=>a+o.cx,0)/L.length, z=L.reduce((a,o)=>a+o.cz,0)/L.length;
       return {rolle, x, z, r:L.reduce((a,o)=>Math.max(a,Math.hypot(o.cx-x,o.cz-z)+Math.hypot(o.ex,o.ez)),0), lose:L.length}; }); }
-  return Object.assign({pl, roads:roads.map(rd=>({pts:rd.pts.filter((_,k2)=>k2*DS<=(rd.len||0)+DS), w:rd.w, gen:rd.gen, len:rd.len||0, quer:rd.quer||false, vor:rd.vor||undefined, treppe:rd.treppe||undefined, ring:rd.ring||undefined})),   /*Whitelist +quer — das Flag starb an dieser Kopie (#1-Sonde: 0 Gassen im lay)*/
+  return Object.assign({pl, roads:roads.map(rd=>({pts:rd.pts.filter((_,k2)=>k2*DS<=(rd.len||0)+DS), w:rd.w, gen:rd.gen, len:rd.len||0, licht:rd.licht, quer:rd.quer||false, vor:rd.vor||undefined, treppe:rd.treppe||undefined, ring:rd.ring||undefined})),   /*Whitelist +quer — das Flag starb an dieser Kopie (#1-Sonde: 0 Gassen im lay)*/
           feldwege, platz, brunnen, fences, felder, staende, spawn:{x:sp.x,z:sp.z}, trees, jitAmp, DS, mauer,
           laternen, marken, laterneNeben, wegRand,
           graph:{nV:G.nodes.length+sack, nE:roads.length, zyklen:Math.max(0,nzyk)},
@@ -8603,7 +8773,7 @@
     // (`lichtStaerkeCd`). 2 000 lm: vier Gasglühkörper (Auer) zu je etwa 500 lm, die Aufsatzleuchte auf dem Mast (Band: Marx,
     // Vortrag „Allgemeine Lichttechnik“, mx-electronic MX-IfLi — „Der Lichtstrom eines Gasglühkörpers beträgt etwa 500 lm“, die
     // sechsflammige Leuchte 3 000 lm bei 1,83 kW Gas; Berlins Gasleuchten tragen 4, 6 oder 9 Glühkörper, Senatsverwaltung UVK,
-    // Öffentliche Beleuchtung) → 159,2 cd: unter dem Mast 12,3 lx, längs der Gasse des Dorfs (ein Mast je 25 m, `DORF_LICHT_WEG`)
+    // Öffentliche Beleuchtung) → 159,2 cd: unter dem Mast 12,3 lx, längs der Gasse des Dorfs (bis nacht-licht-klasse ein Mast je 25 m; der Abstand folgt jetzt der Klasse, `LICHT_KLASSE`)
     // im Mittel Ē = 2·cd ÷ (Abstand · Höhe) = 3,5 lx, in der Mitte zwischen zwei Masten 0,52 lx — EN 13201-2:2015 Tab. 3 P5
     // (Ē 3 lx, Emin 0,6 lx; P1–P6: 15 · 10 · 7,5 · 5 · 3 · 2 lx). Bis nacht-gasse-licht trug sie 25,7 cd (ein offener Gas-Brenner,
     // 10–30 cd; 323 lm): 2 lx unter dem Mast, im Dorf Ē 0,57 lx — unter P6, die Gasse am Leser der Nacht (karte2.erleben.bild.nacht#2,
@@ -8673,6 +8843,33 @@
         aus.armM = a;
         return aus;
     })(LICHT_GESETZ.laterne, 2.8, 0.4);
+    // DIE BELEUCHTUNGSKLASSE (nacht-licht-klasse): der Abstand der Laternen FOLGT aus dem Licht, das der Weg tragen soll, nie aus
+    // einer Zahl je Ort. Das Soll ist die mittlere waagrechte Beleuchtungsstärke Ē der Klasse (EN 13201-2:2015 Tab. 3, Fußgänger und
+    // langsamer Verkehr, P1–P6: Ē 15 · 10 · 7,5 · 5 · 3 · 2 lx, dazu E_min 3 · 2 · 1,5 · 1 · 0,6 · 0,4 lx, beides gewartet): Weg und Platz der Stadt P2, der Weg des Dorfs P5. Die Fläche je Leuchte
+    // ist die Lichtstrom-Methode, A = Φ · U · MF ÷ Ē (Φ = `lm`; MF der Wartungsfaktor 0,8 der Planung, CIE 154:2003). U, der Anteil
+    // ihres Stroms auf der Fläche, folgt aus der Leuchte selbst: sie strahlt nach allen Seiten gleich (cd = lm ÷ 4π), auf den Streifen
+    // quer [x1, x2] vor ihrem Fuß fällt in der Höhe h der Keil (atan(x2 ÷ h) − atan(x1 ÷ h)) ÷ 2π, auf die ganze Ebene die Hälfte. Der
+    // Weg der Breite w: Abstand s = A ÷ w; der Platz: das Raster √A. Leser: die Laternen des Plans (Mast, Raster des Platzes, die
+    // Marke der Wandlaterne je Feld s, ihre Weite s ÷ 2) und gate:settlement DORF-LICHT (rechnet s selbst nach). Bis hier stand der Abstand als Zahl je Ort: die Stadt 13–17 m
+    // (`laneiv`) nur an Trasse und Hauptweg, das Dorf 25 m, die Marke der Wand 10 m, der Platz der Stadt ohne eigene Laterne —
+    // am Plan 7 300 Ē 3,6–5,2 lx in den Wegen, 4,2 lx am Platz (P4–P5), die Gasse stadt-voll third 1,73 EV unter dem Band.
+    var LICHT_KLASSE = Object.freeze({
+        P1: Object.freeze({ e: 15, min: 3 }),
+        P2: Object.freeze({ e: 10, min: 2 }),
+        P3: Object.freeze({ e: 7.5, min: 1.5 }),
+        P4: Object.freeze({ e: 5, min: 1 }),
+        P5: Object.freeze({ e: 3, min: 0.6 }),
+        P6: Object.freeze({ e: 2, min: 0.4 }),
+        stadt: "P2",
+        dorf: "P5",
+        wartung: 0.8,
+    });
+    function lichtNutzung(L, x1, x2) {
+        return (Math.atan(x2 / L.hoeheM) - Math.atan(x1 / L.hoeheM)) / (2 * Math.PI);
+    }
+    function lichtFlaecheM2(L, klasse, x1, x2) {
+        return (L.lm * lichtNutzung(L, x1, x2) * LICHT_KLASSE.wartung) / LICHT_KLASSE[klasse].e;
+    }
     // DIE LICHTFARBE einer Farbtemperatur (K11b): der Planck-Ort (Kim, Kang et al. 2002, kubische Näherung 1 667–25 000 K)
     // als Farbort x, y → XYZ (Y = 1) → lineares sRGB (IEC 61966-2-1, Weiß D65), negativ außerhalb des Gamuts geklemmt, auf den
     // hellsten Kanal 1 normiert. Linear — das FARB-GESETZ (das Hex ist eine sRGB-Absicht) gilt so ohne Hex: 1 900 K ist
@@ -8707,11 +8904,13 @@
     // 1 m gilt die Stärke des Datums, weit draußen 1/d²) und dem weichen Saum an der Reichweite R ((1 − (d/R)⁴)², der Saum
     // von r184s Punktlicht). Bis K11b trug die Welt den Legacy-Abfall des r128-Labors (1 − d/R)^abfall: das Feuer trug in
     // 4 m noch 31 % seiner Stärke in 1 m (1/d²: 7 %) — der Boden glühte über mehrere Meter.
+    // Der Abfall 2 (jede Leuchte des Gesetzes) ist die Basis selbst: pow(x, 1) = x exakt (IEEE 754) — die Licht-Karte ruft ihn je
+    // Zelle und Lage (eine Laterne 30 800-mal), und Math.pow war ihr teuerster Schritt.
     function lichtAbfall(L, d) {
         var R = L.reichweiteM, k2 = L.kernM * L.kernM;
         if (!(d < R)) return 0;
-        var q = (d / R) * (d / R), saum = (1 - q * q) * (1 - q * q);
-        return saum * Math.pow((1 + k2) / (d * d + k2), (L.abfall || 0) / 2);
+        var q = (d / R) * (d / R), saum = (1 - q * q) * (1 - q * q), x = (1 + k2) / (d * d + k2);
+        return saum * (L.abfall === 2 ? x : Math.pow(x, (L.abfall || 0) / 2));
     }
     // Das Flackern einer Quelle zur Zeit t (s) mit der Phase `phase`: −1 … 1 aus zwei Sinus in `flacker.hz` (die Flamme atmet
     // in 6–10 Hz; die Schwebung beider bricht die Periode). Ohne `flacker` 0.
@@ -12390,14 +12589,14 @@
     // DIE WANDLATERNE IM DORF (K66-2) — KONSUM BEIDSEITIG wie reihenSnap: buildDorf (Lab) und exportSettlement rufen sie NACH
     // dem Snap (die Wand steht, wo das Haus steht). Zwei Stände der Gestalt wandlaterne (Kopf `armM` vor der Wand des Kerns
     // W × D, nie vor der Traufe der Hülle): (1) die Tür von Gasthaus und Schmiede trägt sie 1,1 m neben der Tür (bis K66-2 ein
-    // Glas-Kopf des Hofs ohne Licht); (2) jede Marke des Dorf-Lichts (jeder Meter Weg, `lay.marken`), deren nächste Laterne weiter
-    // als LICHT_MARKE_M liegt — die dichte Gasse, in der kein Mast vor der Wand und neben dem Weg steht, und die Lücke zwischen
+    // Glas-Kopf des Hofs ohne Licht); (2) jede Marke des Dorf-Lichts (die Mitte jedes Felds ohne Mast, `lay.marken`), deren nächste Laterne weiter
+    // als ihre Weite `r` liegt (die Hälfte des Felds s ihres Wegs aus `LICHT_KLASSE`, nacht-licht-klasse) — die dichte Gasse, in der kein Mast vor der Wand und neben dem Weg steht, und die Lücke zwischen
     // zwei Masten —, trägt sie an der Hauswand, die ihr am nächsten liegt (der Stand ≥ 0,6 m von der Ecke, der Kopf in keiner
     // fremden Hülle); die Marken laufen den Weg entlang, jede neue Laterne deckt die folgenden. Bis K66-2 setzte `laterneNah`
     // die Laterne einer dunklen Marke an irgendeinen freien Stand des Dorfs; bis N1 lag je 25 m eine Marke, zwischen ihnen blieb
-    // die Wand der Gasse schwarz (nacht-wand 69 %). Leser von LICHT_MARKE_M: gate:settlement DORF-LICHT (das Soll je Meter).
+    // die Wand der Gasse schwarz (nacht-wand 69 %); bis nacht-licht-klasse galt für jede Marke 10 m (`LICHT_MARKE_M`). Leser der Weite:
+    // gate:settlement DORF-LICHT (das Soll je Meter, `licht` je Weg des Plans).
     // dorfB: [{p, dims}] · pl: lay.pl · lay: das Layout (laternen wird ERGÄNZT). Rückgabe: die Zahl der Wandlaternen.
-    var LICHT_MARKE_M = 10;
     // DIE GRÜNDUNG IST FLACH (w28-gruendung-flach): der Kopf einer Wandlaterne fragt nur die Grundrisse seiner Zelle des Rasters
     // (`GRUENDUNG_RASTER.wandM`, je Zelle jeder Grundriss, dessen Umkreis ex + ez sie berührt — derselbe Kreis, an dem `fernOBB`
     // vorher jeden fernen verwarf), und ein Stand, der die Marke nicht näher erreichen kann als der beste bisher (seine Wand liegt
@@ -12477,7 +12676,7 @@
             var m = M[mi],
                 d0 = Infinity;
             for (t = 0; t < lay.laternen.length; t++) d0 = Math.min(d0, Math.hypot(lay.laternen[t].x - m.x, lay.laternen[t].z - m.z));
-            if (!(d0 > LICHT_MARKE_M)) continue;
+            if (!(d0 > m.r)) continue;
             var kand = [];
             for (k = 0; k < H.length; k++) {
                 var h = H[k],
@@ -13152,6 +13351,7 @@
             erbe: kw ? kw.erbe : dp.erbe && typeof dp.erbe === "object" ? dp.erbe : undefined, // die Kachel einer Stadt: Region, Jahr und Spanne ihrer Mitte (`viertelWort`)
             klima: dp.klima, // das Klima des Orts (REGION_KLIMA): der Wirt nennt es, ein Plan ohne Ort (das Labor) nicht
             himmel: dp.himmel, // der Regen des gehaltenen Himmels (`himmelNeigung`): der Wirt nennt ihn, solange ein Wort gilt
+            mundart: kw ? undefined : dp.mundart, // die Mundart des Orts (`mundartVon`): der Wirt nennt sie, die Kachel einer Stadt des Worts und das Labor nicht
         });
         // DIE MAUER STEHT IM JAHR DER WELT (mensch.macht.wehrbau#3, das EINE Urteil jeder Mauer des Exports: die Kachel, das Layout,
         // der Schnitt): die Entfestigung ist ein Gesetz der Welt-Zeit, nicht des Schnitts — steht das Jahr der Welt (`dp.jahr`,
@@ -13319,6 +13519,7 @@
             seed: plan.seed,
             name: plan.name,
             region: plan.region,
+            mundart: plan.mundart, // die Mundart des Orts (sprache#4, `mundartVon`; Leser: der Wirt, `_bewohnerLauf` Name und Rede)
             groesse: plan.schnitt.groesse,
             kernel: plan.kernel,
             jahr: plan.schnitt.jahr,
@@ -16292,7 +16493,8 @@
         brunnenWeicht: brunnenWeicht,
         mastWeicht: mastWeicht,
         laterneWandM: laterneWandM,
-        LICHT_MARKE_M: LICHT_MARKE_M, // das Soll des Dorf-Lichts je Meter Weg (K66-2 N1; Leser gate:settlement DORF-LICHT)
+        LICHT_KLASSE: LICHT_KLASSE, // die Beleuchtungsklasse je Ort (nacht-licht-klasse; Leser der Plan und gate:settlement DORF-LICHT)
+        lichtFlaecheM2: lichtFlaecheM2, // die Fläche je Leuchte Φ·U·MF ÷ Ē (nacht-licht-klasse)
         brandwand: brandwand,
         LEUTE_GESETZ: LEUTE_GESETZ, // die Leute eines Hauses (Meisterkarte mensch.K1; Leser: der Wirt, gate:kreatur-takt bewohner)
         leuteVon: leuteVon,
@@ -16333,11 +16535,15 @@
         SPRACH_BAUM: SPRACH_BAUM, // der Stammbaum je Familie (Tiefe, Grundwörter der Ursprache)
         LAUTWANDEL: LAUTWANDEL, // die Lautgesetze der Zweige (Campbell 2013; Leser: wandle)
         spracheVon: spracheVon,
+        mundartVon: mundartVon, // die Mundart eines Orts aus der Senke seines Tals (sprache#4; Leser: der Wirt _mundartAm, die Station)
+        mundartBlatt: mundartBlatt, // die Mundart eines Blatts des Stammbaums (Leser: gate:settlement R11, die Station sprache#3)
+        SPRACH_RAUM: SPRACH_RAUM, // σ und der Fächer der Mundarten (Burridge 2017)
         sprachName: sprachName,
         sprachWort: sprachWort, // das Wort einer Bedeutung (SPRACH_BAUM.bedeutungen) in der Sprache des Orts
         SATZ_GESETZ: SATZ_GESETZ, // die Folge der Glieder je Familie (WALS 81A/87A/143A) und die Rahmen der Verben der Grundliste
         sprachSatz: sprachSatz, // der Satz eines Sprechers in der Sprache des Orts (Leser: der Wirt _bewohnerLauf „rede“)
-        sprachKerne: sprachKerne, // die Silben-Kerne eines Satzes (Leser: die Rede der Menge, klang.js _bewohnerLautTakt)
+        sprachSilben: sprachSilben, // die Lautung eines Satzes: Silben { an, k, ab } (Leser: die Rede der Menge, klang.js _bewohnerLautTakt)
+        SPRACH_LAUTE: SPRACH_LAUTE, // die Laute der Schrift: Art, Ort, Stimme (Leser: klang `stimmPuffer` über die Silben, die Linse diag-klang-zensus)
         lautGesetz: lautGesetz, // ein Lautgesetz „typ:laut“ als Funktion des Worts (LAUTWANDEL)
         wandle: wandle,
         DORF_NORM: DORF_NORM,

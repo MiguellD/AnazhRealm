@@ -4420,11 +4420,26 @@
     // DIE GÜTE ALS ANTEIL (Welle L 06.10., additiv): der bestandene Lehren-Anteil ∈ [0, 1] einer Gestalt samt Prägung —
     // die EINE Güte eines Schmiede-Geräts (der Wirt liest sie für Schaden, Werkstoff-Kraft und Equip-Fold; gueteFaktor
     // bildet sie auf [faktorLeer, faktorVoll] ab). null = kein Rezept; ein Bogen trägt 1.
-    function gueteAnteil(rezeptId, ov) {
+    // DIE HAND (Meisterkarte 2 mensch.sport.kunst#2, additiv): `hand` das Können dessen, der das Stück macht (1 = das Band der
+    // Guten); ohne Hand die Güte der Gestalt allein, byte-gleich. Mit ihr trägt das Stück den Anteil der Gestalt, den die Hand
+    // trifft: 1 − `handFehler`.
+    function gueteAnteil(rezeptId, ov, hand) {
         var tp = prepP(rezeptId, ov);
         if (!tp) return null;
-        if (tp.modus === "bogen") return 1;
-        return lehrenAnteil(tp);
+        var g = tp.modus === "bogen" ? 1 : lehrenAnteil(tp);
+        return hand == null ? g : g * (1 - handFehler(hand));
+    }
+
+    // DER FEHLER DER HAND (kunst#2): der Anteil des Werks, den die Hand des Könnens `k` verfehlt. Das Potenzgesetz der Übung trägt
+    // Zeit UND Fehler (Newell & Rosenbloom 1981; das Können des Wirts ist die Rate der Guten, `LEBENSLAUF.uebung`) — der Fehler fällt
+    // wie 1 / k (ANGENOMMEN: derselbe Exponent wie die Zeit). Das Band: Birkmeyer et al. 2013 (N Engl J Med 369:1434, 20 Chirurgen,
+    // die Technik im Video von Fachgenossen bewertet, 10 343 Eingriffe) — das unterste Quartil des Könnens 14,5 %, das oberste 5,2 %
+    // Komplikationen (2,8×); `gut` der Fehler am Band der Guten (k 1 ↔ das oberste Quartil, ANGENOMMEN), 14,5 % trifft die Hand k 0,36.
+    var HAND = Object.freeze({ gut: 0.052 });
+    function handFehler(k) {
+        k = +k;
+        if (!(k >= 0) || !isFinite(k)) throw new Error("GÜTE: die Hand " + k + " ist kein Können");
+        return k > HAND.gut ? HAND.gut / k : 1;
     }
 
     function gueteFaktor(rezeptId, ov) {
@@ -5546,6 +5561,8 @@
         ARENA: ARENA,
         gueteFaktor: gueteFaktor,
         gueteAnteil: gueteAnteil,
+        HAND: HAND,
+        handFehler: handFehler,
         kampfMasze: kampfMasze,
         trefferUrteil: trefferUrteil,
         werkUrteil: werkUrteil,

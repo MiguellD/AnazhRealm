@@ -1,6 +1,10 @@
---- a/meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js   (punkte-maschine, Teil S3, Zeilen ~8376–8400)
-+++ b/meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js   (KANDIDAT — Soll und Richter-Text unverändert)
-@@
+diff --git a/meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js b/meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js
+index 1185669..39db232 100644
+--- a/meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js
++++ b/meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js
+@@ -8375,13 +8375,33 @@ L.perspektive("same", (() => {
+                         const aesung = () => r3(block.reduce((s, [x, z]) => s + r._kreaturNahrung(x, z), 0) / block.length);
+                         const flussP = (r._hydroFor(bx, bz).rivers || []).flatMap((v) => v.points || []).sort((p, q) => Math.hypot(p.x - bx, p.z - bz) - Math.hypot(q.x - bx, q.z - bz)).slice(0, 8);
                          const fluss = () => r3(flussP.reduce((s, p) => { const b = r._voxelSurfaceY(p.x, p.z); return s + Math.max(0, r._atlasWaterLevelAt(p.x, p.z, b) - b); }, 0) / Math.max(1, flussP.length));
 +                        // die Pegel-SPITZE ist die Antwort des Abflusses auf Regen: ohne Regen trägt kein Einzugsgebiet einen Beiwert. Derselbe
 +                        // Regen (Stärke a.regen über a.regenS Kalender-Sekunden) vor und nach dem Brand, der Lauf neu aus dem Gesetz.
@@ -22,11 +26,41 @@
 +                                r._pegelTakt();
 +                            }
 +                        };
-@@
+                         const tiere = () => {
+                             let n = 0;
+                             for (const R of Object.values((st.faunaBestand || {}).regionen || {})) for (const t of R.tiere || []) if (Math.hypot(t.x - bx, t.z - bz) <= a.tierR) n++;
+                             return n;
+                         };
+                         const aus = { orte: orte.length, gegen };
 -                        const blockVor = { aesung: aesung(), fluss: fluss(), tiere: tiere(), punkte: flussP.length };
 +                        const blockVor = { aesung: aesung(), fluss: spitze(), tiere: tiere(), punkte: flussP.length };
-@@
--                            aus.block = { vor: blockVor, nach: { aesung: aesung(), fluss: fluss(), tiere: tiere() }, jahre: …
-+                            aus.block = { vor: blockVor, nach: { aesung: aesung(), fluss: spitze(), tiere: tiere() }, jahre: …
-@@ (Aufruf-Argumente des Teils S3)
-+                        regen: 0.004, regenS: 1800,
+                         try {
+                             for (const [m] of stubs) r[m] = () => {};
+                             r._sukzessionNeu = [];
+@@ -8397,7 +8417,7 @@ L.perspektive("same", (() => {
+                             aus.sprungJahre = a.sprungJahre;
+                             wm.taten = Array.isArray(alt.L0) ? alt.L0.slice() : [];
+                             for (const [x, z] of block) r._tatSchreiben("brand", x, z);
+-                            aus.block = { vor: blockVor, nach: { aesung: aesung(), fluss: fluss(), tiere: tiere() }, jahre: a.jahre.map((j) => [j, bei(j, aesung)]), zellen: block.length, ort: [bx, bz].map(Math.round) };
++                            aus.block = { vor: blockVor, nach: { aesung: aesung(), fluss: spitze(), tiere: tiere() }, jahre: a.jahre.map((j) => [j, bei(j, aesung)]), zellen: block.length, ort: [bx, bz].map(Math.round) };
+                         } finally {
+                             wm.taten = alt.L0;
+                             r._nachwuchsFaellig = alt.nf;
+@@ -8409,7 +8429,7 @@ L.perspektive("same", (() => {
+                                 else delete r[m];
+                             }
+                         }
+-                        aus.zurueck = { taten: wm.taten === alt.L0, aesung: aesung() === blockVor.aesung };
++                        aus.zurueck = { taten: wm.taten === alt.L0, aesung: aesung() === blockVor.aesung, fluss: spitze() === blockVor.fluss };
+                         aus.welt = { staedte: r._staedte().length, siedlungen: ((st.wegeKarte || {}).siedlungen || []).length, haefen: (st.architectures || []).filter((e) => e && /hafen|harbor|harbour|port/i.test(String(e.type))).length, bauten: (st.architectures || []).length, wegStufen: ((st.wegeKarte || {}).stufen || []).length };
+                         const GEF = ["beben", "quake", "vulkan", "volcan", "ausbruch", "eruption", "tsunami", "rutsch", "krater", "crater", "gefahr", "hazard", "einschlag", "impact", "aussterb", "arten"];
+                         const gef = (o) => {
+@@ -8439,7 +8459,7 @@ L.perspektive("same", (() => {
+                         aus.saaten = { n: s100.length, streuungM: r3(Math.sqrt(hs.reduce((s, v) => s + (v - hm) * (v - hm), 0) / Math.max(1, hs.length))), gefahr: [...new Set(s100.flatMap(gef))].length, mitGefahr: s100.filter((o) => gef(o).length > 0).length };
+                         return aus;
+                     };
+-                    const x = await S(seite, { orte: (U[2] || {}).orte || 24, radien: [30, 60, 90, 120, 150, 180, 210, 240], sprungJahre: (U[2] || {}).jahre || 1, blockAbstand: 60, blockR: 3, tierR: 150, jahre: [0, 0.5, 1, 2, 3, 5, 7, 10, 15], zeitMa: 1, saaten: (U[6] || {}).saaten || 100 });
++                    const x = await S(seite, { orte: (U[2] || {}).orte || 24, radien: [30, 60, 90, 120, 150, 180, 210, 240], sprungJahre: (U[2] || {}).jahre || 1, blockAbstand: 60, blockR: 3, regen: 1, regenS: 300, tierR: 150, jahre: [0, 0.5, 1, 2, 3, 5, 7, 10, 15], zeitMa: 1, saaten: (U[6] || {}).saaten || 100 });
+                     const R = x.reihe || [];
+                     const pear = (P) => {
+                         const n = P.length;

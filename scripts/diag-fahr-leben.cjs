@@ -772,6 +772,53 @@ function stationVerdict(s) {
                 fk.ball?.zerfallPct >= 4 && fk.ball.zerfallPct <= 8,
                 `frei-drall-zerfall: der Drall des Balls fällt bis kurz nach dem Scheitel um ${fk.ball?.zerfallPct} % (Band der Messungen 4–8 %) — Täter FREI.luft.drallZerfall / \`_freiZiehen\` (stamm/koerper-frei.js)`,
             ],
+            // same.physik.flug#3: das Tauchen — Holz und Eis schwimmen in der Tiefe ihres Dichteverhältnisses (±5 %), der Stein
+            // liegt auf dem Grund (main b3740dd5: der Löser las kein Wasser, Holz 3,42 m tief statt 0,22 m, 1 485 %)
+            [
+                fk.tauch?.holz?.abwPct <= 5 && fk.tauch.eis?.abwPct <= 5,
+                `frei-tauchen: Holz taucht ${fk.tauch?.holz?.tiefe} m (Soll ${fk.tauch?.holz?.soll}, ${fk.tauch?.holz?.abwPct} %), Eis ${fk.tauch?.eis?.tiefe} m (Soll ${fk.tauch?.eis?.soll}, ${fk.tauch?.eis?.abwPct} %; je ≤ 5)${fk.tauch?.fehlt ? " — " + fk.tauch.fehlt : ""} — Täter \`_freiAuftrieb\` / \`_freiWasserPacken\` (stamm/koerper-frei.js)`,
+            ],
+            [
+                fk.tauch?.stein?.ueberGrund < 0.05,
+                `frei-sinken: der Stein-Würfel liegt ${fk.tauch?.stein?.ueberGrund} m über dem Grund (< 0,05) — Täter \`_freiAuftrieb\` (stamm/koerper-frei.js)`,
+            ],
+            [fk.tauchOhneWasser?.holz?.abwPct > 5, "frei-mutante: ohne Wasser schwimmt das Holz doch (vakuös)"],
+            // same.physik.flug#3: das Segel — das Boot des Anlegers schwimmt im Wasser (sein Rumpf, nie Reifen: main b3740dd5 glitt es
+            // mit der Gleitreibung der Kufe, vmax 0,01 m/s), der Ruderer bringt es auf das Tempo seiner 100 W gegen die Haut (ITTC,
+            // Band 1,6–2,4 m/s), und die Polare hat ihre Form: gegen den Wind keine Fahrt, am Wind (45°) Fahrt, halber Wind oder raum am
+            // schnellsten, vor dem Wind langsamer
+            [
+                fk.segel?.rumpf === true && fk.segel.rudern >= 1.6 && fk.segel.rudern <= 2.4,
+                `segel-rudern: das Boot des Anlegers rudert ${fk.segel?.rudern} m/s (Band 1,6–2,4; Rumpf im Fahr-Satz ${fk.segel?.rumpf}, Tiefgang ${fk.segel?.tiefe} m)${fk.segel?.fehlt ? " — " + fk.segel.fehlt : ""} — Täter \`fahrRumpf\` / \`bootFahrt\` (vehicle-core.js) · \`_fahrSatz\` / \`_vehicleProfile\` rumpf (stamm/koerper-fahrt.js)`,
+            ],
+            [
+                ((p) => {
+                    const max = p ? Math.max(p[45], p[90], p[135], p[180]) : NaN;
+                    return p && p[0] <= 0.1 && p[45] >= 0.4 * max && (p[90] === max || p[135] === max) && p[180] < max;
+                })(fk.segel?.polar),
+                `segel-polar: das Segelboot bei 3 m/s Wind, Kurs zum Wind 0 · 45 · 90 · 135 · 180° → ${fk.segel?.polar ? [0, 45, 90, 135, 180].map((k) => fk.segel.polar[k]).join(" · ") : "—"} m/s (Soll: gegen den Wind ≤ 0,1, am Wind ≥ 0,4 × das schnellste, das schnellste bei 90 oder 135°, vor dem Wind langsamer) — Täter \`segelTrimm\` / \`fahrRumpf\` (vehicle-core.js)`,
+            ],
+            // die Polare im starken Wind (8 m/s): halber Wind schneller als am Wind (× 1,2) und als vor dem Wind — main b3740dd5
+            // hatte keinen Rumpf, der WIP 14 deckelte ihn auf die Rumpfgeschwindigkeit (3,32 m/s an jedem Kurs); der Wellen-Widerstand
+            // nach Holtrop (`rumpfWelle`) bremst ihn
+            [
+                ((p) => p && p[90] >= 1.2 * p[45] && p[180] < p[90])(fk.segel?.sturm),
+                `segel-sturm: das Segelboot bei 8 m/s Wind, Kurs 45 · 90 · 180° → ${fk.segel?.sturm ? [45, 90, 180].map((k) => fk.segel.sturm[k]).join(" · ") : "—"} m/s (Soll: halber Wind ≥ 1,2 × am Wind, vor dem Wind langsamer — kein Deckel plättet die Polare) — Täter \`rumpfWelle\` / \`rumpfWelleGesetz\` · der Deckel in \`fahrTakt\` (vehicle-core.js)`,
+            ],
+            // die Krängung: am Wind bei 6 m/s legt sich das Boot nach Lee (über 3°, unter dem Kipp-Winkel), auf dem anderen Bug zur
+            // anderen Seite — die Wank-Feder des Bilds liest das Aufrichten des Rumpfs, nie die Querlast der Reifen
+            [
+                ((k, kipp) => k && Math.abs(k[45]) >= 3 && Math.abs(k[45]) <= kipp && Math.abs(k[315]) >= 3 && k[45] * k[315] < 0)(fk.segel?.kraeng, fk.segel?.kippGrad),
+                `segel-kraengung: am Wind bei 6 m/s krängt das Boot ${fk.segel?.kraeng ? fk.segel.kraeng[45] + "° / " + fk.segel.kraeng[315] : "—"}° (Bug 45 / 315°; Soll je Bug ≥ 3° nach Lee, ≤ Kipp-Winkel ${fk.segel?.kippGrad}°, gegensinnig) — Täter \`fahrRumpf\` z.krang · \`fahrStand\` fWank · \`bootFahrt\` kraeng (vehicle-core.js)`,
+            ],
+            [fk.segelOhneRumpf?.rudern < 1, "segel-mutante: auf Reifen rudert das Boot doch (vakuös)"],
+            // same.physik.flug#3: die Strömung am Rumpf — das Boot ohne Ruder treibt im Fluss mit dem Wasser (Drift über Grund =
+            // Strömung längs seines Wegs ±15 %; main b3740dd5 lag es im Fluss fest)
+            [
+                fk.strom?.rumpf === true && fk.strom.abwPct <= 15,
+                `strom-boot: das Ruderboot treibt im Fluss mit ${fk.strom?.drift ? fk.strom.drift.join("/") : "—"} m/s gegen die Strömung ${fk.strom?.strom ? fk.strom.strom.join("/") : "—"} m/s (Abweichung ${fk.strom?.abwPct} %, Soll ≤ 15; Rumpf ${fk.strom?.rumpf}, Tiefgang ${fk.strom?.tiefe} m)${fk.strom?.fehlt ? " — " + fk.strom.fehlt : ""} — Täter \`_wagenSchritt\` Strömung (stamm/koerper-fahrt.js) · \`_waterFlowAt\` (stamm/wasser-hydro.js)`,
+            ],
+            [fk.stromOhne?.abwPct > 50, "strom-mutante: ohne Strömung treibt das Boot doch (vakuös)"],
             [fk.ballOhneMagnus?.ablenkAbwPct > 25, "frei-mutante: ohne Magnus lenkt der Drall den Ball wie die Rechnung (vakuös)"],
             [!(fk.ballOhneZerfall?.zerfallPct >= 4), "frei-mutante: ohne Zerfall fällt der Drall doch (vakuös)"],
             [fk.ballPrallEins?.prallAbwPct > 10, "frei-mutante: mit EINER Stoßzahl 0,2 prallt der Ball wie das FIFA-Band (vakuös)"],
@@ -2346,6 +2393,12 @@ hauptLauf(async () => {
                 ballOhneMagnus: { kugel: true, ablenkung: 0, rechnung: 1.0, ablenkAbwPct: 100, prallH: 1.3, prallAbwPct: 5.3, zerfallPct: 0 },
                 ballPrallEins: { kugel: true, ablenkung: 0.95, rechnung: 1.0, ablenkAbwPct: 5, prallH: 0.07, prallAbwPct: 77.9, zerfallPct: 5.6 },
                 ballOhneZerfall: { kugel: true, ablenkung: 0.98, rechnung: 1.0, ablenkAbwPct: 2, prallH: 1.3, prallAbwPct: 5.3, zerfallPct: 0 },
+                tauch: { saeule: 3.43, holz: { tiefe: 0.215, soll: 0.216, abwPct: 0.35, ueberGrund: 3.21 }, eis: { tiefe: 0.28, soll: 0.275, abwPct: 1.8, ueberGrund: 3.14 }, stein: { tiefe: 3.43, soll: 0.795, abwPct: 331, ueberGrund: 0 } },
+                tauchOhneWasser: { saeule: 3.43, holz: { tiefe: 3.423, soll: 0.216, abwPct: 1484.9, ueberGrund: 0.007 }, eis: { tiefe: 3.431, soll: 0.275, abwPct: 1147, ueberGrund: 0 }, stein: { tiefe: 3.43, soll: 0.795, abwPct: 331, ueberGrund: 0 } },
+                segel: { rumpf: true, segelA: 8.1, tiefe: 0.143, rudern: 2.11, polar: { 0: -0.22, 45: 1.32, 90: 2.17, 135: 1.49, 180: 1.29 }, sturm: { 45: 3.17, 90: 5.18, 180: 3.3 }, kraeng: { 45: -14.3, 315: 14.3 }, kippGrad: 28.2 },
+                segelOhneRumpf: { rumpf: false, segelA: null, tiefe: 0.175, rudern: 0.01, polar: { 0: 0, 45: 0, 90: 0, 135: 0, 180: 0 } },
+                strom: { rumpf: true, tiefe: 0.143, drift: [0.75, -0.83], strom: [0.75, -0.83], abwPct: 0.4 },
+                stromOhne: { rumpf: true, tiefe: 0.143, drift: [0, 0], strom: [0.75, -0.83], abwPct: 100 },
             },
             spielerWagen: {
                 a: {
@@ -2607,6 +2660,36 @@ hauptLauf(async () => {
                 { frei: { ...gutS.frei, ballOhneZerfall: gutS.frei.ball } },
                 "frei-mutante: ohne Zerfall",
             ],
+            // der Löser ohne Wasser (main b3740dd5): Holz und Eis sinken auf den Grund des Sees
+            [
+                "Holz und Eis sinken auf den Grund",
+                { frei: { ...gutS.frei, tauch: gutS.frei.tauchOhneWasser } },
+                "frei-tauchen",
+            ],
+            ["kein See in der Welt", { frei: { ...gutS.frei, tauch: { fehlt: "kein See in der Welt" } } }, "frei-tauchen"],
+            [
+                "der Stein schwimmt",
+                { frei: { ...gutS.frei, tauch: { ...gutS.frei.tauch, stein: { ...gutS.frei.tauch.stein, ueberGrund: 3 } } } },
+                "frei-sinken",
+            ],
+            [
+                "ohne Wasser schwimmt das Holz doch",
+                { frei: { ...gutS.frei, tauchOhneWasser: gutS.frei.tauch } },
+                "frei-mutante: ohne Wasser",
+            ],
+            // der Rumpf auf Reifen (main b3740dd5): das Boot gleitet mit der Kufe, vmax 0,01 m/s — es rudert nicht, es segelt nicht
+            ["das Boot gleitet auf Reifen", { frei: { ...gutS.frei, segel: gutS.frei.segelOhneRumpf } }, "segel-rudern"],
+            ["das Boot fährt gegen den Wind", { frei: { ...gutS.frei, segel: { ...gutS.frei.segel, polar: { ...gutS.frei.segel.polar, 0: 1.0 } } } }, "segel-polar"],
+            ["vor dem Wind am schnellsten", { frei: { ...gutS.frei, segel: { ...gutS.frei.segel, polar: { ...gutS.frei.segel.polar, 180: 2.5 } } } }, "segel-polar"],
+            ["auf Reifen rudert das Boot doch", { frei: { ...gutS.frei, segelOhneRumpf: gutS.frei.segel } }, "segel-mutante: auf Reifen"],
+            // main b3740dd5: die Wank-Feder liest die Querlast der Reifen — auf dem Wasser ohne Seitenkraft steht das Boot aufrecht
+            // WIP 14: die Rumpfgeschwindigkeit als Deckel — im starken Wind fährt jeder Kurs 3,32 m/s
+            ["der Deckel plättet die Polare", { frei: { ...gutS.frei, segel: { ...gutS.frei.segel, sturm: { 45: 3.32, 90: 3.32, 180: 3.32 } } } }, "segel-sturm"],
+            ["das Boot krängt nicht", { frei: { ...gutS.frei, segel: { ...gutS.frei.segel, kraeng: { 45: 0, 315: 0 } } } }, "segel-kraengung"],
+            ["das Boot krängt nach Luv auf beiden Bugen", { frei: { ...gutS.frei, segel: { ...gutS.frei.segel, kraeng: { 45: 14.3, 315: 14.3 } } } }, "segel-kraengung"],
+            // main b3740dd5: der Fahr-Schritt des Wagens liest keine Strömung — das Boot liegt im Fluss fest
+            ["das Boot liegt im Fluss fest", { frei: { ...gutS.frei, strom: gutS.frei.stromOhne } }, "strom-boot"],
+            ["ohne Strömung treibt das Boot doch", { frei: { ...gutS.frei, stromOhne: gutS.frei.strom } }, "strom-mutante"],
             // der wandernde Fuss an 55a540d7~1: das stehende Fass im Gras gewann +18 J in 8 s und schlief nie
             [
                 "das stehende Fass gewinnt Energie",

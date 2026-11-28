@@ -13,7 +13,8 @@ k2-mensch-sport.diff
   auge-Texts (der nächste nahe Leib im Akt einer Kunst, 3 m vor ihm, Augenhöhe) und ruft K.auge; sonst K.leser mit der Messzeile.
 - sprossen[1]: `erwartet: "nicht"` und `fehlt` fallen; auge.pose und auge.vorbild (der Richter-Text) bleiben Wort für Wort.
 - headless geprüft: KUNST im Wirt (grundWirt, ein Rig aus dem Guss): handwerk Züge 23 ↔ 11 · CV 0,051 ↔ 0,149 · Teile 1 ↔ 2 · Hüfte
-  7,07 ↔ 14,35 mrad; kampf 18 ↔ 12 · 0,050 ↔ 0,153 · 1 ↔ 2 · 7,07 ↔ 14,35; brett wie handwerk. An main eef726c4 (vor dem Schnitt) misst
+  7,07 ↔ 14,35 mrad; kampf 18 ↔ 12 · 0,050 ↔ 0,153 · 1 ↔ 2 · 7,07 ↔ 14,35; brett (seit Kopf 3 ein eigener Leib, MOTION.brett) 12 ↔ 5 ·
+  0,049 ↔ 0,144 · 1 ↔ 2 — bis Kopf 2 trug es den Leib des Handwerks (pwalk 23 ↔ 11). An main eef726c4 (vor dem Schnitt) misst
   dieselbe Messung ROT: kampf 0 Züge, handwerk CV 0,261 ↔ 0,276, Teile 1 ↔ 1, Hüfte gleich.
 
 faecher.diff — Fach „Ist der Mensch in der Bildmitte ein Meister oder ein Anfänger seiner Kunst?“
@@ -22,6 +23,25 @@ faecher.diff — Fach „Ist der Mensch in der Bildmitte ein Meister oder ein An
   < 0,5 Anfänger; „haupt“ liest b.uebung.haupt), je 22 je Klasse im Wechsel (imWechsel) → 44 Posen ≥ MIN 40, nach Abstand.
 - Selbsttest: 15 GRÜN · 0 ROT (vorher 14 · 0); die neue Zeile prüft Klassen-Schwelle, je ≥ 20 und den Wechsel.
 
-Ehrlich offen: ein Standbild trägt Haltung (Steife: Kopf +0,16 rad, Ellbogen) und einen Augenblick des Zugs, nicht Takt und Nachsetzen —
+Ehrlich offen: ein Standbild trägt Haltung (seit Kopf 3 nach Takayasu 2019: der Lehrling Rumpf +10°, Arme 7° vom Leib, Ellbogen 10° gestreckter, Kopf +0,16 rad ANGENOMMEN; L7 im Standbild 20 von 20 Phasen je Kunst) und einen Augenblick des Zugs, nicht Takt und Nachsetzen —
 die Bewegung urteilt S1 an Zahlen; ob der Blindtest am Bild ≥ 80 % trägt, sagt erst das Blatt (GPU, nicht gefahren). Tanz hat keinen
 Akt in der Welt (kunst#3) — die Klasse Tanz fehlt im Fach, nicht still: LEIB_SATZ.kunst nennt keinen Tanz-Akt.
+
+Kandidat 3 (karte2.mensch.sport.kunst#2, Welle 27.11. abends — ohne Auftrag seit 20:03 die nächste rote Sprosse der Leiter) — NICHT
+gesetzt; k2-mensch-sport-3.diff + auge-klasse-3.diff gegen dieselbe Basis (punkte-maschine, byte-gleich um 20:28 Uhr der Wolke), trägt
+Kandidat 2 unverändert und dazu:
+- die Klassen-Zeile von S1 (Post 21:41): stationen/auge-klasse.cjs `"mensch.sport.kunst#1": [P, "Blindtest Anfänger ↔ Meister ≥ 80 %"]`
+  nach `mensch.menge.bild#3` (S2 trägt kein auge, also keine Klasse);
+  geprüft am pm-Baum (punkte-maschine, depth 1): die Register-Liste der Maschine (`liste`) mit Kandidat 3 Exit 0 · 1976 Stationen · Fehler 0; Kandidat 2
+  ohne die Zeile Exit 2 „S1 trägt auge, aber keine Klasse“ (der Befund der GTX 1060 21:37, nachgestellt);
+- neue Seiten-Funktion WERK: je Ort mit Kette der Schmiede (`S.stoffstrom`) die Werkzeuge in den Händen der Leute aus dem Zensus
+  (`_stoffstromZensus`.stuecke: je Stück die Hand seines Schmieds und seine Güte, schmiede `gueteAnteil(beil, null, hand)`); trägt ein
+  Ort < 10 Stücke, läuft seine Kette 7 Tage (wie energie#1). S2 = K.zahl(2, { n Stücke, werte { r2 } }), R² linear Güte ↔ Hand.
+- sprossen[2]: `erwartet: "leser"` und `fehlt` fallen, `wo` zeigt den Schnitt; umfang, masse (der Richter-Text) und die Probe
+  (R² 0,1 → ROT) bleiben Wort für Wort.
+- headless (Sonde werk-wache: grundWirt, eine Kette aus zwei Öfen, deren Schmiede Lebenslauf-Getter tragen wie `_bestandAnlegen`):
+  Hände 0,55 ↔ 1,4 → 12 Stücke, Güte 0,8643 … 0,9191, R² 1,000; eine Hand (1,1 ↔ 1,1) → R² 0 (ROT mit Täter „eine Hand am
+  Messort“); an main b3740dd5 (vor dem Schnitt) → leser „die Güte des Werks liest Rezept und Prägung, nie die Hand“.
+Ehrlich offen: stadt-voll trägt keine Schmiede (Bericht stoffstrom-kette), ein Dorf eine — an einem Ort mit EINEM Schmied streut
+die Güte nicht, R² 0. Den Messort mit ≥ 2 Händen (mehrere Dörfer im Ring) wählt der Koordinator. Die Güte des Stücks in der Hand
+eines Bewohners liest heute nur der Zensus: kein Bewohner schlägt mit seinem Werkzeug (Schaden, Abbau, Verschleiß offen).

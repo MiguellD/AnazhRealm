@@ -184,3 +184,17 @@ zählt quer in Adern (Mittel-Rippe 0), uv.y trägt die Narbe über der Ecke (Bla
 L1 am Fuß 1,86/2,51); die Ähre wächst als Spindel des Stängels mit wechselständigen Ährchen (L1 6, L2 2, je ein Dreieck, die
 Breite des Gesetzes); der Stoff trägt die Cuticula (roughness 0,7 → 0,55) und den Himmel ganz (envMapIntensity 0,18 → 1:
 die Narbe verdeckt ihn in der Tiefe). Dieselben Würfe je Halm (Strom-Erhalt): dieselben Individuen.
+
+**Re-Mint 27.11.2026 (kunst-am-leib 3, begründet — DAS BRETT TRÄGT SEINEN LEIB):** nur `recipes.json` (+ Manifest), per
+`MINT_NUR_DATEN=1`; die 128 Mesh-Goldens, `world-params.json` und `render-config.json` byte-gleich (`gate:asset-contract` vor dem
+Re-Mint 128 von 128, EINE Verletzung: `mensch.fx.motion.presets.brett` fehlt). Genau EIN Feld neu (`mensch.fx.motion.presets.brett`,
+additiv), der Rest byte-gleich: koerper `MOTION.brett` — der Spieler am Brett über die Partie gebeugt (Kopf und Rumpf 0,50 rad, der
+Lidschlag des Lesers) — trennt das Brett vom Handwerk (`pwalk`); vorher trugen beide Künste denselben Leib, und der Blick am Blindpaar
+der Station mensch.sport.kunst#1 trennte sie nicht (gate:koerper-kern L7 „drei Künste, drei Leiber“).
+
+**Re-Mint 27.11.2026 (wurf-mit-luft, flug#3, begründet — DER RUMPF SCHWIMMT):** nur `recipes.json` (+ Manifest), per
+`MINT_NUR_DATEN=1`; die Mesh-Goldens, `world-params.json` und `render-config.json` byte-gleich (`gate:vehicle-contract` GRÜN). Genau
+EIN Feld neu (`boot.fx.fahrprofil.rumpf`, additiv), der Rest byte-gleich: vehicle `bootFahrt` — der Rumpf des Boots im Wasser
+(Archimedes-Linie, Ruderer, Haut nach ITTC 1957, Lateralplan, Segel mit Krängungs-Grenze, die Form der Welle für Holtrop) — statt des
+Reifen-Pfads, auf dem main b3740dd5 das Boot mit 0,01 m/s gleiten ließ. Die Potenzen der Regression stehen NICHT im Rezept
+(`rumpfWelleGesetz` in `fahrGesetz`): Browser und node rechnen Math.pow mit gebrochenem Exponenten nicht bit-gleich (ein ULP an a17).

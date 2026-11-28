@@ -30,7 +30,9 @@
 //  (Mk) DER MARKT AUS SEINER MENGE (markt-klang): nach dem Zensus auf derselben Seite am Ort stadt-voll (an `marktSeite`; allein:
 //      `--markt [--sek n]`, 600 = die 10 Minuten der Karte): Stimmen zugleich, L_Aeq gegen die Wochenmärkte, Spitze, Duck am
 //      Bus, wer duckt, Lombard; Täter S24–S27.
-//  SELBST-TEST (--selftest): je Wand ein gepflanzter Täter (die Zeile S1–S23 und S28 unten), Stubs restauriert.
+//  (Sp) DIE LAUTUNG DER REDE (sprache#5): je Familie %V der Rede (≤ 0,70; das Band 0,40–0,54 nach Ramus et al. 1999 je Zeile)
+//      und der Gipfel je Frikativ gegen Jongman et al. 2000, ±15 %; Täter S29.
+//  SELBST-TEST (--selftest): je Wand ein gepflanzter Täter (die Zeile S1–S23, S28 und S29 unten), Stubs restauriert.
 //  (T) KLANG-TAKT IN BEWEGUNG: der eigene Lauf `--takt` (an `taktSeite`).
 //  (U) GESEHEN = GEHÖRT am Bach und im Regen: der eigene Lauf `--gesehen` (an `gesehenSeite`, klang.K2 Staffel 2).
 //   node scripts/diag-klang-zensus.cjs [--selftest] [--takt [--echt] [--minuten <n>] | --gesehen | --markt [--sek <n>]] [--json <datei>]
@@ -1601,6 +1603,59 @@ const PB_LEIB = { kind: { hoeheM: 1.35, sex: 0.5, jahre: 10 } }; // Mann und Fra
 // Gesetz bis stimme-leib-2) — der kleine Mann und die große Frau fallen beim Namen.
 const PB_RAND = { mannKlein: { hoeheM: 1.5824, sex: 0.25, jahre: 30 }, mannGross: { hoeheM: 1.8576, sex: 0, jahre: 30 }, frauKlein: { hoeheM: 1.5824, sex: 0.75, jahre: 30 }, frauGross: { hoeheM: 1.8576, sex: 1, jahre: 30 } }; // prettier-ignore
 const PB_RAND_BAND = Object.fromEntries(Object.keys(PB_RAND).map((g) => [g, PB_BAND[g.startsWith("mann") ? "mann" : "frau"]]));
+// (Sp) DIE LAUTUNG DER REDE (sprache#5, klang `stimmRede` + `stimmPuffer` ← fachwerk `sprachSilben`): je Familie der Sprache 24
+// Sätze ihrer Ursprache (Mann und Frau im Wechsel) als Rede der Menge gerechnet; aus den Segmenten des Puffers der Anteil der
+// Vokal-Zeit %V, am Puffer der Gipfel jedes Frikativs nach Jongmans Messung (40 ms Hamming, Vorbetonung 98 %). Die Wand: %V ≤ 0,70
+// in jeder Familie (die Rede aus Kernen allein trägt %V nahe 1 — jede gemessene Sprache 0,40–0,54: Ramus, Nespor & Mehler 1999,
+// die Mittel der Klassen 41,2 · 44,2 · 53,1 % bei Dellwo et al., Abb. 1; das Band druckt die Zeile je Familie) und der Gipfel je
+// Frikativ ±15 % zu Jongman, Wayland & Wong 2000 (Tafel 1, das Mittel über Stimme und Geschlecht). Der Täter: S29 die Rede ohne
+// An- und Abglied (die Stimme bis sprache#5, nur die Kerne).
+const SP_JONGMAN = { f: 7678, v: 7678, "θ": 7503, s: 6882, z: 6882, "ʃ": 3712 };
+const SP_BAND = [0.4, 0.54];
+async function redeSeite(arg) {
+    const { mut, jongman } = arg;
+    const K = __klangCore, FC = __fachwerkCore, rot = [], je = [], gipfel = {};
+    for (const R of Object.keys(FC.SPRACHE_GESETZ)) {
+        const L = FC.spracheVon(R, null);
+        let [T, V, kons] = [0, 0, 0];
+        for (let i = 0; i < 24; i++) {
+            let lautung = FC.sprachSilben(FC.sprachSatz(L, `rede${i}:${i % 7}`), L);
+            if (mut === "vokale") lautung = lautung.map((sb) => ({ ...sb, an: [], ab: [] }));
+            const rede = K.stimmRede(lautung, L.gesetz.einsatz).slice(0, K.MENGE.silbenMax);
+            const p = K.stimmPuffer({ leib: i % 2 ? K.STIMME.bezugFrau : K.STIMME.bezug, laut: K.MENGE.laut, rede, einsatz: L.gesetz.einsatz, saat: i + 1 }); // prettier-ignore
+            const N = Math.round(0.04 * p.sr);
+            for (const sg of p.segmente) {
+                const d = sg.bis - sg.von;
+                T += d;
+                if (sg.art === "vokal") V += d;
+                else kons++;
+                const a = Math.round(((sg.von + sg.bis) / 2) * p.sr) - (N >> 1);
+                if (!jongman[sg.l] || d < 0.04 || a < 1 || a + N > p.daten.length) continue;
+                let [best, bk] = [0, 0];
+                for (let k = 4; k < N / 2; k++) {
+                    let [re, im] = [0, 0];
+                    for (let j = 0; j < N; j++) {
+                        const x = (p.daten[a + j] - 0.98 * p.daten[a + j - 1]) * (0.54 - 0.46 * Math.cos((2 * Math.PI * j) / (N - 1)));
+                        re += x * Math.cos((2 * Math.PI * k * j) / N);
+                        im -= x * Math.sin((2 * Math.PI * k * j) / N);
+                    }
+                    if (re * re + im * im > best) [best, bk] = [re * re + im * im, k];
+                }
+                (gipfel[sg.l] ||= []).push((bk * p.sr) / N);
+            }
+        }
+        const pV = +(V / T).toFixed(3);
+        je.push({ R, pV, kons });
+        if (!(pV <= 0.7)) rot.push(`Sp ${R}: %V ${pV} — die Rede spricht nur ihre Kerne (${kons} Konsonanten in 24 Sätzen; klang stimmPuffer ← stimmRede ← fachwerk sprachSilben)`); // prettier-ignore
+    }
+    const mitte = {};
+    for (const [l, a] of Object.entries(gipfel)) {
+        mitte[l] = Math.round(rang(a.sort(aufsteigend)));
+        if (Math.abs(mitte[l] / jongman[l] - 1) > 0.15) rot.push(`Sp Gipfel ${l} ${mitte[l]} Hz gegen ${jongman[l]} Hz (Jongman et al. 2000, ±15 %; klang STIMME.reibung)`); // prettier-ignore
+    }
+    if (!Object.keys(mitte).length) rot.push("Sp Gipfel: kein Frikativ im Puffer (klang stimmPuffer ohne Reibung)");
+    return { rot, je, mitte };
+}
 async function stimmSeite(arg) {
     const { band, leiber, mut } = arg;
     const K = __klangCore, S = K.STIMME, rot = [], je = [], alt = { rachen: S.rachen, kehle: S.kehle, falteExp: S.falteExp };
@@ -2062,11 +2117,15 @@ async function marktSeite(o) {
     if (o.mut === "duck") tausche(DG.gespraech, "db", -13.27);
     if (o.mut === "stumm") tausche(K, "mengeRedet", () => null);
     if (o.mut === "lombard") tausche(K.MENGE.lombard, "dbJeDb", 0);
-    // S29: die Rede verliert die Kerne ihres Satzes (die Stimme spricht Vokale ohne Sprache, das Gesetz bis sprache-saaten-2) ·
+    // S29: die Rede verliert die Silben ihres Satzes, ihr Einsatz bleibt (die Stimme spricht Vokale ohne Sprache, das Gesetz bis sprache-saaten-2) ·
     // S30: die Rede spricht einen fremden Satz (die Nummer daneben — nicht der Satz, den der Wirt ihr gibt)
     if (o.mut === "satzlos") tausche(r, "_bewohnerLaut", ((alt) => function (b, laut, rede) {
-        return alt.call(this, b, laut, rede && { ...rede, kerne: undefined });
+        return alt.call(this, b, laut, rede && { ...rede, rede: undefined });
     })(r._bewohnerLaut));
+    // S31: der Satz vergisst seinen Akt (der Wirt reicht `b.akt` nicht an fachwerk `sprachSatz`)
+    if (o.mut === "handlungslos") tausche(r, "_bewohnerLauf", ((alt) => function (S, b, feld, tag) {
+        return alt.call(this, S, feld === "rede" ? Object.assign(Object.create(b), { akt: undefined }) : b, feld, tag);
+    })(r._bewohnerLauf));
     if (o.mut === "fremd") tausche(r, "_bewohnerLauf", ((alt) => function (S, b, feld, tag) {
         return alt.call(this, S, b, feld, feld === "rede" ? tag + 1 : tag);
     })(r._bewohnerLauf));
@@ -2090,7 +2149,7 @@ async function marktSeite(o) {
     })(r._bewohnerLaut));
     tausche(um.kern, "rufSpielen", ((alt) => function (c, aus, ruf) {
         const e = alt.apply(this, arguments);
-        if (e) rufe.push({ t0: e.einsatz, t1: e.einsatz + e.sek, rede: !!(ruf && ruf.silben), an: (ruf && ruf.anstrengungDb) || 0, kerne: ruf && Array.isArray(ruf.kerne) ? ruf.kerne.length : 0 }); // prettier-ignore
+        if (e) rufe.push({ t0: e.einsatz, t1: e.einsatz + e.sek, rede: !!(ruf && ruf.einsatz), an: (ruf && ruf.anstrengungDb) || 0, silben: ruf && Array.isArray(ruf.rede) ? ruf.rede.length : 0 }); // prettier-ignore
         return e;
     })(um.kern.rufSpielen));
     tausche(r, "_musikDuck", ((alt) => function (art) {
@@ -2118,7 +2177,10 @@ async function marktSeite(o) {
         return el > 0 ? ea / el : 0;
     };
     // DIE A-BEWERTUNG DER SPRECHSTIMME (die Eichung liest sie heraus): ihr Laut im Gesetz, Hann-Fenster je 4096, eine DFT der Bänder
-    const ref = K.stimmPuffer({ leib: K.STIMME.bezug, laut: K.MENGE.laut, silben: 6, saat: 7 });
+    // (sprache#5: die Rede trägt ihre Konsonanten — die Eichung hört einen Satz der Sprache des Markts, den ersten des Wirts)
+    const LS = window.__fachwerkCore.spracheVon(W.S.plan.region, W.S.plan.mundart);
+    const refRede = K.stimmRede(window.__fachwerkCore.sprachSilben(r._bewohnerLauf(W.S, W.S.liste[0], "rede", 1), LS), LS.gesetz.einsatz);
+    const ref = K.stimmPuffer({ leib: K.STIMME.bezug, laut: K.MENGE.laut, rede: refRede.slice(0, K.MENGE.silbenMax), einsatz: LS.gesetz.einsatz, saat: 7 });
     const rb = new Float64Array(mitten.length), rbb = bandVon(ref.sr, N);
     const fft = (re, im) => {
         for (let i = 1, j = 0; i < N; i++) {
@@ -2242,19 +2304,29 @@ async function marktSeite(o) {
     }
     // DER SATZ DER REDE (sprache#2): je Sprecher der Stadt, dessen Rede einen Satz trägt (`_mengeRede`: Nummer und Satz), der Satz
     // des Wirts mit derselben Nummer (`_bewohnerLauf` „rede“, die Mutanten sind zurück) — gleich, Wort für Wort; die Vokale der Kerne
-    // aus dem Gesetz seiner Sprache (fachwerk `spracheVon(region, same).gesetz.vokale`)
-    const satz = { saetze: (sy.menge && sy.menge.saetze) || 0, sprecher: 0, gleich: 0, fremd: [], beispiel: [], vokaleFremd: [] };
+    // aus dem Gesetz seiner Sprache (fachwerk `spracheVon(region, mundart).gesetz.vokale`)
+    // DER SATZ AM AKT (sprache#5): der Akt, in dem der Satz fiel (`z.akt`), trägt sein Verb (fachwerk SATZ_GESETZ.handlung) — das
+    // Wort der Sprache steht in einem Wort des Satzes (Zeit und Verneinung kleben an ihm; Doppel-Laute einfach gelesen)
+    const satz = { saetze: (sy.menge && sy.menge.saetze) || 0, sprecher: 0, gleich: 0, fremd: [], beispiel: [], vokaleFremd: [], mitAkt: 0, amAkt: 0, ohneVerb: [] }; // prettier-ignore
     const FC = window.__fachwerkCore;
-    const vokale = new Set(FC.spracheVon(W.S.plan.region, W.S.plan.seed >>> 0).gesetz.vokale.join(""));
+    const vokale = new Set(LS.gesetz.vokale.join(""));
+    const einfach = (w) => w.toLowerCase().replace(/([^aeiouyäöüøåæ])\1+/g, "$1");
     for (const b of W.S.liste) {
         const z = r._mengeRede && r._mengeRede.get(b);
         if (!z || typeof z.satz !== "string") continue;
         satz.sprecher++;
-        const soll = r._bewohnerLauf(W.S, b, "rede", z.nr);
+        if (z.akt != null) {
+            satz.mitAkt++;
+            const verb = (FC.SATZ_GESETZ.handlung || {})[z.akt];
+            const w = verb && einfach(FC.sprachWort(LS, verb));
+            if (w && z.satz.split(/[^\p{L}]+/u).some((t) => einfach(t).includes(w))) satz.amAkt++;
+            else if (satz.ohneVerb.length < 3) satz.ohneVerb.push(`${z.akt} → ${verb || "kein Verb"} in „${z.satz}“`);
+        }
+        const soll = r._bewohnerLauf(W.S, Object.assign(Object.create(b), { akt: z.akt }), "rede", z.nr);
         if (soll === z.satz) satz.gleich++;
         else if (satz.fremd.length < 3) satz.fremd.push(`„${z.satz}“ statt „${soll}“`);
         if (satz.beispiel.length < 4) satz.beispiel.push(z.satz);
-        for (const k of FC.sprachKerne(z.satz)) for (const c of k) if (!vokale.has(c) && satz.vokaleFremd.length < 3) satz.vokaleFremd.push(`${c} in „${z.satz}“`); // prettier-ignore
+        for (const sb of FC.sprachSilben(z.satz, FC.spracheVon(W.S.plan.region, W.S.plan.mundart))) for (const c of sb.k) if (!vokale.has(c) && satz.vokaleFremd.length < 3) satz.vokaleFremd.push(`${c} in „${z.satz}“`); // prettier-ignore
     }
     const G = 20 * Math.log10(sy.masterGain.gain.value * um.bus.gain.value);
     const dbA = (lTap) => +(lTap - G - aSprache + K.mengeDbA(0)).toFixed(2);
@@ -2287,7 +2359,7 @@ async function marktSeite(o) {
         duckGesetz,
         rufe: rufe.length,
         rede: rufe.filter((q) => q.rede).length,
-        redeOhneKerne: rufe.filter((q) => q.rede && !q.kerne).length,
+        redeOhneSilben: rufe.filter((q) => q.rede && !q.silben).length,
         satz,
         region: W.S.plan.region,
         ducks: duckNach,
@@ -2320,12 +2392,14 @@ function marktUrteil(m) {
     if (menge > 0) rot.push(`Mk die Menge duckt die Musik: ${menge}× \`_musikDuck("ruf")\` aus Lauten der Menge in ${m.sek} s (Bus ${Math.round(m.duckAnteil * 100)} % gesenkt)`);
     if (m.laermDbA > K.lombardAb && !(m.lombardDb > 0 && m.anMax > 0))
         rot.push(`Mk Lombard aus: Lärm ${m.laermDbA} dB(A) am Sprecher über dem Knick ${K.lombardAb}, die Stimme hebt sich um ${m.lombardDb} dB (Rede bis ${m.anMax} dB)`);
-    // DER SATZ DER REDE (sprache#2): jede Rede der Menge trägt die Kerne eines Satzes, jeder Satz ist der des Wirts in den Vokalen seiner Sprache
+    // DER SATZ DER REDE (sprache#2): jede Rede der Menge trägt die Silben eines Satzes, jeder Satz ist der des Wirts in den Vokalen seiner Sprache
     const Z = m.satz;
-    if (m.redeOhneKerne > 0 || !(Z.sprecher > 0))
-        rot.push(`Mk Rede ohne Satz: ${m.redeOhneKerne} von ${m.rede} Reden der Menge ohne die Kerne eines Satzes, ${Z.sprecher} Sprecher mit Satz (klang.js _bewohnerLautTakt ← fachwerk sprachSatz/sprachKerne)`); // prettier-ignore
+    if (m.redeOhneSilben > 0 || !(Z.sprecher > 0))
+        rot.push(`Mk Rede ohne Satz: ${m.redeOhneSilben} von ${m.rede} Reden der Menge ohne die Silben eines Satzes, ${Z.sprecher} Sprecher mit Satz (klang.js _bewohnerLautTakt ← fachwerk sprachSatz/sprachSilben)`); // prettier-ignore
     if (Z.sprecher > 0 && Z.gleich < Z.sprecher)
         rot.push(`Mk Satz ≠ Wirt: ${Z.sprecher - Z.gleich} von ${Z.sprecher} Sätzen der Rede sind nicht der Satz des Wirts (_bewohnerLauf „rede“): ${Z.fremd.join(" · ")}`); // prettier-ignore
+    if (!(Z.mitAkt > 0) || !(Z.amAkt / Z.mitAkt >= 0.8))
+        rot.push(`Mk Satz ↔ Handlung: ${Z.amAkt} von ${Z.mitAkt} Sätzen tragen das Verb ihres Akts (Soll ≥ 0,8, sprache#5; fachwerk SATZ_GESETZ.handlung ← stamm/siedlung-bewohner.js „rede“ b.akt): ${Z.ohneVerb.join(" · ")}`); // prettier-ignore
     if (Z.vokaleFremd.length) rot.push(`Mk Satz fremder Laute: Vokale außerhalb der Sprache ${m.region}: ${Z.vokaleFremd.join(" · ")}`);
     return rot;
 }
@@ -2349,6 +2423,7 @@ async function markt(page, erg) {
             ["lombard", /^Mk Lombard aus/, "S27: Lombard aus"],
             ["satzlos", /^Mk Rede ohne Satz/, "S29: die Rede spricht Vokale ohne Satz"],
             ["fremd", /^Mk Satz ≠ Wirt/, "S30: die Rede spricht einen fremden Satz"],
+            ["handlungslos", /^Mk Satz ↔ Handlung/, "S31: der Satz vergisst seinen Akt"],
         ]) {
             const u = marktUrteil(await lauf(mut, 8, 1));
             const t = u.find((z) => re.test(z));
@@ -2356,7 +2431,7 @@ async function markt(page, erg) {
             else console.log(`   ${was} → ${t}`);
         }
         for (const t of fehl) console.log("   ❌ " + t);
-        if (!fehl.length) console.log("   ✅ S24–S27, S29, S30 nennen jeden Täter beim Namen");
+        if (!fehl.length) console.log("   ✅ S24–S27, S29–S31 nennen jeden Täter beim Namen");
     }
     console.log("");
     if (rot.length) {
@@ -2471,6 +2546,12 @@ async function zensus(page, browser, ergebnis) {
     const randMax = (g) => Math.max(...sRand.je.filter((z) => z.gruppe === g).flatMap((z) => z.abw));
     console.log(
         `── (St) DIE RÄNDER DES LEIBS: ${sRand.je.length * 4 - sRand.rot.length}/${sRand.je.length * 4} Werte ±15 % · max ${sRand.maxPct} % · ${Object.keys(PB_RAND).map((g) => `${g} ${randMax(g)} %`).join(" · ")}`
+    );
+    // (Sp) die Lautung der Rede: %V je Familie, der Gipfel je Frikativ
+    const sp = (ergebnis.rede = await page.evaluate(redeSeite, { mut: false, jongman: SP_JONGMAN }));
+    rot.push(...sp.rot);
+    console.log(
+        `── (Sp) DIE LAUTUNG DER REDE: %V ${sp.je.map((z) => `${z.R} ${z.pV}${z.pV >= SP_BAND[0] && z.pV <= SP_BAND[1] ? "" : " (außer Band)"}`).join(" · ")} — Band ${SP_BAND.join("–")} (Ramus et al. 1999) · Gipfel ${Object.entries(sp.mitte).map(([l, f]) => `${l} ${f}/${SP_JONGMAN[l]}`).join(" · ")} Hz`
     );
     Object.assign(ergebnis, { orte, daten, offline, kosten: kostenErg, lab, ereig, rot });
 
@@ -2641,13 +2722,17 @@ async function zensus(page, browser, ergebnis) {
         nennt((await page.evaluate(stimmSeite, { band: PB_BAND, leiber: PB_LEIB, mut: "pubertaet" })).rot, /^St mann /, "S21: der Mann ohne Pubertät");
         // S28: die Falte folgt der Höhe voll (das Gesetz bis stimme-leib-2) — der Grundton des kleinen Manns fällt beim Namen
         nennt((await page.evaluate(stimmSeite, { band: PB_RAND_BAND, leiber: PB_RAND, mut: "hoehe" })).rot, /^St mannKlein \/\S+\/ f0 /, "S28: die Falte folgt der Höhe voll");
+        // S29: die Rede ohne An- und Abglied (die Stimme bis sprache#5: nur die Kerne) — jede Familie fällt beim Namen
+        const u29 = (await page.evaluate(redeSeite, { mut: "vokale", jongman: SP_JONGMAN })).rot;
+        nennt(u29, /^Sp mitteleuropa: %V /, "S29: die Rede ohne Konsonanten");
+        nennt(u29, /^Sp Gipfel: kein Frikativ/, "S29: die Rede ohne Reibung");
         // S16: die Untertitel aus — der Ton spielt, die Zeile schweigt: jedes klingende Ereignis und jede Stimme fallen beim Namen
         const e16 = await mitZwilling("_untertitelZeile", "zeileAus");
         const u16 = untertitelUrteil(e16, { wiese: await messeOrt(page, "wiese", orte.wiese, { ohneZeile: true }) }, []).rot;
         for (const re of [/^Ü treffer: klingt ohne/, /^Ü auftrag: klingt ohne/, /^Ü wiese\/\S+: klingt ohne/])
             nennt(u16, re, `S16: die Untertitel aus (${re})`);
         for (const t of fehl) console.log("   ❌ " + t);
-        if (!fehl.length) console.log("   ✅ S1–S23 und S28 nennen jeden Täter beim Namen");
+        if (!fehl.length) console.log("   ✅ S1–S23, S28 und S29 nennen jeden Täter beim Namen");
         selbstOk = !fehl.length;
         ergebnis.selbsttest = fehl;
     }

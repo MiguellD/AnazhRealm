@@ -517,7 +517,10 @@ radiusM muendungM`), dazu `guete { faktorVoll faktorLeer }` +
   `gueteFaktor(rezeptId, ov?)` — das Lehren-Urteil der Schmiede als
   Schadens-Faktor; `gueteAnteil(rezeptId, ov?)` (Welle L, additiv) — derselbe
   Lehren-Anteil ∈ [0, 1] als die EINE Güte eines Schmiede-Geräts (Leser
-  `computeBlueprintQuality` → Schaden `_heldGueteFaktor`, Werkstoff-Kraft, Equip-Fold). Alle
+  `computeBlueprintQuality` → Schaden `_heldGueteFaktor`, Werkstoff-Kraft, Equip-Fold);
+  `gueteAnteil(rezeptId, ov?, hand?)` (kunst#2, additiv) — mit der Hand (das Können des
+  Schmieds, 1 = das Band der Guten) mal 1 − `handFehler(hand)` (`HAND.gut` 0,052 / k,
+  Birkmeyer 2013); ohne Hand byte-gleich. Leser: der Zensus der Kette (`stuecke`). Alle
   Blöcke leben NUR im Gesetzbuch — der Stamm trägt keinen Zahlen-Zwilling
   mehr (ZWILLINGS-ABSENZ-WAND).
   Welle L: `trefferUrteil(m, treffer)` — die Treffer-Physik des Prüfstands
@@ -1027,7 +1030,8 @@ je Lage über `landformRegler` —, die Landmarke des Orts `LANDMARKE`/`landmark
 Felsturm je km² aus der Großform × der Trockenheit des Orts, die Bänder der Profis; Leser der Wurf je Chunk `_landmarkeChunk`
 und die Phyto-Linse), das Flussnetz mit den Kanten `NETZ_KANTE`, seinen Läufen `flussLaeufe` und seinen Senken als
 den benannten Seen `benannteSeen`, die Arbeit des Netzes `netzZaehler` (Knoten und gebaute Talprofile je Ebene, das
-Einzugsgebiet ohne Leser — der Leser ist die Gelände-Linse „netz“), die Breite des Flusses `FLUSS_BREITE`/`flussBreite`, die Art des Gewässers
+Einzugsgebiet ohne Leser — der Leser ist die Gelände-Linse „netz“), der Tal-Weg eines Orts `talWeg` (das eingefrorene Glied des
+Netzes, über `unter` bis zur Senke seines Einzugsgebiets; Leser der Wirt `_mundartAm` — die Mundart folgt dem Tal, sprache#4), die Breite des Flusses `FLUSS_BREITE`/`flussBreite`, die Art des Gewässers
 `GEWAESSER_ART`/`gewaesserArt` (w13-bach-klar: see · bach · fluss nach der LAWA-Größenklasse, Bach < 100 km² Einzugsgebiet,
 über die Breite), das Gewässer am Ort `gewaesserAm` (unter-wasser: der Typ aus der Hydrosphäre — Lauf nach der Breite, sonst
 Meer oder See der Zelle — und der Abfluss Q/Q̄ aus dem Pegel), die Optik der Gewässer `GEWAESSER_OPTIK`/`gewaesserOptik`
@@ -1059,11 +1063,17 @@ nach Herkunft `korn(L, x, z, aus)` (karte2.planet.relief.boden#2: Bett — Stern
 Hang, Wind; die Tafel `KORN`, die Wentworth-Klassen `KORN_KLASSEN` mit `kornKlasse`, die Farbe des Sediments `sedimentFarbe`, die
 Boden-Farbe am Fluss und `_terrainMaterialAt` lesen es; die Sohle des fließenden Wassers `flussSohle` mit der Tafel `SOHLE`, voll ab
 0,3 m unter dem Spiegel, und die Bank des Kanals `flussBank` bis zum Saum, den er schneidet, tragen sein Korn ins Bild) und den
-Klassen am Rechteck `pegelKlassen` (die Marke des Chunks), dem Abfluss nach Brand `BRAND_ABFLUSS`/`pegelBrand` (same.kopplung.stoerung#3:
-die Taten „brand“ des Wirts, gewogen mit ihrer Asche, stromab durch das Knoten-Netz; je Knoten hebt der verbrannte Anteil seines
-Einzugsgebiets den Abflussbeiwert des Regens 0,3 → 0,56 nach SCS-CN 95 — BAER; Moody & Martin 2001 —, die Tafel trägt je
-verbranntem Knoten ihre Reihe, der Kanal je Segment seinen Knoten; ohne Brand liest der Pegel byte-gleich), die
-Generation des Bodens `BODEN_GENERATION` und der Kachel-Schlüssel `kachelSchluessel`. DIE HYDROSPHÄRE (Karte hydro-faden): das
+Klassen am Rechteck `pegelKlassen` (die Marke des Chunks), die
+Generation des Bodens `BODEN_GENERATION` und der Kachel-Schlüssel `kachelSchluessel`. DER PEGEL IM REGEN: der Abflussanteil
+`ABFLUSS_CN` (planet.wetter.extreme: der schnelle Abfluss faltet den Regen jedes Ereignisses nach seinem Anfangsverlust,
+SCS-Curve-Number — NEH-4, TR-55 —, Wiese CN 58, Brandfläche CN 95, ein Ereignis höchstens ein Tag `tagH`; `PEGEL.regen` 10 mm/h des Regens selbst, der Hub über dem Grund des Flusses (trocken steht er im geschnitzten Bett, Hub 0), der Grund trägt im Klima
+den Anteil `PEGEL.bfi` 0,7 des Mittels — der Base-Flow-Index, `pegelKlima`, die Lage `abflussMittel` —: das Mittel bleibt im Bett, 100 mm treten über die Krone), die Aue `AUE`/`auenBreite` (über der Krone trägt der gegliederte Querschnitt
+Q = Q_Bett + R·Q_Aue, R = (2F − B)/B · n_Bett/n_Aue nach Chow 1959; die Tafel trägt `aueF` und, wo ihr höchster Hub über der
+Krone steht, `flut` — dann steht das Wasser in `flussAm` jenseits der Krone binnen F, der Boden entscheidet, die Marke des Chunks
+liest den Hub im Band ihres Wassers `band`, über der Krone in Stufen `AUE.stufe` von 1 ft; ohne Flut byte-gleich), der Abfluss nach Brand `pegelBrand` (same.kopplung.stoerung#3:
+die Taten „brand“ des Wirts, gewogen mit ihrer Asche, stromab durch das Knoten-Netz — je Knoten der verbrannte Anteil b seines
+Einzugsgebiets, der Lauf faltet die Brandfläche mit CN 95, BAER; Moody & Martin 2001 —, die Tafel trägt je verbranntem Knoten
+ihre Reihe, der Kanal je Segment seinen Knoten; ohne Brand liest der Pegel byte-gleich). DIE HYDROSPHÄRE (Karte hydro-faden): das
 Drainage-Netz einer Region `hydrosphaere(L, H, boden, origin)` (Flüsse, Seen, Fälle, der gepackte Kanal `kanal` mit
 `KANAL_FELDER` Zahlen je Segment, Wasser-Feld; `H` das Gesetz des Wirts, `boden` seine gebaute Fläche — der voxel-worker rechnet
 sie), die Bett-Tiefe `flussTiefe` und das Wasser-Band `hydroBand`. DER FELS-STOFF (K17): das Aussehen
@@ -1072,7 +1082,14 @@ des Felsens `FELS` mit seiner Saat `FELS_SAAT` — `felsStoff` (der Welt-Boden j
 Detail-Term des Shaders) mit seiner Welle `felsWelle` (K17-3: der Shader liest sie EINMAL im Rausch-Atlas und reicht sie
 in die Fels-Funktion), die Geologie der Lage `felsGeologie` (Karte 2 planet.geologie.gebirge#1: Streichen und `FALTUNG` der Bänke aus den
 Reglern `streichC`/`streichS`/`faltung`; `FELS_GEO_HEIMAT` die flach lagernde Heimat, bit-gleich) mit ihrem Einfallen `felsEinfall`, der Groß-Term des Orts `grossTerm` (Entscheid 28.11., Karte 2 planet.geologie.platten#1: das Feld der Planeten-Höhe im Wildnis-Term `gross` auf der Grundhöhe K, die Sohle der Ebene 0 steigt mit; `GROSS_FENSTER` die Naht des lokalen Rahmens — innen exakt 0, die Rampe C¹; ohne Feld dieselben Bytes), `felsZahl` (das Rechenwerk des Gesetzes, mit `falte` und `fest`), `felsBankung` (die Messung der Bänke), der Schutt
-`schuttKorn`/`schuttMittel`, die Himmels-Sicht der Höhle `HIMMELS_SICHT`/`himmelsSicht`, die Mulde des Bodens `MULDE`/`muldeEcken`
+`schuttKorn`/`schuttMittel`, die Decke des Bodens nach Steile, Feuchte, Licht und Klima (karte2.planet.relief.boden#1): der Schutt
+am Steilen `HANG_SCHUTT`/`HANG_SCHUTT_ST`/`hangSchuttAnteil`/`hangSchutt` (Flecken, deren Mittel die Kurve der Steile ist; die Ferne
+liest `HANG_SCHUTT_ST` im Boden-Shader) und der Fächer unter der Wand `SCHUTT_FAECHER`/`schuttFaecher` (der Schatten 27,5° ihrer
+Krone, Evans & Hungr 1993; Leser `felsStoff` und `felsStoffPunkt`), das Moos `MOOS`/`moosKlima`/`moosDeckung` (Feuchte des Bodens oder de Martonne des Orts,
+der Nordhang hält das Wasser; Fels und Erde aus EINEM Gesetz) und die Erde in der Farbe ihres Klimas `ERDE_KLIMA`/`ortErde` (Humus
+nach Jenny, Hämatit nach Schwertmann, relativ zur Heimat — Leser `_bodenFarbeAt` und der Worker `bodenFarbe`; die
+Wege und der Acker offen), der Anschnitt des Erdbaus als Unterboden `felsAnschnitt`/`anschnittErde` (Bw 10YR 4/4 über der Erde des Orts, der
+Grundton trägt sie: `felsBasis(…, erde)`; Linse `gate:hoehlen-sicht` (o)/(p)), die Himmels-Sicht der Höhle `HIMMELS_SICHT`/`himmelsSicht`, die Mulde des Bodens `MULDE`/`muldeEcken`
 (wetter.K2: die Senke des Gesetzes je Vertex, in der der Regen als Pfütze steht — der voxel-worker rechnet sie je Chunk), die Boden-Karte des gerenderten
 Bodens `bodenKarte` (w4-b-boden: der voxel-worker rastert sie je Chunk, Sync-Bau und Naht-Morph rufen dieselbe Funktion), DER BODEN IM
 FADEN (w4-b-boden2: der voxel-worker hält jedes Netz und rechnet, was bis dahin der Haupt-Faden trug) — die Vertex-Form des Satzes

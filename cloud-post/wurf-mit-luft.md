@@ -1,5 +1,88 @@
 # Stand-Blatt der Bahn `wurf-mit-luft` (Sprosse `karte2.same.physik.flug#1`, nun `#2`)
 
+## 28.11. 01:30 Macher — Post 00:57/01:09 gelesen (flug#3 GEBUCHT); Kopf 4 auf main 27d2f60e geschoben, ohne Anspruch — die Segel-Hälfte des Richters
+
+- Kopf 4 = EIN glatter Commit auf 27d2f60e: die Polare des Segels, die Krängung, die Strömung am Boot, Holtrop statt Deckel, das Ruderboot schwimmt im Fahr-Satz. Kette GRÜN am gemischten Stand (b56b51f0 ganz inkl. vehicle-drive und fahr-leben; 27d2f60e: statik · fachwerk · format · lint · umzug · daten · welt-boot · vehicle-contract). Preis am Ort der Station: 0 Fahr-Schritte; je Löser-Schritt Ruderboot 1 479 → 1 943 ns, Segelboot 3 048 ns, Auto 1 559 → 1 518 ns (Rauschen). `zug.sh probe-tag` nicht gefahren: das Werkzeug liegt nicht auf main (404).
+- Nächste Sprossen nach Zuteilung 00:57: `same.physik.stoffe#1` (Fach für die Blind-Jury) · `same.massstab.nahe#1` (Korpus Bodenfoto 2 m).
+- Karte 2 gebucht 156 von 1 718 · Status ZWISCHENSTAND
+
+## 28.11. 00:22 Macher — WIP 20: z812 gelandet (main b56b51f0 trägt Kopf 3), main glatt hereingeholt; die Kette für Kopf 4 läuft
+
+- `git merge-tree --write-tree origin/main HEAD` ohne CONFLICT, Mischung ohne Handgriff (der Umschlag recipes blieb unberührt von main). Kopf 4 (Segel-Polare · Krängung · Strömung am Boot · Holtrop statt Deckel) folgt als EIN glatter Commit auf b56b51f0, sobald die ganze Kette grün steht; flug#3 wartet weiter am Vor-Richter der GTX 1060.
+- Karte 2 gebucht 156 von 1 718 · Status ZWISCHENSTAND
+
+## 27.11. 23:32 Macher — WIP 18: der Wellen-Widerstand nach Holtrop ersetzt den Deckel der Rumpfgeschwindigkeit (offener Punkt aus WIP 14 geschlossen)
+
+- Quelle gelesen (Holtrop & Mennen 1982, ISP 29; Holtrop 1984, ISP 31 — dieselbe PDF): R_W = c1·c2·c5·∇ρg·exp(m1·Fn^−0,9 + m4·cos(λ·Fn⁻²)), m4 = c15·0,4·exp(−0,034·Fn^−3,29) bis Fn 0,40, über 0,55 c17/m3, dazwischen die Gerade. Kern: `rumpfWelleGesetz` (aus `bootFahrt.welleForm`: L, B, T, ∇) in `fahrGesetz`, `rumpfWelle` halb-implizit im Widerstand längs von `fahrRumpf`; der Deckel `vmax` im Wasser ist gefallen. Gültig: Kahn L/B 9,1 · C_P 0,60, Spitzboot 6,4 / 0,56 (Regression 3,9–15 / 0,55–0,85); ANNAHMEN C_WP nach Schneekluth, lcb 0, kein Spiegel, kein Wulst.
+- Gemessen (Welt): Polare bei 8 m/s, Kurs 45 · 90 · 180° vorher 3,32 · 3,32 · 3,32 m/s (der Deckel plättete jeden Kurs) → 3,02 · 5,01 · 3,18; bei 3 m/s −0,24 · 1,34 · 2,06 · 1,50 · 1,29; Rudern 2,12 → 2,01 m/s; Krängung am Wind bei 6 m/s 13,7°. Neue Linse `segel-sturm` (Selbsttest „der Deckel plättet die Polare“ feuert). Preis je Löser-Schritt: Ruderboot 1 140 → 1 871 ns, Segelboot 2 358 → 2 981 ns, Auto an Land 1 553 → 1 556 ns; am Stations-Ort fährt kein Boot.
+- Wand benannt und an der Wurzel geschnitten: die Potenzen der Regression wichen zwischen Browser (Mint) und node (Statik) um ein ULP ab (a17 …353 gegen …355) — das Rezept trägt nur die Form, die Beiwerte rechnet die Laufzeit. Umschlag gemünzt (`MINT_NUR_DATEN`), danach GRÜN: daten-contract · vehicle-contract · vehicle-drive · check:statik ganz · welt-boot · fahr-leben Selbsttest und voll (2 min 58 s) · lint · format · merge-tree gegen main.
+- Karte 2 gebucht 156 von 1 718 · Status ZWISCHENSTAND
+
+## 27.11. 23:05 Macher — WIP 17: das Boot krängt im Bild (offener Punkt aus WIP 14 geschlossen)
+
+- Schnitt im Kern: `bootFahrt` trägt `kraeng` (Aufrichten der Form m·g·BM, der Mannschaft auf der hohen Kante, Kipp-Winkel, Hebel des Segels — dieselben Größen, aus denen `segel.fMax` steht); `fahrRumpf` löst form·sin φ + mann·cos φ = |Y|·Hebel geschlossen (z.krang, nach Lee); die Wank-Feder in `fahrStand` zieht den schwimmenden Rumpf zu ihr statt zur Querlast der Reifen — `_wagenLage` und die Instanz-Matrix lesen sie schon (`_rideKurvenRoll`).
+- Gemessen (Welt): am Wind bei 6 m/s main b3740dd5 0° → 16,0° / −16,0° je Bug (Kipp-Winkel 28,4°); bei 3 m/s hält die Mannschaft es aufrecht; Kern bei 9 m/s fiert der Segler, 8,8°. Linse `segel-kraengung` mit zwei Selbsttest-Fällen. Preis je Löser-Schritt: Auto an Land 1 481 → 1 515 ns (Rauschen), Segelboot 2 358 ns.
+- Umschlag erneut gemünzt (`MINT_NUR_DATEN`, recipes trägt `boot.fx.fahrprofil.rumpf.kraeng`). GRÜN: daten-contract · vehicle-contract · vehicle-drive · check:statik ganz · fahr-leben Selbsttest und voll (2 min 47 s) · welt-boot · lint · format.
+- Karte 2 gebucht 156 von 1 718 · Status ZWISCHENSTAND
+
+## 27.11. 22:35 Macher — WIP 16: Post 22:11 an alle gelesen; die Strömung trägt das Boot (offener Punkt aus WIP 14 geschlossen)
+
+- Schnitt: `_wagenSchritt` (stamm/koerper-fahrt.js) koppelt den schwimmenden Rumpf an die EINE Strömung (`_waterFlowAt`), dieselbe Kopplung wie Spieler, gerittenes Gefährt und Tier (`_stepCharacter` 4b: v_Welt = v_eigen + Strömung); der Kern führt das Eigene, die Hülle sieht v_Welt. Linse 4f in fahr-leben: das Ruderboot treibt 15 s ohne Ruder und ohne Wind im Fluss.
+- Gemessen (Welt, swiftshader): main b3740dd5 Drift 0/0 m/s (das Boot lag im Fluss fest) → 0,783/−0,879 m/s gegen Strömung 0,783/−0,879 (Abweichung 0 %); Mutante ohne Strömung ROT. Welt-Polar 3 m/s: −0,24 · 1,35 · 2,26 · 1,60 · 1,30 m/s, Rudern 2,12.
+- Vertrags-Akt am Umschlag: `MINT_NUR_DATEN=1` — recipes.json trägt neu genau `boot.fx.fahrprofil.rumpf` (sonst byte-gleich, world-params und render-config gleich). Danach GRÜN: check:statik ganz · fachwerk-contract · format · lint · stamm-umzug · fahr-leben Selbsttest, voll (2 min 52 s) und --verkehr (21 von 21 Wagen, 1,22–1,31 ms je Schritt) · welt-boot · daten-contract · vehicle-contract · vehicle-drive · lint · merge-tree gegen main sauber.
+- Karte 2 gebucht 156 von 1 718 · Status ZWISCHENSTAND
+
+## 27.11. 22:10 Macher — WIP 15: Post 21:41/21:50/21:52 gelesen; Täter-Zahl an 8 Kursen, Preis des Segels 5,12 → 2,15 µs
+
+- Täter-Zahl (Kern-Lauf, 3 m/s wahrer Wind, aus der Ruhe, 60 s, Mittel der letzten 15 s; Fahrt längs / VMG gegen den Wind in m/s) an 0 · 45 · 90 · 135 · 180 · 225 · 270 · 315°: main b3740dd5 überall 0 / 0 (kein Rumpf, kein Segel — das Boot fährt auf dem Reifen-Pfad und das Wasser hält es) → WIP −0,23 · 1,32/+0,93 · 2,17/0 · 1,49/−1,05 · 1,29/−1,29 · 1,49 · 2,17 · 1,32/+0,93 — am Wind gewinnt es Luv, im Wind treibt es zurück, symmetrisch. Die Quelle der Polare: Jones 1946 (Auftrieb endlicher Streckung) bis zum Abriss, darüber die Platte (Marchaj 1979), der Rumpf nach ITTC 1957.
+- Preis (Kern, ABAB 5×, ns je Löser-Schritt): Auto an Land 1 598 → 1 521 (Rauschen); Ruderboot im Wasser 1 479 → 1 140; Segelboot 1 470 → 5 120 im WIP 14 → 2 151 jetzt (`segelTrimm` ohne Array und ohne Winkel je Stellung: das Schot-Gitter trägt cos/sin, die Suche endet, wo das Tuch killt; dieselbe Stellung in 5 160 von 5 160 Fällen, Abweichung ≤ 1,7·10⁻¹⁵ relativ). Am Ort der Station (Wiese, 5 s): 0 Fahr-Schritte — der Rumpf-Pfad läuft dort nie.
+- GRÜN: vehicle-contract (Goldens byte-gleich) · vehicle-drive · daten-contract. Kein Vorprüf-Kopf bis zur Landung des Bündels. flug#4 (Mindestfahrt eines Flügels) liegt nicht am Rumpf-Löser.
+- Karte 2 gebucht 156 von 1 718 · Status ZWISCHENSTAND
+
+## 27.11. 21:56 Macher — WIP 14: Probe 50154359 GRÜN gelesen (Kopf 3 im Bündel mit boden-korn 3, kein neuer Kopf bis zur Landung); flug#3 Segel-Hälfte im Kern
+
+- Der Rumpf ist Gesetz des Fahrzeug-Kerns (vehicle-core `bootFahrt` · `fahrRumpf` · `SEGEL_GESETZ` · `segelTrimm`): Reibung nach ITTC 1957, Kiel-Auftrieb nach Jones, Segel auf dem scheinbaren Wind mit Krängungs-Grenze; der Wirt liest ihn (`_vehicleProfile` → `_fahrSatz` → `fahrTakt`, die Wasserlinie aus `rumpf.linie`), der Anleger setzt das Spritsegel ab 20 Rumpflängen Fetch.
+- Gemessen (Welt, Werkbank swiftshader): Ruderboot im See vorher auf Reifen 0,01 m/s → nachher 2,11 m/s (`rumpf` gelesen, Tiefgang 0,143 m); Polar bei 3 m/s Wind aus der Ruhe, 60 s, 0°/45°/90°/135°/180° = −0,22 / 1,32 / 2,17 / 1,49 / 1,29 m/s — gegen den Wind nichts, am Wind schon, Maximum halber Wind (Polar-Form); Mutante ohne Rumpf: 0,01 und Polar 0 → ROT. vehicle-contract und vehicle-drive GRÜN, Goldens byte-gleich.
+- Offen benannt: das Schwenken des Segels ist nicht zeichenbar (Studio-Fahrzeuge instanziert, `z.schot` ohne Wirt-Leser) · Wellen-Widerstand nur als Rumpf-Geschwindigkeits-Deckel · Segeltuch fährt auf der Stoff-Zeile „leder“ (kein Tuch in der Stoff-Tafel) · keine Krängung im Bild · die Strömung erreicht das Boot nicht · Mitbewegte Masse fehlt · kein Bild des Segels (die Werkbank-Welt stand nicht: Wald und Karten offen) · keine Segel-Soll-Zeile in S3 (setzt der Schöpfer) · Preis am Stations-Ort noch nicht gemessen.
+- Karte 2 gebucht 156 von 1 718 · Status ZWISCHENSTAND
+
+## 27.11. 21:20 Macher — Post 20:57 gelesen (flug#2 GEBUCHT, Karte 2 = 156); Kette für Kopf 3 GRÜN, Kopf 3 geschoben
+
+- Lokal am WIP-Kopf GRÜN: check:statik ganz (Exit 0; das eine ❌ ist die Etikett-Zeile eines Selbsttests) · gate:fachwerk-contract · diag-fahr-leben Selbsttest / voll / --verkehr (K3#1 mit frei-tauchen: Holz 0,347 %, Eis 1,794 %, Stein am Grund −0,022 m; Mutante ohne Wasser 1 484,9 % ROT) · diag-koerper-kern · diag-stand-takt Selbsttest / Lauf / --narbe · gate:welt-boot (Selbsttest und Tor) · gate:webgl-probe (rc 0; im ersten Lauf stand der GPU-Prozess der Wolke, solange die eigene Werkbank lief) · probeUrteil webgl-probe GRÜN, stand-takt GRÜN · format/lint · stamm-umzug 0 Abweichung · merge-tree gegen main b3740dd5 sauber.
+- Preis am Ort der Station (Wiese): die Welt trägt dort 0 freie Körper — `_freiSchritt` kehrt in seiner dritten Zeile zurück, kein Wasser wird gelesen; mit 200 wachen Kisten 1,06 → 1,08 ms je Schritt (5× ABAB).
+- Strömung: ein Holz-Würfel treibt im Fluss der Mess-Wiese mit 0,75/−0,83 m/s (Strömung 0,78/−0,88), im Bach 0,81/−0,40 (0,84/−0,41).
+
+## 27.11. 20:42 Macher — WIP 13: der Auftrieb im Löser (flug#3), Rumpf 1 484,9 → 1,79 %
+
+- Schnitt `stamm/koerper-frei.js`: `_freiWasserPacken` (Spiegel und Strömung der EINEN Wasser-Wahrheit `_koerperWasser`/`_waterFlowAt`, ρ der Zeile wasser; gemerkt 0,5 m / 0,1 s), `_freiZellen` (4³ Zellen der Hülle, Volumen auf die Gestalt geeicht), `_freiAuftrieb` (Archimedes je Zelle mit Moment — das Metazentrum entsteht; Widerstand im Wasser und gegen die Drehung, je mit dem eingetauchten Anteil; die Luft trägt den Rest). Die Ruhe: wen kein Kontakt trägt und wessen Auftrieb sein Gewicht um mehr als ruheMs/ruheS verfehlt, der ruht nicht (vorher schlief der Eis-Würfel am Umkehrpunkt 6 cm zu tief).
+- Gemessen (Werkbank, See 1816/−6168, Säule 3,43 m, 10 s, Mittel der letzten 4 s): Holz 0,215 gegen 0,216 m (0,35 %), Eis 0,280 gegen 0,275 m (1,79 %) — **tauch_abw_pct 1 484,9 → 1,79**.
+- Preis: 200 trockene fallende Kisten 1,08 gegen 1,06 ms je Schritt (Median, 5× ABAB; `_koerperWasser` 1 µs je Lesung, ~33 Lesungen je Schritt).
+- Linse: Fahr-Linse (4d) `frei-tauchen` (Holz, Eis ≤ 5 %), `frei-sinken` (Stein am Grund), Mutante „ohne Wasser“ → ROT; Selbsttest grün mit vier neuen Fällen.
+- Ehrlich offen in flug#3: die zweite Hälfte des Richters, „Segelboot fährt am Wind, nicht gegen ihn (Polar-Form)“. Im Code gibt es kein Segel-Gesetz (nur das Flattern des Tuchs, `_animateCompoundMotion`), die Station S3 misst nur `tauch_abw_pct`. Auch die mitbewegte Masse und die Wellen-Abstrahlung fehlen: der Eis-Würfel schwingt nach 10 s noch ±2 cm.
+
+## 27.11. 20:34 Macher — WIP 12: Post 20:28 gelesen (flug#2 gesetzt), Sprosse flug#3 — die Täter-Zahl am main b3740dd5
+
+- Karte flug#3: „Schwimmen und Segeln · Auftrieb und Widerstand in Wasser und Wind · Richter: Tauchtiefe = Dichteverhältnis ±5 %; Segelboot fährt am Wind, nicht gegen ihn (Polar-Form)“. Die Station S3 misst `tauch_abw_pct ≤ 5` und ist eine feste Leser-Zeile („der Löser liest kein Wasser“).
+- Rumpf-Entwurf: Holz-Würfel 0,3 m (ρ 720) und Eis-Würfel 0,3 m (ρ 917) als freie Körper, aufrecht über stillem Wasser am See der Welt (`__wasserOrte`, 1816/−6168, Säule 3,43 m), 8 s.
+- Ergebnis am main: **tauch_abw_pct 1 484,9** — beide sinken auf den Grund (Tauchtiefe 3,42 / 3,43 m gegen 0,216 / 0,275 m) und schlafen dort. Täter: `stamm/koerper-frei.js` kennt kein Wasser (weder `_koerperWasser` noch `_eintauchAnteil`), der Auftrieb lebt nur beim Gefährt und beim Leib.
+- Schnitt jetzt: der Auftrieb (Archimedes über das eingetauchte Volumen je Zelle, der Spiegel aus der EINEN Wasser-Wahrheit) und der Widerstand im Wasser im Paket des Lösers; danach die Polar-Form des Segels.
+
+## 27.11. 20:25 Macher — Kopf 2 liegt im main (b3740dd5, V18.546.458)
+
+- `w28-wurf-mit-luft-2` gelandet (Merge 2e8da66): die Kugel, die Magnus-Kraft, der Zerfall des Dralls und die Stoßzahl aus den Stoff-Zeilen spielen im main. Die Buchung von flug#2 liest den Stations-Kandidaten S2 (`cloud-post/wurf-mit-luft-station/`, Soll und Richter unverändert) — sein Setzen ist Sache des Zweigs punkte-maschine.
+- Wartezimmer: Briefkasten und Rundbrief alle ≤ 9 min.
+
+## 27.11. 19:51 Macher — Wartezimmer: Kopf 2 gestempelt
+
+- Gelesen: Rundbriefe 19:24 und 19:50 — Vor-Richter GTX 1050 am Kopf 580fdbb3 GRÜN 7,04 / 5,57 (lokal 6,86 / 5,59); gestempelt `w28-wurf-mit-luft-2` 4d65706b, wartet auf den Zug. Über dem Vorprüf-Kopf nur WIP, nie Rebase oder Force.
+- main = 9a75d61c (wetter-lagen-3) berührt keine Datei des Kopfs.
+
+## 27.11. 19:04 Macher — Wartezimmer: GPU-Probe 580fdbb3 GRÜN 3/3
+
+- Gelesen: Rundbriefe 18:53 und 18:57 (Regel 2 gestrichen; Regel 1: probeUrteil über jedes Tor des Rufs) — lokal am Kopf `gate:webgl-probe` GRÜN (rc 0) und `gate:stand-takt` GRÜN; `bild:dorf@0.5` ist in der Wolke nicht fahrbar (GPU-Prozess stürzt ab).
+- GPU-Probe 580fdbb3 auf omen-gtx1060 GRÜN in 1220 s (webgl-probe 64 s · stand-takt 281 s · bild:dorf@0.5 115 s). Das Bild selbst angesehen: das Dorf am Mittag, Fachwerk mit Turm, Gras, Leute, Laterne, Rauch — nichts Fremdes (der Schnitt ist im Bild nicht sichtbar, kein Ball in der Szene).
+- Kopf 2 wartet als Kandidat auf das nächste Bündel.
+
 ## 27.11. 18:33 Macher — Vorprüfung 2 (auf main 948f68ee), danach Wartezimmer
 
 - Geschnitten (`stamm/koerper-frei.js`): die KUGEL als dritte Gestalt des Lösers · die MAGNUS-KRAFT im Luft-Paket (C_L(S) Sawicki 2003, c_w über die Krise nach Re, Asai 2007) · der DRALL ZERFÄLLT (dω/dt ∝ ω·|u|, James & Haake; die Zahl aus dem Band 4–8 % bis zum Scheitel) · die STOSSZAHL je Kontakt aus den Stoff-Zeilen beider (`_freiPrallZahl`: η, σ_Y, E, ν; Johnson/Thornton) statt EINER Zahl 0,2.

@@ -1,4 +1,136 @@
-# Stand-Blatt kunst-am-leib (Bahn der Welle 27.11., Sprosse `karte2.mensch.sport.kunst#1`) — ZWISCHENSTAND
+# Stand-Blatt kunst-am-leib (Bahn der Welle 27.11., Sprosse `karte2.mensch.sport.kunst#1`, dann `#2`) — ZWISCHENSTAND
+
+## Wartezimmer nach Kopf 3 (033ff310 auf main b3740dd5)
+
+- Kopf 3 geschoben (Post 18:10 trägt er: das Standbild 20 von 20 Phasen je Kunst nach Takayasu 2019); die GPU-Probe läuft, dann setzt
+  der Koordinator Kandidat 2 und fährt das Blatt an der OMEN.
+- Post an alle 20:57 — „ohne Auftrag?“: kunst#1 wartet nur auf den Koordinator → **ohne Auftrag seit 20:03 (Uhr der Wolke)**; ich nehme
+  die nächste rote Sprosse MEINER Leiter: `karte2.mensch.sport.kunst#2` „die Güte des Werks liest die Hand“ (R² Werk-Güte ↔
+  Können-Profil ≥ 0,7 an 10 Werkstücken; Täter am main: schmiede-core `gueteFaktor` liest Rezept und Prägung, nie die Hand —
+  schmiede-core.js:4430). WIP über dem Vorprüf-Kopf, nie ein Rebase unter ihm (Post 19:50). Die Kreatur-Regel (Stoppuhr je Teil)
+  trifft diese Bahn nicht: sie lässt keine Kreatur-Linse wachsen.
+- GPU-Probe Kopf 3 (033ff310, radeon-890m, 21:10, Lauf 46060329667): GRÜN, probeUrteil GRÜN — gate:stand-takt 218 s ·
+  gate:mensch-zuege 34 s · bild:dorf@0.5 86 s (ABNAHME GRÜN, Inhalt bauSatz 17,0 %) · gate:webgl-probe 56 s. Kopf 3 wartet auf den
+  Koordinator (Kandidat 2 setzen, Blatt an der OMEN).
+
+## kunst#2 — das Werkstück trägt die Hand: Kopf 5 fc0958fb auf main b3740dd5 (trägt Kopf 4 adc95977 des Koordinators)
+
+- **Kopf 7 auf main b56b51f0 (Post 00:27, z811 + z812 darin):** der Zweig über adc95977 mischt den main zweimal (23b593ac, dann
+  b56b51f0 — Konflikte nur in Linse und Blatt: der Selbsttest-Satz 73 ↔ 75, die Vereinigung trägt beide). Am Baum des Kopfs:
+  check:statik GANZ 512 s · format:check · gate:daten-contract · gate:welt-boot · gate:fachwerk-contract · gate:asset-contract ·
+  gate:koerper-kern 75/75 (HAND 12 Stücke 6/6, Güte 0,8643 ↔ 0,9191, R² 1,000) — alle Exit 0; Kreatur mit Stoppuhr 859 · 757 ·
+  667 s, je SELBST-TEST GRÜN. merge-tree Exit 0 gegen main 27d2f60e (z813), w28-tier-bewegung-3, w28-sprache-dialekt-2b,
+  w28-wurf-mit-luft-3, sprache-dialekt, werk-am-ort-2-kopf5; gegen `werk-am-ort-2` Exit 1 nur in `.github/workflows/check.yml` und `spec/ci/ci-zeiten.json` —
+  dieser Zweig mischt schon mit main selbst nicht (Exit 1 ohne meinen Kopf), meine Dateien sind frei.
+- **Post 00:57 gelesen:** nach Kopf 7 die Fächer `mensch.leib.verschieden#1` · `mensch.leib.tracht#1` · `mensch.leib.ausdruck#1`
+  (Vorlage kunst#1: Fach, Station liest das Prüfer-Urteil, Klassen-Zeile P — die drei Zeilen stehen schon in der Klassen-Datei).
+
+- **Post 23:45:** Kopf 6 a1a2cff6 mischt nicht mit dem Stempel `w28-kunst-am-leib-4` (Kopf 4 adc95977): mein flacher Kopf stammt nicht
+  von adc95977 ab, beide schreiben dieselben Zeilen der Linse und des Blatts über b3740dd5 — Batterie abgebrochen (nicht neu
+  anstoßen). Kopf 7 kommt auf dem neuen main (z811: frist-puls-1 + kunst-am-leib-4): der Zweig mit der Geschichte über adc95977
+  (`kunst-am-leib-wip6`) mischt den neuen main, die Linse ist die Vereinigung beider Stände, dann check:statik GANZ, format:check,
+  gate:daten-contract, gate:welt-boot, merge-tree gegen main und jeden Stempel vor dem Zug, PROBE-TAG.
+- GPU-Proben Kopf 5: fc0958fb omen-gtx1060 GRÜN 2341 s (pruefbuehne-licht 59 · weltbild-frost:echt 163 · studio-begehen 261 ·
+  stand-takt 271 · webgl-probe 56 s), 07746140 radeon-890m GRÜN 880 s — probeUrteil je GRÜN.
+
+- **Kopf 6 a1a2cff6 (Post 22:38: Kopf 5 ROT an Prettier, eigenes Rot; geschoben, PROBE-TAG OK, merge-tree Exit 0 gegen main, werk-am-ort-2, sprache-dialekt):** `stamm/siedlung-bewohner.js` ab Zeile 1744 — meine Zeile `guete:` im
+  Zensus, `npx prettier --write` ändert nur sie (3 Zeilen). Warum lokal grün: `check:statik` trägt kein `format:check` — Prettier
+  steht nur im Puls; ich fahre `npm run format:check` ab hier vor jedem Schub (Exit 0, 113 Teile). check:statik GANZ Exit 0
+  (zuerst ROT an der ZITAT-WAND: mein Blatt nannte eine Datei der Punkte-Maschine beim Namen — umformuliert). Die Klassen-Zeile
+  steht nun auch als dritter Diff neben dem Kandidaten 2: `cloud-post/kunst-am-leib-station/auge-klasse.diff` (byte-gleich `auge-klasse-3.diff`).
+  kunst#2 trägt kein auge, also keine Klasse. Die Probe-Liste ohne Leerzeichen nach den Kommas (Regel 22:11).
+
+- Post 21:27 (Kopf 4 adc95977 heilt den Daten-Vertrag v7, kein eigener Kopf 4) und 21:41 (die Klassen-Zeile gehört in jeden
+  Kandidaten) gelesen: kunst#2 steht auf adc95977, Kandidat 3 trägt `auge-klasse-3.diff`, am Baum von punkte-maschine die Register-Liste (`liste`) Exit 0.
+- Vor dem Schub am Baum des Kopfs: check:statik · gate:welt-boot · gate:daten-contract (koerper 94d4f918958c byte-treu) ·
+  gate:fachwerk-contract · gate:asset-contract · gate:koerper-kern (75/75) · gate:betriebsgesetz — alle Exit 0; Kreatur-Linse mit
+  Stoppuhr 1010 · 808 · 663 s, je SELBST-TEST GRÜN (54 Täter); merge-tree Exit 0 gegen main, werk-am-ort-2 173e764b und
+  sprache-dialekt 3c73df4a (beide fassen stamm/siedlung-bewohner.js an). PROBE-TAG OK; die Probe-Liste trägt, was der Zug für
+  stamm/siedlung-bewohner.js verlangt (pruefbuehne-licht, weltbild-frost:echt, studio-begehen) und gate:stand-takt.
+
+- **Geschnitten (EIN Chokepoint je Gesetz, additiv):** schmiede `gueteAnteil(rezeptId, ov, hand)` — die EINE Güte eines
+  Schmiede-Geräts mal 1 − `handFehler(hand)`; das Band: der Fehler fällt wie 1/Können (das Potenzgesetz der Übung, Newell &
+  Rosenbloom 1981, ANGENOMMEN: Fehler wie Zeit), `HAND.gut` 0,052 am Band der Guten — Birkmeyer et al. 2013 (N Engl J Med
+  369:1434: unterstes ↔ oberstes Quartil des Könnens 14,5 % ↔ 5,2 % Komplikationen; 14,5 % trifft k 0,36). Ohne Hand byte-gleich
+  (23 Rezepte, 0 Abweichungen in gueteAnteil und gueteFaktor). koerper `bestandHalter` trägt die Hand des Werks (`koennen`),
+  `stoffstromFassen` schreibt sie in jedes Stück (`K.stueck` je Ofen → `K.hand` in der Reihe der Ausgabe), ohne Hand bricht es laut.
+  Der Wirt bindet die Hand an den Lebenslauf (`_bestandAnlegen`: `koennen` = uebung.handwerk, die Rate liest sie — EINE Naht),
+  gibt sie mit dem Werkzeug (`b.werkzeugHand`), der Zensus trägt je Stück Hand und Güte (`stuecke`).
+- **Gemessen:** Linse gate:koerper-kern D11 (Familie Stoffstrom): vorher (Kerne von main) ROT „0 Stücke in 12 Händen“, nachher 12
+  Stücke (Lehrling 0,55: 6 · Meister 1,4: 6), Güte 0,8643 ↔ 0,9191, R² Güte ↔ Hand 1,000; Selbsttest 75 von 75 (zwei neue Täter:
+  „die Güte ohne die Hand“, „das Stück vergisst seinen Schmied“). Station-Kandidat 3 (k2-mensch-sport-3.diff, BEGRUENDUNG.txt):
+  headless 12 Stücke R² 1,000; eine Hand R² 0 (ROT, Täter genannt); an main leser.
+- **Ehrlich offen:** stadt-voll trägt keine Schmiede, ein Dorf EINE — der Messort mit ≥ 2 Händen ist Wahl des Koordinators. Die
+  Güte in der Hand eines Bewohners liest heute nur der Zensus (kein Bewohner schlägt mit seinem Werkzeug); das Schmieden des Spielers
+  liest keine Hand.
+
+## Wartezimmer (27.11., nach Kopf 2)
+
+- GPU-Probe Kopf 2 (85c5d75a, omen-gtx1060, 15:07): GRÜN — gate:stand-takt 285 s · gate:mensch-zuege 39 s · bild:dorf@0.5 96 s
+  (ABNAHME GRÜN, Inhalt bauSatz 17,0 %) · gate:webgl-probe 64 s.
+- Post an alle 15:39: Kopf 2 fährt im Bündel 2 `buendel-abend` (29015b4e, auf Bündel 1); nicht neu schieben, Batterie und Probe des
+  Bündels urteilen. Offen: der Lauf der OMEN an Kopf 2 (S1 3 von 3 an stadt-voll?), dann der Prüfer-Lauf (Blindtest ≥ 80 %).
+- 15:27 (Uhr der Wolke): main bed6256c, Kopf 2 noch nicht darin; keine neue Post an kunst-am-leib — Wartezimmer läuft weiter.
+- Post an alle 16:54: beide Bündel ROT, keine rote Zeile an kunst-am-leib; Kopf 2 fährt neu in `buendel-b` (08098b8f, auf `buendel-a`
+  a60ad9a9, main bed6256c). Nach der Lehre des Koordinators fahre ich die Kreatur-Linse (`diag-kreatur-takt --selftest`, Teil 1/3 · 2/3 ·
+  3/3) an Kopf 2 lokal ganz nach — der Schnitt berührt die Haltung der Bewohner. Ergebnis: Teil 1/3 und 2/3 GRÜN an Kopf 2; 3/3 GRÜN,
+  sein Start lag 36 s vor dem ersten Schnitt an Kopf 3 im Arbeitsbaum (nicht eindeutig) — er fährt für Kopf 3 neu.
+- Post 17:26 (Koordinator): an der GTX 1060 am Bündel-Kopf 08098b8f mit kandidat2 „Künste, deren Leib trennt: 3 von 3“, Preis GRÜN (p95
+  33,39 ms); Richter ROT allein an der Klasse P (Blindpaar am Gerät). Nächste Wurzel (Kopf 3): Handwerk und Brett tragen denselben Leib
+  (pwalk ↔ pwalk) — der Blick trennt zwei Künste nicht.
+
+## Kopf 3 (Vorprüf-Kopf auf main 948f68ee — Post 17:58: z806 und z807 gelandet, Kopf 2 steht im main)
+
+Schnitt (koerper-core): das Brett bekommt seinen eigenen Leib — `MOTION.brett` (über die Partie gebeugt: Blick 57,5° unter der
+Waagrechten aus Augenhöhe 0,936 × 1,80 m auf ein Brett 0,6 m vor ihm auf 0,74 m, das Auge trägt 29° nach Hill & Kroemer 1986, Kopf und
+Rumpf 0,50 rad; Lidschlag des Lesers 4,5 statt 17 je Minute nach Bentivoglio 1997 → 0,13), `TAGES_GESETZ.haltung.brett = "brett"`,
+`STAND.tun.brett = "setzen"` (EINE Hand, die rechte: je Zug zwei Griffe, Schale → Feld; die Schulter beugt vor und hinab, der Ellbogen
+streckt). Linse L7: „drei Künste, drei Leiber“ — vorher ROT „arbeit pwalk · zweikampf fight · brett pwalk“, nachher pwalk · fight · brett;
+Brett Meister ↔ Lehrling: Züge 12 ↔ 5 · CV 0,049 ↔ 0,144 · Teile 1 ↔ 2 · Hüfte 7,07 ↔ 14,35 mrad. Selbsttest „brettWieWerk“ → ROT an L7
+(✅). Bildstreifen (`cloud-post/kunst-am-leib-bild/drei-kuenste-seite.png`, der Leib der Welt — Guss + `_animateHumanoidRig` — von der
+Seite, 4 Phasen um die erste Spitze der rechten Hand, Sonde `kunst-bild`): das Brett steht über die Partie gebeugt, der Kopf gesenkt —
+anders als Werk und Kampf; Hub der Hand Meister ↔ Lehrling: Werk 37 ↔ 25 · Kampf 12 ↔ 20 · Brett 32 ↔ 13 cm. Selbst gesehen: der erste
+Wurf streckte den Ellbogen beim Setzen, der steife Lehrling reichte 4 cm weit — der Ellbogen beugt nun wenig (0,2). `MOTION` reist im Buch des Körpers (`fx.motion.presets`) → `recipes.json` des Asset-Vertrags v1 ändert sich additiv
+(Re-Mint nur `recipes.json` + Manifest, begründet in `CONTRACT.md`, wie die Vorläufer) — `gate:asset-contract` vor dem Re-Mint ROT an genau diesem Feld, danach 128 von 128 GRÜN.
+Auf main 948f68ee neu gemünzt (main trug selbst einen Re-Mint): gegen main fällt genau EIN Feld neu, `mensch.fx.motion.presets.brett`.
+
+Station (Kandidat `kunst-am-leib-station`, Leib der Stadt mit Kampf-Meister als Wache, Wirt `grundWirt`), main 948f68ee ↔ Kopf 3:
+
+| Kunst | vorher (main) Meister ↔ Lehrling | nachher (Kopf 3) |
+|---|---|---|
+| Handwerk | pwalk · Züge 23 ↔ 11 · CV 0,051 ↔ 0,149 · Teile 1 ↔ 2 | gleich |
+| Kampf | fight · 18 ↔ 12 · 0,050 ↔ 0,153 · 1 ↔ 2 | gleich |
+| Brett | pwalk · 23 ↔ 11 · 0,051 ↔ 0,149 (= Handwerk) | **brett · 12 ↔ 5 · 0,049 ↔ 0,144 · 1 ↔ 2** |
+
+**Das Standbild (Post 18:10: der blinde Prüfer sieht EIN Bild an ≥ 40 Posen, „Meister oder Anfänger?“).** Gemessen an main 948f68ee
+mit der neuen Linse: je Kunst an 20 gelosten Phasen (3 Zyklen) die Winkel des Leibs der Welt; ein Merkmal zählt, wenn |M − L| an ≥ 16
+der 20 Phasen über seiner Streuung UND über der Schwelle des Sichtbaren liegt (5° · 5 cm, ANGENOMMEN). Vorher (main): trennbar an
+**20 von 20** je Kunst — aber getragen von Blick 13° und einem Ellbogen, den der Lehrling 17,5–22° MEHR beugt; die Größen der Steife
+waren ANGENOMMEN. IPERKA-Band: Takayasu et al. 2019, Am J Surg 217:12–16 (laparoskopische Naht, 20 Chirurgen, Experte ↔ Novize,
+optische Bewegungserfassung): der Experte hält die Arme ~7° lockerer am Leib, beugt die Ellbogen ~10° MEHR, beugt den Rumpf
+thorakolumbal ~10° weniger, sein Kopf steht ruhiger. Schnitt (`LEIB_SATZ.koennen.pose`, × steife): der Lehrling Rumpf +0,175 rad
+(10°), Arme +0,122 (7° vom Leib), Ellbogen −0,175 (10° gestreckter); Kopf +0,16 und Knie −0,04 bleiben ANGENOMMEN. Nachher: trennbar
+an **20 von 20** je Kunst — Werk [Blick 19,4° · Schulter L 8,0° · R 7,5°] · Kampf [Blick 19,6° · Hand −13,3 cm] · Brett [Blick 18,4° ·
+Schultern 8,9° / 9,2° · Ellbogen −9,3° / −8,8°]. Linse L7 „im Standbild“ (Soll ≥ 16 von 20), Mutant `standbildWieMeister` (die Pose
+des Lehrlings = die des Meisters) → ROT ✅. Selbst gesehen: `kunst-am-leib-bild/standbild-vorn.png` (von vorn wie das Fach, 3 m,
+Augenhöhe 1,6 m, Lochkamera, 3 Phasen je Kunst; blau Meister, rot Lehrling) — von vorn trägt das Bild den tieferen Kopf und die
+weiteren Arme, den Rumpf (von der Seite deutlich, `drei-kuenste-seite.png`) verkürzt es. Ehrlich offen: ob der Prüfer daran ≥ 80 %
+liest, sagt erst das Blatt an der OMEN. Kopf 3 berührt Station und Fach nicht: Kandidat 2 gilt — Blobs
+`k2-mensch-sport.diff` 7cc7770d · `faecher.diff` 062dc01f (BEGRUENDUNG.txt trägt die Zahlen von Kopf 3).
+
+Prüfung lokal am Kopf 3 (das letzte Gesetz, nacheinander, Logs je Tor mit `probeUrteil` GRÜN): `check:statik` ganz · `gate:fachwerk-contract`
+· `gate:welt-boot` (Stall-Akte, Selbsttest) · `gate:koerper-kern` (Selbsttest 73 von 73) · `gate:asset-contract` 128/128 ·
+`gate:mensch-anatomie` · `gate:mensch-zuege` · `gate:stand-takt` · `diag-kreatur-takt --selftest` Teil 1/3 · 2/3 · 3/3 — alle GRÜN. Der
+Kopf sitzt auf main b3740dd5 (V18.546.458): sein Delta zu 948f68ee berührt keine Datei dieses Diffs (merge-tree Exit 0), wohl aber `diag-stand-takt` und `koerper-frei` — `check:statik`, `gate:koerper-kern` und `gate:stand-takt` fuhren am vereinten Baum neu: GRÜN.
+
+Lokal vor dem Schub: `gate:mensch-anatomie` ROT „haltung.tun brett 5 mm < 90 mm“ (auch `brett/meister` 7 mm) — die 12 Zeilen des
+Satzes treffen den Takt bei u = ⅙ · ½ · ⅚; die rechte Hand, um den Versatz 0,5 geschoben, fiel bei 4 Griffen je Zyklus auf u 0 und ⅓,
+beide außerhalb des Hubs 0,3: der ferne Leib am Brett hätte die Hand still gehalten. Schnitt an der Wurzel (`leibTunWert`): ein Tun EINER
+Hand (`seite`) trägt keinen Versatz — er teilt die Takte zweier Hände. Hand über den Zyklus: brett 6 → 394 mm · brett/meister 8 → 343 mm ·
+brett/lehrling 107 → 103 mm (Soll ≥ 90); die bestehende Linse nannte den Täter, sie bleibt die Wand.
+
+Gegenlauf `tagesHaltung` über 14 Rollen × 19 Akte × 4 Sätze (1 064 Fälle): es ändern sich genau die 56 Brett-Fälle (pwalk → brett,
+die Stufe bleibt); Namen der Naht 18 → 25 (die sieben `brett/…`); `MOTION` anders nur am neuen `brett`.
 
 ## Kopf 2 (Post des Koordinators 13:51: S1 ROT 2 von 3 an der OMEN, der Kampf-Meister der Stadt ist eine Wache)
 
