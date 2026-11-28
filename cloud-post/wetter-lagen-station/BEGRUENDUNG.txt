@@ -1,92 +1,32 @@
-Kandidat der Station planet.geologie.gebirge (S1, die verformte Wand) — wetter-lagen, 28.11., DREI Dateien gegen punkte-maschine
-1ad7f6b2 (platten S1 + extreme S2 dort gesetzt; k2-planet.diff trägt nur noch gebirge, 3-Wege-Merge ohne Konflikt, patch exakt):
-k2-planet.diff · faecher.diff · quellen.diff. Selbsttest des Fachs mit dem Kandidaten 17 GRÜN · 0 ROT; gegen die Station von heute
-ROT beim Namen („die Felswand liest das Gesetz der Station“) — die drei Dateien landen zusammen.
+Kandidat der Station planet.geologie.platten (S1, das Blindpaar der Region) — wetter-lagen, 28.11. 04:45 MEZ, DREI Dateien gegen
+punkte-maschine d35d07e7 (gebirge#1 dort gesetzt: 5e895684 + Heilung 8c0ec40d; je Datei EIN Diff, patch exakt):
+faecher.diff · quellen.diff · k2-planet.diff. Selbsttest des Fachs am Kopf mit dem Kandidaten 21 GRÜN · 0 ROT (neu: „die Region liest
+die Zone der Station wörtlich, reist je Lage und überfliegt die Ankunft 1 800 m hoch nach Norden, je Klasse 10 × 2 Uhren“).
 
-DAS GESETZ (Zweig wetter-lagen, gelaende-core `felsGeologie`/`felsEinfall`, Regler `faltung`, planet-core ortRoh, voxel-worker
-planetOrtAuftrag): die Bank-Fläche s = y + tan(einfall)·h1 + a·sin(k·h1), h1 quer zum Streichen des Orts; Faltenzug 400 m, Schenkel
-bis faltung × 60° (Gürtel 20–60°, Kraton-Tafel < 5°: Ramsay & Huber 1987, Twiss & Moores 2007); faltung = glatt(0,01, 0,08,
-orogenStaerke) — die Naht bleibt gefaltet, der Kraton ohne Orogen 0. Vertex (felsStoff) und Shader (felsFein/felsWelle, fünf Uniforms
-je Bild aus der Lage) lesen dieselbe Funktion. Heimat bit-gleich: Fels-Farbe a77e70d3 = a77e70d3, Höhe fc654324 = fc654324; jede Ort-
-Antwort ohne die zwei neuen Felder c49f3460 alt = neu.
+DAS FACH (faecher.cjs, Sprosse planet.geologie.platten#1): die Station schießt „Überflug 1 800 m über dem Spawn, Blick nach Norden“
+(k2-planet.js:1116). Die Region trägt den Planeten nur in der Reise-Welt — der Groß-Term (Entscheid 03:13; Zweig wetter-lagen
+7b94d89, Kopf wetter-lagen-kopf9): planet-core `planetGrossFeld` legt das Feld der Planeten-Höhe ±128 km um die Ankunft in den
+Wildnis-Term, gelaende-core `grossTerm` auf die Grundhöhe; die Heimat trägt es nicht. Also reist der Fächer: 200 Lagen der
+Fibonacci-Kugel der Saat der Welt (auf 0,01°, die Körnung von „reise“), je Land-Lage der Zone der Station — die Zeile `const zone`
+aus FELS_AN wörtlich (`zonenGesetz()`, nie eine Abschrift): Kollision → Klasse „Gürtel“, Kraton → „Kraton“ — eine Reise, die Pose
+{ px 0, py "+1800", pz 0, lx 0, ly "+0", lz −6000 } (die Werkbank liest „+“ über dem Boden; Norden = −z), Klassen im Wechsel,
+je 10 Lagen × Uhren 0,42 · 0,58 = 40 Bilder an 20 Reisen. Frage: „Liegen die Kämme im Bild in langen Zügen oder ohne Richtung?“
 
-WAS DER KANDIDAT ÄNDERT: (1) die Zone: Kraton = alte Kruste OHNE Orogen (krusteAlterMa > 1 500 Ma, orogenStaerke ≤ 0,01) statt
-orogenAlterMa > 1 000 — ein erloschenes Orogen über 1 000 Ma ist gefaltet (Appalachen, Kaledoniden): mit der alten Zone stehen dort
-48 % der „Kraton“-Wände verformt, mit der neuen 0 %. (2) Fenster halb 100 → 500, Orte 24 → 200: am Mittelpunkt des Orts (200 × 200 m)
-stehen an 200 Lagen 6 Wände ≥ 40° (keine in einer Kollisionszone), im Quadratkilometer 32 800. (3) die Lage auf 0,01° (die Körnung
-von „reise“), die zehn steilsten Wände je Lage (≥ 60 m auseinander) reisen zurück — der Fächer stellt das Ego 40 m hangab vor jede. (4) die Streuung des Einfallens
-über alle Wände der Orte (die Heimat ist flach: ihre Streuung 0 bleibt als einfallStreuHeimatGrad). (5) das Bild vor dem Fächer (der
-Deckel lag nach 200 Lagen leer). Soll, Wortlaut und Pose unverändert.
+ORT UND PREIS (Regel 03:03): der billigste Ort, den das Gesetz erlaubt, ist die Reise-Welt — die Heimat hat keine Region (kein Feld,
+keine Zone). Gezählt an der Saat anazh-realm-seed (planet-core wie der Faden, fuss 16): von 200 Lagen 134 Meer, 66 Land: Kollision 11,
+Kraton 24, sonst 31 → je Klasse 10 = 40 Bilder. Ohne die Zone des Fadens (main vor Kopf 9: der Faden reicht orogenAktiv nicht) wird
+jede Lage „sonst“ und der Fächer meldet laut „Umfang nicht erzeugbar: 0 von MIN“ — kein stilles Bild.
 
-ORT UND PREIS DES FACHS (Regel 03:03 „am billigsten Ort, den sein Gesetz erlaubt“): die Heimat ist Kraton-flach (Streuung 0), das
-Soll verlangt Kollision gegen Kraton — also Reise-Welten, keine Stadt. Gezählt (Emulation, 200 Lagen × 1 km², 10 Wände ≥ 60 m):
-Kollision 22 Wände an 3 Lagen (Lage 54 · 109 · 198, je 6/6/10), Kraton 150 an 15 Lagen; je Klasse 20 → 40 Bilder an 3 + 2 Reisen
-(die Posen laufen Lage um Lage, je Lage EINE Reise). Korpus: Anticlines 103 Dateien (11 Unterkategorien) + Synclines 61 (4) ≥ 40 je
-Satz; Folds_(geology), Folded_strata, Geological_folds gibt es an Commons nicht.
+DAS VORBILD (k2-planet.diff, S1 auge.vorbild): „Schummerung einer realen Gebirgsregion 10⁴ km² (Copernicus DEM)“ → „Luftbilder realer
+Gebirge aus dem Überflug“. Grund: das Blindpaar vergleicht dieselbe Sicht — eine Karten-Schummerung neben dem Überflug-Bild wäre
+am Medium unterscheidbar, nie am Gelände. Die Pose bleibt wörtlich. Geprüft und verworfen: NASA SRTM „Shaded Relief“ (images-api:
+486 Treffer zu „SRTM“, davon 29 reine Schummerungen, gemischt Land/Kontinent/Insel — unter 40 und kein Gebirge-Maßstab); Commons
+trägt keine Kategorie der Schummerung je Gebirge.
 
-GEMESSEN (node, Emulation von FELS_AN, Saat anazh-realm-seed, Lage über lageGrund statt _reiseSaat — die Station am Gerät richtet):
-  vorher:  felsEinfall fehlt, FELS.einfall = 0,07 rad (4,0°) überall → verformt 0 % in jeder Zone (das Soll ≥ 80 % fällt am Gesetz)
-  nachher: Kollision 93,6 % (5 Lagen, 2 984 Wände) ✓ ≥ 80 · Kraton 0 % (16 Lagen, 9 055 Wände) ✓ ≤ 20 · Einfallen 26,1° ± 21,5°
-           (32 800 Wände) ✓ Streuung ≥ 0,5 · 96 Lagen: 94,7 % / 0 %.
+DER SATZ (quellen.json, ueberflug-gebirge, 2afc, soll 40): Commons-Kategorie „Aerial photographs of mountains“ — 118 Dateien
+unmittelbar (18 Unterkategorien liest der Holer nicht), nach `ohne` 114 Titel; Reserve „Aerial photographs of the Alps“ 138 Dateien.
+Gezählt 28.11. an der Commons-API (categoryinfo, categorymembers); nicht geholt — geholt wird am Gerät (`--nur ueberflug-gebirge`).
 
-„/eval: planet: koerper ist kein Objekt (string)“ — DIE STELLE: pm 1ad7f6b2 Station k2-planet, Zeile 1074 (platten, Teil E: koerper: "mond",
-radiusKm, masseErden lose daneben) und :1605 (gebirge S7: koerper: "mars", schwere: 3.71) reichen den Körper als Zeichenkette; der
-Faden nimmt ein Objekt aus KOERPER_FELDER (voxel-worker.js:1458 planetKoerper, fail-closed — wie die Station selbst an :2476
-{ g: 3.71, radiusKm: 3390 }). Der Kandidat setzt { radiusKm: 1737.4, g: 1.62 } und { g: 3.71, radiusKm: 3389.5 }.
-
-KORPUS, ehrlich offen: falten-fels (Commons „Anticlines“) und falten-fels-2 („Synclines“), je 40, frei lizenziert — nicht geholt: die
-Commons-API antwortet der Wolke mit 429. Die Klasse flach tragen schichtfels/schichtfels-2 (schon für gebirge#1 eingetragen).
-Das Ego-Bild der Wand im Spiel (Kollision ↔ Kraton) steht im Blatt cloud-post/wetter-lagen.md.
-
-Kandidat der Station planet.geologie.platten (S1, die Gürtel) — wetter-lagen, 28.11., gegen punkte-maschine 8ec2a4eb
-(EIN Diff je Datei: k2-planet.diff trägt diesen Teil UND den Teil extreme#2 unten; git apply --check GRÜN am pm-Kopf).
-
-WARUM: die Station misst an der Gebirgsfläche der Saat (Flut auf dem Gitter 80 km um jeden Stichpunkt > 2 km), nicht an der Region
-10⁴ km². Ihr Maß hat zwei Fehler, beide mit Zahl: (1) der Deckel 350 gefragte Zellen je Komponente kappt 77,7 % der Fläche zur
-BFS-Kugel um den höchsten Gipfel (Achse einer Kugel ≈ 1,3); (2) die Achse aus den Momenten macht jeden gebogenen oder verzweigten
-Gürtel rund. DIE ERDE DURCH DIESELBE FLUT (ETOPO1 Eis-Oberfläche 0,5°, NOAA NGDC über ERDDAP etopo180, frei; Antarktis < −60° und
-Grönland ausgenommen): Deckel 350 → Gürtel 0 %, achseP30 1,20; ohne Deckel, Momente → 2,1 %, P30 2,50. Das Soll ≥ 70 % fällt mit
-diesem Maß an der Erde selbst — ein Stations-Befund, das Soll bleibt.
-
-WAS DER KANDIDAT ÄNDERT: die Achse ist geodätisch D²/A (D = der längste kürzeste Weg IN der Komponente, 8er-Nachbarn, zwei Sweeps;
-A = ihre Fläche; Rechteck L × B → L/B, Scheibe → 1,27). Deckel 1 000 je Komponente, 1 500 je Saat. Die Momente bleiben Zeuge
-(achseKovP30, guertelKovProzent), dazu breiteKmP50/P80 (A/D). Soll, Wortlaut, Pose und Vorbild unverändert.
-
-GEMESSEN — der EIGENE Mess-Code der Station (mess aus probe.befehl, acorn) in node, der Faden = planetPunkt fuss 16 wie
-voxel-worker planetOrtAuftrag, main 27d2f60 (planet-core gleich b56b51f0):
-  Station heute:   saaten 30 · guertelProzent 5,295 ✗ · achseP30 1,35 ✗ · 17 747 Antworten   (= die Radeon-Zahl, genau)
-  Kandidat:        saaten 30 · guertelProzent 74,29 ✓ · achseP30 4,386 ✓ · 45 164 Antworten · abgebrochen 0 · Momente 5,7 % / 1,72
-  Erde, Kandidat:  95,3 % · P30 6,11 (Anden 14,3:1 auf 4 069 km, Himalaya–Tibet 6,2:1 auf 4 878 km)
-  Spiel ohne Deckel: 92,3 % · P30 6,08 — der Deckel 1 000 misst eine untere Schranke.
-Wand punkte.cjs liste Basis ↔ Kandidat (Kopf 27d2f60, lokaler Baum): 1976 Stationen · 420 Kriterien · fehlt 15, ROT-Zeilen 737 ↔ 737.
-
-PREIS, ehrlich offen: 45 164 statt 17 747 Antworten im Fenster des Teils B (Uhr 8 → 24 s). Ob die Radeon sie in 16 s trägt, misst nur
-der Lauf; was bis 24 s offen ist, zählt der Zeuge `abgebrochen`, und eine Saat mit offener Komponente fällt aus `saaten` (ROT beim
-Namen, nie still).
-
-DAS BILD (R11), ehrlich offen: die Region 10⁴ km² der Welt (gelaende-core hoehe ohne Detail, 720², Schummerung 315°/45°) ist an der
-Heimat isotropes Rauschen, Relief 240 m, keine Streichrichtung — der Ort trägt keine: planetOrt reicht land · hoehe · rauhLambda ·
-trog · ks · tafel, die Großform liest rauhLambda isotrop. Das Blindpaar fällt dort, bis der Ort das Streichen trägt.
-
-────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-
-Kandidat der Station planet.wetter.extreme (S2, die Hitzewelle) — wetter-lagen, 27.11., gegen punkte-maschine 429560b6
-(git apply --check GRÜN; Diff k2-planet.diff gegen die Station k2-planet).
-
-WARUM: die Station misst amplitudeK = Tw.sunny − tMittel — die Temperatur des WORTS „sunny" aus der Tafel WEATHER_FIELD über
-dem Mittel der Worte. Die Tafel kennt keine Luftmasse: ein Block der Lage (phyto-core lageBlock) macht nur mehr klare Worte,
-also sinkt die Wort-Amplitude sogar (heimat, 100 Jahre: 1,91 → 1,69 K), obwohl die Welt über der Strecke wärmer ist. Die Welt
-liest die Wärme des Blocks (phyto-core lageWaerme → gelaende-core temperaturAus, 5. Glied → stamm/bild-himmel.js _temperaturAt
-· _luftmasseWaerme; Leser Brand, Grillen, Zündung, Lava, Tracht der Bewohner). Die Station misst damit die Tafel, nicht die Welt.
-
-WAS DER KANDIDAT ÄNDERT: der Block `welt` rechnet je Takt die Temperatur am Ort so, wie die Welt sie liest (Wort UND Wärme der
-Luftmasse, Sommer 0,375, Uhr 0,6); amplitudeK = Mittel über die längste klare Strecke − Mittel aller Takte (HWDI: Temperatur
-der Welle über dem Mittel, Frich et al. 2002, 5 K ±50 %). Ohne den Leser (alter Kern) ist amplitudeK null mit Täter
-„Leser fehlt: phyto-core lageWaerme" — ungemessen, nie still grün. Zeugen: spitzeK, kaelteK (dieselbe Strecke im Hochwinter, Saison 0,875 — die Kältewelle derselben Sprosse:
-'Hitze- und Kältewelle'), wortK (die alte Zahl bleibt sichtbar).
-
-GEMESSEN (echte Welt, Null-Renderer, heimat, 100 Jahre, scratchpad probe s2):
-  main b3740dd5:          dauerTage 0,5  · amplitudeK (Wort) 1,91 K
-  Kopf 4, alte Station:   dauerTage 6,9 ✓ · amplitudeK (Wort) 1,69 K ✗ (die Tafel sieht den Block nicht)
-  Kopf 4, Kandidat:       dauerTage 6,9 ✓ · amplitudeK 6,52 K ✓ (Spitze 8,72 K)        Soll 3–9 d · 2,5–7,5 K
-  Kopf 6, Kandidat:       kaelteK −3,13 K im Hochwinter (gelaende-core temperaturAus: das Vorzeichen der Jahreszeit, Pfahl & Wernli 2012)
+EHRLICH OFFEN: (1) das Fach braucht den Groß-Term und die Zone im Faden — beide stehen in wetter-lagen-kopf9 (gestapelt auf Kopf 8),
+nicht im main. (2) Der Überflug sieht ±20 km, nicht 10⁴ km²: die Region steht im Fern-Ring der Welt; das Relief der 10-km-Skala trägt
+der Planet mit 3–19 m Spiel (real 22–25 m nach Stauchung), der Deckel des Voxel-Bands 255 m schneidet die Gipfel (Flanke 14,7 %).

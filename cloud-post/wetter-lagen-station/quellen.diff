@@ -1,49 +1,28 @@
 --- a/vision/pruefer/quellen.json
 +++ b/vision/pruefer/quellen.json
-@@ -9290,6 +9290,48 @@
-    "ablage": "2afc/wikimedia-commons/schichtfels-2"
+@@ -9332,6 +9332,27 @@
+    "ablage": "2afc/wikimedia-commons/falten-fels-2"
    },
    {
-+   "id": "falten-fels",
++   "id": "ueberflug-gebirge",
 +   "art": "2afc",
 +   "quelle": "Wikimedia Commons",
 +   "fuer": [
-+    "planet.geologie.gebirge#1"
++    "planet.geologie.platten#1"
 +   ],
 +   "soll": 40,
 +   "breite": 1280,
 +   "lizenz": "je Datei (gemeinfrei · CC0 · CC BY · CC BY-SA)",
-+   "motiv": "gefaltete und gekippte Bänke in der Wand aus Augenhöhe (die Klasse gefaltet des Fachs: Sättel und Mulden, Schenkel 20–60°, Ramsay & Huber 1987) — die Klasse flach tragen schichtfels und schichtfels-2 (flach lagernde Tafel-Deckschichten des Colorado-Plateaus)",
++   "motiv": "Gebirge aus dem Überflug, schräg nach vorn auf die Kämme (die Pose des Fachs: 1 800 m über der Ankunft, Blick 6 km voraus) — Faltengürtel mit Kämmen in langen Zügen (Jura, Zagros, Appalachen: Strukturtensor A 1,5–2,5) und Bergland ohne Richtung (Kristallin-Kerne, Kratone: A 1,0–1,3), aus Flugzeug oder Drohne; kein Satellit, keine Karte",
 +   "abfrage": {
 +    "art": "commons",
-+    "kategorie": "Anticlines",
-+    "ohne": "map|diagram|chart|drawing|painting|sign|museum|specimen|hand sample|thin section|microscop|seismic|cross-section|profile|aerial|satellite"
++    "kategorie": "Aerial photographs of mountains",
++    "ohne": "map|karte|diagram|satellit|ISS0|iss\\d|night|nacht|drawing|painting|tagged|airport|flughafen|cockpit|wing|airplane|helicopter|city|village|dorf"
 +   },
 +   "dateien": [],
 +   "liegenGeblieben": [],
-+   "stand": "Kategorie Anticlines 103 Dateien (11 Unterkategorien) — gezählt 28.11. an der Commons-API; nicht geholt: sie antwortet der Wolke mit 429, hole.cjs am Gerät holt und sichtet am Bogen",
-+   "ablage": "2afc/wikimedia-commons/falten-fels"
-+  },
-+  {
-+   "id": "falten-fels-2",
-+   "art": "2afc",
-+   "quelle": "Wikimedia Commons",
-+   "fuer": [
-+    "planet.geologie.gebirge#1"
-+   ],
-+   "soll": 40,
-+   "breite": 1280,
-+   "lizenz": "je Datei (gemeinfrei · CC0 · CC BY · CC BY-SA)",
-+   "motiv": "gefaltete und gekippte Bänke in der Wand aus Augenhöhe (die Klasse gefaltet des Fachs: Sättel und Mulden, Schenkel 20–60°, Ramsay & Huber 1987) — die Klasse flach tragen schichtfels und schichtfels-2 (flach lagernde Tafel-Deckschichten des Colorado-Plateaus)",
-+   "abfrage": {
-+    "art": "commons",
-+    "kategorie": "Synclines",
-+    "ohne": "map|diagram|chart|drawing|painting|sign|museum|specimen|hand sample|thin section|microscop|seismic|cross-section|profile|aerial|satellite"
-+   },
-+   "dateien": [],
-+   "liegenGeblieben": [],
-+   "stand": "Kategorie Synclines 61 Dateien (4 Unterkategorien) — gezählt 28.11. an der Commons-API; nicht geholt: sie antwortet der Wolke mit 429, hole.cjs am Gerät holt und sichtet am Bogen",
-+   "ablage": "2afc/wikimedia-commons/falten-fels-2"
++   "stand": "Kategorie Aerial photographs of mountains 118 Dateien (18 Unterkategorien liest der Holer nicht), nach `ohne` 114 Titel — gezählt 28.11. an der Commons-API (categoryinfo, categorymembers); nicht geholt: geholt wird am Gerät (`--nur ueberflug-gebirge`); Reserve: Aerial photographs of the Alps 138 Dateien (6 Unterkategorien)",
++   "ablage": "2afc/wikimedia-commons/ueberflug-gebirge"
 +  },
 +  {
     "id": "weiler-2",
