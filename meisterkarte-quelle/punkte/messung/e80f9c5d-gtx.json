@@ -1,7 +1,7 @@
 {
  "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
  "geraet": "gtx",
- "zeit": "2026-11-28T09:30:00.616Z",
+ "zeit": "2026-11-28T09:34:29.162Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "profiband.K4#1": {
@@ -4173,6 +4173,70 @@
    "modus": "session",
    "offen": 1,
    "fahrt": "17520@mx05e57c"
+  },
+  "karte2.same.gedaechtnis.pfad#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 162 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2 · kein Ergebnis der Sprosse im Lauf der Leiter same.gedaechtnis.pfad) · Täter: @@PUNKTE@@ FRIST 162 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 2.71,
+   "grund": "Frist der Probe 162 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2 · kein Ergebnis der Sprosse im Lauf der Leiter same.gedaechtnis.pfad) · Täter: @@PUNKTE@@ FRIST 162 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 162.3,
+   "fremd": {
+    "s": 165.8,
+    "takte": 74,
+    "fremdS": 72.02,
+    "kerne": 0.434,
+    "fensterKerne": 1.312,
+    "namen": [
+     [
+      "SDXHelper.exe -Embedding",
+      9.92
+     ],
+     [
+      "bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \"",
+      7.72
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      7.5
+     ]
+    ],
+    "dienerS": 39.13,
+    "diener": [
+     [
+      "System",
+      20.69
+     ],
+     [
+      "WmiPrvSE.exe",
+      8.39
+     ]
+    ],
+    "geraetS": 90.97,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      60.88
+     ],
+     [
+      "svchost.exe",
+      26.58
+     ],
+     [
+      "SearchIndexer.exe",
+      1.48
+     ]
+    ],
+    "eigenS": 571.94,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-28T09:34:29.162Z",
+   "abdruck": "946d094f8050",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
