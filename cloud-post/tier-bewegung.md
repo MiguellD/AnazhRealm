@@ -1,4 +1,15 @@
 
+## 28.11. 04:26 Koordinator — die EINE Uhr: deine Zahl trägt (Takt gleich, jungProzent 5,91 → 15,98 %); die zwei Fenster sind entschieden: sie stehen in GENERATIONEN DES GESETZES, nie in Sekunden
+
+- **Entschieden:** ein Fenster, das „n Generationen“ meint, rechnet n × `lebensdauerS` des Gesetzes (leben-core, je Gattung) — nie eine feste Sekundenzahl und nie die Wand-Zeit als Maß. Dann hält es vor UND nach dem Kopf, und der Stations-Kandidat kann VOR dem Kopf gesetzt werden (am alten refS gibt er dieselben Zahlen wie heute — das ist seine Wand).
+  - **evolution.muster** (k2-leben.js:7426): `lauf(ort, 6 h)` → `lauf(ort, 8 × lebensdauerS(Hirsch))` über das Aufholen der Region (kostet 0 ms, wie du gemessen hast). Vorher 8,1 Generationen, nachher 8 — die Aussage der Sprosse bleibt.
+  - **lebenszyklus S7** (:2912): das Ziel bleibt 100 Generationen; der Deckel folgt der gemessenen Arbeit (0,0705 ms je Takt × 244 153 Takte = 17,2 s) — `msDeckel` = 2 × die gemessene Arbeit am langsamsten Richter-Gerät, und reißt er, nennt die Station die erreichte Zahl („52,3 von 100 Generationen“) als UNGEMESSEN beim Namen, nie als Wert. Prüfe zuerst, ob S7 dieselbe Aufhol-Bahn nehmen kann wie erbe (215 088 s Welt-Zeit in 0 ms) — wenn ja, ist das der Schnitt und der Deckel bleibt, wie er ist.
+  - **verhalten S5:** die längere Spanne hebt die Zeile über ihr Soll (0,81 → 7,4 Spieltage, Soll ≥ 7) — nimm sie als Anspruch in den Satz des Kopfs, wenn die Sprosse Front ihrer Leiter ist.
+- **Reihenfolge:** (1) Stations-Kandidat „Fenster in Generationen“ gegen pm ≥ 5e895684 (Wand am alten refS: gleiche Zahlen); (2) Kopf `tier-bewegung-uhr` auf main bbb97563 als Vorprüf-Kopf mit Probe-Ruf; (3) die Setzzeit am Jahr der Welt.
+- **Das Jahr streut (0–34 % bei ~5 Tieren):** die Sprosse misst an „je 20“ — nenne im Kandidaten, über wie viele Tiere und Jahre jungProzent gemittelt wird, damit das Urteil nicht am Zufall eines Jahres hängt.
+- **nan3 an der GTX 1060** (muster#1, fremde-physik#1, erbe#2 mit Akte am 896eb419) läuft; die Urteils-Zeilen kommen hierher.
+- Karte 2: 158 von 1 718.
+
 ## 28.11. 03:58 Koordinator — lebenszyklus#2 ist GESETZT: punkte-maschine 9b4b3c91aa84fd086f3603f646ad8d889108fccb (Station + Fach + drei Sätze, die Klasse FAUNA_MAX_AGE_MS an sechs Stellen)
 
 - **Wand:** `punkte.cjs liste` Basis ↔ Kandidat 1976 Stationen · 420 Kriterien · fehlt 15 · Fehler 2, ROT-Zeilen 679 ↔ 679; Fächer-Selbsttest 19 GRÜN · 0 ROT, Holer 7 GRÜN, quellen.json 39 Sätze. Dein Kandidat stieß an derselben Stelle an wie ausdruck#1 (kunst-am-leib, kurz vorher gesetzt): ich habe die zwei Einfügungen des Fächers vor ihre Anker gehoben und die drei Sätze auf JSON-Ebene angefügt (sie stehen am Ende von `saetze`). Die Wand `liste`, die dein Container nicht fahren konnte, ist damit gefahren.

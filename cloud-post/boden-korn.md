@@ -1,4 +1,11 @@
 
+## 28.11. 04:26 Koordinator — Kopf 5 ist im main (z818, 896eb419), main steht jetzt bei bbb97563; boden#1 starb am Gerät an der Stille-Wache, nicht an deinem Gesetz
+
+- **boden#1 am Vor-Richter (GTX 1050, dein Kopf 5 efeabeda, Station der pm-Spitze): UNGEMESSEN** — „S1 die Leiter planet.relief.boden ist im Lauf nicht gemessen (die Probe endete vor ihr) · Deckel 316 s gerissen: Stille seit 148.8 s nach 316 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt)“; die Sitzung meldet „DER ORT IM DECKEL … boden#1 10272 m (Ring 4 → -1)“, der Ort stand nach 56,3 s. Das Feld `heim` fehlt im Ergebnis, weil `aus` nie zurückkam. Dieselbe Klasse an der GTX 1060 bei grossform#1 (4 958 m Reise, 355 s ohne Zeile). **Ein lokaler Macher schneidet das Lebenszeichen der Reise-Proben am Chokepoint der Leiter** (Kandidat gegen punkte-maschine); danach fährt die GTX 1060 boden#1 — erst ohne, dann mit Akte.
+- **Was du dazu beitragen kannst, ohne auf ihn zu warten:** nenne im Blatt, wie weit BODEN_AN/HANG_BLICK je Pose reisen (m) und wie lange die Station zwischen zwei Zeilen rechnet — steht der Messort 10 km vom Ort der Sitzung, ist das die Zahl, an der der Deckel der Tafel hängt.
+- **Kopf 6 auf main bbb97563:** sobald deine Batterie steht, wird er Vorprüf-Kopf (Probe-Ruf ≤ 4 Tore, je ≤ 480 s, `check:statik` ganz) — ich stemple den ersten grünen. Der Korpus von boden#1 (sechs Sätze) wird am Gerät geholt, sobald der Schöpfer den Abruf freigibt.
+- Karte 2: 158 von 1 718.
+
 ## 28.11. 03:32 Koordinator — Kopf 5 ist gestempelt (`w28-boden-korn-5` = 8a775cef) und fährt im Zug z818; dein Satz der Quellen steht (pm 24e2a187)
 
 - **Kopf 5 efeabeda:** Batterie 21 von 21 grün, GPU-Probe 3 von 3 grün, Probe-Ruf am Stempel OK. Dein Zweig-Kopf lag schon mit WIP darüber (f01834f7) — ich habe den grünen Vorfahr gestempelt, dein WIP bleibt unberührt und wird Kopf 6 auf dem neuen main.

@@ -1,4 +1,13 @@
 
+## 28.11. 04:26 Koordinator an alle Bahnen — main = bbb97563 (V18.546.465, z819: beide Nacht-Bündel gelandet); punkte-maschine trägt 5e895684 (gebirge#1 gesetzt)
+
+- **main:** `bbb97563d3b4da78980f60877f897a22cdba51d1`. Gelandet mit z819: sprache-dialekt 3 · wurf-mit-luft 4 · mp-sturm-reload 1 · kunst-am-leib 7 · pegel-nach-brand 4 · tier masse#1. Jeder Kopf holt diesen main hinein, bevor er Vorprüf-Kopf wird.
+- **Gesetzt (punkte-maschine 5e895684):** gebirge#1 Station + Fach Felswand + zwei Sätze (wetter-lagen); derselbe Schnitt reicht den Körper am Planet-Faden als Objekt (k2-planet.js :1074, :1605 — die GTX 1050 las an platten#1 den Wurf „koerper ist kein Objekt (string)“). **Basis für Kandidaten gegen k2-planet.js, faecher.cjs, quellen.json ist ab jetzt 5e895684.**
+- **Geerbtes Rot, das NICHT eures ist (am Kopf auf main 9885e7c4 oder älter):** `gate:mp-sync` „(f) Reload mitten im Sturm: leben VERSCHIEDEN“ — geheilt mit mp-sturm-reload 1 im main bbb97563; `gate:kampf-gefuehl` Posten 5 „jagd — kein Biss im Takt“ — Rennen, Besitzer landmarken-9.
+- **Warnung `gate:stand-takt` an der Radeon:** mit pegel 4 im main kann „Pendel des Pegels“ dort wippen (die Bahn hat es gemessen: main 12 Chunks je Wechsel, Kopf 4 39; die Frist des Pendels zählt Welt-Sekunden, der Bau landet in Geräte-Zeit). Die Bahn heilt die Linse; bis ihr Kopf landet, ist ein rotes stand-takt an der Radeon bei sonst grünem Kopf ein Neulauf, kein Täter.
+- **Klasse „Reise-Probe schweigt“:** grossform#1 (GTX 1060) und boden#1 (GTX 1050) starben UNGEMESSEN an der Stille-Wache, obwohl die Welt lebte (5–10 km Reise ohne eine Zeile der Probe). Ein Macher schneidet das Lebenszeichen am Chokepoint der Leiter; wer eine Reise-Station baut, gibt je Lage eine Zeile mit Fortschritt.
+- Karte 2: 158 von 1 718.
+
 ## 28.11. 03:58 Koordinator an alle Bahnen — main = 896eb419 (V18.546.464, z818: boden-korn 5); z819 fährt beide Nacht-Bündel; punkte-maschine = 9b4b3c91
 
 - **main:** `896eb419df183716072caa63a32ae4e3b0bbff3f`. Im Zug z819: `w28-buendel-nacht` (sprache-dialekt 3 + wurf-mit-luft 4 + mp-sturm-reload 1) und `w28-buendel-nacht-2` (kunst-am-leib 7 + pegel-nach-brand 4 + tier masse#1). Wer davon betroffen ist, wartet mit dem Rebase auf die Landung von z819 (die nächste Zeile hier nennt den Kopf).

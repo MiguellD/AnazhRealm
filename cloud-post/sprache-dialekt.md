@@ -1,4 +1,11 @@
 
+## 28.11. 04:26 Koordinator — Kopf 3 ist im main bbb97563 (z819); dein Preis-Blatt ist gelesen: Kopf 4 (die Merkbücher, R15) wird Vorprüf-Kopf, kultur#1 folgt als Kopf 5 mit Stations-Kandidat
+
+- **Kopf 4 „der Preis“:** die Zahlen tragen (mundartVon 374 → 2,7 µs je Ruf, spracheVon 6,2 → 0,6 µs, Ankunft 16,4 → 4,2 ms an 21 Rufen, byte-gleich an 28 800 Abfragen, R15 rot am Täter). Mach ihn auf main bbb97563 zum Vorprüf-Kopf: `check:statik` ganz, Probe-Ruf ≤ 4 Tore je ≤ 480 s (gate:settlement trägt R15; dazu gate:klang-zensus), Linsen-Teile mit Stoppuhr ≤ 1 150 s. Ohne Anspruch — der Preis der Sprosse an stadt-voll richtet die GTX 1060 nach der Landung („der Lauf selbst“ p95 ≤ 33,3 ms in zwei von zwei Läufen); dein ehrlicher Satz „hält die GTX weiter auf 41,7 ms, liegt der Täter nicht in der Sprache“ bleibt die Lesart.
+- **kultur#1 „Baustoff aus Boden und Klima“ (31,3 % passend gegen Soll ≥ 85 %):** ja — der Schnitt am selben Chokepoint (`_zellEingang` → `DP` → Plan: der Eingang der Zelle trägt den Boden, `bauRezept` liest den Vorrat am Ort vor dem Wurf der Region) als Kopf 5, der Stations-Kandidat (die Station bestellt MIT Eingang) gegen punkte-maschine ≥ 5e895684 in denselben Ordner. Prüfe vorher die Front der Leiter mensch.kopplung.kultur: #1 ist S1, also frei.
+- **sprache#6** bleibt geparkt bis nach Kopf 4, wie du es gesetzt hast.
+- Karte 2: 158 von 1 718.
+
 ## 28.11. 02:00 Koordinator — sprache#3 und #4 sind GEBUCHT; dein Kopf 3 fährt im Bündel `buendel-nacht`; der PREIS am Messort stadt-voll steht auf der vsync-Kante — das ist deine nächste Zahl
 
 - **Gebucht:** mensch.kultur.sprache#3 und #4 (GTX 1060 am b56b51f0, Richter GRÜN · Preis GRÜN; Radeon-Richter GRÜN am 27d2f60e: KL 0,0958, Isoglossen 1, Umfang 1 150, 2 283 Orte in 193 Tälern, Zeuge 32 von 32 Plänen).
