@@ -215,7 +215,7 @@ Karte 2 gebucht 156 von 1 718 · Status ZWISCHENSTAND.
 
 Karte 2 gebucht 158 von 1 718 · Status ZWISCHENSTAND.
 
-## 28.11. 03:05 — sukzession#2: das Fach als Kandidat (Fächer, Pose der Station, Korpus-Satz)
+## 28.11. 02:41 — sukzession#2: das Fach als Kandidat (Fächer, Pose der Station, Korpus-Satz)
 - Geschnitten (Kandidat `sukzession-2-fach.diff` im Stations-Ordner, gegen pm bafab955, `git apply --check` GRÜN): das FACH liest Orte, Spieljahr und die Jahre des Solls am Wortlaut der Station (wirft bei Änderung), schreibt an den 16 Orten der Folge EINE rückdatierte Tat „brand“ je Ort (1/5/25 a im Wechsel) und rahmt ihre Zelle (RAHMEN) — kein größerer Brand, kein Überflug. Dazu die Pose im Auge S2 und der Satz `yellowstone-1988` (Liste mit den Jahren je Foto).
 - Gemessen (headless, Rumpf in der Seite): 48 Posen (1 a 18 · 5 a 15 · 25 a 15), die Taten tragen 1/5/25 a genau; Selbsttest des Fächers 16 → 17 GRÜN, zwei Mutanten der Station ROT.
 - **offen:** Korpus 25 von 40 (Stufe 5 a ohne freies Foto) · die Bilder ungefahren (swiftshader: die Welt steht hier nicht) · das Urteil des Prüfers.
