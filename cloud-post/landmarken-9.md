@@ -58,7 +58,7 @@ Zeuge 3 ohne Lesung · Richter ROT an drei Saaten („Blickziel verdeckt“ von 
 | frei im Bild von 51 Saaten | ROT 3 von 3 (GTX f07abc1a) | ungemessen — braucht die GTX (der Zeuge mit dem Kandidaten) |
 | Bilder-p95 GTX 1060 | 41,72 ms (ohne den Kopf 25,02) | ungemessen in der Wolke |
 
-## Kopf 2 (auf main 9885e7c4) — die sechs roten Schritte von Kopf 1, je vorher → nachher (lokal, swiftshader, je mit Selbsttest)
+## Kopf 2 (auf main bbb97563; die Batterie lief am gemischten 9885e7c4, am bbb97563 erneut: Verträge, statik, kampf, welt-boot) — die sechs roten Schritte von Kopf 1, je vorher → nachher (lokal, swiftshader, je mit Selbsttest)
 
 Der Kopf steht im Zweig `landmarken-9-2`: `landmarken-9` trägt Kopf 1 (dd490d1e auf main 948f68ee), ein glatter Commit auf dem
 heutigen main ist dort kein Fast-Forward, und force ist verboten.
