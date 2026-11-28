@@ -310,13 +310,7 @@ class AnazhRealm_siedlung_bewohner {
         ];
         const melde = (k, dp, ort) => {
             if (B.has(k) || Math.hypot(ort.x - origin.x, ort.z - origin.z) > maxM) return;
-            this._foundryRequestSettlement(dp, false) // Region und Name: Same, Epoche, Klima (fachwerk DORF), nie der Ort
-                .then((p) => {
-                    if (this.state !== welt || this._bewohnerSiedlungen !== B || B.has(k)) return;
-                    if (!p || !Array.isArray(p.slots)) return void this._bruchMelden(`ORT: der Nachbar ${k} von ${key} trägt keinen Plan — die Foundry gab keinen`); // prettier-ignore
-                    B.set(k, { key: k, plan: p, ox: ort.x, oz: ort.z, liste: null, gestalten: null, wirt: this, gemeldet: true }); // prettier-ignore
-                })
-                .catch((e) => this._stoffBruch(`der Plan des Nachbarn ${k} von ${key}`, e));
+            this._ortMelden(k, dp, ort, `der Nachbar ${k} von ${key}`);
         };
         const nachbarn = (runde) => {
             if (this.state !== welt || this._bewohnerSiedlungen !== B) return;
@@ -594,7 +588,8 @@ class AnazhRealm_siedlung_bewohner {
                 this._temperaturFeld(this.getTerrainHeightAt(x, z)),
                 st.seasonPhase,
                 kc.LEIB_SATZ.tracht.uhr,
-                w
+                w,
+                this._luftmasseWaerme(x, z, 0)
             );
             M = this._bewohnerTrachtMerk = { T, x, z, t: st.spielZeit, phase: st.seasonPhase, w: st.weather, fort };
             M.k = kc.trachtDesTags(T, grad, w.rain);

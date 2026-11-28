@@ -262,7 +262,7 @@ class AnazhRealm_siedlung_ort {
     // Lehre 14) als `dp.hoehe` — die Gassen des Exports folgen dem Grund dort (fachwerk `dorfLayout`). Ohne Ort (der Akt, dessen
     // Anker erst der Plan nennt; der Wege-Bau eines Alt-Saves) liegt der Plan auf ebenem Grund. Steht der Ort-Faden noch nicht, ist der
     // Export null wie bei kalter Foundry (der nächste Takt fragt neu; ein Wurf im Faden meldet sein `_bruchMelden`).
-    _foundryRequestSettlement(dp, kopf) {
+    _foundryRequestSettlement(dp, kopf, wo = 0) {
         const f = this._ensureAssetFoundry();
         if (!f || !f.ready || !f.worker) return Promise.resolve(null);
         const d = Object.assign({}, dp || {});
@@ -315,7 +315,7 @@ class AnazhRealm_siedlung_ort {
                 f,
                 "stl-",
                 { type: "export-settlement", dp: d },
-                this._foundryRang(0, kopf), // das Start-Dorf ist ein Kopf der Ankunft (`_startDorfAmBuch`, die Bahn ohne Arbeit)
+                this._foundryRang(wo, kopf), // das Start-Dorf ist ein Kopf der Ankunft (`_startDorfAmBuch`, die Bahn ohne Arbeit); `wo` der Ort des Lesers (die Ferne der Stadt), sonst 0: vorn
                 45000,
                 "FOUNDRY TIMEOUT: export-settlement nach 45 s Arbeit ohne Reply → null"
             );
