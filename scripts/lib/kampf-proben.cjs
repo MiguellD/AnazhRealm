@@ -2644,14 +2644,17 @@ async function WELLE_L(ort) {
                     // Sprung (das Kleinste zählt); die Gegenprobe waagrecht in der Weite des Ansprungs
                     {
                         const P0 = { x: P.x, y: P.y, z: P.z };
-                        const wolfS = neu("wolf", P.x + 0.4, P.z + 6, 1);
+                        // im Ring der Hetze wie (a) (`wolfAb`): auf dem Ring hetzM pirschte er an der Schwelle fest (4,8 m waagrecht)
+                        const wolfS = neu("wolf", P.x + wolfAb.x, P.z + wolfAb.z, 1);
                         const trocken = (x, z) => {
                             wolfS.position.set(x, r.getTerrainHeightAt(x, z), z);
                             return r._kreaturSchwimmt(wolfS, r._creatureGroundY(wolfS)) === null;
                         };
                         const ort = wolfS
                             ? ringe8([57, 70]).find(
-                                  ([ox, oz]) => trocken(P0.x + ox, P0.z + oz) && trocken(P0.x + ox + 0.4, P0.z + oz + 6)
+                                  ([ox, oz]) =>
+                                      trocken(P0.x + ox, P0.z + oz) &&
+                                      trocken(P0.x + ox + wolfAb.x, P0.z + oz + wolfAb.z)
                               )
                             : null;
                         if (wolfS && ort) {
@@ -2659,8 +2662,9 @@ async function WELLE_L(ort) {
                             P.z = P0.z + ort[1];
                             P.y = r.getTerrainHeightAt(P.x, P.z) + A.PLAYER_FOOT_OFFSET + 3.5;
                             halte();
-                            wolfS.position.set(P.x + 0.4, r.getTerrainHeightAt(P.x + 0.4, P.z + 6), P.z + 6);
-                            wolfS.rotation.set(0, Math.PI, 0);
+                            const [wx, wz] = [P.x + wolfAb.x, P.z + wolfAb.z];
+                            wolfS.position.set(wx, r.getTerrainHeightAt(wx, wz), wz);
+                            wolfS.rotation.set(0, Math.atan2(-wolfAb.x, -wolfAb.z), 0);
                             wolfS.userData._steuer = null;
                             let letzte = null,
                                 n = 0,
@@ -3318,7 +3322,10 @@ async function K5_VOR(abdruck) {
     r.assignCreatureTask(fuchs, "follow_player");
     K.vorTod = abdruck();
     const hpMax0 = ruhe(1e-4) / 1e-4;
-    const [wolf, seele] = [neu("wolf", 0.4, 6, Math.PI), p.soul];
+    // der Wolf im Ring der Hetze (0,8 × jagd.hetzM, landmarken-9 Kopf 2): auf 6,01 m stand er GENAU auf dem Ring hetzM 6 m —
+    // knapp darüber pirscht ein einzelner Jäger zum Ring und steht dort (T23 Posten 5: 1 500 Takte „jagd“ auf 6,0 m)
+    const wolfM = (0.8 * AnazhRealm._verhaltenGesetz().jagd.hetzM) / Math.hypot(0.4, 6);
+    const [wolf, seele] = [neu("wolf", 0.4 * wolfM, 6 * wolfM, Math.PI), p.soul];
     for (let k = 0; k < 1200 && !(p.respawnGraceUntil > s.spielZeit); k++) takt(1 / 60);
     const [e, M] = [p.emotions, r._genesisMitte()];
     if (!M) throw new Error("K5: kein Genesis-Ort (der Plan der Welt)");
