@@ -1,7 +1,7 @@
 {
  "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
  "geraet": "gtx",
- "zeit": "2026-11-28T11:39:47.550Z",
+ "zeit": "2026-11-28T11:53:02.752Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "profiband.K4#1": {
@@ -4536,18 +4536,67 @@
   },
   "karte2.same.entfaltung.abwesenheit#1": {
    "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 182 s von karte2.same.entfaltung.abwesenheit#1) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 182 s von karte2.same.entfaltung.abwesenheit#1) — offen, UNGEMESSEN",
+   "zahl": "Frist der Probe 176 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter same.entfaltung.abwesenheit) · Täter: @@ 173 s · same.entfaltung.abwesenheit S1 warf: /eval ohne Antwort binnen 80 s",
+   "exit": 3,
+   "minuten": 2.95,
+   "grund": "Frist der Probe 176 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter same.entfaltung.abwesenheit) · Täter: @@ 173 s · same.entfaltung.abwesenheit S1 warf: /eval ohne Antwort binnen 80 s",
+   "gpu": "nvidia/pascal",
    "ungemessen": true,
-   "zeit": "2026-11-28T08:57:38.852Z",
+   "s": 176.2,
+   "fremd": {
+    "s": 178.1,
+    "takte": 80,
+    "fremdS": 57.61,
+    "kerne": 0.323,
+    "fensterKerne": 0.634,
+    "namen": [
+     [
+      "bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \"",
+      10.75
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      6.63
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-e80f9c5d-w125137-s x listen/kandidat-gtx-e80f9c5d-w125137-s.t",
+      4.2
+     ]
+    ],
+    "dienerS": 33.03,
+    "diener": [
+     [
+      "System",
+      14.63
+     ],
+     [
+      "WmiPrvSE.exe",
+      7.97
+     ]
+    ],
+    "geraetS": 83.06,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      58.86
+     ],
+     [
+      "svchost.exe",
+      22.23
+     ],
+     [
+      "SearchIndexer.exe",
+      0.88
+     ]
+    ],
+    "eigenS": 591.38,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-28T11:53:02.752Z",
    "abdruck": "148f77bd11af",
    "port": 7804,
    "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1,
-   "fahrt": "17520@mx05e57c"
+   "modus": "session"
   },
   "karte2.mensch.bau.bauen#1": {
    "gruen": false,
