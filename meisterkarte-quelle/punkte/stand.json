@@ -3020,7 +3020,7 @@
   },
   "profiband.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Gehen 63 Bilder · max 75.35 ms · 68.25 % > 33 ms · Fahrt 47 Bilder · max 125.6 ms · 95.74 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 68.25 % > 33 ms | Fahrt: 4 Bild(er) > 100 ms (max 125.6), 95.74 % > 33 ms an 27d2f60e radeon · gehalten: Gehen 79 Bilder · max 83.36 ms · 21.52 % > 33 ms · Fahrt 54 Bilder · max 116.68 ms · 74.07 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 21.52 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 116.68), 74.07 % > 33 ms an b3740dd5 gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an 27d2f60e: Last: Referenz f 1,257 (Faden 1,257 · alle Kerne 1,168; vor 105/258,1 ms, nach 103,8/303,4 ms, Ruhe 83,5/259,8 ms seit 2026-11-16) · fremd: bash.exe scratchpad/wache-0331.sh 17,5 CPU-s · bash.exe -c s · profiband.K4#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, koerper-core.js +30) — zuletzt an 27d2f60e: Last: Referenz f 1,469 (Faden 1,329 · alle Kerne 1,469; vor 118,4/324,5 ms, nach 116,4/293,6 ms, Ruhe 89,1/220,9 ms seit 2026-11-17) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrj",
+   "beleg": "Maschine: gehalten: Gehen 63 Bilder · max 75.35 ms · 68.25 % > 33 ms · Fahrt 47 Bilder · max 125.6 ms · 95.74 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 68.25 % > 33 ms | Fahrt: 4 Bild(er) > 100 ms (max 125.6), 95.74 % > 33 ms an 27d2f60e radeon · gehalten: Gehen 79 Bilder · max 83.36 ms · 21.52 % > 33 ms · Fahrt 54 Bilder · max 116.68 ms · 74.07 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 21.52 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 116.68), 74.07 % > 33 ms an b3740dd5 gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an 27d2f60e: Last: Referenz f 1,28 (Faden 1,28 · alle Kerne 1,113; vor 106,9/259,6 ms, nach 102,9/288,9 ms, Ruhe 83,5/259,6 ms seit 2026-11-16) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxf · profiband.K4#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, koerper-core.js +30) — zuletzt an 27d2f60e: Last: Referenz f 1,469 (Faden 1,329 · alle Kerne 1,469; vor 118,4/324,5 ms, nach 116,4/293,6 ms, Ruhe 89,1/220,9 ms seit 2026-11-17) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrj",
    "stationen": [
     {
      "id": "profiband.K4#1",
@@ -3048,7 +3048,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 27d2f60e: Last: Referenz f 1,257 (Faden 1,257 · alle Kerne 1,168; vor 105/258,1 ms, nach 103,8/303,4 ms, Ruhe 83,5/259,8 ms seit 2026-11-16) · fremd: bash.exe scratchpad/wache-0331.sh 17,5 CPU-s · bash.exe -c s",
+     "grund": "Station seit der Messung geändert — zuletzt an 27d2f60e: Last: Referenz f 1,28 (Faden 1,28 · alle Kerne 1,113; vor 106,9/259,6 ms, nach 102,9/288,9 ms, Ruhe 83,5/259,6 ms seit 2026-11-16) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxf",
      "ungemessen": true
     },
     {
@@ -37612,7 +37612,7 @@
   "ohne": 3385
  },
  "kopfVoll": "9885e7c4a0af4d496f4ce33f3951342f528c7174",
- "zeit": "2026-11-28T01:43:21.658Z",
+ "zeit": "2026-11-28T01:55:27.905Z",
  "vorher": "9885e7c4",
  "bilanz": {
   "gewinn": [],
