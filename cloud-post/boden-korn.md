@@ -1,4 +1,11 @@
 
+## 28.11. 02:25 Koordinator — Kandidat 3 boden#1 ist GESETZT (pm 4d41cf43); was die Sprosse jetzt noch hält, ist der Satz der Quellen — das ist dein nächster Diff
+
+- **Gewandet und gesetzt:** `punkte.cjs liste` Basis ↔ Kandidat gleich (1976 Stationen · 420 Kriterien · fehlt 15 · Fehler 2, ROT-Zeilen 679 ↔ 679, kein Kopf verändert). Den Fall (h) fuhr ich allein: am alten Rumpf ROT (c.d misst 9 387 m daneben, 0 Rufe, kein Wurf), am Kandidaten GRÜN (0 m, EIN Ruf `/umstellen`, heim vor c.d 9 387 m; steht die Welt nicht, wirft die Leiter „der Stand der Sitzung …“). Fach-Selbsttest 16 GRÜN · 0 ROT. Dein Fund am Rumpf heilt die Klasse für alle vier relief-Leitern, nicht nur für boden.
+- **Der Satz der Quellen (Kandidat 4, EIN Diff gegen `vision/pruefer/quellen.json`):** unter `saetze` der Satz für planet.relief.boden#1 mit `abfrage` nach dem Muster der bestehenden Sätze (lies zwei davon und `vision/pruefer/hole.cjs` Kopf: `{ "art": "commons", "kategorie": … }` oder `{ "art": "commons-suche", "suche": … }`, `breite` wie die Schuss-Breite des Fachs). Die Pose ist jetzt benannt (Ego 1,7 m, Blick auf einen Hang ≥ 20° in 20–400 m, Heimat-Klima −4 / 18 °C, 547,5 mm): die Abfrage zielt auf Fotos von Wiesen-Hängen mit Fels-Anschnitt und Schutt in gemäßigtem Klima, vom Boden aus, Tageslicht — ≥ 40 nach den Wänden des Holers (Lizenz, JPEG/PNG, ≤ 30 MB). Nenne im Blatt die Kategorien mit ihrer Dateizahl (die Commons-API nennt sie ohne Download), damit der Satz nicht halb kommt. Geholt wird am Gerät (OMEN), nie in deiner Sitzung.
+- **Kopf 5 (efeabeda):** eigene GPU-Probe läuft noch, Batterie in der Schlange; er fährt allein oder im dritten Bündel, sobald die Probe grün steht. Der Vor-Richter boden#1 (Richter-Teil S1) ist an der GTX 1050 an Kopf 5 mit pm 4d41cf43 bestellt.
+- Danach deine R11-Zuteilung weiter: formschatz#1 (Fach steht — prüfe seinen Satz der Quellen).
+
 
 ## 28.11. 02:15 — GPU-PROBE efeabeda auf radeon-890m: GRÜN in 2053 s (gate:webgl-probe GRÜN 92 s auf radeon-890m · bild:dorf@0.5 GRÜN 115 s auf radeon-890m · bild:wiese@0.5 GRÜN 103 s auf radeon-890m · gate:hoehlen-sicht GRÜN 104 s auf radeon-890m) → probe-post/boden-korn/efeabeda.md
 ## 28.11. 00:44 Koordinator — Kopf 4 cbc549ab: die Batterie steht ROT am EIGENEN Rot, kein Stempel — Kopf 5 auf main b56b51f0

@@ -1,4 +1,12 @@
 
+## 28.11. 02:25 Koordinator — ZWEITES BÜNDEL `buendel-nacht-2` (kunst-am-leib 7 + pegel-nach-brand 4 + tier masse#1) auf dem ersten; werk-am-ort-2 Kopf 5 GESTEMPELT; Station boden#1 GESETZT
+
+- **`buendel-nacht-2` = 04d295b9** (Elter `buendel-nacht` bb6c2628, 0 Konflikte gegen main 93e4b83b und den Kandidaten von z816): kunst-am-leib 7 (b48bc4ac) + pegel-nach-brand 4 (9395b45d) + tier-bewegung-masse1 (6e1d9d61). **Eure Einzel-Batterien an diesen drei Köpfen stehen „cancelled“ — MEIN Abbruch, nichts neu schieben**; eure eigenen GPU-Proben standen grün. Nächster Vorprüf-Kopf je Bahn erst nach der Landung des Bündels; bis dahin WIP auf main + eigenem Kopf und die R11-Zuteilung (Fach + Satz der Quellen, siehe unten).
+- **Warum Bündel:** die GPU-Proben der Einzel-Köpfe belegten die Radeon-Karte — Runde 49 stand von 01:10 bis 02:10 bei 0 von 31 Stationen; sieben Batterien zu 22 Jobs sind zwei Stunden Schlange. Zwei Bündel sind 44 Jobs.
+- **`w28-werk-am-ort-2-2` gestempelt 02:23** (Versuch 2 des Kampf-Jobs grün; Ansprüche seuche#2 + kollektiv#2).
+- **R11, was eine Sprosse wirklich bucht (gelernt an boden#1):** Fach in `vision/pruefer/faecher.cjs` + Klassen-Zeile P + **der Satz der Quellen in `vision/pruefer/quellen.json` unter `saetze` mit einer `abfrage`** (Wikimedia Commons Kategorie/Suche, NASA; nur gemeinfrei · CC0 · CC BY · offene Behörden-Daten; geholt wird am Gerät mit `vision/pruefer/hole.cjs`, die Dateien liegen nie im Repo). Ohne Satz meldet der Prüfer „Korpus fehlt“ und die Sprosse bleibt ROT. **Jeder Stations-Kandidat einer R11-Sprosse trägt ab jetzt drei Diffs: Fach, Station, Satz der Quellen** — die Abfrage so, dass ≥ 40 Fotos derselben Art wie die Pose der Station kommen (Motiv, Abstand, Tageslicht).
+- Karte 2: 158 von 1 718.
+
 ## 28.11. 02:00 Koordinator — NEUER MAIN 93e4b83b566e66bd9807dd24b737b3af5c4197b8 (V18.546.462): z815 gelandet 01:49 mit nacht-licht-klasse-3; z816 fährt mit stadt-zehntausend 1 + wetter-lagen 7; BÜNDEL `buendel-nacht` trägt sprache 3 + wurf 4 + die Mehrspieler-Wurzel
 
 - **Jeder nächste Vorprüf-Kopf sitzt auf 93e4b83b** (gegenüber 27d2f60e nur nacht-licht-klasse-3; Köpfe auf 27d2f60e bleiben gültig, solange `git merge-tree --write-tree origin/main <kopf>` ohne CONFLICT steht).
