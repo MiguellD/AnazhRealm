@@ -1,7 +1,7 @@
 {
  "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
  "geraet": "gtx",
- "zeit": "2026-11-28T09:50:53.854Z",
+ "zeit": "2026-11-28T10:20:38.565Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "profiband.K4#1": {
@@ -2872,6 +2872,76 @@
    },
    "zeit": "2026-11-28T09:50:53.854Z",
    "abdruck": "b77edce78e9d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.netz.gestalt#1": {
+   "gruen": false,
+   "zahl": "S1 ROT an Umfang 1 < 8 Saaten (Orte mit stehendem Plan) — Täter: Gefälle 30 % an d:7@836,438 (fachwerk STRASSENGRAPH) · Wand im Korridor: ortsdurchfahrt 39 (haus_marokkanisch bei 803.8,485.0 (d:7@836,438)); wohnstrasse 183 (haus_italienisch bei 844.4,474.5 (d:7@836,438)); gasse 1450 (haus_provenzalisch bei 868.2,455.4 (d:7@836,438)); feldweg 98 (haus_italienisch  · Gefälle p95 % (die steilste Saat) 30 (Soll ≤ 9.5) · Wegeklassen 4 (Soll ≥ 4) · Wand-Stellen im Fahrkorridor 1770 (Soll ≤ 0) · Netz des Orts km 7.13 (Soll ≥ 10) · Umfang 1 (Soll ≥ 8 Saaten (Orte mit stehendem Plan)) · Saaten d:7@836,438 30 % · je Klasse m ortsdurchfahrt 678, wohnstrasse 987, gasse 5035, feldweg 432 · der Korridor gelesen, nicht gefahren · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.24,
+   "grund": "ROT: S1 ROT an Umfang 1 < 8 Saaten (Orte mit stehendem Plan) — Täter: Gefälle 30 % an d:7@836,438 (fachwerk STRASSENGRAPH) · Wand im Korridor: ortsdurchfahrt 39 (haus_marokkanisch bei 803.8,485.0 (d:7@836,438)); wohnstrasse 183 (haus_italienisch bei 844.4,474.5 (d:7@836,438)); gasse 1450 (haus_provenzalisch bei 868.2,455.4 (d:7@836,438)); feldweg 98 (haus_italienisch  · Gefälle p95 % (die steilste Saat) 30 (Soll ≤ 9.5) · Wegeklassen 4 (Soll ≥ 4) · Wand-Stellen im Fahrkorridor 1770 (Soll ≤ 0) · Netz des Orts km 7.13 (Soll ≥ 10) · Umfang 1 (Soll ≥ 8 Saaten (Orte mit stehendem Plan)) · Saaten d:7@836,438 30 % · je Klasse m ortsdurchfahrt 678, wohnstrasse 987, gasse 5035, feldweg 432 · der Korridor gelesen, nicht gefahren · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k037717809c18",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k1ca930620453",
+   "s": 13.8,
+   "fremd": {
+    "s": 17.5,
+    "takte": 8,
+    "fremdS": 5.89,
+    "kerne": 0.336,
+    "fensterKerne": 0.336,
+    "namen": [
+     [
+      "Explorer.EXE",
+      0.95
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      0.94
+     ],
+     [
+      "bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \"",
+      0.8
+     ]
+    ],
+    "dienerS": 5.27,
+    "diener": [
+     [
+      "System",
+      2
+     ],
+     [
+      "dwm.exe",
+      1.2
+     ]
+    ],
+    "geraetS": 10.34,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      6.56
+     ],
+     [
+      "svchost.exe",
+      3.31
+     ],
+     [
+      "SearchIndexer.exe",
+      0.25
+     ]
+    ],
+    "eigenS": 49.05,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-28T10:20:38.565Z",
+   "abdruck": "8b25433a2a61",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
