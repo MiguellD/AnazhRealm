@@ -1,6 +1,6 @@
 Kandidat der Station planet.geologie.gebirge (S1, die verformte Wand) — wetter-lagen, 28.11., DREI Dateien gegen punkte-maschine
 916ff168 (alle drei Diffs dort gebaut; k2-planet.diff trägt jetzt platten + extreme#2 + gebirge, neu gegen 916ff168, patch exakt):
-k2-planet.diff · faecher.diff · quellen.diff. Selbsttest faecher.cjs mit dem Kandidaten 17 GRÜN · 0 ROT; gegen die Station von heute
+k2-planet.diff · faecher.diff · quellen.diff. Selbsttest des Fachs mit dem Kandidaten 17 GRÜN · 0 ROT; gegen die Station von heute
 ROT beim Namen („die Felswand liest das Gesetz der Station“) — die drei Dateien landen zusammen.
 
 DAS GESETZ (Zweig wetter-lagen, gelaende-core `felsGeologie`/`felsEinfall`, Regler `faltung`, planet-core ortRoh, voxel-worker
@@ -23,7 +23,7 @@ GEMESSEN (node, Emulation von FELS_AN, Saat anazh-realm-seed, Lage über lageGru
   nachher: Kollision 93,6 % (5 Lagen, 2 984 Wände) ✓ ≥ 80 · Kraton 0 % (16 Lagen, 9 055 Wände) ✓ ≤ 20 · Einfallen 26,1° ± 21,5°
            (32 800 Wände) ✓ Streuung ≥ 0,5 · 96 Lagen: 94,7 % / 0 %.
 
-„/eval: planet: koerper ist kein Objekt (string)“ — DIE STELLE: pm 916ff168 k2-planet.js:1044 (platten, Teil E: koerper: "mond",
+„/eval: planet: koerper ist kein Objekt (string)“ — DIE STELLE: pm 916ff168 Station k2-planet, Zeile 1044 (platten, Teil E: koerper: "mond",
 radiusKm, masseErden lose daneben) und :1575 (gebirge S7: koerper: "mars", schwere: 3.71) reichen den Körper als Zeichenkette; der
 Faden nimmt ein Objekt aus KOERPER_FELDER (voxel-worker.js:1458 planetKoerper, fail-closed — wie die Station selbst an :2476
 { g: 3.71, radiusKm: 3390 }). Der Kandidat setzt { radiusKm: 1737.4, g: 1.62 } und { g: 3.71, radiusKm: 3389.5 }.
