@@ -5567,11 +5567,11 @@
    "summe": {
     "kriterien": 84,
     "sprossen": 569,
-    "heute": 56,
-    "kern": 1,
-    "kernDazu": 1,
-    "anteilHeute": 9.4,
-    "anteilKern": 0.1
+    "heute": 57,
+    "kern": 0,
+    "kernDazu": 0,
+    "anteilHeute": 9.5,
+    "anteilKern": 0
    },
    "perspektiven": [
     {
@@ -10729,8 +10729,8 @@
        "richter": "Verständigungs-Probe: zwei fremde Sprecher stimmen über ihren Kanal eine Tat ab (Treffen am genannten Ort ≥ 80 %); Gegenlauf Kanal gekappt → Zufall; Zipf 0,8–1,2"
       }
      ],
-     "heute": 2,
-     "kern": 1,
+     "heute": 3,
+     "kern": 0,
      "fuss": "gemessen",
      "beleg": "keine Welt-Sprache; Ortsnamen aus festen Silben je Region (fachwerk-core.js:3306)",
      "alt": [
@@ -20099,10 +20099,10 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 156,
+  "heute": 157,
   "davonKopplungen": 33,
-  "kern": 1,
-  "kernDazu": 1,
+  "kern": 0,
+  "kernDazu": 0,
   "anteilHeute": 8.1,
   "anteilKern": 0,
   "kapitel": 7,
@@ -20113,7 +20113,7 @@
    "ungemessen": 113
   },
   "gliederLeitern": 9,
-  "beide": 75,
+  "beide": 76,
   "nachwache": 81
  },
  "zusammengelegt": [
