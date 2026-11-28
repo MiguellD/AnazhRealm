@@ -19030,7 +19030,7 @@
   },
   "karte2.mensch.kultur.verstaendigung": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.verstaendigung#1 radeon: ROT: S1 ROT an Bewohner antworten 0.21739 verfehlt ≥ 0.9 — Täter: die Begegnung (stamm/siedlung-bewohner.js _bewohnerKopf): EIN Gesetz des Kopfes für jede Kultur, keine Gruß-Form · Bewohner antworten 0.21739 (Soll ≥ 0.9) · Gruß-Form trennbar — (Soll ≥ 0.8) · Umfang 23 · geantwortet 5/23 · Zeit bis 10° prov 0.45, prov 0.467, prov 0.35, prov 0.533, prov 0.333 · [linse-gpu] amd/rdna-3 an e80f9c5d · karte2.mensch.kultur.verstaendigung#1 gtx: ungemessen (R10) — zuletzt an b3740dd5: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 50.9 s · S1 warf: /eval ohne Antwort binnen 40 s · karte2.mensch.kultur.verstaendigung#2 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#2 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#3 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#3 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#4 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#4 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#5 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#5 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#6 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.verstaendigung#1 radeon: ROT: S1 ROT an Bewohner antworten 0.21739 verfehlt ≥ 0.9 — Täter: die Begegnung (stamm/siedlung-bewohner.js _bewohnerKopf): EIN Gesetz des Kopfes für jede Kultur, keine Gruß-Form · Bewohner antworten 0.21739 (Soll ≥ 0.9) · Gruß-Form trennbar — (Soll ≥ 0.8) · Umfang 23 · geantwortet 5/23 · Zeit bis 10° prov 0.45, prov 0.467, prov 0.35, prov 0.533, prov 0.333 · [linse-gpu] amd/rdna-3 an e80f9c5d · karte2.mensch.kultur.verstaendigung#1 gtx: ungemessen (R10) — zuletzt an e80f9c5d: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 50.7 s · S1 warf: /eval ohne Antwort binnen 40 s · karte2.mensch.kultur.verstaendigung#2 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#2 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#3 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#3 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#4 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#4 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#5 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#5 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#6 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.kultur.verstaendigung#1",
@@ -19048,7 +19048,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an b3740dd5: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 50.9 s · S1 warf: /eval ohne Antwort binnen 40 s",
+     "grund": "ungemessen (R10) — zuletzt an e80f9c5d: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 50.7 s · S1 warf: /eval ohne Antwort binnen 40 s",
      "ungemessen": true,
      "beide": true
     },
@@ -37603,7 +37603,7 @@
   "ohne": 3368
  },
  "kopfVoll": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
- "zeit": "2026-11-28T07:47:48.880Z",
+ "zeit": "2026-11-28T07:54:44.817Z",
  "vorher": "e80f9c5d",
  "bilanz": {
   "gewinn": [],
