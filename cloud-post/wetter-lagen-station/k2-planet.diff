@@ -1,74 +1,6 @@
 --- a/meisterkarte-quelle/punkte/stationen/k2-planet.js
 +++ b/meisterkarte-quelle/punkte/stationen/k2-planet.js
-@@ -799,8 +799,13 @@
-             };
-             // ── B (S1): die Gebirgsfläche > 2 km als Komponenten, verfolgt über den Faden — von jedem Stichpunkt > 2 km (der höchste zuerst)
-             // wächst eine Flut auf einem Gitter der Kante B.kante (gnomonisch um den Startpunkt: Großkreise sind Geraden) durch jede
--            // Zelle > 2 km, bis die Komponente geschlossen ist (kein Fenster, das einen Gürtel abschneidet); ihre Achsen aus den Momenten
--            // (+ Kante²/12), Komponenten < B.minZellen fallen wie in der Linse (diag-planet: < 5·10⁴ km²) aus der Fläche
-+            // Zelle > 2 km, bis die Komponente geschlossen ist (kein Fenster, das einen Gürtel abschneidet); Komponenten < B.minZellen
-+            // fallen wie in der Linse (diag-planet: < 5·10⁴ km²) aus der Fläche.
-+            // DIE ACHSE IST GEODÄTISCH (D²/A): D = der längste kürzeste Weg IN der Komponente (8er-Nachbarn, Schritt Kante bzw. √2·Kante,
-+            // zwei Sweeps), A = ihre Fläche — ein Rechteck L × B trägt L/B, eine Scheibe 1,27, ein gebogener oder verzweigter Gürtel
-+            // bleibt lang. Vorher stand die Achse aus den Momenten: sie macht jeden Bogen rund, und die ERDE fiel durch dasselbe Maß
-+            // (ETOPO1 0,5°, NOAA NGDC, Eisschilde ausgenommen, diese Flut nachgebaut: kovariant 2,1 % in Gürteln, achseP30 2,50;
-+            // geodätisch 95,5 %, P30 6,11 — Anden 14,3:1 auf 4 069 km, Himalaya–Tibet 6,2:1 auf 4 878 km). Die Momente bleiben Zeuge.
-             const B = U[1];
-             const rad = Math.PI / 180;
-             const rahmen = (p) => {
-@@ -858,7 +863,28 @@
-                 }
-                 const t = (sxx + syy) / 2, d = Math.sqrt(((sxx - syy) / 2) * ((sxx - syy) / 2) + sxy * sxy);
-                 if (K.voll) gedeckelt++;
--                formen.push({ s: Z.s, n, achse: Math.sqrt((t + d) / Math.max(1e-9, t - d)), laengeKm: Math.sqrt(12 * (t + d)) });
-+                const zelle = new Map(K.berg.map((b, q) => [b[0] + "," + b[1], q]));
-+                const sweep = (s0) => {
-+                    const dd = new Float64Array(n).fill(Infinity), Q = [s0];
-+                    dd[s0] = 0;
-+                    let fern = s0;
-+                    for (let h = 0; h < Q.length; h++) {
-+                        const u = Q[h], [i, j] = K.berg[u];
-+                        if (dd[u] > dd[fern]) fern = u;
-+                        for (let di = -1; di <= 1; di++)
-+                            for (let dj = -1; dj <= 1; dj++) {
-+                                const v = di || dj ? zelle.get(i + di + "," + (j + dj)) : undefined;
-+                                const nd = v === undefined ? Infinity : dd[u] + (di && dj ? Math.SQRT2 : 1);
-+                                if (nd < dd[v]) {
-+                                    dd[v] = nd;
-+                                    Q.push(v);
-+                                }
-+                            }
-+                    }
-+                    return [fern, dd[fern]];
-+                };
-+                const D = (sweep(sweep(0)[0])[1] + 1) * B.kante, A = n * B.kante * B.kante;
-+                formen.push({ s: Z.s, n, achse: (D * D) / A, achseKov: Math.sqrt((t + d) / Math.max(1e-9, t - d)), laengeKm: D, breiteKm: A / D });
-             };
-             for (const Z of zust) Z.komp = naechste(Z);
-             while (M.uhr() < B.bis) {
-@@ -892,8 +918,8 @@
-             }
-             for (const Z of zust) if (Z.komp) abgebrochen++;
-             const flaeche = formen.reduce((u, f) => u + f.n, 0);
--            const gewichtet = [];
--            for (const f of formen) for (let q = 0; q < f.n; q++) gewichtet.push(f.achse);
-+            const gewichtet = [], kov = [], breite = [];
-+            for (const f of formen) for (let q = 0; q < f.n; q++) (gewichtet.push(f.achse), kov.push(f.achseKov), breite.push(f.breiteKm));
-             gewichtet.sort((x, y) => x - y);
-             const jeSaat = zust.map((Z) => {
-                 const F = formen.filter((f) => f.s === Z.s), g = F.reduce((u, f) => u + f.n, 0);
-@@ -915,6 +941,10 @@
-                     jeSaatMedianProzent: r3(100 * med(jeSaat)),
-                     laengsteKm: r3(formen.reduce((u, f) => Math.max(u, f.laengeKm), 0)),
-                     achseMedian: r3(quant(gewichtet, 0.5)),
-+                    achseKovP30: r3(quant(kov, 0.3)),
-+                    guertelKovProzent: r3(flaeche ? (100 * formen.filter((f) => f.achseKov >= 4).reduce((u, f) => u + f.n, 0)) / flaeche : NaN),
-+                    breiteKmP50: r3(quant(breite, 0.5)),
-+                    breiteKmP80: r3(quant(breite, 0.8)),
-                 },
-             };
-             // ── C (S5): die Küste zur Zeit −1 Ma an den Küsten-Lagen der Stichprobe: |Δ Küstenabstand| je Ma = der Versatz der Küste (km/Ma = mm/a)
-@@ -1041,7 +1071,7 @@
+@@ -1071,7 +1071,7 @@
              // ── E: was der Faden trägt — der Körper (ein Mond-Argument), die älteste Zeit, der Erd-Schlüssel (S3, S7, S8, S9)
              const e = await H.seite(
                  "await r._fadenQuelle(); const a = await r._planetAuftrag({ type: \"planet-ort\", samen: \"erde-01\", breite: 10, laenge: 20, zeitMa: 0 }); " +
@@ -77,25 +9,7 @@
                      "const c = await r._planetAuftrag({ type: \"planet-ort\", samen: \"erde-01\", breite: 10, laenge: 20, zeitMa: -3990 }); " +
                      "const G = r._gelaende && r._gelaende(); return { dh: b.hoeheM - a.hoeheM, h: a.hoeheM, hAlt: c.hoeheM, schluessel: !!(G && G.ort && G.ort.teil && G.ort.teil.erdSchluessel), schl: Object.keys(a).sort().join(\",\"), delta: Object.keys(a.delta).sort().join(\",\") };"
              );
-@@ -1076,7 +1106,7 @@
-         },
-         sprossen: {
-             1: {
--                u: { saaten: 30, kante: 80, rand: 50, deckel: 350, jeSaat: 450, minZellen: 8, bis: 24, augeBis: 58 },
-+                u: { saaten: 30, kante: 80, rand: 50, deckel: 1000, jeSaat: 1500, minZellen: 8, bis: 24, augeBis: 58 },
-                 soll: [
-                     K.soll(PL, 1, "30 Saaten", { key: "saaten", rel: "≥" }),
-                     K.soll(PL, 1, "Gebirgsfläche > 2 km liegt in Gürteln mit Achsen ≥ 4:1", { key: "achseP30" }),
-@@ -1085,7 +1115,7 @@
-                 zeuge: zMin({ antworten: 3000, bergZellen: 30, komponenten: 5 }),
-                 auge: { pose: "Überflug 1 800 m über dem Spawn, Blick nach Norden (die Schummerung der Region)", vorbild: "Schummerung einer realen Gebirgsregion 10⁴ km² (Copernicus DEM), Blindpaar R11" },
-                 taeter: "planet-core.js planetPunktR (Orogen-Schablone der Ränder) über den Faden voxel-worker.js planetOrtAuftrag",
--                unklar: "„in ≥ 70 %“ gelesen wie die Linse diag-planet (guertel.lang): der Anteil der Gebirgsfläche > 2 km, der in Komponenten mit Achsen ≥ 4:1 liegt (Gitter 80 km, Komponenten ≥ 8 Zellen), über die Saaten gepoolt; eine Hochfläche über 350 Zellen (≈ 2,2 Mio km²) geht mit ihrer verfolgten Teilform ein (Zeuge gedeckelt)",
-+                unklar: "„in ≥ 70 %“ gelesen wie die Linse diag-planet (guertel.lang): der Anteil der Gebirgsfläche > 2 km, der in Komponenten mit Achsen ≥ 4:1 liegt (Gitter 80 km, Komponenten ≥ 8 Zellen), über die Saaten gepoolt; die Achse geodätisch D²/A (die Erde durch diese Flut: 95,5 %, P30 6,11 — die Momente ließen sie mit 2,1 % fallen, Zeuge achseKovP30); eine Komponente über 1 000 gefragte Zellen geht mit ihrer verfolgten Teilform ein (Zeuge gedeckelt; der Deckel 350 kappte 77,7 % der Fläche zur Kugel um den Gipfel)",
-                 gruen: gut({ saaten: 30, achseP30: 4.6, guertelProzent: 78 }, { antworten: 5070, bergZellen: 900, komponenten: 60 }),
-                 attrappen: [
-                     { name: "der Gürtel-Anteil als Zahl ohne Fenster des Fadens", roh: leer({ saaten: 30, achseP30: 4.6, guertelProzent: 78 }) },
-@@ -1450,11 +1480,14 @@
+@@ -1480,11 +1480,14 @@
              // fehlt eine, nennt die Adresse sie (`fehlt`), die Wände der Heimat stehen daneben als Zeuge
              const FELS_AN = async (r, T, a, mit) => {
                  const K = globalThis.__gelaendeCore, RAD = Math.PI / 180, k = a.ort + 1;
@@ -112,12 +26,13 @@
                  const einfallAn = typeof K.felsEinfall === "function" ? K.felsEinfall : null;
                  if (zone == null || !einfallAn)
                      return { fehlt: (zone == null ? "voxel-worker.js:1446 planetOrtAuftrag gibt die Zone nicht weiter (planet-core.js:1860 trägt orogenStaerke/orogenAktiv/orogenAlterMa, die Antwort nur " + Object.keys(o).sort().join(",") + ")" : "") + (zone == null && !einfallAn ? "; " : "") + (!einfallAn ? "gelaende-core.js:3351 FELS.einfall ist EINE Konstante (" + K.FELS.einfall + " rad), keine Funktion des Orts (gelaende-core.js:3417 FELS_TE liest sie)" : "") };
-@@ -1463,19 +1496,32 @@
+@@ -1493,19 +1496,40 @@
                  const O = K.ortGesetz(ort), eg = K.erbgutNormal(K.ortErbgut(K.erbgutNormal(heim == null ? undefined : heim), o.delta.wildnis));
                  const wl = K.GRUND.basis - O.meerUnterBasisM;
                  const L = K.lageAus({ seed: r._reiseSaat(ort, heim), baseHeight: K.GRUND.basis, waterLevel: wl, ort, erbgut: { terme: eg, wildnis: eg[0] && eg[0].art === "wildnis" ? 1 : 0 }, regionSize: K.GRUND.kachel }, SimplexNoise);
 -                let waende = 0, verformt = 0;
-+                let waende = 0, verformt = 0, einS = 0, einQ = 0, steil = null;
++                let waende = 0, verformt = 0, einS = 0, einQ = 0;
++                const steil = [];
                  for (let z = -mit.halb; z < mit.halb; z += 5)
                      for (let x = -mit.halb; x < mit.halb; x += 5) {
                          const h0 = K.hoehe(L, x, z, true);
@@ -128,15 +43,22 @@
                          waende++;
 -                        if (einfallAn(L, x, z) / RAD >= 10) verformt++;
 +                        const e = einfallAn(L, x, z) / RAD;
-+                        if (!steil || t > steil.t) steil = { t, x, z, y: Math.round(h0 * 100) / 100, fx: gx / t, fz: gz / t, einfall: Math.round(e * 10) / 10 };
++                        // die zehn steilsten Wände, je ≥ 60 m auseinander (das Ego steht 40 m davor) (der Fächer schießt je Wand ein Bild)
++                        const neu = { t, x, z, y: Math.round(h0 * 100) / 100, fx: gx / t, fz: gz / t, einfall: Math.round(e * 10) / 10 };
++                        const nah = steil.findIndex((q) => Math.hypot(q.x - x, q.z - z) < 60);
++                        if (nah >= 0) {
++                            if (t > steil[nah].t) steil[nah] = neu;
++                        } else steil.push(neu);
++                        steil.sort((p, q) => q.t - p.t);
++                        if (steil.length > 10) steil.length = 10;
 +                        einS += e;
 +                        einQ += e * e;
 +                        if (e >= 10) verformt++;
                      }
 -                return { zone, waende, verformt, breite: Math.round(breite * 10) / 10, laenge: Math.round(laenge * 10) / 10 };
-+                // die steilste Wand der Lage (hangauf fx/fz): der Fächer stellt das Ego 40 m hangab vor sie (vision/pruefer/faecher.cjs gebirge#1)
-+                if (steil) steil.yEgo = Math.round(K.hoehe(L, steil.x - steil.fx * 40, steil.z - steil.fz * 40, true) * 100) / 100;
-+                return { zone, waende, verformt, einS, einQ, wand: steil, breite, laenge };
++                // die steilsten Wände der Lage (hangauf fx/fz): der Fächer stellt das Ego 40 m hangab vor jede (vision/pruefer/faecher.cjs gebirge#1)
++                for (const q of steil) q.yEgo = Math.round(K.hoehe(L, q.x - q.fx * 40, q.z - q.fz * 40, true) * 100) / 100;
++                return { zone, waende, verformt, einS, einQ, bilder: steil, breite, laenge };
              };
 +            // DAS BILD VOR DEM FÄCHER: 200 Lagen × 1 km² brauchen den Deckel der Leiter — geschossen danach, lag kein Bild mehr darin
 +            // (Nachtrag 01:09: „Bild fehlt (kein Bild im Deckel der Leiter)“); die Pose steht in der Heimat, die Lagen reisen nicht
@@ -150,7 +72,7 @@
                  adressen: { orte: Array.from({ length: U[1].orte }, (_, j) => j) },
                  mit: { halb: U[1].halb },
                  ms: U[1].ms,
-@@ -1484,6 +1530,8 @@
+@@ -1514,6 +1538,8 @@
                      kraton: { wie: (v, aus) => { const w = aus.reduce((s, x) => s + x.w.waende, 0); return w ? (100 * aus.reduce((s, x) => s + x.w.verformt, 0)) / w : null; }, feld: "zone", nur: (a, w) => w.zone === "kraton" },
                      waende: { wie: "summe", feld: "waende" },
                      zonen: { wie: "verschieden", feld: "zone", nur: (a, w) => w.zone === "kollision" || w.zone === "kraton" },
@@ -159,7 +81,7 @@
                  },
                  schlecht: { feld: "waende", richtung: "max" },
                  pose: (a, w) => "Ego vor der Wand der Lage " + w.breite + "°/" + w.laenge + "° (" + w.zone + ")",
-@@ -1491,21 +1539,17 @@
+@@ -1521,21 +1547,17 @@
              });
              // ── die Felswände der Heimat (Hang ≥ 40° der Welt-Höhe, 1 km²) und das Einfallen ihrer Bänke, wie der Fels-Stoff es liest — der Zeuge
              const w = await H.seite(
@@ -185,7 +107,7 @@
                  auge: bild,
              };
              if (RF.fehlt) aus[1].taeter = "Leser fehlt: " + RF.fehlt + " · " + RF.akte;
-@@ -1572,14 +1616,14 @@
+@@ -1602,14 +1624,14 @@
              // ── S7: der Körper — ein Mond-Argument am Faden
              const k = await H.seite(
                  "await r._fadenQuelle(); const a = await r._planetAuftrag({ type: \"planet-ort\", samen: \"erde-02\", breite: -20, laenge: 60, zeitMa: 0 }); " +
@@ -202,65 +124,3 @@
                  soll: [K.soll(GE, 1, "in Kollisionszonen ≥ 80 % der Wände verformt", { key: "verformtProzent", einheit: "%" }), K.soll(GE, 1, "im alten Kraton ≤ 20 %", { key: "kratonProzent", einheit: "%" })],
                  zeuge: zMin({ antworten: 1000, waende: 20, zonen: 2, einfallStreuGrad: 0.5 }),
                  auge: { pose: "Ego 45 m über dem Spawn vor der nächsten Felswand, Blick auf sie", vorbild: "Fotos von Felswänden in Faltengebirgen und Kratonen (Feldfotos je Gestein), Blindpaar R11" },
-@@ -6045,6 +6089,25 @@
- for (const w of W) freq[w] = (freq[w] || 0) + 1;
- let tMittel = 0;
- for (const w of Object.keys(freq)) tMittel += (Tw[w] * freq[w]) / W.length;
-+// DIE HITZE DER STRECKE (planet.wetter.extreme#2): die Temperatur je Takt am Ort (Sommer, Nachmittag) unter dem Wort UND der Wärme
-+// der Luftmasse (phyto-core lageWaerme: der Block der Lage sammelt Wärme über Tage), gelesen wie die Welt sie liest (gelaende-core
-+// temperaturAus, 5. Glied); die Amplitude ist das Mittel über die längste klare Strecke über dem Mittel aller Takte
-+const lw = typeof P.lageWaerme === "function" ? P.lageWaerme : null, saatW = A._saatVon(wm);
-+const Tt = lw ? W.map((w, i) => G.temperaturAus(r._temperaturFeld(wl), 0.375, 0.6, FELD[w], lw(saatW, 0, 0, i * Z))) : null;
-+let hitze = null;
-+if (Tt) {
-+const mT = Tt.reduce((s, v) => s + v, 0) / Tt.length;
-+let bi = 0, bl = 0;
-+for (let i = 0; i < W.length; ) { if (W[i] === "sunny") { let e = i; while (e < W.length && W[e] === "sunny") e++; if (e - i > bl) { bl = e - i; bi = i; } i = e; } else i++; }
-+let mL = 0, spitze = -Infinity;
-+for (let i = bi; i < bi + bl; i++) { mL += Tt[i] / bl; if (Tt[i] > spitze) spitze = Tt[i]; }
-+// die Kältewelle (dieselbe Sprosse): dieselbe Strecke im Hochwinter (0,875) — der Block strahlt aus, die Anomalie kehrt ihr Vorzeichen
-+const Tw0 = W.map((w, i) => G.temperaturAus(r._temperaturFeld(wl), 0.875, 0.6, FELD[w], lw(saatW, 0, 0, i * Z)));
-+const mW = Tw0.reduce((s, v) => s + v, 0) / Tw0.length;
-+let mLW = 0;
-+for (let i = bi; i < bi + bl; i++) mLW += Tw0[i] / bl;
-+hitze = { amplitudeK: bl ? mL - mT : null, spitzeK: bl ? spitze - mT : null, kaelteK: bl ? mLW - mW : null, takte: bl };
-+}
- const tele = [];
- try {
- for (let k = 0; k < ${Number(u4.saaten) || 100}; k++) {
-@@ -6056,7 +6119,7 @@
- }
- } finally { wm.seed = s0; }
- const sichtSturm = -Math.log(A.LUFT.kontrast) / r._luftBeta(FELD.stormy);
--return { jahrMax, maxAll, sonnig, Tw, tMittel, tele, sichtSturm, saatZurueck: wm.seed === s0, jeJahr, stundeS, worte: Object.keys(freq).length };
-+return { jahrMax, maxAll, sonnig, Tw, tMittel, hitze, tele, sichtSturm, saatZurueck: wm.seed === s0, jeJahr, stundeS, worte: Object.keys(freq).length };
- `);
-             // die Bild-Zeit über 2,5 s im Wetter der Welt (requestAnimationFrame) — headless die Zeit des Software-Renderers
-             const takt = await H.seite(`
-@@ -6148,11 +6211,13 @@
-                 auge: await M.auge("wetter-extreme-s1", { ort: "wiese" }, { wetter: "stormy" }),
-                 taeter: (RF.fehler.length && !RF.gemessen ? "Leser fehlt: " + RF.fehler[0].fehler + " · " : "") + "gelaende-core.js:1627 pegelHubVon deckelt den Hub an der Krone (Math.min(krone, h)), " + RF.werte.bordvoll + " von " + RF.gemessen + " Adressen bordvoll, " + RF.werte.stark + " mit ≥ " + stark + " mm — die Aue trägt den Überschuss „nicht gerechnet“ (gelaende-core.js:1569) · " + RF.akte,
-             };
--            // S2 die Hitzewelle: die längste Strecke klarer Worte (Spieltage) und der Überschuss der Temperatur des klaren Worts über
--            // das Mittel der Worte (Sommer, Nachmittag)
-+            // S2 die Hitzewelle: die längste Strecke klarer Worte (Spieltage) und die Temperatur über ihr — das Mittel der Strecke über
-+            // dem Mittel aller Takte (Sommer, Nachmittag), unter Wort und Wärme der Luftmasse (welt.hitze); ohne den Leser der Wärme
-+            // ist die Amplitude ungemessen (bis hier: das klare Wort über dem Mittel der Worte — die Tafel kennt den Block nicht)
-             aus[2] = {
--                werte: { dauerTage: R(Math.max(0, ...welt.sonnig)), amplitudeK: R(welt.Tw.sunny - welt.tMittel) },
--                zeuge: { strecken: welt.sonnig.length, streuDauer: R(streu(welt.sonnig)), streuT: R(streu(Object.values(welt.Tw))), worte: welt.worte },
-+                werte: { dauerTage: R(Math.max(0, ...welt.sonnig)), amplitudeK: welt.hitze ? R(welt.hitze.amplitudeK) : null },
-+                zeuge: { strecken: welt.sonnig.length, streuDauer: R(streu(welt.sonnig)), streuT: R(streu(Object.values(welt.Tw))), worte: welt.worte, spitzeK: welt.hitze ? R(welt.hitze.spitzeK) : null, kaelteK: welt.hitze ? R(welt.hitze.kaelteK) : null, wortK: R(welt.Tw.sunny - welt.tMittel) },
-+                taeter: welt.hitze ? "phyto-core.js lageBlock · lageWaerme (die Blockierlage der WETTER_LAGE)" : "Leser fehlt: phyto-core lageWaerme (die Wärme der Luftmasse) — die Amplitude ist ungemessen",
-             };
-             // S3 die Wiederkehr: Gumbel über die Jahresmaxima des Strecken-Regens (Momente), x100 ÷ x2 gegen die Erd-Erwartung
-             const jm = welt.jahrMax;
-@@ -6223,7 +6288,7 @@
-                 ],
-                 zeuge: zMinStreu({ strecken: 10, worte: 3 }, ["streuDauer", "streuT"]),
-                 taeter: "phyto-core.js wetterAt (keine Blockierlage)",
--                leser: "phyto-core.js:4423 — wetterAt kennt keine Blockierlage: die längste klare Strecke ist ein Bruchteil eines Tages",
-+                leser: "phyto-core.js wetterAt → lageBlock (das Hoch, das steht) · lageWaerme → gelaende-core temperaturAus (5. Glied) — die Welt: stamm/bild-himmel.js _temperaturAt · _luftmasseWaerme (Brand, Grillen, Zündung, Lava), stamm/siedlung-bewohner.js _bewohnerTracht",
-                 gruen: { werte: { dauerTage: 7, amplitudeK: 5.5 }, zeuge: { strecken: 40, streuDauer: 2, streuT: 3, worte: 5 } },
-                 attrappen: [
-                     { name: "Welle aus der Statistik ohne Welt", roh: leer({ dauerTage: 7, amplitudeK: 5.5 }) },

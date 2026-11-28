@@ -1,5 +1,12 @@
 # Stand-Blatt wetter-lagen (Sprossen `karte2.planet.wetter.lagen#2`, `karte2.planet.wetter.extreme#1`) — oberster Abschnitt = jüngster Stand
 
+## 28.11. 03:50 MEZ — gebirge#1: der Kandidat steht neu gegen pm 1ad7f6b2 (nur gebirge), mit Ort, Bildzahl und gezähltem Korpus
+
+- **Gegen den gesetzten Kopf:** pm 1ad7f6b2 trägt platten S1 + extreme S2 wörtlich wie mein Kandidat (3-Wege-Merge ohne Konflikt); `k2-planet.diff` trägt nur noch gebirge, alle drei Diffs patchen exakt, Fach-Selbsttest 17 GRÜN · 0 ROT.
+- **Ort und Bildzahl (Regel 03:03):** die Heimat ist flach (Streuung 0), das Soll verlangt Kollision gegen Kraton → Reise-Welten, keine Stadt. FELS_AN gibt je Lage die zehn steilsten Wände (≥ 60 m auseinander); gezählt an 200 Lagen: Kollision **22** Wände an 3 Lagen, Kraton **150** an 15 → je Klasse 20 = **40 Bilder an 3 + 2 Reisen**. Bei vier Wänden je Lage ≥ 100 m trug die Kollision nur 12 — beim Namen.
+- **Korpus (Muster boden#1, Dateizahl im `stand`):** Anticlines 103 Dateien (11 Unterkategorien) · Synclines 61 (4); geholt wird am Gerät (die Commons-API antwortet der Wolke mit 429).
+- **koerper-Wurf, Stelle am neuen Kopf:** Station k2-planet Zeile 1074 und 1605.
+
 ## 28.11. 03:38 MEZ — gebirge#1: die Wand trägt ihre Faltung (Kopf d8d98d1); der Kandidat aus drei Dateien liegt im Station-Ordner
 
 - **Geschnitten** (`wetter-lagen` d8d98d1): gelaende-core `felsGeologie(L)` — die Bank-Fläche s = y + tan(einfall)·h1 + a·sin(k·h1) quer zum Streichen des Orts (`streichC`/`streichS` aus platten#1), Faltenzug 400 m, Schenkel bis `faltung` × 60°; neuer Regler `faltung` (0 … 1), planetOrt setzt ihn = glatt(0,01, 0,08, orogenStaerke) — die Naht bleibt gefaltet, der Kraton ohne Orogen trägt 0. Vertex (`felsStoff`) und Shader (`felsFein`/`felsWelle`, fünf Uniforms je Bild aus der Lage) lesen DIESELBE Funktion; `felsEinfall(L, x, z)` ist der Leser der Station. Der Faden reicht die Zone (`orogenAktiv` · `orogenAlterMa` · `orogenStaerke` · `krusteAlterMa`).

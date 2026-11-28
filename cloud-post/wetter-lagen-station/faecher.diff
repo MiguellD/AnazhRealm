@@ -5,14 +5,14 @@
  }
  
 +// DAS GESETZ DER FELSWAND (planet.geologie.gebirge#1): FELS_AN der Station (k2-planet.js) — Zone des Planet-Fadens, Wände ≥ 40° und
-+// ihr Einfallen (gelaende-core `felsEinfall`), dazu die steilste Wand je Lage; der Fächer ruft es wörtlich, nie eine Abschrift
++// ihr Einfallen (gelaende-core `felsEinfall`), dazu die zehn steilsten Wände je Lage (≥ 60 m auseinander); der Fächer ruft es wörtlich, nie eine Abschrift
 +function gebirgeGesetz() {
 +    const t = fs.readFileSync(path.join(STATIONEN, "k2-planet.js"), "utf8");
 +    const a = t.indexOf("const FELS_AN = async (r, T, a, mit) => {");
 +    const e = a < 0 ? -1 : t.indexOf("\n            };\n", a);
 +    if (a < 0 || e < 0) throw new Error("Gesetz fehlt: k2-planet.js trägt FELS_AN im Gebirge nicht mehr");
 +    const fn = t.slice(a + "const FELS_AN = ".length, e + 14).trim();
-+    if (!/wand: steil/.test(fn)) throw new Error("Gesetz fehlt: FELS_AN gibt die steilste Wand („wand: steil“) nicht zurück");
++    if (!/bilder: steil/.test(fn)) throw new Error("Gesetz fehlt: FELS_AN gibt die steilsten Wände („bilder: steil“) nicht zurück");
 +    return fn;
 +}
 +
@@ -25,12 +25,12 @@
      },
 +    // die Felswand: die Station misst an 200 Lagen der Fibonacci-Kugel (k2-planet.js FELS_AN) das Einfallen jeder Wand ≥ 40° im
 +    // Quadratkilometer der Reise-Welt — der Fächer REIST an jede Lage der Kollisionszone (Orogen aktiv) und des Kratons (Kruste
-+    // > 1 500 Ma ohne Orogen) und stellt das Ego 40 m hangab vor ihre steilste Wand, Augenhöhe, Blick auf die Wand; die Klasse sagt
++    // > 1 500 Ma ohne Orogen) und stellt das Ego 40 m hangab vor jede ihrer zehn steilsten Wände (Reise-Welten: das Gesetz verlangt die Zone, die Heimat ist flach; je Klasse 20 Bilder = 40, gezählt Kollision 22 Wände an 3 Lagen, Kraton 150 an 15 Lagen; geschossen werden 3 + 2 Reisen), Augenhöhe, Blick auf die Wand; die Klasse sagt
 +    // die Zone des Planet-Fadens (gefaltet · flach), das Einfallen der Bänke an der Wand reist ins Wort
 +    "planet.geologie.gebirge#1": {
 +        ort: "wiese",
-+        gesetz: "meisterkarte-quelle/punkte/stationen/k2-planet.js:1451",
-+        faecher: "200 Lagen der Fibonacci-Kugel der Saat der Welt (FELS_AN, auf 0,01°), je Lage der Kollisionszone und des Kratons die steilste Wand ≥ 40° im Quadratkilometer der Reise-Welt, Ego 1,7 m über dem Boden 40 m hangab, Blick auf die Wand 4 m über ihrem Fuß, Klassen im Wechsel, Mittag",
++        gesetz: "meisterkarte-quelle/punkte/stationen/k2-planet.js:1481",
++        faecher: "200 Lagen der Fibonacci-Kugel der Saat der Welt (FELS_AN, auf 0,01°), je Lage der Kollisionszone und des Kratons die zehn steilsten Wände ≥ 40° (≥ 60 m auseinander) im Quadratkilometer der Reise-Welt, Ego 1,7 m über dem Boden 40 m hangab, Blick auf die Wand 4 m über ihrem Fuß, Klassen im Wechsel, Mittag",
 +        ordner: "planet.geologie.gebirge.1-b1",
 +        uhren: [0.5],
 +        frage: "Sind die Bänke der Felswand in der Bildmitte gefaltet oder gekippt?",
@@ -42,8 +42,8 @@
 +            SAAT +
 +            "const FELS_AN = " + gebirgeGesetz() + ", posen = [], je = {}; let meer = 0, sonst = 0, ohneWand = 0, fehlt = null;" +
 +            "for (let ort = 0; ort < 200; ort++) { let w = null; try { w = await FELS_AN(r, T, { ort }, { halb: 500 }); } catch (e) { w = null; } if (!w || w.meer) { meer++; continue; } if (w.fehlt) { fehlt = w.fehlt; break; }" +
-+            " const klasse = w.zone === 'kollision' ? 'gefaltet' : w.zone === 'kraton' ? 'flach' : null; if (!klasse) { sonst++; continue; } if (!w.wand) { ohneWand++; continue; } const s = w.wand; je[klasse] = (je[klasse] || 0) + 1;" +
-+            " posen.push({ klasse, reise: 'reise ' + w.breite + ' ' + w.laenge, pose: { px: +(s.x - s.fx * 40).toFixed(2), py: +(s.yEgo + 1.7).toFixed(2), pz: +(s.z - s.fz * 40).toFixed(2), lx: s.x, ly: +(s.y + 4).toFixed(2), lz: s.z }, wort: 'Lage ' + ort + ' (' + w.breite + ' ' + w.laenge + ', ' + w.zone + '): die steilste von ' + w.waende + ' Wänden ≥ 40°, ihre Bänke fallen ' + s.einfall + '°, Ego 40 m hangab' }); }" +
++            " const klasse = w.zone === 'kollision' ? 'gefaltet' : w.zone === 'kraton' ? 'flach' : null; if (!klasse) { sonst++; continue; } if (!w.bilder || !w.bilder.length) { ohneWand++; continue; }" +
++            " w.bilder.forEach((s, rang) => { je[klasse] = (je[klasse] || 0) + 1; posen.push({ rang, klasse, reise: 'reise ' + w.breite + ' ' + w.laenge, pose: { px: +(s.x - s.fx * 40).toFixed(2), py: +(s.yEgo + 1.7).toFixed(2), pz: +(s.z - s.fz * 40).toFixed(2), lx: s.x, ly: +(s.y + 4).toFixed(2), lz: s.z }, wort: 'Lage ' + ort + ' (' + w.breite + ' ' + w.laenge + ', ' + w.zone + '): Wand ' + (rang + 1) + ' der steilsten von ' + w.waende + ' Wänden ≥ 40°, ihre Bänke fallen ' + s.einfall + '°, Ego 40 m hangab' }); }); }" +
 +            "return { saat, posen, lage: fehlt ? 'Leser fehlt: ' + fehlt : '200 Lagen: ' + JSON.stringify(je) + ', Meer ' + meer + ', weder Kollision noch Kraton ' + sonst + ', ohne Wand ≥ 40° ' + ohneWand };",
 +    },
      // die Glut: die Station setzt ihre Lava-Tat selbst und schießt am Spawn (k2-planet.js:1228); das Gesetz der Welt stellt keinen
@@ -53,7 +53,7 @@
      t("an der Pose: ein Bild, für das die Werkbank eine andere Kamera wählte (Blick-Wahl ≥ 2 Posen), trägt kein Rahmen-Motiv", AN_DER_POSE("ABNAHME GRÜN · Blick-Wahl 1 Pose") && !AN_DER_POSE("ABNAHME GRÜN · Blick-Wahl 2 Posen") && !AN_DER_POSE("Blick-Wahl 42 Posen") && !PF("ABNAHME GRÜN · Blick-Wahl 37 Posen", { ziel: { art: "eiche", d: 9 } }) && !SPROSSEN["mensch.bau.bedarf#1"].motiv("ABNAHME GRÜN · Blick-Wahl 3 Posen") && SPROSSEN["mensch.bau.bedarf#1"].wahl === 0 && !SPROSSEN["mensch.bau.bedarf#1"].motiv("ABNAHME ROT [Sicht verdeckt 49.5 % (Bau als 1 m): bauSatz 49.5 %] · Ziel Blickziel verdeckt von bauSatz in 1.2 m · Blick-Wahl 1 Pose") && SPROSSEN["mensch.bau.bedarf#1"].motiv("ABNAHME GRÜN · Blick-Wahl 1 Pose") && SPROSSEN["leben.pflanzen.arten#1"].wahl === 0);
      t("das Motiv der Pflanze: ihr eigenes Laub am Ziel trägt, fremdes oder nahes Laub nicht", PF("ABNAHME ROT [Ziel Blickziel verdeckt von Laub fscatter:eiche:L1 in 9.2 m]", { ziel: { art: "eiche", d: 12 } }) && !PF("ABNAHME ROT [Ziel Blickziel verdeckt von Laub fscatter:tanne:L1 in 9.2 m]", { ziel: { art: "eiche", d: 12 } }) && !PF("ABNAHME ROT [Ziel Blickziel verdeckt von Laub fscatter:eiche:L1 in 2.1 m]", { ziel: { art: "eiche", d: 12 } }) && PF("ABNAHME GRÜN", {}));
      t("Meister oder Anfänger: die Klasse ist das Können des Lebenslaufs an den Schwellen des Gesetzes (≥ 1 / < 0,5), ≥ 20 je Klasse im Wechsel", /klasse = k >= 1 \? 'Meister' : k < 0\.5 \? 'Anfänger' : null/.test(SPROSSEN["mensch.sport.kunst#1"].rumpf()) && SPROSSEN["mensch.sport.kunst#1"].je >= 20 && imWechsel([{ klasse: "Meister" }, { klasse: "Meister" }, { klasse: "Anfänger" }], 22).map((x) => x.klasse).join() === "Meister,Anfänger,Meister");
-+    t("die Felswand liest das Gesetz der Station: FELS_AN wörtlich (Zone und steilste Wand), die Klasse aus der Zone des Planet-Fadens, je Lage eine Reise", (() => { try { const g = SPROSSEN["planet.geologie.gebirge#1"].rumpf(); return /const FELS_AN = async \(r, T, a, mit\) =>/.test(g) && /w\.zone === 'kollision' \? 'gefaltet' : w\.zone === 'kraton' \? 'flach'/.test(g) && /reise: 'reise '/.test(g) && SPROSSEN["planet.geologie.gebirge#1"].je >= 20; } catch (e) { return false; } })());
++    t("die Felswand liest das Gesetz der Station: FELS_AN wörtlich (Zone und die steilsten Wände), die Klasse aus der Zone des Planet-Fadens, je Lage eine Reise", (() => { try { const g = SPROSSEN["planet.geologie.gebirge#1"].rumpf(); return /const FELS_AN = async \(r, T, a, mit\) =>/.test(g) && /w\.zone === 'kollision' \? 'gefaltet' : w\.zone === 'kraton' \? 'flach'/.test(g) && /reise: 'reise '/.test(g) && SPROSSEN["planet.geologie.gebirge#1"].je >= 20; } catch (e) { return false; } })());
      t("jede Klassen-Sprosse trägt ihre Frage", Object.values(SPROSSEN).filter((d) => d.je).every((d) => /\?$/.test(d.frage || "")));
      t("eine feste Uhr (Erntetag) fächert nur über Adressen", faechern(basis(12), [10 / 24], { uhr: 1 }).length === 12 && faechern(basis(12), [10 / 24], {})[0].mehr.uhr === 10 / 24);
      const png = Buffer.alloc(24);

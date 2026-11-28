@@ -1,5 +1,5 @@
 Kandidat der Station planet.geologie.gebirge (S1, die verformte Wand) — wetter-lagen, 28.11., DREI Dateien gegen punkte-maschine
-916ff168 (alle drei Diffs dort gebaut; k2-planet.diff trägt jetzt platten + extreme#2 + gebirge, neu gegen 916ff168, patch exakt):
+1ad7f6b2 (platten S1 + extreme S2 dort gesetzt; k2-planet.diff trägt nur noch gebirge, 3-Wege-Merge ohne Konflikt, patch exakt):
 k2-planet.diff · faecher.diff · quellen.diff. Selbsttest des Fachs mit dem Kandidaten 17 GRÜN · 0 ROT; gegen die Station von heute
 ROT beim Namen („die Felswand liest das Gesetz der Station“) — die drei Dateien landen zusammen.
 
@@ -14,17 +14,23 @@ WAS DER KANDIDAT ÄNDERT: (1) die Zone: Kraton = alte Kruste OHNE Orogen (kruste
 orogenAlterMa > 1 000 — ein erloschenes Orogen über 1 000 Ma ist gefaltet (Appalachen, Kaledoniden): mit der alten Zone stehen dort
 48 % der „Kraton“-Wände verformt, mit der neuen 0 %. (2) Fenster halb 100 → 500, Orte 24 → 200: am Mittelpunkt des Orts (200 × 200 m)
 stehen an 200 Lagen 6 Wände ≥ 40° (keine in einer Kollisionszone), im Quadratkilometer 32 800. (3) die Lage auf 0,01° (die Körnung
-von „reise“), die steilste Wand je Lage reist zurück — der Fächer stellt das Ego 40 m hangab vor sie. (4) die Streuung des Einfallens
+von „reise“), die zehn steilsten Wände je Lage (≥ 60 m auseinander) reisen zurück — der Fächer stellt das Ego 40 m hangab vor jede. (4) die Streuung des Einfallens
 über alle Wände der Orte (die Heimat ist flach: ihre Streuung 0 bleibt als einfallStreuHeimatGrad). (5) das Bild vor dem Fächer (der
 Deckel lag nach 200 Lagen leer). Soll, Wortlaut und Pose unverändert.
+
+ORT UND PREIS DES FACHS (Regel 03:03 „am billigsten Ort, den sein Gesetz erlaubt“): die Heimat ist Kraton-flach (Streuung 0), das
+Soll verlangt Kollision gegen Kraton — also Reise-Welten, keine Stadt. Gezählt (Emulation, 200 Lagen × 1 km², 10 Wände ≥ 60 m):
+Kollision 22 Wände an 3 Lagen (Lage 54 · 109 · 198, je 6/6/10), Kraton 150 an 15 Lagen; je Klasse 20 → 40 Bilder an 3 + 2 Reisen
+(die Posen laufen Lage um Lage, je Lage EINE Reise). Korpus: Anticlines 103 Dateien (11 Unterkategorien) + Synclines 61 (4) ≥ 40 je
+Satz; Folds_(geology), Folded_strata, Geological_folds gibt es an Commons nicht.
 
 GEMESSEN (node, Emulation von FELS_AN, Saat anazh-realm-seed, Lage über lageGrund statt _reiseSaat — die Station am Gerät richtet):
   vorher:  felsEinfall fehlt, FELS.einfall = 0,07 rad (4,0°) überall → verformt 0 % in jeder Zone (das Soll ≥ 80 % fällt am Gesetz)
   nachher: Kollision 93,6 % (5 Lagen, 2 984 Wände) ✓ ≥ 80 · Kraton 0 % (16 Lagen, 9 055 Wände) ✓ ≤ 20 · Einfallen 26,1° ± 21,5°
            (32 800 Wände) ✓ Streuung ≥ 0,5 · 96 Lagen: 94,7 % / 0 %.
 
-„/eval: planet: koerper ist kein Objekt (string)“ — DIE STELLE: pm 916ff168 Station k2-planet, Zeile 1044 (platten, Teil E: koerper: "mond",
-radiusKm, masseErden lose daneben) und :1575 (gebirge S7: koerper: "mars", schwere: 3.71) reichen den Körper als Zeichenkette; der
+„/eval: planet: koerper ist kein Objekt (string)“ — DIE STELLE: pm 1ad7f6b2 Station k2-planet, Zeile 1074 (platten, Teil E: koerper: "mond",
+radiusKm, masseErden lose daneben) und :1605 (gebirge S7: koerper: "mars", schwere: 3.71) reichen den Körper als Zeichenkette; der
 Faden nimmt ein Objekt aus KOERPER_FELDER (voxel-worker.js:1458 planetKoerper, fail-closed — wie die Station selbst an :2476
 { g: 3.71, radiusKm: 3390 }). Der Kandidat setzt { radiusKm: 1737.4, g: 1.62 } und { g: 3.71, radiusKm: 3389.5 }.
 
