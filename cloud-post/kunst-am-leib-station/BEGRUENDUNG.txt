@@ -46,7 +46,7 @@ Ehrlich offen: stadt-voll trägt keine Schmiede (Bericht stoffstrom-kette), ein 
 die Güte nicht, R² 0. Den Messort mit ≥ 2 Händen (mehrere Dörfer im Ring) wählt der Koordinator. Die Güte des Stücks in der Hand
 eines Bewohners liest heute nur der Zensus: kein Bewohner schlägt mit seinem Werkzeug (Schaden, Abbau, Verschleiß offen).
 
-═══ Kandidat ausdruck#1 (Post 00:57: das Fach des Prüfers für karte2.mensch.leib.ausdruck#1) — gegen punkte-maschine 4a2784e8 ═══
+═══ Kandidat ausdruck#1 (Post 00:57: das Fach des Prüfers für karte2.mensch.leib.ausdruck#1) — gegen punkte-maschine bafab955 ═══
 - ausdruck-1-station.diff (meisterkarte-quelle/punkte/stationen/k2-mensch-leib.js): neue Seiten-Funktion AUSDRUCK — je Bewohner
   sein Soll zu 17:15 · 17:30 · 17:45 · 18:00 (`_bewohnerSoll(b, h)`) und der Name, den sein Leib dann steht: dieselbe Wahl wie der
   Wirt (`_koerperMotionName(false, { haltung: tagesHaltung(akt, rolle, b), sorrow, chaos })`, die Furcht aus
@@ -59,11 +59,21 @@ eines Bewohners liest heute nur der Zensus: kein Bewohner schlägt mit seinem We
 - ausdruck-1-faecher.diff (vision/pruefer/faecher.cjs): `faechern` — eine Pose mit eigener Uhr schießt EINMAL zu ihr (die Klasse
   gilt nur zu ihrer Stunde); Fach "mensch.leib.ausdruck#1" (ort stadt-voll, gesetz k2-mensch-leib.js:422, je 22, Frage „Was zeigt
   die Haltung des Menschen in der Bildmitte: arbeitet er, ist er müde vom Tag, oder fürchtet er sich?“) — der Rumpf ruft AUSDRUCK
-  über `seiteVon`, nie eine Abschrift. Zwei neue Selbsttests (17 GRÜN · 0 ROT); Mutante „sad ohne Abend = Müde“ → ROT.
+  über `seiteVon`, nie eine Abschrift. Zwei neue Selbsttests (18 GRÜN · 0 ROT am Baum bafab955); Mutante „sad ohne Abend = Müde“ → ROT.
 - Die Klassen-Zeile steht schon: stationen/auge-klasse.cjs `"mensch.leib.ausdruck#1": [P, "Prüfer errät Akt/Gemüt"]`.
   Register-Liste (`liste`) am pm-Baum mit dem Kandidaten: Exit 0 · 1976 Stationen · Fehler 0.
+- ausdruck-1-quellen.diff (vision/pruefer/quellen.json, Post 02:25: der Satz der Quellen): Satz "haltung-arbeit" (2afc,
+  fuer mensch.leib.ausdruck#1, soll 40, breite 1280), Abfrage Wikimedia Commons Kategorie "Farmers at work" mit `ohne` gegen
+  Gemälde, Stich, Plakat, Maschine. Trocken-Lauf von hole.cjs am 28.11.: 52 freie Fotos (gemeinfrei · CC0 · CC BY · CC BY-SA), 3
+  liegen geblieben (Lizenz) — Menschen im Akt der Feldarbeit, draußen, Tageslicht, der ganze Leib auf wenigen Metern: die Art
+  der Pose der Station (ein Bewohner im Akt, 3,5 m seitlich). Geholt und gesichtet wird am Gerät (hole.cjs --nur haltung-arbeit),
+  die Dateien nie im Repo; summe.saetze 29 → 30. Geprüfte Abfragen, die das Maß nicht trugen: Fortepan agriculture work 10 (Breite
+  < 1280), Fortepan walking cane 40 (Gruppen und Posen, nicht die Art), Kategorien People resting · Fatigue (sitzend, drinnen).
+  hole.cjs Selbsttest 7 GRÜN · liste Exit 0.
 - Headless (Sonde: je Rolle 40 Bewohner, Bindung wie gate:mensch-zuege, `tagesPlan` + `tagesHaltung` zu den vier Stunden,
   draußen): Arbeit 718 · Müde 518 (Kirche, Händler, Gasthaus, Schmied am Werk; Kaufhaus, Kontor, Kind, Jäger, Fischer im Abend).
 Ehrlich offen: (1) Furcht trägt nur, wer die Tat des Spielers sah — in der Sitzung des Fächers 0, das Blatt hat zwei Klassen.
 (2) Das Gesetz ist schwach: pwalk beugt den Rumpf 2,9°, sad senkt den Kopf 10° (MOTION) — ob der Prüfer ≥ 60 % trifft, sagt
 seine Zahl; liegt sie darunter, ist die Beuge am Werk und die Müdigkeit des Abends (Winkel mit Quelle) die nächste Arbeit.
+(3) Der Satz der Quellen trägt die Klasse Arbeit; für Müde (ein Mensch im Gang des Feierabends, draußen) fand keine freie
+Abfrage ≥ 40 Fotos derselben Art — 0 von 40, offen beim Namen.

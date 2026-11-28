@@ -1,0 +1,38 @@
+diff --git a/vision/pruefer/quellen.json b/vision/pruefer/quellen.json
+index 67266b231..1bbed236d 100644
+--- a/vision/pruefer/quellen.json
++++ b/vision/pruefer/quellen.json
+@@ -12057,6 +12057,24 @@
+    "liegenGeblieben": [],
+    "stand": "geholt 40 von 40 · gesichtet am Bogen des Satzes (26.11., dritte Welle): 31 tragen das Motiv, 9 fielen (nicht)",
+    "ablage": "2afc/wikimedia-commons/haus-zehn-meter-2"
++  },
++  {
++   "id": "haltung-arbeit",
++   "art": "2afc",
++   "quelle": "Wikimedia Commons",
++   "fuer": [
++    "mensch.leib.ausdruck#1"
++   ],
++   "soll": 40,
++   "breite": 1280,
++   "lizenz": "je Datei (gemeinfrei · CC0 · CC BY · CC BY-SA)",
++   "abfrage": {
++    "art": "commons",
++    "kategorie": "Farmers at work",
++    "ohne": "map|diagram|chart|logo|poster|painting|drawing|stamp|sign|museum|statue|sculpture|engraving|illustration|lithograph|postcard|tractor|bulldog|combine|machine|generator|Google Art Project"
++   },
++   "dateien": [],
++   "stand": "Abfrage trocken am 28.11.: 52 von 40 frei (Menschen im Akt der Feldarbeit, draußen, Tageslicht, ganzer Leib auf wenigen Metern — die Pose der Station: ein Bewohner im Akt, 3,5 m seitlich) · ungeholt · ungesichtet"
+   }
+  ],
+  "liegenGebliebenQuellen": [
+@@ -12297,7 +12315,7 @@
+   }
+  ],
+  "summe": {
+-  "saetze": 29,
++  "saetze": 30,
+   "dateien": 976,
+   "bytes": 269368450,
+   "liegenGeblieben": 83

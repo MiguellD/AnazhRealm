@@ -1,8 +1,8 @@
 diff --git a/vision/pruefer/faecher.cjs b/vision/pruefer/faecher.cjs
-index 9b4d3fe3d..8d17b5a4d 100644
+index bf57832d1..e14d5519e 100644
 --- a/vision/pruefer/faecher.cjs
 +++ b/vision/pruefer/faecher.cjs
-@@ -380,6 +380,27 @@ const SPROSSEN = {
+@@ -398,6 +398,27 @@ const SPROSSEN = {
              "H.sort((a, b) => a.d - b.d);" +
              "return { saat, posen: H, lage: 'im Akt einer Kunst um 10 Uhr draußen: Meister ' + je.Meister + ' · Anfänger ' + je['Anfänger'] + ' · dazwischen ' + mitte + ' · drinnen ' + drinnen };",
      },
@@ -30,7 +30,7 @@ index 9b4d3fe3d..8d17b5a4d 100644
      // die Talform an 20 Saaten: die Station rechnet je Saat (Land-Lage der Fibonacci-Kugel) × Stelle 1/4 · 1/2 · 3/4 des größten Laufs
      // den Querschnitt (k2-planet.js:2662 PROFIL_AN, V-Tal b < 1,5 ≤ Trog) und nennt die Pose „Ego 8 m über der Sohle, Blick talauf“
      // (:2706) — der Fächer REIST je Saat an ihre Lage (der Satz des Spielers „reise <Breite> <Länge>“, wie die Werkbank ihre Reise-Orte
-@@ -426,7 +447,11 @@ const SPROSSEN = {
+@@ -471,7 +492,11 @@ const SPROSSEN = {
  function faechern(basis, uhren, mehr) {
      const aus = [];
      // die KLASSE (ordnen × klasse): die Wahrheit des Gesetzes an der Adresse reist mit der Pose in die Akte — nie von Hand gesetzt
@@ -43,7 +43,7 @@ index 9b4d3fe3d..8d17b5a4d 100644
      return aus;
  }
  // DIE KLASSEN IM WECHSEL: je Klasse die Adressen nach Abstand, dann Runde um Runde eine je Klasse (höchstens `je` je Klasse) — der
-@@ -683,6 +708,10 @@ function selbsttest() {
+@@ -728,6 +753,10 @@ function selbsttest() {
      t("an der Pose: ein Bild, für das die Werkbank eine andere Kamera wählte (Blick-Wahl ≥ 2 Posen), trägt kein Rahmen-Motiv", AN_DER_POSE("ABNAHME GRÜN · Blick-Wahl 1 Pose") && !AN_DER_POSE("ABNAHME GRÜN · Blick-Wahl 2 Posen") && !AN_DER_POSE("Blick-Wahl 42 Posen") && !PF("ABNAHME GRÜN · Blick-Wahl 37 Posen", { ziel: { art: "eiche", d: 9 } }) && !SPROSSEN["mensch.bau.bedarf#1"].motiv("ABNAHME GRÜN · Blick-Wahl 3 Posen") && SPROSSEN["mensch.bau.bedarf#1"].wahl === 0 && !SPROSSEN["mensch.bau.bedarf#1"].motiv("ABNAHME ROT [Sicht verdeckt 49.5 % (Bau als 1 m): bauSatz 49.5 %] · Ziel Blickziel verdeckt von bauSatz in 1.2 m · Blick-Wahl 1 Pose") && SPROSSEN["mensch.bau.bedarf#1"].motiv("ABNAHME GRÜN · Blick-Wahl 1 Pose") && SPROSSEN["leben.pflanzen.arten#1"].wahl === 0);
      t("das Motiv der Pflanze: ihr eigenes Laub am Ziel trägt, fremdes oder nahes Laub nicht", PF("ABNAHME ROT [Ziel Blickziel verdeckt von Laub fscatter:eiche:L1 in 9.2 m]", { ziel: { art: "eiche", d: 12 } }) && !PF("ABNAHME ROT [Ziel Blickziel verdeckt von Laub fscatter:tanne:L1 in 9.2 m]", { ziel: { art: "eiche", d: 12 } }) && !PF("ABNAHME ROT [Ziel Blickziel verdeckt von Laub fscatter:eiche:L1 in 2.1 m]", { ziel: { art: "eiche", d: 12 } }) && PF("ABNAHME GRÜN", {}));
      t("Meister oder Anfänger: die Klasse ist das Können des Lebenslaufs an den Schwellen des Gesetzes (≥ 1 / < 0,5), ≥ 20 je Klasse im Wechsel", /klasse = k >= 1 \? 'Meister' : k < 0\.5 \? 'Anfänger' : null/.test(SPROSSEN["mensch.sport.kunst#1"].rumpf()) && SPROSSEN["mensch.sport.kunst#1"].je >= 20 && imWechsel([{ klasse: "Meister" }, { klasse: "Meister" }, { klasse: "Anfänger" }], 22).map((x) => x.klasse).join() === "Meister,Anfänger,Meister");

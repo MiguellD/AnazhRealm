@@ -30,10 +30,12 @@
   merge-tree Kopf 7 gegen main 93e4b83b Exit 0 — Kopf 7 bleibt gültig.
 - **Kandidat ausdruck#1 (WIP über Kopf 7)** im Stations-Ordner: `cloud-post/kunst-am-leib-station/ausdruck-1-station.diff` (die
   Seite AUSDRUCK und S1 der Leiter) · `cloud-post/kunst-am-leib-station/ausdruck-1-faecher.diff` (das Fach, die Uhr der Pose) ·
+  `cloud-post/kunst-am-leib-station/ausdruck-1-quellen.diff` (Post 02:25: der Satz der Quellen `haltung-arbeit`, Commons-Kategorie
+  Farmers at work, trocken 52 freie Fotos ≥ 40, Menschen im Akt draußen bei Tag; Müde ohne Satz: 0 von 40, offen) ·
   Begründung in `cloud-post/kunst-am-leib-station/BEGRUENDUNG.txt`. Die Klasse ist der Name, den der Leib zur Stunde steht (die
   Wahl des Wirts): Arbeit · Müde · Furcht; die Stunde des Feierabends 17:15–18:00 trägt Arbeit und Müde unter demselben Licht;
   die Pose seitlich 3,5 m (die Beuge im Profil). Gemessen headless: Arbeit 718 · Müde 518 draußen (14 Rollen × 40 × 4 Stunden);
-  Fächer-Selbsttest 17 GRÜN (Mutante ROT), die Register-Liste Exit 0 · 1976 Stationen. Offen: Furcht 0 ohne Tat des Spielers; die
+  Fächer-Selbsttest 18 GRÜN (Mutante ROT) am pm-Baum bafab955, die Register-Liste Exit 0. Offen: Furcht 0 ohne Tat des Spielers; die
   Winkel des Gesetzes (Rumpf 2,9° am Werk, Kopf 10° am Abend) — die Zahl des Prüfers richtet, dann der Schnitt am Leib.
 - **verschieden#1 und tracht#1:** der Prüfer kennt für beide heute keine Schwelle im Satz (Zensus `mass null`: „0 gleiche Paare“
   ist keine Klassen-Frage, „± 1 Jh.“ eine Schwelle anderer Art) — das Fach allein trägt dort kein Urteil. Am Gesetz: je Siedlung 8
