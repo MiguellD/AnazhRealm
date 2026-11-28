@@ -19141,7 +19141,7 @@
   },
   "karte2.mensch.kultur.wissen": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.wissen#1 radeon: ungemessen (R10) · karte2.mensch.kultur.wissen#1 gtx: Station seit der Messung geändert · karte2.mensch.kultur.wissen#2 radeon: ungemessen (R10) · karte2.mensch.kultur.wissen#2 gtx: ungemessen (R10) · karte2.mensch.kultur.wissen#3 radeon: ungemessen (R10) · karte2.mensch.kultur.wissen#3 gtx: ungemessen (R10) · karte2.mensch.kultur.wissen#4 radeon: ungemessen (R10) · karte2.mensch.kultur.wissen#4 gtx: ungemessen (R10) · karte2.mensch.kultur.wissen#5 radeon: ungemessen (R10) · karte2.mensch.kultur.wissen#5 gtx: ungemessen (R10) · karte2.mensch.kultur.wissen#6 radeon: ungemessen (R10) · karte2.mensch.kultur.wissen#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.wissen#1 radeon: ungemessen (R10) · karte2.mensch.kultur.wissen#1 gtx: ROT: S1 ROT: fehlender Leser: kein Technikstand je Ort: die Epoche eines Jahrs (epocheBei) setzt den Bau, kein Stand wächst aus Bevölkerung und Vernetzung (fachwerk-core.js:4168) · gemessen 5 · [linse-gpu] nvidia/pascal an e80f9c5d · karte2.mensch.kultur.wissen#2 radeon: ungemessen (R10) · karte2.mensch.kultur.wissen#2 gtx: ungemessen (R10) · karte2.mensch.kultur.wissen#3 radeon: ungemessen (R10) · karte2.mensch.kultur.wissen#3 gtx: ungemessen (R10) · karte2.mensch.kultur.wissen#4 radeon: ungemessen (R10) · karte2.mensch.kultur.wissen#4 gtx: ungemessen (R10) · karte2.mensch.kultur.wissen#5 radeon: ungemessen (R10) · karte2.mensch.kultur.wissen#5 gtx: ungemessen (R10) · karte2.mensch.kultur.wissen#6 radeon: ungemessen (R10) · karte2.mensch.kultur.wissen#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.kultur.wissen#1",
@@ -19157,10 +19157,10 @@
      "id": "karte2.mensch.kultur.wissen#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true,
+     "zahl": "S1 ROT: fehlender Leser: kein Technikstand je Ort: die Epoche eines Jahrs (epocheBei) setzt den Bau, kein Stand wächst aus Bevölkerung und Vernetzung (fachwerk-core.js:4168) · gemessen 5 · [linse-gpu] nvidia/pascal",
+     "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
+     "grund": "ROT: S1 ROT: fehlender Leser: kein Technikstand je Ort: die Epoche eines Jahrs (epocheBei) setzt den Bau, kein Stand wächst aus Bevölkerung und Vernetzung (fachwerk-core.js:4168) · gemessen 5 · [linse-gpu] nvidia/pascal",
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -37463,7 +37463,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 307,
+  "konsum": 308,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37595,10 +37595,10 @@
    "karte2.same.kopplung.terraform#1 gtx",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3351
+  "ohne": 3350
  },
  "kopfVoll": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
- "zeit": "2026-11-28T10:24:07.263Z",
+ "zeit": "2026-11-28T10:30:35.190Z",
  "vorher": "e80f9c5d",
  "bilanz": {
   "gewinn": [],
