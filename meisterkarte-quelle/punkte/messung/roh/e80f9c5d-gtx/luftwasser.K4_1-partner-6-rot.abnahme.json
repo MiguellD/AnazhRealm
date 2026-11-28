@@ -1,0 +1,129 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.466",
+  "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 59,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "nvidia pascal",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0.1389,
+  "taeter": {
+   "Rinde baum_tanne": 0.1389
+  },
+  "vordergrund": {
+   "radius": 5.29,
+   "deckung": 0.2049,
+   "taeter": {
+    "Rinde baum_tanne": 0.1476,
+    "Laub grown_busch_hazel_v1": 0.0365,
+    "Rinde baum_kiefer": 0.0208
+   },
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": {
+   "n": 1,
+   "naechster": 7.37,
+   "name": "Leib spieler"
+  },
+  "abstand": 10.57,
+  "gestalt": [
+   "baum_eiche 1542"
+  ],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -280.4,
+   31.626,
+   -995.6
+  ],
+  "blick": [
+   0,
+   -0.32496,
+   -0.94573
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 68.8,
+  "sigma": 52.9,
+  "schwarz": 0.0026,
+  "weiss": 0
+ },
+ "ok": false,
+ "zeile": "ABNAHME ROT [Sicht verdeckt 13.9 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Rinde baum_tanne 13.9 %] · beweis · Sicht 13.9 % (Rinde baum_tanne 13.9 %) · Ziel Blickziel im Bild frei 10.57 m, verdeckt nur von Leibern: 1 Punkt, nächster 7.37 m (Leib spieler) · Luma 68.8 σ 52.9 schwarz 0.3 % weiß 0.0 % · Stand 18.546.466 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal",
+ "rot": [
+  {
+   "feld": "sicht.deckung",
+   "grund": "Sicht verdeckt 13.9 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Rinde baum_tanne 13.9 %"
+  }
+ ],
+ "urteil": "ROT",
+ "klasse": {
+  "ausdruck": "^tier:bestaeuber|blume",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "kenn": {
+   "n": 8,
+   "tw": 1440,
+   "th": 810,
+   "ms": 2157,
+   "wechsel": 1137659
+  },
+  "rinde": null,
+  "toene": [
+   "f:blume:L2=255/80/80",
+   "f:blume:L2:holz=80/255/80",
+   "fscatter:blume:L2=80/120/255",
+   "streuNah:blume=255/220/60",
+   "tier:bestaeuber=255/80/255"
+  ],
+  "klassen": {
+   "streuNah:blume": {
+    "objekte": 8,
+    "pixel": 55
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\e80f9c5d-gtx\\luftwasser.K4_1-partner-6-rot.maske.png"
+ }
+}

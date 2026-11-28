@@ -1,0 +1,123 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.466",
+  "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 62,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "nvidia pascal",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0.446,
+  "taeter": {
+   "Laub baum_eiche": 0.446
+  },
+  "vordergrund": {
+   "radius": 5.24,
+   "deckung": 0.691,
+   "taeter": {
+    "Laub baum_eiche": 0.5191,
+    "Laub baum_tanne": 0.1528,
+    "Rinde baum_tanne": 0.0191
+   },
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 10.49,
+  "gestalt": [
+   "grown_busch_hazel_v1 98"
+  ],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -320.4,
+   34.349,
+   -995.6
+  ],
+  "blick": [
+   0,
+   -0.3008,
+   -0.95369
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 58.2,
+  "sigma": 31.1,
+  "schwarz": 0.0014,
+  "weiss": 0
+ },
+ "ok": false,
+ "zeile": "ABNAHME ROT [Sicht verdeckt 44.6 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Laub baum_eiche 44.6 % · Vordergrund 69.1 % näher als 5.24 m (der halbe Ziel-Abstand): Laub baum_eiche 51.9 %, Laub baum_tanne 15.3 %, Rinde baum_tanne 1.9 %] · beweis · Sicht 44.6 % (Laub baum_eiche 44.6 %) · Ziel Blickziel im Bild frei 10.49 m · Luma 58.2 σ 31.1 schwarz 0.1 % weiß 0.0 % · Stand 18.546.466 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal",
+ "rot": [
+  {
+   "feld": "sicht.deckung",
+   "grund": "Sicht verdeckt 44.6 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Laub baum_eiche 44.6 %"
+  },
+  {
+   "feld": "sicht.vordergrund.deckung",
+   "grund": "Vordergrund 69.1 % näher als 5.24 m (der halbe Ziel-Abstand): Laub baum_eiche 51.9 %, Laub baum_tanne 15.3 %, Rinde baum_tanne 1.9 %"
+  }
+ ],
+ "urteil": "ROT",
+ "klasse": {
+  "ausdruck": "^tier:bestaeuber|blume",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "kenn": {
+   "n": 8,
+   "tw": 1440,
+   "th": 810,
+   "ms": 1774,
+   "wechsel": 1166338
+  },
+  "rinde": null,
+  "toene": [
+   "f:blume:L2=255/80/80",
+   "f:blume:L2:holz=80/255/80",
+   "streuNah:blume=80/120/255",
+   "tier:bestaeuber=255/220/60"
+  ],
+  "klassen": {},
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\e80f9c5d-gtx\\luftwasser.K4_1-partner-3-rot.maske.png"
+ }
+}
