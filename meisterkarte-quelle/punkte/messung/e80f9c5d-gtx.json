@@ -1,7 +1,7 @@
 {
  "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
  "geraet": "gtx",
- "zeit": "2026-11-28T11:53:02.752Z",
+ "zeit": "2026-11-28T11:56:40.826Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "profiband.K4#1": {
@@ -3435,6 +3435,76 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.mensch.bau.bauen#1": {
+   "gruen": false,
+   "zahl": "fachwerk Labor ↔ Welt an derselben Kamera: 45.2 % (Soll ≤ 2,1 % über der Gestalt beider Seiten) [Differenz 0.4519 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · WebGPU pascal",
+   "exit": 1,
+   "minuten": 1.55,
+   "grund": "ROT: fachwerk Labor ↔ Welt an derselben Kamera: 45.2 % (Soll ≤ 2,1 % über der Gestalt beider Seiten) [Differenz 0.4519 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · WebGPU pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k3551207346a1",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k1ca930620453",
+   "s": 92.7,
+   "fremd": {
+    "s": 95.2,
+    "takte": 43,
+    "fremdS": 37.8,
+    "kerne": 0.397,
+    "fensterKerne": 0.63,
+    "namen": [
+     [
+      "bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \"",
+      5.75
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      4.98
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-e80f9c5d-w125137-s x listen/kandidat-gtx-e80f9c5d-w125137-s.t",
+      4.08
+     ]
+    ],
+    "dienerS": 41.16,
+    "diener": [
+     [
+      "dwm.exe",
+      18.92
+     ],
+     [
+      "System",
+      15.56
+     ]
+    ],
+    "geraetS": 55.22,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      38.31
+     ],
+     [
+      "svchost.exe",
+      14.86
+     ],
+     [
+      "SearchIndexer.exe",
+      0.81
+     ]
+    ],
+    "eigenS": 271.84,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-28T11:56:40.826Z",
+   "abdruck": "d9207b4f93a6",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -3471,7 +3541,8 @@
   "k1c3dbdf304f9": "bVTRcpswEPwXP6ZVBBYEoZk8yCadeKbpJJ9wgpOgxuCRwHTc6b93wMYxEL1q925vb6W/qyOkezD4+NvV1UqsHlbfVw5OSBzaE9rH324lVnHqr5EJeTlUSrntYaktjo2jZaEoqAryA5LWNliUj+lA00/ghUrQ7kWad0o1PdOke36eU0uFWU0a0DgSPWQhRzEHts6AQgKtHppdwQ8zmIIqm+rw/RieIiG73VbKj3n/rABsSFlUbqzoZ1GsPUHH070tOBY6cgbMS7RXEnLfD9SVxDe9Uf3QM6IuW+cmzTjLwjUXlMZzrEFXpHlDjrZWWF3hKl5HPojN0kdzbIm+VwRKAVdzF3PAyqCdaPBYqp98Qf/wedE9HNACqSC/QmOPRWv16Q2l9HWppRyEDy1G4QHja+5PiJTyhJ56gzM5Oe/DpRlRuhsv0hvEyEVTl+aFPUzt0gGuPSZ+LiW6HDK0ZF+75oZmGAWeuuR8l9CLFr6ZMz+HG3cIAPwuMJRT+brw0tW66cAiMcd2DE2AYRQKKXcLcAOHw00W48Dmi3RNH/R7GetYh2EgKP2WXHK7GPryLMgZixJvuU0jFs+LnywcCChjC63Hzasw1fFXQe2wbIiq62bUwTwvDQVltLpf9q9hjbu7PSfmI3j7Ic3LdP07Odc9dKhtM4pWoFgQCG0STinXc3RhG9JBmo/wiClE9lW+z2hLNDixcf6hnAvsLatc60bPUghUKL4wuUO7V1Dtbw8LMhYOgdq8yfe7GY2UW9MHm544nU6fnORum8i3l9e+8BFTerS1Lvp/jebQuhzK5vO7/vcf",
   "k8f43e0012133": "bVXRbqMwEPyXPF6PGjAUY6kPTqnUnK5S+glrswYaApEN4ZTT/fsJEmiA7hvKrHc8M+v83ZxAHSDDx09bVxu++bH5ubFwRseiOaN5/LQbvomV5yPl4kP0tRdCvPQwZYpTY0lZSAKygvyITmsaLMpHNbTpJ3BDyUn3KrI9IZpcSNKJqV7F8/PymFJiWjsNaBwPcZGGDPkS2NoMJDrQ6mHwDSyjwGOKk6FYIt4Tcqts+N4lZEs+yTD+YzVdQpXOb+B5MTxFXHS7oWGBTwvAximLyo7zvTSKtcvHoaR7X/UY6JwLYF6iuTUh87xAjqS3PbderkWjLltrZ8MYTUOfcULiJTZDW6i8cU6mlliN2sR+5AHfdqt7Z6fW0feMQEpgcql5DlhlaGYcXKr0k8fJH7Y89ABHNOBUkN+gsUsjX35pQwh5W3MpB+LDiJF4QJnPvFljbyY59wKnYlb70exr6SluaoJk69hZlRfmOJdLB+i7lP9eU7Q5pGicQ22bCU0xClzJhwG75BqwPdsuO78uN3oIAOwuMIQR8bbS0ta66cCgk53aMTQBhlHIhditwA0cjxMtyoAujbRNH/R7Gn6swzDghDxcF2Z96etaOBcsSpxyqyIaLw8/Gzg6IDNTaD06L0Ol4++C2mHZOLKum5EHdV0V9nJU92bvBxt3dz4n2UfQlNvudW7/Tix5DxNq00wvBEgaBFxnCSOE6SW6MI3TgcpHeEQlIuV93hbQC5oSM5zJqD0P/JSTTl95X5gQ++j2FOiHWYAvK5cvBfYCV7a1o8IKAhnybyzp0BwkVIdpDSGlIf8lhNi+Dw/03TP7kvVrMKzLvM7D7/a4v2mXCJEwfRt0QkVOptZF/yqSHFqbQ9l8/U38+w8=",
   "kbfa885f49ab6": "bVXRjqM4EPyXPO6upyHAYCztgzOMdiPtnDKf0IY2MCEQ2SacOO2/n0hCJpDpp6BUu4uqavPf6ojZHgt6+rBtsxKrb6sfK4snYpbMiczTh12JVZL5awqEfJdjgZTyZYRlpjo6C3mFBevJ7K1D51hPxVN2bvt2B6orBagaLA/EOuOoqq8g/YxepAT0r7LYAWgYIO1//ly21oryljnUNDV6FEScxBLY2QIVMez0edgVrOLQ55mAc/FUvqVwreL8vE1hAx+wOExhk8/Z+n6Cz7E46yDflyzzCsmxumrsNNfP40R7YhoG/dtDj8GeDUhlTebaRNz3QzWR3YyjRmkWjbrurJ0N40EerbkASJbYgmyVlY4dTauomTRJ1rGPYvOodnHsmL5nhEohV0utS6SmIDPj4AWZfvYF/MuXh+7xQAZZg+UVmnhBvFaf2gDA70cu9Zn4ecREPAz4mvuzxtFEOI0C53JWu8nkS+l++iO7QQr5MNRmZWUOc7l0SGsvEH8eKdoSczJs31p3QwcUh566BGWbwoUL3yw7P19u8hAR+V1ggIP8/aClbbXr0RArjt0UmpCiOBJSbh/ADg+HG62AY7A00rox6Pc01omOolAAfL8syuNLX9aCDVTVdMttFgeJeEnDJfhk8MBQFabSenJfRZlOvgprT7Vjqm3dxCXwvCwSMEBzb/g/vXyRcnvndVq8h67e9K/X54386uTWuNutgCoIQ6GLlANwvURXxrEes3KCx4EiCsSYtQV0IFNTQTMJte/jOhfQ6wvfgUu5i6/XgP4+C+/w4PBQ0ShuYzs7qZthqCLxhR3j3auw2d9WEPMgOkdv8yZ3dwIV8vXjOK4A7DjM1mSbnuRWpvLt1wU//pYp19dBR8rgaFpdjTcilNjZEms3+2ZcIB1pi24AhR01bB98Qv7+Dw==",
-  "k4f409c591b42": "bVXRbptAEPwXP7YlCxyE46Q8nE2qWKqr5BP2YA+IMVh3YCpX/fcKOzgGsk9Int0dZmbx39UR0z3m9PBum3olVt9WP1YWT+RYMicyD+92JVZx6vnEhLwWSCk3Ayw15bG1UJUKUNVYHMjpTEtl9ZBe2vQjuqES0D/L/BVAwxmS/ulp3lopyhqnRU1jo0ss5CTmwM7mqMjBTl+WfYBVFHg8FXApnshdAh+VA3Aptwms4R1mwxTW2ZSt58X4GAnZbzdSvs1ZZiVS61Rlbce9XhbF2hXjMuh3ix6DvXNGKioyH03EPS9QI9n1IOcgzaxRV521k2WcZaHPBUA8x+Zky7RonaNpFNWjJrEfeSjWS7XzY+foe0aoFHI117pAqnMyEw4uS/WjJ+APnw/d44EMOjUWH9DYZZGvPrUBgJcll+pC/LJiJB4w7nNv0jiYCqdB4ExO6nU0+Vq6H39Ib5BcLpbatCjNYSqXDsh3mfi1pGgLzMg4+8a2NzSjKHDV9Rq2CVy58PW88/PlRg8Rkd8FBjjIl4WWttFtj4ac/NiNoQkojEIh5XYBbvFwuNFiHNncSNsOQb+n4cc6DAMB8P16KMuXvp6Fc6ayoltu04jF8+EngwcHVW5KrUfnVZjq+Kug9lS1jmqaduTBXDcNBTCo783+fbFxe+dzkr8Fu58yf57av5Vz3pcNjWlvXwZULAiEzhMOwPUcXZrW6TEtRnjEFBH7Kt9nMhXlNJFRex76mYA+vWMajA/fJwE+LyeWNAhc286OCqcYqFB8YUlPZq+w3t/OEDMWXuK33snXqSibfDgDOHGYapWcpNxIuXt+GQYfKYWjaXQ5fAWhwM4WWLWffwH//gM="
+  "k4f409c591b42": "bVXRbptAEPwXP7YlCxyE46Q8nE2qWKqr5BP2YA+IMVh3YCpX/fcKOzgGsk9Int0dZmbx39UR0z3m9PBum3olVt9WP1YWT+RYMicyD+92JVZx6vnEhLwWSCk3Ayw15bG1UJUKUNVYHMjpTEtl9ZBe2vQjuqES0D/L/BVAwxmS/ulp3lopyhqnRU1jo0ss5CTmwM7mqMjBTl+WfYBVFHg8FXApnshdAh+VA3Aptwms4R1mwxTW2ZSt58X4GAnZbzdSvs1ZZiVS61Rlbce9XhbF2hXjMuh3ix6DvXNGKioyH03EPS9QI9n1IOcgzaxRV521k2WcZaHPBUA8x+Zky7RonaNpFNWjJrEfeSjWS7XzY+foe0aoFHI117pAqnMyEw4uS/WjJ+APnw/d44EMOjUWH9DYZZGvPrUBgJcll+pC/LJiJB4w7nNv0jiYCqdB4ExO6nU0+Vq6H39Ib5BcLpbatCjNYSqXDsh3mfi1pGgLzMg4+8a2NzSjKHDV9Rq2CVy58PW88/PlRg8Rkd8FBjjIl4WWttFtj4ac/NiNoQkojEIh5XYBbvFwuNFiHNncSNsOQb+n4cc6DAMB8P16KMuXvp6Fc6ayoltu04jF8+EngwcHVW5KrUfnVZjq+Kug9lS1jmqaduTBXDcNBTCo783+fbFxe+dzkr8Fu58yf57av5Vz3pcNjWlvXwZULAiEzhMOwPUcXZrW6TEtRnjEFBH7Kt9nMhXlNJFRex76mYA+vWMajA/fJwE+LyeWNAhc286OCqcYqFB8YUlPZq+w3t/OEDMWXuK33snXqSibfDgDOHGYapWcpNxIuXt+GQYfKYWjaXQ5fAWhwM4WWLWffwH//gM=",
+  "k3551207346a1": "bVVdb6MwEPwvebw7unwWY6kPTumpOV2l9CesYQ0kBJAN5ZTT/fcTSaABuk88zHpnZ8bm76bB5IgZPRxMXW345tvmx8bgB1mG9Afph4PZ8E2UOC55XLyLoUAI8TzAEl00rYGykICywvxEVqdbKsqH5NKmHtEOJIf+RWR7AAVniHsx1Yt4eloeU0pKa6tFReMhNnkBI74EdiZDSRZ26jL4Bpah77CEw6VYLN5iuFUGwITYxbCFA1zGv6+mS6zS+QaOE+FjyMWtYYFPC6TWKovKjPOdNIyUzceh0L+tejT21hkpL0nfmog5ji9H0tth1CDXolGVnTGzYcxLA5dxgGiJzcgUSd5aja4lVaM2kRs6yLf9au+s6Sx1zwilRCaXmudIVUZ6xsH2EvXocPjDloce8UQarQrzGzSyvdCVn9oAwOuaS3khfhkxEvc95jJn1jiYexU4FbPaj2ZfS01xSyZIto6dSfJCn+ZyKZ9c2+O/1xRNjilp61ibdkJ7FPq2vAZlF18DtmfbZefncqOHiMjuAgMMxOtKS1OrtkdNVtZ0Y2h8CsKAC7FbgVs8nSZaHkNvaaRph6Df03AjFQQ+B/h+k3W19PVaWGcqSppym4RexJ9jfwn+0HiyUGa6UGp0XwaJir4Ka09la8m6bkcunm0nAYcQqnvD9xcrd3dex9m7//ZT9C9iWWpt8WVKrdvppUDp+T5XWcwAmFqiC91aPSb5CA89SeTxIXcL6Jl0SRnN5FSOg27KoU/u2Prjx/dZkM8rt88FDUJXpjOj0gn6MuBfWNOTPkqsjtN1xNQL+C8hxPZN7O8kyYQ4NMN1gD2sSuxELMxpP1fx+t41lECja1UMryPk2Jkcy/bzd/HvPw=="
  },
  "ungemessen": {
   "karte2.planet.kosmos.himmelsmechanik#1": {
@@ -4597,21 +4668,6 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
-  },
-  "karte2.mensch.bau.bauen#1": {
-   "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 185 s von karte2.mensch.bau.bauen#1) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 185 s von karte2.mensch.bau.bauen#1) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-28T08:57:38.893Z",
-   "abdruck": "d9207b4f93a6",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1,
-   "fahrt": "17520@mx05e57c"
   },
   "karte2.same.gedaechtnis.schicht#1": {
    "gruen": false,
