@@ -2635,8 +2635,10 @@ class AnazhRealm_gelaende_boden {
         // V9.60-b.2 — Sand-Variation: lazy-laden des deterministischen
         // Welt-Noises (gleiche Instanz wie `_terrainMacroSurfaceY`). Macht
         // Strand-Breite + Intensität regional variabel statt überall gleich.
-        const sandNoise = this._gelaende().noise;
-        const P = AnazhRealm.BODEN_FARBE;
+        const L = this._gelaende();
+        const sandNoise = L.noise;
+        // die Erde in der Farbe des Klimas (gelaende-core `ortErde`, die Heimat die Studio-Palette selbst; der Worker liest dasselbe)
+        const P = globalThis.__gelaendeCore.ortErde(AnazhRealm.BODEN_FARBE, L);
         const stone = P.rock;
         const earth = P.mead;
         const dampEarth = P.wet;
@@ -2666,6 +2668,8 @@ class AnazhRealm_gelaende_boden {
         // Feuchte schiebt den Boden Richtung dampEarth. Reihenfolge im mix-Stack ist Pflicht: nach earth, VOR
         // lava/snow/sed/strand. genVersion-Schleuse via _feuchteAt (< 2 → 0); Vertex-y ist die Surface.
         const feuchte = typeof this._feuchteAt === "function" ? this._feuchteAt(x, z, y) : 0;
+        // die Feuchte dieses Punkts für den nächsten Leser desselben Punkts (`_bodenGruenAt` → das Moos in `felsStoffPunkt`)
+        [this._bfFx, this._bfFz, this._bfFy, this._bfF] = [x, z, y, feuchte];
         const nass = ss(F_VIS_LO, F_VIS_HI, feuchte);
         mix(dampEarth, nass);
         // Kein Kronendach im Vertex: bis 06.10. dunkelte das Kronenlicht-Feld der Platzierung (`_canopyLightAt`, wo
@@ -2804,7 +2808,11 @@ class AnazhRealm_gelaende_boden {
         };
         const h = hang == null ? this._slopeAt(x, z, boden, 1) : hang;
         const FS = AnazhRealm.FELS_STOFF;
-        const fe = this._feuchteLeser || (this._feuchteLeser = (px, pz, py) => this._feuchteAt(px, pz, py));
+        // die Feuchte am Punkt: `_bodenFarbeAt` hat sie eben gerechnet (dieselben x, z, y), sonst der Wirt
+        const fe =
+            this._feuchteLeser ||
+            (this._feuchteLeser = (px, pz, py) =>
+                px === this._bfFx && pz === this._bfFz && py === this._bfFy ? this._bfF : this._feuchteAt(px, pz, py));
         globalThis.__gelaendeCore.felsStoffPunkt(
             this._gelaende(),
             FS.basis,
@@ -3192,7 +3200,8 @@ class AnazhRealm_gelaende_boden {
             !GK.FELS
         )
             AnazhRealm._kernPflichtBruch("gelaende:felsFarbe");
-        const basis = GK.felsBasis(AnazhRealm.BODEN_FARBE.rock);
+        // der Grundton des Felsens und die Erde der Palette (der Anschnitt des Erdbaus, gelaende-core `anschnittErde`)
+        const basis = GK.felsBasis(AnazhRealm.BODEN_FARBE.rock, null, null, AnazhRealm.BODEN_FARBE.dirt);
         const G = AnazhRealm.TERRAIN_GEOLOGY;
         return this._einmal(
             "FELS_STOFF",

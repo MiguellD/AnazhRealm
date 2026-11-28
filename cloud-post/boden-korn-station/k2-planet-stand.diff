@@ -1,0 +1,116 @@
+--- a/meisterkarte-quelle/punkte/stationen/k2-planet.js
++++ b/meisterkarte-quelle/punkte/stationen/k2-planet.js
+@@ -395,8 +395,38 @@
+         }
+         // DIE SPROSSE IST DIE EINHEIT (pm-front-f1): eine Leiter legt jedes fertige Ergebnis in `M.teil[nr]`, sobald es steht; reißt ihr
+         // Deckel, bleibt es gemessen (`deckel: true` daneben) — die Sprosse ohne Wert ist UNGEMESSEN (urteilBauen), nie ROT
++        // DER STAND DER SITZUNG (28.11., boden#1 an der GTX 1050): jede Leiter beginnt, wo die Sitzung den Spieler hinstellte und die
++        // Welt stand. Ein Auge mit ferner Pose trägt ihn mit (werkbank /bild stellt um, wenn die Kamera mehr als einen Chunk neben ihm
++        // steht) — formschatz trug ihn nach −7683/−6818 (9 387 m von der Wiese), und jedes Auge danach ohne Pose (`{ ort: "wiese" }`, 57 Rufe) schoss in
++        // einem kalten Ring: boden S1 sechsmal „DIE WELT STEHT NICHT … streuLod 160/1435“. Vor jeder Leiter und am Ende der Probe kehrt
++        // der Spieler darum an den Stand zurück und die Welt schwingt dort ein (`/umstellen` wartet, bis sie steht) — AUSSERHALB des
++        // Deckels der Leiter, gezählt in `heim`; kommt er nicht an, wirft die Leiter mit dem Grund (am Ende die Probe), nie misst sie
++        // still im fremden Ring. Ohne Welt (der Sandkasten des Selbsttests (g)) steht kein Spieler und kein Stand
++        const stand = await H.seite("if (typeof r === 'undefined') return null; const p = r.state.playerMesh.position; return [p.x, p.z, r._voxelChunkConfig(0).span];");
++        const zurueck = async (vor) => {
++            if (!stand) return null;
++            const weg = await H.seite("const p = r.state.playerMesh.position; return Math.hypot(p.x - " + stand[0] + ", p.z - " + stand[1] + ");");
++            if (weg <= stand[2]) return null;
++            const t = Date.now(), heim = { vor, m: Math.round(weg) };
++            (aus.heim = aus.heim || []).push(heim);
++            try {
++                await H.ruf("/umstellen", { x: stand[0], z: stand[1] });
++                heim.s = (Date.now() - t) / 1000;
++                return null;
++            } catch (e) {
++                heim.fehler = String((e && e.message) || e).split("\n")[0].slice(0, 200);
++                return "der Stand der Sitzung: der Spieler stand " + heim.m + " m daneben und kam nicht zurück (" + heim.fehler + ")";
++            }
++        };
+         for (const id of Object.keys(LEITERN)) {
+             const L = LEITERN[id];
++            const fremd = await zurueck(id);
++            if (fremd) {
++                aus.leitern[id] = { s: 0, warf: fremd, sprossen: {} };
++                H.schritt(id);
++                fs.writeFileSync(H.aus, JSON.stringify(aus));
++                continue;
++            }
+             M.t0 = Date.now();
+             M.teil = {};
+             let uhr = null, deckel = false;
+@@ -417,6 +447,9 @@
+             H.schritt(id);
+             fs.writeFileSync(H.aus, JSON.stringify(aus));
+         }
++        const fremd = await zurueck("ende");
++        fs.writeFileSync(H.aus, JSON.stringify(aus));
++        if (fremd) throw new Error(fremd);
+         return 0;
+         // DER RAFFER AM BUDGET SEINER PROBE (pm-stationen-kalender 22.11.; Radeon 161ff792: die Leiter leben.oeko.dynamik stand 271 s
+         // still — ihr Raffer zählte das Jahr in Welt-Uhr-Sekunden, unter dem angehaltenen Tag der Bühne (10¹² min) 4·10¹² Takte). JEDE
+@@ -2910,6 +2943,26 @@
+                     const steil = hang >= 30 ? 1 : 0;
+                     return { pose: a.ort[2], hang: R3(hang), steil, flach: hang < 10 ? 1 : 0, schutt: R3(q.schutt > 0 ? q.schutt : 0), stoff: R3(w), feucht: R3(fe), moos, klasse: r._bodenKlasseAt(x, z), steilOhneStoff: steil && !(w > 0.5) ? 1 : 0, y: R3(y) };
+                 };
++                // DER BLICK AUF DEN NÄCHSTEN HANG (die Pose der Sprosse: „Ego an der Wiese, Blick auf den nächsten Hang“; der Fächer
++                // vision/pruefer/faecher.cjs liest DIESE Zeile für seine ≥ 40 Posen): vom Punkt x/z in 16 Richtungen, 20 … 400 m in Schritten
++                // zu 10 m, der erste Ring mit einem Hang ≥ 20° (dort der steilste), sonst der steilste ≥ 10° — Ego 1,7 m über dem Boden des
++                // Gesetzes (`hoehe`), Blick 0,5 m über den Hang. Bis 28.11. schoss die Sprosse `{ ort: "wiese" }`: die Kamera des Spiels, Blick
++                // WSW ins Offene (die Wiese ist eben, der erste Ring mit einem Hang ≥ 20° liegt 360 m westlich) — ein Bild ohne Hang
++                const HANG_BLICK = (r, x, z) => {
++                    const K = globalThis.__gelaendeCore, L = r._gelaende();
++                    const hang = (qx, qz) => { const gx = (K.hoehe(L, qx + 2, qz, true) - K.hoehe(L, qx - 2, qz, true)) / 4, gz = (K.hoehe(L, qx, qz + 2, true) - K.hoehe(L, qx, qz - 2, true)) / 4; return (Math.atan(Math.hypot(gx, gz)) * 180) / Math.PI; };
++                    let ziel = null, steilst = null;
++                    for (let d = 20; d <= 400 && !ziel; d += 10)
++                        for (let k = 0; k < 16; k++) {
++                            const az = (k / 16) * 2 * Math.PI, qx = x + Math.cos(az) * d, qz = z + Math.sin(az) * d, h = hang(qx, qz);
++                            if (!steilst || h > steilst.h) steilst = { x: qx, z: qz, h, d };
++                            if (h >= 20 && (!ziel || h > ziel.h)) ziel = { x: qx, z: qz, h, d };
++                        }
++                    if (!ziel && steilst && steilst.h >= 10) ziel = steilst;
++                    if (!ziel) return null;
++                    const R2 = (v) => Math.round(v * 100) / 100;
++                    return { d: ziel.d, hang: R2(ziel.h), ort: [Math.round(ziel.x), Math.round(ziel.z)], pose: { px: R2(x), py: R2(K.hoehe(L, x, z, true) + 1.7), pz: R2(z), lx: R2(ziel.x), ly: R2(K.hoehe(L, ziel.x, ziel.z, true) + 0.5), lz: R2(ziel.z) } };
++                };
+                 let sz = 12345;
+                 const zf = () => (sz = (sz * 16807) % 2147483647) / 2147483647;
+                 const ORTE = [];
+@@ -2937,12 +2990,13 @@
+                     ungemessen: ["das Blindpaar Ego-Bild gegen Foto gleichen Hangs und Klimas (2AFC, Panel R11, am Gerät)", "der Foto-Korpus der Erd-Anteile (Schutt am Steilen, Moos im Feuchten) als Zahl"],
+                 });
+                 const W1 = RB.werte;
++                const hb = await H.seite("const p = r.state.playerMesh.position; return (" + HANG_BLICK + ")(r, p.x, p.z);");
+                 const nz = (o) => { const r0 = {}; for (const k of Object.keys(o)) if (o[k] != null) r0[k] = o[k]; return r0; };
+                 const zz = (v) => (v == null ? "—" : v);
+                 aus[1] = {
+                     werte: nz({ posen: W1.posen, schuttSteilProzent: W1.schuttSteilProzent, schuttFlachProzent: W1.schuttFlachProzent, stoffSteilProzent: W1.stoffSteilProzent, feuchtProzent: W1.feuchtProzent, moosFeuchtProzent: W1.moosFeuchtProzent, moosTrockenProzent: W1.moosTrockenProzent, steilePunkte: W1.steilePunkte }),
+-                    zeuge: { posen: W1.posen, punkte: W1.punkte, steilePunkte: W1.steilePunkte, flachePunkte: W1.flachePunkte, klassen: W1.klassen, gerissen: RB.gerissen, akte: RB.akte },
+-                    auge: await M.auge("relief-boden-s1", { ort: "wiese" }),
++                    zeuge: { posen: W1.posen, punkte: W1.punkte, steilePunkte: W1.steilePunkte, flachePunkte: W1.flachePunkte, klassen: W1.klassen, gerissen: RB.gerissen, blick: hb ? { m: hb.d, hang: hb.hang, ort: hb.ort } : null, akte: RB.akte },
++                    auge: hb ? await M.auge("relief-boden-s1", Object.assign({ ort: "wiese" }, hb.pose)) : { bild: null, pose: "Ego an der Wiese", grund: "kein Hang ≥ 10° in 400 m um den Stand (HANG_BLICK)" },
+                     taeter: (RB.fehler.length && !RB.gemessen ? "Leser fehlt: " + RB.fehler[0].fehler + " · " : "") + "kein Foto-Korpus der Erde als Zahl: die Welt zeichnet Fels/Schutt an " + zz(W1.stoffSteilProzent) + " % der " + W1.steilePunkte + " Punkte ≥ 30° (Schutthang " + zz(W1.schuttSteilProzent) + " %; der Fels beginnt erst an der Steile 0,42 ≈ 55°, stamm/daten.js:646 TERRAIN_GEOLOGY.rockLo), Moos an " + zz(W1.moosFeuchtProzent) + " % der feuchten Felsen (" + zz(W1.moosTrockenProzent) + " % der trockenen) — die Anteile gleichen Hangs und Klimas der Erde stehen nirgends (unklar), das Blindpaar nur am Gerät · " + RB.akte,
+                 };
+             }
+@@ -3489,7 +3543,7 @@
+             const pose = meer.ufer ? { px: meer.ufer[0], py: meer.ufer[1], pz: meer.ufer[2], lx: meer.ufer[3], ly: meer.ufer[4], lz: meer.ufer[5] } : null;
+             let stand0 = null;
+             if (!M.swift && pose) {
+-                stand0 = await H.seite("const p = r.state.playerMesh.position; return [p.x, p.z, r.state.weather];");
++                stand0 = await H.seite("return [null, null, r.state.weather];");
+                 const pfad = require("path");
+                 for (const wetter of ["sunny", "cloudy", "rainy"])
+                     for (const uhr of [0.3, 0.45, 0.6, 0.75]) {
+@@ -3506,10 +3560,8 @@
+             }
+             const auge3 = pose ? await M.auge("wasser-seegang-s3", pose, { wetter: "stormy" }) : undefined;
+             const auge7 = pose ? await M.auge("wasser-seegang-s7", pose, { uhr: 0.7 }) : undefined;
+-            if (stand0 && M.uhr() < 50) {
+-                await H.ruf("/umstellen", { x: stand0[0], z: stand0[1] }).catch(() => null);
+-                await H.seite("window.__wetterSetzen(" + JSON.stringify(stand0[2]) + "); return 1;").catch(() => null);
+-            }
++            // das Wetter der Sitzung zurück; den Stand stellt der Rumpf vor der nächsten Leiter (DER STAND DER SITZUNG)
++            if (stand0) await H.seite("window.__wetterSetzen(" + JSON.stringify(stand0[2]) + "); return 1;").catch(() => null);
+             const st = bilder.filter((b) => Number.isFinite(b.spiegelTreue));
+             const mittel = (a) => (a.length ? a.reduce((s, x) => s + x, 0) / a.length : NaN);
+             const streu = (a) => (a.length > 1 ? Math.sqrt(mittel(a.map((x) => (x - mittel(a)) ** 2))) : 0);

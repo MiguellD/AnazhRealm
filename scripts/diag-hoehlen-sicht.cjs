@@ -48,6 +48,26 @@
 //       ruft der Haupt-Thread in keinem Worker-Bau (`_buildVoxelChunkDataFromWorkerMesh`) das Fels-Gesetz, und (a) prüft
 //       Himmel, Schutt und Farbe des Workers byte-gleich gegen den Sync-Bau. Gegenprobe: der Sync-Bau ruft es (sonst
 //       zählte die Wand blind).
+//   (o) DER SCHUTT AM STEILEN — am Gesetz (gelaende-core `hangSchutt`, ohne Browser): an den Steilen 25° … 55° liegt das
+//       Mittel der Flecken auf dem Anteil der Kurve (`hangSchuttAnteil`, ± 0,03), unter 30° kein Schutt, an 40° mindestens
+//       ein Drittel (der Zensus vom 27.11.: 0 von 10 steilen Punkten trugen ihn), und er liegt als FLECKEN, nie als Schleier
+//       (höchstens ein Viertel der Punkte zwischen 0,1 und 0,9 — Nachbesserung 2: „ab 28° auf jedem Hang, der grüne Hügel
+//       grau“); der Leser ist der Boden-Shader (`aSchutt` → das Korn, `_kornW`). OFFEN: der Konsum der Kurve in der Ferne
+//       (`HANG_SCHUTT_ST` in `_terrainGeologyAlbedo`) trägt keine Sonde (die Quelltext-Wand verbietet die Präsenz). DER FÄCHER UNTER DER WAND (am Wirt): um den Ursprung legt das Gesetz
+//       Schutt unter die Wand (`schuttFaecher`: der Schatten 27,5° ihrer Krone, Evans & Hungr 1993), und jeder solche Punkt
+//       trägt ihn im Punkt-Stoff (`felsStoffPunkt` `aus.schutt`, der Leser des Auges und der Nah-Wiese).
+//   (p) DIE ERDE IN DER FARBE IHRES KLIMAS — am Wirt (gelaende-core `ortErde` mit der Palette der Welt): die Heimat trägt die Palette
+//       des Studios byte-gleich (dasselbe Objekt), der warme Ort der Terra rossa (17 °C, 700 mm) wird röter (Hämatit,
+//       Schwertmann 1982), das kalte Moor (3 °C, 1 400 mm) dunkler und die Steppe (9 °C, 350 mm) heller (der Humus, Jenny 1930);
+//       der Leser, der Boden-Stoff (`_bodenFarbeAt`), wandert an jedem Pfad-Punkt mit dem Ort der Terra rossa zu ihrer Erde (der
+//       Zensus vom 27.11.: die Erde trug an jedem Ort dasselbe 10YR 3/2). OFFEN ohne Konsum-Sonde: der Worker (`bodenFarbe` —
+//       in der Heimat deckt ihn (a) Main = Worker; der fremde Ort reist erst mit `ort.teil`). OFFEN ohne Leser: die Wege
+//       (`_wegeBodenFarbe`, TSL), das Band der Ferne und der Acker (stamm/siedlung-wege.js) färben am fremden Ort mit der Erde
+//       der Heimat — ihr Stempel trägt drei Pflicht-Wände (Bau, Haus) und fährt eigen. DER ANSCHNITT IST ERDE: die Wand des
+//       Erdbaus ohne Schutt der Natur trägt ganz den Unterboden (`felsAnschnitt` 1), wo die Natur Schutt trägt, bleibt er
+//       Schutt (0); der Unterboden der Heimat ist röter als der Fels (r/g ≥ 1,5, Bw 10YR 4/4) und nie grün (die Wiesen-Wache),
+//       und der Punkt-Stoff trägt ihn (`felsStoffPunkt` mit dem Grundton des Stamms: an ≥ 95 % der steilen Wände des Erdbaus
+//       `aus.anschnitt` > 0,5, voll angeschnitten die Farbe von `anschnittErde`).
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): ein Befund mit jedem Täter — Spiegel-Drift, Loch, Licht-Leck,
 // leerer Blick, blinde Linse, toter Schnitt, stumpfer Hinaus-Blick, fehlender Chokepoint — MUSS rot fallen und
 // ihn beim Namen nennen.
@@ -68,6 +88,20 @@ const FELS_ALBEDO_MAX = 0.3;
 const BANK_CV_MIN = 0.4;
 const FUGE_WELLE_MIN = 0.1;
 const KLUFT_DURCHLAUF_MIN = 0.4;
+// (o) Der Schutt am Steilen (boden#1): das Mittel der Flecken trifft den Anteil der Kurve, an 40° mindestens ein Drittel
+// (DiBiase, Heimsath & Whipple 2012: über 30° mittlerer Steile steigt die Entblößung stark; die Kurve legt 40° auf 0,42),
+// Flecken statt Schleier.
+const HANG_SCHUTT_MITTEL_TOL = 0.03;
+const HANG_SCHUTT_40_MIN = 1 / 3;
+const HANG_SCHUTT_SCHLEIER_MAX = 0.25;
+// (p) Die Erde des Klimas (boden#1): die Röte (r/g linear) der Terra rossa mindestens 1,15 × der Heimat (2,5YR gegen 10YR), die
+// Albedo des Moors höchstens 0,8 ×, der Steppe mindestens 1,1 × der Heimat (Munsell-Wert 2 bzw. 4 gegen 3).
+const ERDE_ROT_MIN = 1.15;
+const ERDE_MOOR_MAX = 0.8;
+const ERDE_STEPPE_MIN = 1.1;
+// (p) Der Anschnitt: der Unterboden der Heimat (10YR 4/4) trägt r/g ≥ 1,5 (der Fels der Palette 1,2)
+const ANSCHNITT_RG_MIN = 1.5;
+const ANSCHNITT_TRAEGT_MIN = 0.95;
 
 // Das Urteil über einen Befund: Liste der Verstöße (leer = grün). Rein, im Selbsttest wie im Lauf.
 function urteil(b) {
@@ -280,6 +314,115 @@ function urteil(b) {
                     `${KLUFT_DURCHLAUF_MIN}: ihre Lage je Paket, gelaende-core kluftVersatz)`
             );
     }
+    // (o) DER SCHUTT AM STEILEN: das Mittel der Flecken ist der Anteil, Flecken statt Schleier, und die Ferne liest die Kurve
+    const hs = b.hangSchutt;
+    if (!hs || !(hs.stufen && hs.stufen.length))
+        v.push("LEER: (o) Schutt am Steilen: das Gesetz trägt keinen Schutt des Steilen (gelaende-core `hangSchutt` fehlt)");
+    else {
+        for (const q of hs.stufen) {
+            if (q.grad < 30 && q.mittel > 0)
+                v.push(
+                    `SCHUTT AM FLACHEN: an ${q.grad}° tragen die Punkte im Mittel ${q.mittel} Schutt — unter 30° ist der Hang ` +
+                        "bewachsen (gelaende-core `HANG_SCHUTT.ab`)"
+                );
+            if (Math.abs(q.mittel - q.anteil) > HANG_SCHUTT_MITTEL_TOL)
+                v.push(
+                    `FLECKEN OHNE ANTEIL: an ${q.grad}° liegt das Mittel der Flecken bei ${q.mittel}, der Anteil der Kurve bei ` +
+                        `${q.anteil} (± ${HANG_SCHUTT_MITTEL_TOL}: die Quantil-Tafel \`HANG_SCHUTT_Q\` trifft das Rauschen nicht)`
+                );
+            if (q.grad >= 40 && q.grad <= 40 && !(q.mittel >= HANG_SCHUTT_40_MIN))
+                v.push(
+                    `KEIN SCHUTT AM STEILEN: an 40° tragen die Punkte im Mittel ${q.mittel} Schutt (mindestens ` +
+                        `${HANG_SCHUTT_40_MIN.toFixed(2)}: der Zensus vom 27.11. fand 0 von 10 steilen Punkten mit Schutt)`
+                );
+            if (q.schleier > HANG_SCHUTT_SCHLEIER_MAX)
+                v.push(
+                    `SCHLEIER: an ${q.grad}° liegen ${q.schleier} der Punkte zwischen 0,1 und 0,9 Schutt (höchstens ` +
+                        `${HANG_SCHUTT_SCHLEIER_MAX}) — der Schutt deckt den Hang als grauen Schleier statt in Flecken ` +
+                        "(Nachbesserung 2: der grüne Hügel grau)"
+                );
+        }
+        const fz = b.faecher;
+        if (!fz || !(fz.steil > 0))
+            v.push("LEER: (o) Fächer unter der Wand: der Wirt fragt keinen Fächer (gelaende-core `schuttFaecher` fehlt)");
+        else {
+            if (!(fz.faecher > 0))
+                v.push(
+                    `KEIN FÄCHER UNTER DER WAND: an ${fz.steil} steilen Punkten um den Ursprung legt das Gesetz keinen Schutt unter ` +
+                        "eine Wand (der Schatten 27,5° der Krone, Evans & Hungr 1993)"
+                );
+            if (fz.getragen < fz.faecher)
+                v.push(
+                    `FÄCHER OHNE LESER: ${fz.faecher - fz.getragen} von ${fz.faecher} Punkten unter der Wand tragen im Punkt-Stoff ` +
+                        `(\`felsStoffPunkt\`) keinen Schutt` +
+                        (fz.erst ? ` — erst bei ${fz.erst.p.join(", ")}: Fächer ${fz.erst.f}, Schutt ${fz.erst.schutt}` : "")
+                );
+        }
+    }
+    // (p) DIE ERDE IN DER FARBE IHRES KLIMAS: die Heimat byte-gleich, der Ort färbt, die Leser rufen das Gesetz
+    const oe = b.ortErde;
+    if (!oe) v.push("LEER: (p) Erde des Klimas: das Gesetz trägt keine Erde des Orts (gelaende-core `ortErde` fehlt)");
+    else {
+        if (oe.heimatGleich !== true)
+            v.push(
+                "HEIMAT VERFÄRBT: die Erde der Heimat ist nicht die Palette des Studios (`ortErde` muss sie unverändert " +
+                    "zurückgeben — jede Welt der Heimat verlöre ihre Bytes)"
+            );
+        if (!(oe.rot >= ERDE_ROT_MIN))
+            v.push(
+                `ERDE OHNE KLIMA: die Terra rossa (17 °C, 700 mm) trägt die Röte ${oe.rot} der Heimat (mindestens ` +
+                    `${ERDE_ROT_MIN}: der Hämatit des warmen Orts, Schwertmann 1982)`
+            );
+        if (!(oe.moor <= ERDE_MOOR_MAX))
+            v.push(
+                `ERDE OHNE KLIMA: das Moor (3 °C, 1 400 mm) trägt die Albedo ${oe.moor} der Heimat (höchstens ` +
+                    `${ERDE_MOOR_MAX}: der Humus des kalten Nassen, Jenny 1930)`
+            );
+        if (!(oe.steppe >= ERDE_STEPPE_MIN))
+            v.push(
+                `ERDE OHNE KLIMA: die Steppe (9 °C, 350 mm) trägt die Albedo ${oe.steppe} der Heimat (mindestens ` +
+                    `${ERDE_STEPPE_MIN}: der Humus des Trockenen, Jenny 1930)`
+            );
+        const le = oe.leser || {};
+        if (!(le.pfad > 0)) v.push("LEER: (p) Leser: kein Pfad-Punkt (`_pathFieldAt` > 0,3) im Feld — der Boden-Stoff prüfte nichts");
+        else if (!(le.zurErde === le.pfad))
+            v.push(
+                `LESER OHNE KLIMA: der Boden-Stoff \`_bodenFarbeAt\` (stamm/gelaende-boden.js) färbt ${le.pfad - le.zurErde} von ` +
+                    `${le.pfad} Pfad-Punkten am Ort der Terra rossa wie in der Heimat — er liest die Palette des Studios statt der ` +
+                    "Erde des Orts (`ortErde`)"
+            );
+        const an = oe.anschnitt;
+        if (!an)
+            v.push("ANSCHNITT AUS FELS: das Gesetz trägt keine Erde am Anschnitt (gelaende-core `felsAnschnitt`/`anschnittErde` fehlen)");
+        else {
+            if (!(an.wand === 1) || !(an.natur === 0))
+                v.push(
+                    `ANSCHNITT AUS FELS: die Wand des Erdbaus trägt ${an.wand} Erde (Soll 1), am Schutt der Natur ${an.natur} ` +
+                        "(Soll 0) — die Böschung ist loser Boden im Schüttwinkel, ihr Anschnitt der Unterboden (`felsAnschnitt`)"
+                );
+            if (!(an.rg >= ANSCHNITT_RG_MIN) || !(an.gruen <= 0))
+                v.push(
+                    `ANSCHNITT OHNE UNTERBODEN: die Erde am Anschnitt trägt r/g ${an.rg} (mindestens ${ANSCHNITT_RG_MIN}, ` +
+                        `Bw 10YR 4/4) und das Grün ${an.gruen} der Wiesen-Wache (höchstens 0: auf ihr steht kein Halm)`
+                );
+            if (!(an.wandPunkte > 0)) v.push("LEER: (p) Anschnitt: keine Wand des Erdbaus im Schutt-Kandidaten — der Stoff prüfte nichts");
+            else if (!(an.getragen >= ANSCHNITT_TRAEGT_MIN * an.wandPunkte) || !(an.erde > 0))
+                v.push(
+                    `ANSCHNITT OHNE LESER: der Punkt-Stoff (\`felsStoffPunkt\` mit dem Grundton des Stamms) trägt an ` +
+                        `${an.getragen} von ${an.wandPunkte} Wänden des Erdbaus die Erde (mindestens ${ANSCHNITT_TRAEGT_MIN * 100} %), ` +
+                        `${an.erde} voll angeschnittene in der Farbe des Unterbodens — der Stoff mischt \`anschnittErde\` nicht`
+                );
+            const fe = an.fern;
+            if (an.wandPunkte > 0 && !(fe && fe.n > 0))
+                v.push("LEER: (p) Ferne: kein Fern-Punkt an den Wänden des Erdbaus (`_fernAuftrag` „teile“) — die Ferne prüfte nichts");
+            else if (fe && !(fe.fremd === 0))
+                v.push(
+                    `FERNE OHNE GESETZ: der Fern-Faden (voxel-worker \`fernFarbeTeile\`) färbt ${fe.fremd} von ${fe.n} Wänden des ` +
+                        `Erdbaus anders als das Gesetz (bis ${fe.abw} linear) — er trägt nicht \`felsStoffPunkt\` mit dem Schutthang ` +
+                        "der Ferne (`fernFelsStoff`), der Ring zeigt eine Naht der Erde"
+                );
+        }
+    }
     // (n) DER STOFF ENTSTEHT IM WORKER: kein Ruf des Fels-Gesetzes im Haupt-Thread je Worker-Bau
     const sw = b.stoffWorker;
     if (!sw || !(sw.bauten > 0))
@@ -419,6 +562,15 @@ function selbsttest() {
             kanteSicht: { knoten: 1, schirm: true },
         },
         bankung: { baenke: 2000, mittel: 0.65, cv: 0.71, welligkeit: 0.112, durchlauf: 0.526 },
+        faecher: { steil: 2300, faecher: 90, getragen: 90, erst: null },
+        hangSchutt: {
+            stufen: [
+                { grad: 25, anteil: 0, mittel: 0, schleier: 0 },
+                { grad: 40, anteil: 0.422, mittel: 0.428, schleier: 0.05 },
+                { grad: 45, anteil: 0.799, mittel: 0.803, schleier: 0.04 },
+            ],
+        },
+        ortErde: { heimatGleich: true, rot: 1.749, moor: 0.659, steppe: 1.226, leser: { pfad: 123, zurErde: 123 }, anschnitt: { wand: 1, natur: 0, rg: 1.693, gruen: -0.005, wandPunkte: 1168, getragen: 1165, erde: 1157, fern: { n: 1168, fremd: 0, abw: 0 } } },
         wieseUnterFels: { ohneHimmel: 700, fremd: 0, gruen: 0, erst: null, streuung: 0.19, albedo: 0.14 },
         kliff: { steil: 300, fremd: 0, gruen: 0, erst: null },
         augenLicht: {
@@ -611,6 +763,55 @@ function selbsttest() {
         ["Gerade Fugen", ["bankung.welligkeit=", 0], /GERADE FUGEN: .* Eigen-Welligkeit 0 Bänke/],
         ["Klüfte je Bank", ["bankung.durchlauf=", 0.13], /KLÜFTE SETZEN NEU AN: nur 0\.13/],
         ["Ohne Bankung", ["bankung"], /LEER: \(m\) Bankung/],
+        // (o) boden#1: der Zensus vom 27.11. (main 948f68ee) — kein Schutt am Steilen, 0 von 10 Punkten ≥ 30°
+        [
+            "Kein Schutt am Steilen (main 948f68ee)",
+            ["hangSchutt.stufen.1=", { grad: 40, anteil: 0, mittel: 0, schleier: 0 }],
+            /KEIN SCHUTT AM STEILEN: an 40° tragen die Punkte im Mittel 0 Schutt/,
+        ],
+        // (o) Nachbesserung 2: der Schutt nach Steile als Schleier über jedem Hang
+        [
+            "Schleier (Nachbesserung 2)",
+            ["hangSchutt.stufen.2=", { grad: 45, anteil: 0.799, mittel: 0.8, schleier: 0.97 }],
+            /SCHLEIER: an 45° liegen 0\.97 der Punkte/,
+        ],
+        [
+            "Flecken ohne Anteil",
+            ["hangSchutt.stufen.1=", { grad: 40, anteil: 0.422, mittel: 0.6, schleier: 0.05 }],
+            /FLECKEN OHNE ANTEIL: an 40° liegt das Mittel der Flecken bei 0\.6/,
+        ],
+        ["Schutt am Flachen", ["hangSchutt.stufen.0=", { grad: 25, anteil: 0, mittel: 0.2, schleier: 0 }], /SCHUTT AM FLACHEN: an 25°/],
+        // (o) der Fächer: bis boden#1 lag unter der Wand nur der Fleck des Hangs, ohne Fallrichtung
+        ["Ohne Fächer (main 948f68ee)", ["faecher"], /LEER: \(o\) Fächer unter der Wand/],
+        ["Kein Fächer", ["faecher.faecher=", 0], /KEIN FÄCHER UNTER DER WAND: an 2300 steilen Punkten/],
+        [
+            "Fächer ohne Leser",
+            ["faecher.getragen=", 0],
+            /FÄCHER OHNE LESER: 90 von 90 Punkten unter der Wand/,
+        ],
+        ["Ohne Schutt am Steilen", ["hangSchutt"], /LEER: \(o\) Schutt am Steilen/],
+        // (p) boden#1: der Zensus vom 27.11. (main 948f68ee) — dieselbe Erde 10YR 3/2 an jedem Ort
+        [
+            "Erde ohne Klima (main 948f68ee)",
+            ["ortErde=", { heimatGleich: true, rot: 1, moor: 1, steppe: 1, leser: { pfad: 123, zurErde: 0 } }],
+            /ERDE OHNE KLIMA: die Terra rossa .* Röte 1 der Heimat/,
+        ],
+        ["Heimat verfärbt", ["ortErde.heimatGleich=", false], /HEIMAT VERFÄRBT/],
+        // (p) der Anschnitt: bis boden#1 trug die Wand des Erdbaus den Fels-Schutt (K66, grau wie Stein)
+        ["Anschnitt aus Fels (main 948f68ee)", ["ortErde.anschnitt"], /ANSCHNITT AUS FELS: das Gesetz trägt keine Erde/],
+        ["Anschnitt ohne Leser", ["ortErde.anschnitt.getragen=", 0], /ANSCHNITT OHNE LESER: der Punkt-Stoff .* an 0 von 1168/],
+        ["Anschnitt ohne Wand", ["ortErde.anschnitt.wandPunkte=", 0], /LEER: \(p\) Anschnitt/],
+        ["Anschnitt grün", ["ortErde.anschnitt.gruen=", 0.01], /ANSCHNITT OHNE UNTERBODEN: .* das Grün 0\.01/],
+        // (p) die Ferne: bis boden#1 mischte der Fern-Faden nur den Schutt zum Fels-Mittel (`fernSchutt`, main b3740dd5)
+        [
+            "Ferne mit Zwilling (main b3740dd5)",
+            ["ortErde.anschnitt.fern=", { n: 1168, fremd: 995, abw: 0.137 }],
+            /FERNE OHNE GESETZ: der Fern-Faden \(voxel-worker `fernFarbeTeile`\) färbt 995 von 1168/,
+        ],
+        ["Ohne Ferne", ["ortErde.anschnitt.fern"], /LEER: \(p\) Ferne/],
+        ["Boden-Stoff ohne Klima", ["ortErde.leser.zurErde=", 3], /LESER OHNE KLIMA: der Boden-Stoff `_bodenFarbeAt` .* 120 von 123/],
+        ["Ohne Pfad", ["ortErde.leser.pfad=", 0], /LEER: \(p\) Leser/],
+        ["Ohne Erde des Klimas", ["ortErde"], /LEER: \(p\) Erde des Klimas/],
         ["Graph bricht", ["code.graphFehler=", "x"], /CODE: der Boden-Stoff baut keinen Graph \(x\)/],
         ["Eigene Ziehung", ["code.feinEigenHash=", true], /CODE: der Detail-Term .*\(eigene Ziehung/],
         // (f) w28-funkeln: der Mutant von main e71f2721 — die Fels-Kante blendet nur nach Metern (`fugeFern`)
@@ -1264,13 +1465,14 @@ const server = statikServer();
                         }
                     const B = FS ? FS.basis : GK.felsBasis(A.BODEN_FARBE.rock);
                     const fuss = FS.netz.fuss; // die Kante des Nah-Netzes, die das Spiel liest (`FELS_STOFF.netz`, kein Zwilling daneben)
+                    const KM = GK.moosKlima(r._gelaende()); // das Klima des Mooses (gelaende-core `moosDeckung`), wie `felsStoff` es liest
                     const soll = [0, 0, 0];
                     const pruefe = (i, him, z) => {
                         const x = P3[3 * i],
                             y = P3[3 * i + 1],
                             zz = P3[3 * i + 2];
                         const fe = him > 0 ? FE[i] : 0;
-                        GK.felsFarbe(B, x, y, zz, N3[3 * i], N3[3 * i + 1], N3[3 * i + 2], KR[i], him, fe, fuss, soll);
+                        GK.felsFarbe(B, x, y, zz, N3[3 * i], N3[3 * i + 1], N3[3 * i + 2], KR[i], him, fe, fuss, soll, KM);
                         const c = [CA.getX(i), CA.getY(i), CA.getZ(i)];
                         if (Math.max(...c.map((q, j) => Math.abs(q - soll[j]))) <= 0.002) return c;
                         z.fremd++;
@@ -1304,6 +1506,154 @@ const server = statikServer();
                 }
                 aus.wieseUnterFels = wf;
                 aus.kliff = kl;
+                // (o) DER FÄCHER UNTER DER WAND am Wirt: die steilen Punkte (≥ `schuttKandidat`) um den Ursprung (1,2 × 1,2 km, 6 m),
+                // an denen das Gesetz einen Fächer legt (`schuttFaecher` > 0,5), und ob der Punkt-Stoff (`felsStoffPunkt`, der Leser des
+                // Auges und der Nah-Wiese) dort den Schutt trägt (`aus.schutt` ≥ 0,9 des Fächers)
+                if (GK && typeof GK.schuttFaecher === "function") {
+                    const L = r._gelaende();
+                    const fz = { steil: 0, faecher: 0, getragen: 0, erst: null };
+                    for (let x = -600; x <= 600; x += 6)
+                        for (let z = -600; z <= 600; z += 6) {
+                            const gx = (GK.hoehe(L, x + 1, z, true) - GK.hoehe(L, x - 1, z, true)) / 2;
+                            const gz = (GK.hoehe(L, x, z + 1, true) - GK.hoehe(L, x, z - 1, true)) / 2;
+                            const ny = 1 / Math.sqrt(1 + gx * gx + gz * gz);
+                            if (1 - ny < FS.netz.schuttKandidat) continue;
+                            fz.steil++;
+                            const f = GK.schuttFaecher(L, x, z);
+                            if (!(f > 0.5)) continue;
+                            fz.faecher++;
+                            const y = GK.hoehe(L, x, z, true);
+                            const sa = {};
+                            GK.felsStoffPunkt(L, FS.basis, FS.netz, x, y, z, ny, [0, 0, 0], () => 0, sa, -gz * ny);
+                            if (sa.schutt >= 0.9 * f * (1 - (sa.fels || 0))) fz.getragen++;
+                            else if (!fz.erst) fz.erst = { p: [x, z], f: +f.toFixed(3), schutt: +(sa.schutt || 0).toFixed(3) };
+                        }
+                    aus.faecher = fz;
+                } else aus.faecher = null;
+                // (p) DIE ERDE IN DER FARBE IHRES KLIMAS am Wirt: das Gesetz an drei Klimaten gegen die Heimat (die Palette der Welt);
+                // der Leser `_bodenFarbeAt` an den Pfad-Punkten (gepackte Erde, `_pathFieldAt` > 0,3; 3 × 3 km, 12 m) mit dem Ort der
+                // Terra rossa — seine Farbe muss zur Erde des Orts wandern; der Anschnitt am Punkt-Stoff (`felsStoffPunkt` mit dem
+                // Grundton des Stamms) an den Wänden des Erdbaus (Splats ± 12 m, 1,5 m)
+                if (GK && typeof GK.ortErde === "function") {
+                    const L = r._gelaende();
+                    const P = A.BODEN_FARBE;
+                    const heim = L.ort;
+                    const ortK = (sommer, winter, mm) =>
+                        Object.assign({}, heim, {
+                            klimaHeute: Object.assign({}, heim.klimaHeute, { sommer, winter, niederschlagMm: mm }),
+                        });
+                    const Yl = (d) => 0.2126 * d[0] + 0.7152 * d[1] + 0.0722 * d[2];
+                    const r3 = (q) => Math.round(q * 1000) / 1000;
+                    const e0 = P.dirt;
+                    const warm = ortK(25, 9, 700);
+                    const rot = GK.ortErde(P, { ort: warm }).dirt,
+                        moor = GK.ortErde(P, { ort: ortK(10, -4, 1400) }).dirt,
+                        steppe = GK.ortErde(P, { ort: ortK(24, -6, 350) }).dirt;
+                    const oe = {
+                        heimatGleich: GK.ortErde(P, L) === P,
+                        rot: r3(rot[0] / rot[1] / (e0[0] / e0[1])),
+                        moor: r3(Yl(moor) / Yl(e0)),
+                        steppe: r3(Yl(steppe) / Yl(e0)),
+                        leser: { pfad: 0, zurErde: 0 },
+                        anschnitt: null,
+                    };
+                    const desc = Object.getOwnPropertyDescriptor(L, "ort");
+                    const D = [0, 1, 2].map((k) => rot[k] - e0[k]);
+                    for (let x = -1500; x <= 1500; x += 12)
+                        for (let z = -1500; z <= 1500; z += 12) {
+                            const y = GK.hoehe(L, x, z, true);
+                            if (!(r._pathFieldAt(x, z, y) > 0.3)) continue;
+                            oe.leser.pfad++;
+                            const c = [0, 0, 0],
+                                c2 = [0, 0, 0];
+                            r._bodenFarbeAt(x, y, z, c);
+                            Object.defineProperty(L, "ort", { value: warm, configurable: true, writable: true });
+                            try {
+                                r._bodenFarbeAt(x, y, z, c2);
+                            } finally {
+                                if (desc) Object.defineProperty(L, "ort", desc);
+                            }
+                            if ((c2[0] - c[0]) * D[0] + (c2[1] - c[1]) * D[1] + (c2[2] - c[2]) * D[2] > 1e-5) oe.leser.zurErde++;
+                        }
+                    if (typeof GK.felsAnschnitt === "function" && typeof GK.anschnittErde === "function") {
+                        const E = GK.anschnittErde(FS.basis, L);
+                        const an = {
+                            wand: r3(GK.felsAnschnitt({ schutt: 1 }, 0, 1, 0, 0)),
+                            natur: r3(GK.felsAnschnitt({ schutt: 1 }, 0, 0.6, 0, 1)),
+                            rg: r3(E[0] / E[1]),
+                            gruen: r3(E[1] - 0.5 * (E[0] + E[2])),
+                            wandPunkte: 0,
+                            getragen: 0,
+                            erde: 0,
+                        };
+                        // die Wände des Erdbaus (Splats ± 12 m, 1,5 m; steil genug für den Schutt, `erdbauWand` > 0,5): der Punkt-Stoff
+                        // trägt die Erde (`aus.anschnitt` > 0,5), voll angeschnitten ist seine Farbe die Erde des Anschnitts (± 0,001)
+                        const gesehen = new Set();
+                        const wandXZ = [],
+                            wandY = [];
+                        for (const p of L.erdbau ? L.erdbau.splats : []) {
+                            if (p.frei) continue;
+                            const cx = p.platte ? p.cx : p.x0 + p.dx / 2,
+                                cz = p.platte ? p.cz : p.z0 + p.dz / 2;
+                            for (let dx = -12; dx <= 12; dx += 1.5)
+                                for (let dz = -12; dz <= 12; dz += 1.5) {
+                                    const x = Math.round((cx + dx) / 1.5) * 1.5,
+                                        z = Math.round((cz + dz) / 1.5) * 1.5;
+                                    if (gesehen.has(x * 1e6 + z)) continue;
+                                    gesehen.add(x * 1e6 + z);
+                                    const gx = (GK.hoehe(L, x + 1, z, true) - GK.hoehe(L, x - 1, z, true)) / 2,
+                                        gz = (GK.hoehe(L, x, z + 1, true) - GK.hoehe(L, x, z - 1, true)) / 2;
+                                    const ny = 1 / Math.sqrt(1 + gx * gx + gz * gz);
+                                    if (1 - ny < FS.netz.schuttKandidat) continue;
+                                    const y = GK.hoehe(L, x, z, true);
+                                    if (!(GK.erdbauWand(L, x, y, z, ny) > 0.5)) continue;
+                                    an.wandPunkte++;
+                                    const sa = {},
+                                        c = [0, 0, 0];
+                                    GK.felsStoffPunkt(L, FS.basis, FS.netz, x, y, z, ny, c, () => 0, sa, -gz * ny);
+                                    if (sa.anschnitt > 0.5) an.getragen++;
+                                    if (sa.anschnitt > 0.999 && Math.max(...c.map((q, k) => Math.abs(q - E[k]))) < 1e-3) an.erde++;
+                                    wandXZ.push(x, z);
+                                    wandY.push(y);
+                                }
+                        }
+                        // DIE FERNE TRÄGT DASSELBE GESETZ (boden#1, die Naht Nah-Erde ↔ Fern-Mittel): der Fern-Faden (voxel-worker
+                        // `fernFarbeTeile` → `fernFelsStoff`) färbt jede Wand des Erdbaus wie das Gesetz des Haupt-Fadens — der Boden-Stoff
+                        // (`_bodenFarbeAt`) und `felsStoffPunkt` mit dem Schutthang der Ferne (`fern`), seine Normale aus dem Gefälle ± 2 m
+                        // (`bodenSteilheit`). Bis hier mischte der Faden nur den Schutt zum Fels-Mittel (`fernSchutt`): an 995 von 1 168
+                        // Wänden eine andere Erde (bis 0,137 linear) — die Naht, die der Fern-Ring an 16 von 29 Posen zeigte.
+                        if (wandY.length) {
+                            const t = await r._fernAuftrag("teile", {
+                                punkte: new Float32Array(wandXZ),
+                                y: new Float32Array(wandY),
+                                roh: true,
+                            });
+                            const fern = { n: wandY.length, fremd: 0, abw: 0 };
+                            const hA = (px, pz) => r.getTerrainHeightAt(px, pz);
+                            const hAus = {};
+                            for (let k = 0; k < wandY.length; k++) {
+                                const x = wandXZ[k * 2],
+                                    z = wandXZ[k * 2 + 1],
+                                    y = Math.fround(wandY[k]);
+                                const gx = (hA(x + 2, z) - hA(x - 2, z)) / 4,
+                                    gz = (hA(x, z + 2) - hA(x, z - 2)) / 4;
+                                const ny = 1 / Math.sqrt(1 + gx * gx + gz * gz);
+                                GK.hoehe(L, x, z, false, hAus);
+                                const c = [0, 0, 0];
+                                r._bodenFarbeAt(x, y, z, c);
+                                const fe = (px, pz, py) => r._feuchteAt(px, pz, py);
+                                GK.felsStoffPunkt(L, FS.basis, FS.netz, x, y, z, ny, c, fe, null, -gz * ny, hAus.schutt > 0 ? hAus.schutt : 0);
+                                const d = Math.max(...c.map((q, i) => Math.abs(q - t.teile[k * 8 + i])));
+                                if (!(d <= 1e-4)) fern.fremd++;
+                                if (!(d <= fern.abw)) fern.abw = d;
+                            }
+                            fern.abw = Math.round(fern.abw * 1e4) / 1e4;
+                            an.fern = fern;
+                        }
+                        oe.anschnitt = an;
+                    }
+                    aus.ortErde = oe;
+                } else aus.ortErde = null;
             }
             // ── (j) DAS LICHT DES AUGES: das Auge in der Höhlen-Luft (der Hinaus-Blick, 16 m unter der Wiese) und unter freiem
             // Himmel (2 m über der Säulen-Oberkante desselben Orts) — je Ort der Takt der Lichter (`_applyDayNightToScene`),
@@ -1751,6 +2101,49 @@ const server = statikServer();
         befund.bankung = null;
         console.log("  (m) Bankung: gelaende-core nicht ladbar — " + (e?.message || e));
     }
+    // (o) DER SCHUTT AM STEILEN am Gesetz (rein, ohne Browser): 4 096 Punkte je Steile, das Mittel gegen die Kurve
+    try {
+        const GKn = globalThis.__gelaendeCore;
+        if (GKn && typeof GKn.hangSchutt === "function") {
+            const stufen = [];
+            for (const grad of [25, 33, 37, 40, 45, 55]) {
+                const st = 1 - Math.cos((grad * Math.PI) / 180);
+                let s0 = 0,
+                    schleier = 0,
+                    n = 0;
+                for (let k = 0; k < 4096; k++) {
+                    const x = ((k * 7919) % 4096) * 1.37 - 2800,
+                        z = Math.floor(k / 64) * 11.3 + ((k * 104729) % 97) - 400;
+                    const w = GKn.hangSchutt(x, z, st);
+                    s0 += w;
+                    if (w > 0.1 && w < 0.9) schleier++;
+                    n++;
+                }
+                const r3 = (q) => Math.round(q * 1000) / 1000;
+                stufen.push({ grad, anteil: r3(GKn.hangSchuttAnteil(st)), mittel: r3(s0 / n), schleier: r3(schleier / n) });
+            }
+            befund.hangSchutt = { stufen };
+        } else befund.hangSchutt = null;
+    } catch (e) {
+        befund.hangSchutt = null;
+        console.log("  (o) Schutt am Steilen: gelaende-core nicht ladbar — " + (e?.message || e));
+    }
+    if (befund.ortErde)
+        console.log(
+            `  (p) Erde des Klimas am Wirt: Heimat byte-gleich ${befund.ortErde.heimatGleich} · Terra rossa Röte ` +
+                `${befund.ortErde.rot} · Moor Albedo ${befund.ortErde.moor} · Steppe Albedo ${befund.ortErde.steppe} der Heimat · ` +
+                `Leser ${JSON.stringify(befund.ortErde.leser)} · Anschnitt ${JSON.stringify(befund.ortErde.anschnitt)}`
+        );
+    if (befund.faecher)
+        console.log(
+            `  (o) Fächer am Wirt: ${befund.faecher.faecher} von ${befund.faecher.steil} steilen Punkten unter der Wand, ` +
+                `${befund.faecher.getragen} im Punkt-Stoff getragen`
+        );
+    if (befund.hangSchutt)
+        console.log(
+            "  (o) Schutt am Steilen am Gesetz: " +
+                befund.hangSchutt.stufen.map((q) => `${q.grad}° ${q.mittel} (Kurve ${q.anteil}, Schleier ${q.schleier})`).join(" · ")
+        );
     const bkn = befund.bankung;
     if (bkn)
         console.log(

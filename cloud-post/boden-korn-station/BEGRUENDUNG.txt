@@ -37,3 +37,123 @@ Die Station ist radeon+gtx (Bild): headless fährt hier nur ihr Körper; das Urt
 
 DIE ZEILE, DIE DER RICHTER NACH DEM SETZEN ZEIGEN SOLL
 karte2.planet.relief.boden#2 · GRÜN · rang 1 (Soll ≥ 0,7) · laeufe 20 · kornStufen 2
+
+════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+KANDIDAT karte2.planet.relief.boden#1 — S1 „der Boden am Fächer“ liest den Schutt, den der Punkt trägt
+(k2-planet.diff gegen origin/punkte-maschine 06fd62d6 (die Station unverändert seit b6022f80, der Diff fällt glatt); der Kandidat für boden#2 ist gesetzt, 7d5a6463)
+
+WAS DIE STATION HEUTE MISST
+S1 zählt Schutt am Steilen über `hoehe(…, aus).schutt` — den Schutthang des Schicht-Gesetzes allein. Den Schutt, den
+der Chunk als `aSchutt` legt (gelaende-core `felsSchutt`: Schutthang, Wand des Erdbaus, und ab Kopf 3 der Schutt des
+Steilen `hangSchutt`), sieht sie nicht; sie zählte ihn nur mittelbar über `stoff` (`felsStoffPunkt` > 0,5).
+
+DER KANDIDAT
+1. `felsStoffPunkt(…, aus, nz)` (gelaende-core.js:6428) nennt, was der Punkt trägt: `aus.fels` (die Steile),
+   `aus.schutt` (0 … 1, das Gewicht ÷ `o.schutt`, wie der Chunk es legt) und `aus.moos` (das Moos der Erde, gelaende-core
+   `moosDeckung`: die Feuchte des Bodens oder das Klima nach de Martonne, der Nordhang `nz` = −g_z·n_y hält das Wasser).
+   S1 liest `schutt` = max(Schutthang, aus.schutt) und `moosErde` = aus.moos.
+   Ohne `aus` am main (vor Kopf 3) bleibt das Feld leer: der Kandidat misst dort byte-gleich wie heute.
+2. Neue Maße `schuttMittelSteil`: das Mittel des Schutts an den Punkten ≥ 30° (weniger Rauschen als die Schwelle 0,5
+   an 10 Punkten) · `moosErdeFeuchtProzent` / `moosErdeTrockenProzent`: der Anteil der Erde (stoff ≤ 0,5) mit Moos-Polster
+   (> 0,25) unter den feuchten (> 0,5) bzw. trockenen Punkten. `moosFeuchtProzent` (das Moos am Fels) bleibt, wie es ist.
+3. Export-Zeilen auf die Zeilen von Kopf 3; der Täter-Satz nennt den Schutt des Steilen (`HANG_SCHUTT`, ab 30°).
+
+GEMESSEN (Körper des Kandidaten in der Werkbank, Heimat, Saat 12345, 30 Posen × 9 Punkte, swiftshader)
+vorher (main 948f68ee): schuttSteilProzent 0 (0 von 10) · schuttMittelSteil 0 · stoffSteilProzent 0 · schuttFlachProzent 0 ·
+moosErdeFeuchtProzent 0 (die Erde trug kein Moos, nur der Fels-Sims) · moosErdeTrockenProzent 0.
+nachher (Kopf 3, Schutt des Steilen): schuttSteilProzent 30 (3 von 10: 37,8° · 43,5° · 44,2°) · schuttMittelSteil 0,304
+(die Kurve erwartet an denselben Steilen 0,28) · stoffSteilProzent 30 · schuttFlachProzent 0 (0 von 200) ·
+moosErdeFeuchtProzent 46,2 (6 von 13 feuchten Punkten, das Klima der Heimat k 0,28) · moosErdeTrockenProzent 0.
+Das Band des Mooses: de Martonne (1926) I = P/(T+10) — die Heimat I = 32 (halbfeucht); Moos-Polster sammeln sich, wo Wasser
+bleibt (Feuchte des Bodens, Nordhang); der Korpus gleichen Klimas trägt die Zahl ±20 % (nicht geholt).
+Das Band: DiBiase, Heimsath & Whipple 2012 (ESPL 37:855–865, DOI 10.1002/esp.3205) — unter 30° mittlerer Steile ist der Fels
+kaum entblößt, darüber steigt die Entblößung stark; der Schüttwinkel 35–40° (Statham 1976). Der Foto-Korpus gleichen
+Hangs und Klimas (vision/pruefer/quellen.json `plan`: „Wikimedia Commons, ≥ 40 Fotos, nicht geholt“) bleibt die Zahl,
+gegen die ±20 % gilt; er steht nicht als Zahl.
+
+DIE ZEILE, DIE DER RICHTER NACH DEM SETZEN ZEIGEN SOLL
+karte2.planet.relief.boden#1 · ROT (ungemessen: der Foto-Korpus, das Blindpaar am Gerät) · schuttSteilProzent 30 ·
+schuttMittelSteil 0,304 · schuttFlachProzent 0 · moosErdeFeuchtProzent 46,2 · moosErdeTrockenProzent 0
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────
+KANDIDAT 2 — karte2.planet.relief.boden#1: DAS AUGE AM ORT DER SITZUNG (gegen origin/punkte-maschine 6483c403,
+die Datei k2-planet.js dort zuletzt 7d5a6463) · Diff: k2-planet-boden1.diff (patch -p1 im Baum von punkte-maschine)
+Soll und Richter-Text bleiben unberührt.
+
+DER BEFUND (Vor-Urteil 27.11. 22:12, GTX 1050: „SITZUNG DER ORT IM DECKEL … boden#1 10272 m (Ring 4 → -1)“,
+der Ort stand in 59,3 s, der Deckel riss nach 62 s)
+- Der Körper zieht NICHT: die Seite (30 Posen × 9 Punkte, 20 Läufe, 50 Säulen, 100 Orte) 158 ms, der Fächer S1
+  (270 Adressen am Gesetz BODEN_AN) 8 ms, Weg des Spielers 0 m — Funktionsrufe der Saat, kein Sprung (Werkbank, Kopf 4).
+- Der Täter (am Code gelesen, das Sitzungs-Log der GTX liegt hier nicht vor): die vier Augen `M.auge("relief-boden-s1/4/5/6", { ort: "wiese" })` tragen kein px — das Auge schießt an
+  der Kamera des Spiels (k2-planet.js:288). Steht die Kamera an der Pose einer Station davor (formschatz schießt an
+  px-Posen ferner Orte, k2-planet.js:2649 `pose` → w.poseSchicht/w.poseFluss), stellt /bild den Spieler dorthin um (scripts/werkbank.cjs:2546, `fern` > span)
+  und der Ring baut kalt: 10 272 m, Ring 4 → -1, 59,3 s.
+
+DER SCHNITT
+- poseBoden: das Auge AM SPIELER (px = seine Lage, 1,7 m über `_voxelSurfaceY`), der Blick auf den steilsten Hang
+  20 … 120 m um ihn (16 Richtungen × 6 Abstände am Gesetz `hoehe`) — im gebauten Ring, 0 m vom Ort der Sitzung; in der
+  Werkbank 1 ms (Heimat: Hang 27,6° in 120 m).
+- EIN Schuss trägt die vier Auge-Sprossen der Leiter (dieselbe Pose, `augeEins`) — vorher vier /bild 1920 × 1080.
+
+DER RICHTER R11 (ehrlich offen)
+- `afcProzent` rechnet keine Station: R11-Sprossen urteilt die Prüfer-Akte (vision/pruefer/pruefer.cjs, Muster
+  leben.pflanzen.arten.1 und mensch.bau.bedarf.1). Die Station liefert das Ego-Bild an der Pose (`auge`, die Datei
+  auge-relief-boden-s1.png) und die Anteile der Welt (schuttSteilProzent, moosFeuchtProzent). Die Akte braucht das Blindpaar
+  gegen ein Foto gleichen Hangs und Klimas und den Korpus der Anteile als Zahl — beides fehlt (kein Foto-Korpus in der Karte).
+
+───────────────────────────────────────────────────────────────────────────────────
+KANDIDAT 3 — karte2.planet.relief.boden#1: DER STAND DER SITZUNG + DAS FACH (gegen origin/punkte-maschine 2ec879b1)
+Diffs (patch -p1 im Baum von punkte-maschine, alle drei zusammen):
+  k2-planet-stand.diff    meisterkarte-quelle/punkte/stationen/k2-planet.js
+  punkte-stand-linse.diff meisterkarte-quelle/punkte/punkte.cjs (Selbsttest (h))
+  faecher-boden1.diff     vision/pruefer/faecher.cjs (das Fach planet.relief.boden#1)
+Die Klassen-Zeile steht schon: stationen/auge-klasse.cjs:233 „planet.relief.boden#1": [P, "Blindpaar Ego-Bild gegen Foto (2AFC ≤ 85 %)"].
+Soll und Richter-Text bleiben unberührt. KANDIDAT 2 (k2-planet-boden1.diff, das Auge am Spieler) fällt: er irrte im Täter.
+
+DER TÄTER (Koordinator 28.11. 00:27, gelesen in k2-planet.js)
+- Die Probe fährt die vier relief-Leitern in EINER Sitzung. formschatz schießt S1/S2/S5/S7 an px-Posen ferner Orte
+  (w.poseSchicht/poseFluss); /bild stellt den Spieler um, wenn die Kamera mehr als einen Chunk (43,2 m) neben ihm steht
+  (scripts/werkbank.cjs:2546) — und NIEMAND stellt ihn zurück. Jedes Auge danach ohne px (`{ ort: "wiese" }`, 57 Rufe in der
+  Planet-Station) schießt im kalten Ring an der Kamera des Spiels: boden S1 sechsmal „DIE WELT STEHT NICHT“.
+- Ein Zwilling stand schon: wasser.seegang stellte seinen Stand selbst zurück, nur „wenn M.uhr() < 50“ und mit .catch(() => null)
+  (fail-soft) — die Klasse fiel nie, sie war in EINER Leiter gepflastert.
+
+DER SCHNITT (am EINEN Chokepoint, dem Rumpf der Probe `probeRumpf`)
+- Der Rumpf liest vor der ersten Leiter den Stand der Sitzung (Spieler x/z, Chunk-Spanne). Vor JEDER Leiter und am Ende der
+  Probe: steht der Spieler weiter als eine Chunk-Spanne daneben, `/umstellen` zurück (wartet, bis die Welt steht) — AUSSERHALB
+  des Deckels der Leiter, gezählt in `heim` ({ vor, m, s }). Kommt er nicht an, wirft die Leiter „der Stand der Sitzung: der
+  Spieler stand <m> m daneben und kam nicht zurück (<Grund>)“ und am Ende die Probe — nie misst eine Leiter still im fremden Ring.
+- Der Zwilling in wasser.seegang fällt (nur das Wetter der Sitzung stellt die Leiter noch selbst zurück).
+- An der Wiese ist die Rückkehr treu: ihr Ort trägt ortTakt [] und dorfZug false, `/umstellen` x/z verliert nichts davon.
+  (Ein Ort mit eigenem Takt oder Stellgrößen verlöre sie schon im fernen /bild (umstellen(px, pz, null)); die ortstreue Rückkehr
+  bräuchte den Namen des Orts der Sitzung in H — offen beim Namen, kein Ort der Planet-Probe trägt das heute.)
+
+DIE POSE DER SPROSSE (sage a, tue a)
+- Das Auge der Sprosse heißt „Ego an der Wiese, Blick auf den nächsten Hang“; geschossen wurde `{ ort: "wiese" }` = die
+  Kamera des Spiels, Blick WSW ins Offene — ein Bild ohne Hang. Neu: `HANG_BLICK(r, x, z)` in der Station (16 Richtungen,
+  20 … 400 m in 10-m-Ringen, der erste Ring mit Hang ≥ 20° — dort der steilste —, sonst der steilste ≥ 10°; Ego 1,7 m über
+  `hoehe`, Blick 0,5 m über den Hang). An der Wiese (−280,4/−1045,6): 360 m westlich, 21,5° (Werkbank). Der Zeuge trägt `blick`.
+
+DAS FACH (vision/pruefer/faecher.cjs, Muster formschatz#1/kunst#1)
+- Das Fach liest `BODEN_AN`, `HANG_BLICK` und den Strom der Saat 12345 aus dem WORTLAUT der Station (wirft beim Namen, wenn
+  einer fehlt) — keine eigene Formel. Adressen: die Mittelpunkte der ersten 100 Zufallsposen desselben Stroms (die Station misst
+  die ersten 30), je Pose Ego mit Blick auf ihren nächsten Hang, eine Uhr (0,5), Motiv GRÜN und an der Pose. Die Klasse am
+  Blickziel (Schutt · Moos · Fels · Erde nach BODEN_AN) reist in die Akte — der Anteil je Klasse gegen den Foto-Korpus.
+- Werkbank (Heimat-Welt, lokal): 85 Posen des Gesetzes von 100 (Erde 80, Fels 4, Moos 1; ohne Hang ≥ 10° in 400 m: 15), 153 ms.
+  ≥ 44 tragen das Blatt; der Fächer schießt, bis 44 das Motiv tragen.
+
+GEMESSEN (Baum punkte-maschine 2ec879b1 + die drei Diffs)
+- faecher.cjs --selftest: 16 GRÜN · 0 ROT (neu: „der Boden am Hang liest das Gesetz der Station …“). Ohne den Stations-Diff:
+  2 ROT beim Namen „Gesetz fehlt: k2-planet.js trägt HANG_BLICK im Boden nicht mehr“ — die drei Diffs landen zusammen.
+- Selbsttest (h) DER STAND DER SITZUNG (die Linse des Täters): am alten Rumpf ROT — c.d misst 9 387 m neben dem Stand, kein
+  Ruf /umstellen; am neuen GRÜN — c.d misst 0 m, EIN Ruf, heim [{ vor: "c.d", m: 9387 }]; steht die Welt nicht, wirft c.d „der
+  Stand der Sitzung: der Spieler stand 9387 m daneben und kam nicht zurück (DIE WELT STEHT NICHT …)“ und die Probe am Ende.
+  (g) DER RAFFER bleibt GRÜN (Sandkasten ohne Welt: kein Stand). Gefahren als Auszug der Blöcke, nicht `punkte.cjs selbsttest` ganz.
+- prettier --check faecher.cjs, k2-planet.js: sauber.
+
+EHRLICH OFFEN
+- Am Gerät ungefahren: die Rückkehr kostet einen kalten Ring an der Wiese (lokal, swiftshader, fiel /bild nach einem 1,5-km-Sprung
+  an „DIE WELT STEHT NICHT nach 5343 Takten“ — dieselbe Wand wie an der GTX, darum steht die Rückkehr VOR dem Deckel der Leiter).
+- Der Korpus (quellen.json fronten2afc „planet.relief.boden#1“, b: false): ≥ 40 gesichtete Fotos GLEICHEN Hangs und Klimas fehlen
+  — paare.cjs verweigert das Blatt bis dahin beim Namen („Korpus fehlt“). Die Spiel-Bilder des Fachs kann die GTX schon schießen.
+- anteilJeKorpus bleibt ungemessen, bis der Korpus die Anteile (Schutt am Steilen, Moos im Feuchten) als Zahl trägt.
