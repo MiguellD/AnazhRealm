@@ -1,7 +1,7 @@
 {
  "sha": "b3740dd5566793ae66152d955e5a55d9c272884c",
  "geraet": "gtx",
- "zeit": "2026-11-27T23:58:23.079Z",
+ "zeit": "2026-11-28T00:09:29.506Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "profiband.K4#1": {
@@ -2542,182 +2542,215 @@
   },
   "karte2.planet.relief.grossform#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: Prozess unbekannt · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\bdbbda82-721e-4145-8864-2f350e2bc3f5.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\punkte-gtx\\\\scripts\\\\lib\\\\welt-boot.c) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: Prozess unbekannt · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\bdbbda82-721e-4145-8864-2f350e2bc3f5.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\punkte-gtx\\\\scripts\\\\lib\\\\welt-boot.c) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-27T23:58:23.079Z",
+   "zahl": "Deckel 355 s gerissen: Stille seit 354.8 s nach 355 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 5.92,
+   "grund": "Deckel 355 s gerissen: Stille seit 354.8 s nach 355 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 355.2,
+   "fremd": {
+    "s": 357,
+    "takte": 160,
+    "fremdS": 216.14,
+    "kerne": 0.605,
+    "fensterKerne": 1.366,
+    "namen": [
+     [
+      "bash.exe sk/wacht6.sh",
+      24.75
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      20.41
+     ],
+     [
+      "bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \"",
+      19.5
+     ]
+    ],
+    "dienerS": 135.31,
+    "diener": [
+     [
+      "System",
+      51.44
+     ],
+     [
+      "WmiPrvSE.exe",
+      40
+     ]
+    ],
+    "geraetS": 264.53,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      177.61
+     ],
+     [
+      "svchost.exe",
+      77.64
+     ],
+     [
+      "SearchIndexer.exe",
+      4.45
+     ]
+    ],
+    "eigenS": 1284.55,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-28T00:09:29.506Z",
    "abdruck": "562950e4c769",
    "port": 7804,
    "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1,
-   "fahrt": "12372@mwzmxui2"
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-27T23:51:36.292Z",
-  "ordner": "sitzung-20261128-005136",
+  "start": "2026-11-28T00:08:39.791Z",
+  "ordner": "sitzung-20261128-010839",
   "port": 7804,
   "warten": 0.03,
-  "bootS": 7,
-  "grundstellungS": [
-   0.2,
-   0.1
-  ],
-  "proben": 3,
+  "bootS": 7.1,
+  "grundstellungS": [],
+  "proben": 1,
   "freigaben": [],
   "geraet": {
    "name": "GTX 1060",
    "adapter": "NVIDIA GeForce GTX 1060",
    "preis": true
   },
-  "offen": [
-   "karte2.planet.relief.grossform#1"
-  ],
   "orte": [
    {
-    "ort": null,
-    "vor": "karte2.erleben.spieler.hand#1",
-    "s": 30.6,
-    "takte": 881,
+    "ort": "wiese",
+    "vor": "karte2.planet.relief.grossform#1",
+    "s": 34.5,
+    "takte": 740,
     "chunks": 81,
     "nach": null
-   },
-   {
-    "ort": null,
-    "vor": "karte2.same.physik.feuer#2",
-    "s": 17.6,
-    "takte": 650,
-    "chunks": 81,
-    "nach": "der Grundstellung"
-   },
-   {
-    "ort": null,
-    "vor": "karte2.leben.kopplung.evolution-planet#1",
-    "s": 17.6,
-    "takte": 632,
-    "chunks": 81,
-    "nach": "der Grundstellung"
    }
   ],
   "wegeTueren": [],
   "felder": [
    {
-    "probe": "karte2.erleben.spieler.hand#1",
+    "probe": "karte2.planet.relief.grossform#1",
     "weg": [
-     "__ortZeit",
-     "__weltaktSpionBuch",
-     "__wetterSpionBuch",
-     "__buehneUhr"
-    ]
-   },
-   {
-    "probe": "karte2.same.physik.feuer#2",
-    "weg": [
-     "__ortZeit",
-     "__weltaktSpionBuch",
-     "__wetterSpionBuch",
-     "__buehneUhr"
+     "__imSchuss",
+     "__nahSpeicher",
+     "__letzteSpiegel",
+     "__letzteTeilung",
+     "__abbruchEpoche"
     ]
    }
   ],
   "wirt": [
    {
-    "probe": "karte2.erleben.spieler.hand#1",
+    "probe": "karte2.planet.relief.grossform#1",
     "anders": [
-     "r._bildZeit",
-     "r._wolkenZeit",
-     "r._weltaktGehalten",
-     "r._setWeather",
-     "r.state.weather",
+     "window.luma709",
      "window.__wieseMessen",
      "window.__wieseUrteil",
-     "window.__ortSchritt"
+     "window.__weltOrte",
+     "window.__weltOrt",
+     "window.__strecke",
+     "window.__ortSchritt",
+     "window.__wasserOrte",
+     "window.__wasserLeser",
+     "window.__wasserLeib",
+     "window.__wasserEis",
+     "window.__wasserMutation",
+     "window.__wasserKarte",
+     "window.__wasserLaeufe",
+     "window.__wasserTreibt",
+     "window.__wasserHoehle",
+     "window.__wasserWagen",
+     "window.__wasserSichtNetz",
+     "window.__wasserFlora",
+     "window.__wasserSee",
+     "window.__wasserQuelle",
+     "window.__wasserQuellTeil",
+     "window.__wasserBach",
+     "window.__wasserBank",
+     "window.__wasserFluss",
+     "window.__wasserKroneVon",
+     "window.__wasserUfer",
+     "window.__wasserStrom",
+     "window.__wasserFlussNah",
+     "window.__wasserGraben",
+     "window.__wasserDamm",
+     "window.__wasserUferFarbe",
+     "window.__wasserKoerper",
+     "window.__wasserBild",
+     "window.__wasserSeeAm",
+     "window.__wasserLicht",
+     "window.__wasserRegen",
+     "window.__vorBild"
     ],
     "wie": {
-     "r._bildZeit": "getauscht: () => S.T → der Wert 12.5",
-     "r._wolkenZeit": "getauscht: () => S.T → der Wert 12.5",
-     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
-     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
-     "r.state.weather": "getauscht: () => wert → der Wert sunny",
+     "window.luma709": "getauscht: (u, i = 0) => 0.2126 * u[i] + 0.7152 * u[i + 1] + 0.0722 * u[i + 2]",
      "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
      "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
-     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+     "window.__weltOrte": "getauscht: function weltOrte(art, opts) { const o = opts || {}; const [mx, mz] = o.mitte ||",
+     "window.__weltOrt": "getauscht: function weltOrt(art, opts) { return window.__weltOrte(art, Object.assign({}, op",
+     "window.__strecke": "getauscht: function strecke(mitte, ringe, stufeMax = Infinity, querMax = Infinity, naechste",
+     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit",
+     "window.__wasserOrte": "neu: async function wasserOrte(o = {}) { const G = window.__gelaendeCore; const mitte",
+     "window.__wasserLeser": "neu: async function wasserLeser(o = {}) { if (!st.hydrosphere || !st.hydrosphere.read",
+     "window.__wasserLeib": "neu: function wasserLeib() { const [r, A] = [window.anazhRealm, window.anazhRealm.con",
+     "window.__wasserEis": "neu: async function wasserEis(o = {}) { const A = AnazhRealm; const FUSS = A.PLAYER_F",
+     "window.__wasserMutation": "neu: async function wasserMutation(o = {}) { const A = AnazhRealm; const [RHO, TIEF] ",
+     "window.__wasserKarte": "neu: async function wasserKarte(o) { const [orte, zufall] = [[], window.__phytoCore.m",
+     "window.__wasserLaeufe": "neu: async function wasserLaeufe() { const [G, L] = [window.__gelaendeCore, r._gelaen",
+     "window.__wasserTreibt": "neu: async function wasserTreibt(o) { const [r, A] = [window.anazhRealm, window.anazh",
+     "window.__wasserHoehle": "neu: async function wasserHoehle(o = {}) { const A = AnazhRealm; const cfg = r._voxel",
+     "window.__wasserWagen": "neu: async function wasserWagen(o = {}) { const ziel = o.see || (await window.__wasse",
+     "window.__wasserSichtNetz": "neu: function wasserSichtNetz() { const cfg = r._voxelChunkConfig(0); const span = cf",
+     "window.__wasserFlora": "neu: function wasserFlora(o = {}) { const sicht = o.sicht || window.__wasserSichtNetz",
+     "window.__wasserSee": "neu: async function wasserSee(o = {}) { const f = o.fenster || (await window.__wasser",
+     "window.__wasserQuelle": "neu: async function wasserQuelle(o = {}) { if (!st.hydrosphere || !st.hydrosphere.rea",
+     "window.__wasserQuellTeil": "neu: function wasserQuellTeil(p, n) { const h = (Math.imul(Math.round(p.x * 4), 73856",
+     "window.__wasserBach": "neu: async function wasserBach(o = {}) { const R = wasserRund(2); const bachOrt = Num",
+     "window.__wasserBank": "neu: async function wasserBank(o = {}) { const h = st.hydrosphere; if (!h || !h.ready",
+     "window.__wasserFluss": "neu: function wasserFluss() { const h = st.hydrosphere; if (!h || !h.ready || !Array.",
+     "window.__wasserKroneVon": "neu: function __wasserKroneVon(r, p) { const A = r.constructor; const HC = A.HYDROSPH",
+     "window.__wasserUfer": "neu: async function wasserUfer(o = {}) { const h = st.hydrosphere; if (!h || !h.ready",
+     "window.__wasserStrom": "neu: async function wasserStrom(ort, hoehe) { const zurueck = [leihe(st, { postProces",
+     "window.__wasserFlussNah": "neu: function __wasserFlussNah(r, x, z) { const st = r.state; const fluesse = []; for",
+     "window.__wasserGraben": "neu: async function wasserGraben(o = {}) { const K = AnazhRealm.NAH_WIESE.kachel; con",
+     "window.__wasserDamm": "neu: async function wasserDamm(o = {}) { const f2 = wasserRund(2); const S = (q) => r",
+     "window.__wasserUferFarbe": "neu: async function wasserUferFarbe(o = {}) { const h = st.hydrosphere; if (!h || !h.",
+     "window.__wasserKoerper": "neu: async function wasserKoerper(o = {}) { const A = AnazhRealm; const DT = A.FIXED_",
+     "window.__wasserBild": "neu: async function wasserBild(o = {}) { const T = window.THREE; const renderer = st.",
+     "window.__wasserSeeAm": "neu: function __wasserSeeAm(r, ziel) { const st = r.state; const h = r._hydroFor(ziel",
+     "window.__wasserLicht": "neu: async function wasserLicht(o = {}) { if (!st.renderer || st.renderer._isHeadless",
+     "window.__wasserRegen": "neu: async function wasserRegen(o = {}) { const T = window.THREE; const renderer = st",
+     "window.__vorBild": "neu: async (x, z) => { await G.stehen(x + 8, z); return { nass: r._nassAt(x, z) }; }"
     },
     "haelt": [],
     "heap": [
-     201.9,
-     242.7
+     232.6,
+     329.3
     ],
     "ungemessen": null
-   },
+   }
+  ],
+  "wanderung": [
    {
-    "probe": "karte2.same.physik.feuer#2",
-    "anders": [
-     "r._bildZeit",
-     "r._wolkenZeit",
-     "r._weltaktGehalten",
-     "r._setWeather",
-     "r.state.weather",
-     "window.__wieseMessen",
-     "window.__wieseUrteil",
-     "window.__ortSchritt"
-    ],
-    "wie": {
-     "r._bildZeit": "getauscht: () => S.T → der Wert 12.5",
-     "r._wolkenZeit": "getauscht: () => S.T → der Wert 12.5",
-     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
-     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
-     "r.state.weather": "getauscht: () => wert → der Wert sunny",
-     "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
-     "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
-     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
-    },
-    "haelt": [],
-    "heap": [
-     226.7,
-     248.3
-    ],
-    "ungemessen": null
+    "probe": "karte2.planet.relief.grossform#1",
+    "ort": "wiese",
+    "m": 3991.11,
+    "dreh": 0
    }
   ],
   "messHalt": [
    {
-    "probe": "karte2.erleben.spieler.hand#1",
-    "halt": -1000000000,
-    "zurueck": 0
-   },
-   {
-    "probe": "karte2.same.physik.feuer#2",
-    "halt": -1000000000,
-    "zurueck": 0
+    "probe": "karte2.planet.relief.grossform#1",
+    "gehalten": [
+     "skala",
+     "spiegel"
+    ],
+    "offen": []
    }
   ],
-  "felderBlind": [
-   {
-    "probe": "karte2.leben.kopplung.evolution-planet#1",
-    "wann": "nach",
-    "fehler": "ABSTURZ der Seite: Prozess unbekannt · Abbild C:\\Users\\micha\\AppData\\Local\\Temp\\anazh-absturz\\bdbbda82-721e-4145-8864-2f350e2bc3f5.dmp"
-   }
-  ],
-  "wirtBlind": [
-   {
-    "probe": "karte2.leben.kopplung.evolution-planet#1",
-    "wann": "nach",
-    "fehler": "ABSTURZ der Seite: Prozess unbekannt · Abbild C:\\Users\\micha\\AppData\\Local\\Temp\\anazh-absturz\\bdbbda82-721e-4145-8864-2f350e2bc3f5.dmp"
-   }
-  ],
-  "zeichnerBlind": [
-   {
-    "probe": "karte2.leben.kopplung.evolution-planet#1",
-    "wann": "nach",
-    "fehler": "ABSTURZ der Seite: Prozess unbekannt · Abbild C:\\Users\\micha\\AppData\\Local\\Temp\\anazh-absturz\\bdbbda82-721e-4145-8864-2f350e2bc3f5.dmp"
-   }
-  ],
-  "grund": "die Welt trägt nicht mehr vor karte2.planet.relief.grossform#1: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: Prozess unbekannt · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\bdbbda82-721e-4145-8864-2f350e2bc3f5.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\punkte-gtx\\\\scripts\\\\lib\\\\welt-boot.c — offen: karte2.planet.relief.grossform#1",
-  "ciBlicke": 4,
+  "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
    "bilder": 0,
@@ -2730,29 +2763,17 @@
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "karte2.erleben.spieler.hand#1",
-     "m": 1083,
+     "probe": "karte2.planet.relief.grossform#1",
+     "m": 4958,
      "ringVor": 4,
      "ringMin": -1
-    },
-    {
-     "probe": "karte2.same.physik.feuer#2",
-     "m": 1083,
-     "ringVor": 4,
-     "ringMin": 0
-    },
-    {
-     "probe": "karte2.leben.kopplung.evolution-planet#1",
-     "m": 340,
-     "ringVor": 4,
-     "ringMin": 0
     }
    ],
-   "zapfen": 186,
-   "luecken": 32,
-   "letzteLuecke": "ABSTURZ der Seite: Prozess unbekannt · Abbild C:\\Users\\micha\\AppData\\Local\\Temp\\anazh-absturz\\bdbbda82-721e-4145-8864-2f350e2bc3f5.dmp"
+   "zapfen": 389,
+   "luecken": 0,
+   "letzteLuecke": null
   },
-  "fahrtS": 400.3,
-  "minuten": 6.84
+  "fahrtS": 399.8,
+  "minuten": 6.83
  }
 }
