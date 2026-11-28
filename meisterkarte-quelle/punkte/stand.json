@@ -21146,7 +21146,7 @@
   },
   "karte2.mensch.menge.dichte": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.menge.dichte#2 radeon: ungemessen (R10) · karte2.mensch.menge.dichte#2 gtx: Station seit der Messung geändert · karte2.mensch.menge.dichte#3 radeon: ungemessen (R10) · karte2.mensch.menge.dichte#3 gtx: Station seit der Messung geändert — zuletzt an e80f9c5d: die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 78 s von karte2.mensch.menge.dichte#3) — offen, UNGEMESSEN · karte2.mensch.menge.dichte#4 radeon: ungemessen (R10) · karte2.mensch.menge.dichte#4 gtx: Station seit der Messung geändert · karte2.mensch.menge.dichte#5 radeon: ungemessen (R10) · karte2.mensch.menge.dichte#5 gtx: Station seit der Messung geändert · karte2.mensch.menge.dichte#6 radeon: ungemessen (R10) · karte2.mensch.menge.dichte#6 gtx: Station seit der Messung geändert · karte2.mensch.menge.dichte#7 radeon: ungemessen (R10) · karte2.mensch.menge.dichte#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.menge.dichte#2 radeon: ungemessen (R10) · karte2.mensch.menge.dichte#2 gtx: Station seit der Messung geändert · karte2.mensch.menge.dichte#3 radeon: ungemessen (R10) · karte2.mensch.menge.dichte#3 gtx: ROT: S3 ROT an Umfang 60 < 1000 Gehende gemessen — Täter: größte Dichte 0.71 P je m²: die Stadt füllt nicht jede Klasse bis 4 P je m² · größte Abweichung v gegen Weidmann 0.146 (Soll ≤ 0.15) · Anteil gemessener Dichte-Klassen 0,5–4 P je m² 0.2 (Soll ≥ 1) · Umfang 60 (Soll ≥ 1000 Gehende gemessen) · 1088 Proben je Gehendem und s, größte Dichte 0.71 P je m², die Klassen [{\"von\":0.5,\"bis\":1,\"n\":27,\"rho\":0.57,\"v\":1.09,\"weidmann\":1.27,\"ab\":0.146}] · [linse-gpu] nvidia/pascal an e80f9c5d · karte2.mensch.menge.dichte#4 radeon: ungemessen (R10) · karte2.mensch.menge.dichte#4 gtx: Station seit der Messung geändert · karte2.mensch.menge.dichte#5 radeon: ungemessen (R10) · karte2.mensch.menge.dichte#5 gtx: Station seit der Messung geändert · karte2.mensch.menge.dichte#6 radeon: ungemessen (R10) · karte2.mensch.menge.dichte#6 gtx: Station seit der Messung geändert · karte2.mensch.menge.dichte#7 radeon: ungemessen (R10) · karte2.mensch.menge.dichte#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.menge.dichte#2",
@@ -21179,10 +21179,10 @@
      "id": "karte2.mensch.menge.dichte#3",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an e80f9c5d: die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 78 s von karte2.mensch.menge.dichte#3) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "S3 ROT an Umfang 60 < 1000 Gehende gemessen — Täter: größte Dichte 0.71 P je m²: die Stadt füllt nicht jede Klasse bis 4 P je m² · größte Abweichung v gegen Weidmann 0.146 (Soll ≤ 0.15) · Anteil gemessener Dichte-Klassen 0,5–4 P je m² 0.2 (Soll ≥ 1) · Umfang 60 (Soll ≥ 1000 Gehende gemessen) · 1088 Proben je Gehendem und s, größte Dichte 0.71 P je m², die Klassen [{\"von\":0.5,\"bis\":1,\"n\":27,\"rho\":0.57,\"v\":1.09,\"weidmann\":1.27,\"ab\":0.146}] · [linse-gpu] nvidia/pascal",
+     "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
+     "grund": "ROT: S3 ROT an Umfang 60 < 1000 Gehende gemessen — Täter: größte Dichte 0.71 P je m²: die Stadt füllt nicht jede Klasse bis 4 P je m² · größte Abweichung v gegen Weidmann 0.146 (Soll ≤ 0.15) · Anteil gemessener Dichte-Klassen 0,5–4 P je m² 0.2 (Soll ≥ 1) · Umfang 60 (Soll ≥ 1000 Gehende gemessen) · 1088 Proben je Gehendem und s, größte Dichte 0.71 P je m², die Klassen [{\"von\":0.5,\"bis\":1,\"n\":27,\"rho\":0.57,\"v\":1.09,\"weidmann\":1.27,\"ab\":0.146}] · [linse-gpu] nvidia/pascal",
+     "r6": "konsum"
     },
     {
      "id": "karte2.mensch.menge.dichte#4",
@@ -22624,7 +22624,7 @@
   },
   "karte2.mensch.netz.massenverkehr": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.netz.massenverkehr#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +24) · karte2.mensch.netz.massenverkehr#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +22) · karte2.mensch.netz.massenverkehr#2 radeon: ungemessen (R10) · karte2.mensch.netz.massenverkehr#2 gtx: Station seit der Messung geändert · karte2.mensch.netz.massenverkehr#3 radeon: ungemessen (R10) · karte2.mensch.netz.massenverkehr#3 gtx: Station seit der Messung geändert · karte2.mensch.netz.massenverkehr#4 radeon: ungemessen (R10) · karte2.mensch.netz.massenverkehr#4 gtx: Station seit der Messung geändert · karte2.mensch.netz.massenverkehr#5 radeon: ungemessen (R10) · karte2.mensch.netz.massenverkehr#5 gtx: Station seit der Messung geändert · karte2.mensch.netz.massenverkehr#6 radeon: ungemessen (R10) · karte2.mensch.netz.massenverkehr#6 gtx: Station seit der Messung geändert · karte2.mensch.netz.massenverkehr#7 radeon: ungemessen (R10) · karte2.mensch.netz.massenverkehr#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.netz.massenverkehr#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +24) · karte2.mensch.netz.massenverkehr#1 gtx: ROT: S1 ROT: fehlender Leser: keine Linie, kein Halt, kein Fahrzeug des Massenverkehrs: der Verkehr einer Siedlung legt nur Wagen an Wenden an (stamm/siedlung-verkehr.js:27) · gemessen 0 · [linse-gpu] nvidia/pascal an e80f9c5d · karte2.mensch.netz.massenverkehr#2 radeon: ungemessen (R10) · karte2.mensch.netz.massenverkehr#2 gtx: Station seit der Messung geändert · karte2.mensch.netz.massenverkehr#3 radeon: ungemessen (R10) · karte2.mensch.netz.massenverkehr#3 gtx: Station seit der Messung geändert · karte2.mensch.netz.massenverkehr#4 radeon: ungemessen (R10) · karte2.mensch.netz.massenverkehr#4 gtx: Station seit der Messung geändert · karte2.mensch.netz.massenverkehr#5 radeon: ungemessen (R10) · karte2.mensch.netz.massenverkehr#5 gtx: Station seit der Messung geändert · karte2.mensch.netz.massenverkehr#6 radeon: ungemessen (R10) · karte2.mensch.netz.massenverkehr#6 gtx: Station seit der Messung geändert · karte2.mensch.netz.massenverkehr#7 radeon: ungemessen (R10) · karte2.mensch.netz.massenverkehr#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.netz.massenverkehr#1",
@@ -22641,10 +22641,9 @@
      "id": "karte2.mensch.netz.massenverkehr#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +22)",
-     "ungemessen": true,
+     "zahl": "S1 ROT: fehlender Leser: keine Linie, kein Halt, kein Fahrzeug des Massenverkehrs: der Verkehr einer Siedlung legt nur Wagen an Wenden an (stamm/siedlung-verkehr.js:27) · gemessen 0 · [linse-gpu] nvidia/pascal",
+     "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
+     "grund": "ROT: S1 ROT: fehlender Leser: keine Linie, kein Halt, kein Fahrzeug des Massenverkehrs: der Verkehr einer Siedlung legt nur Wagen an Wenden an (stamm/siedlung-verkehr.js:27) · gemessen 0 · [linse-gpu] nvidia/pascal",
      "r6": "konsum",
      "beide": true
     },
@@ -37463,7 +37462,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 308,
+  "konsum": 309,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37595,10 +37594,10 @@
    "karte2.same.kopplung.terraform#1 gtx",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3350
+  "ohne": 3349
  },
  "kopfVoll": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
- "zeit": "2026-11-28T10:30:35.190Z",
+ "zeit": "2026-11-28T10:42:17.030Z",
  "vorher": "e80f9c5d",
  "bilanz": {
   "gewinn": [],
