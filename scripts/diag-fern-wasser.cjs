@@ -40,7 +40,7 @@ async function runOnce(browser, noFoundry) {
         if (!m || !m.mesh) return o;
         const g = m.mesh.geometry;
         // (2) der VOLLE Material-Vertrag
-        const want = { position: 3, aFlow: 2, aWave: 1, aDepth: 1, aSlope: 1 };
+        const want = { position: 3, aFlow: 2, aWave: 1, aStreich: 1, aDepth: 1, aSlope: 1 };
         o.attrs = {};
         let attrsOk = true;
         for (const [name, size] of Object.entries(want)) {

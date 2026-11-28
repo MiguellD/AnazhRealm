@@ -1121,6 +1121,11 @@ sie, der Fern-Ring setzt mit ihr je Stufe neu — über `spiegelMitGezeit`, `spi
 Der Export `wasserSpiegel` trägt die Gezeit der Lage (`gezeitHub`); eine Lage ohne Uhr bekommt die Stunde mit `lageZurStunde`, die
 Ufer-Bänder lesen ihn in Ruhe (`uferSpiegel` an `lageRuhe`, der Träger der Stufe 0).
 `gate:worker-dichte --gezeit` misst Hub, Periode, Stamm ↔ Faden und den Ring.
+DIE STREICHLÄNGE (planet.wasser.seegang): der Seegang aus dem Wind ist fetch-begrenzt (SPM 1984, dasselbe Gesetz wie vehicle-core
+`bootWelle`) — `streichLaenge` misst je Ort die effektive Streichlänge über dem Meer (16 Strahlen, cos²-Sektor nach Saville 1962,
+Maximum über die Richtungen), `seegangStreich` gibt f = √(F/fRef) bilinear auf dem Gitter von `STREICH`, `streichUvoll(g)` den
+Wind, über dem auch die offene See fetch-begrenzt ist; beide Blätter (Stamm und Faden) und der Fern-Ring schreiben f als
+`aStreich`, der Wasser-Stoff trägt die Dünung × f und die See des Winds × Hs(F, U)/Hs(fRef, U). `gate:wasser-leben` B11.
 DAS WELT-FELD (Leben C2a2): die vier Stimmen der Saat `weltFeld` an den Strömen `weltFeldRausch` mit den Zahlen `WELT_FELD`
 (Wellenlängen, Domain-Warp) — die Stimme „lebendig“ ist das Substrat der Äsung; Stamm (`worldFieldAt`), jeder Faden und das
 Feld des Gaus lesen sie hier, die Probe `gau` in `gate:kreatur-takt` ändert die Formel EINMAL und sieht Stamm und Faden gleich gehen.

@@ -646,10 +646,11 @@ function streichUrteil(quelle) {
     const see = G.streichLaenge({}, 0, 0, (x, z) => Math.hypot(x, z) > 435);
     if (!(Math.abs(see - 435) / 435 <= 0.1)) v.push(`der See von 435 m Halbmesser trägt F ${see.toFixed(0)} m`);
     // das Band ist EIN Gesetz: vehicle-core `bootWelle` (das Boot am Anleger liest dieselbe Welle)
-    const hs = require("./lib/welt-boot.cjs").fadenScope(["vehicle-core.js"]).__vehicleCore.bootWelle;
+    const V = require("./lib/welt-boot.cjs").fadenScope(["vehicle-core.js"]).__vehicleCore,
+        hs = V.bootWelle;
     for (const U of [3, 10, 17]) {
         const f = Math.sqrt(Math.min(see, S.fRef) / S.fRef),
-            s = U / S.stoffUvoll;
+            s = U / G.streichUvoll(V.FAHR.G);
         const k = Math.min(f, s) / Math.min(1, s),
             band = hs(see, U) / hs(S.fRef, U);
         if (!(Math.abs(k - band) / band <= 0.005)) v.push(`U ${U} m/s: k ${k.toFixed(4)} gegen das Band ${band.toFixed(4)} (bootWelle)`);

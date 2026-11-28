@@ -8901,10 +8901,10 @@
     // DIE STREICHLÄNGE (planet.wasser.seegang, rein additiv): der Seegang aus dem Wind ist FETCH-begrenzt — Sverdrup–Munk–
     // Bretschneider (Shore Protection Manual 1984, Gl. 3-33/3-34; JONSWAP, Hasselmann 1973): g·Hs/U² = 1,6·10⁻³ · (g·F/U²)^½,
     // voll ausgereift 0,243 — bei U = 10 m/s über F = 435 m Hs ≈ 0,11 m, über 50 km 1,14 m. DASSELBE Gesetz wie vehicle-core
-    // `bootWelle` (das Boot am Anleger; `hsA`, `hsVoll`, `g` sind seine Zahlen). Die Dünung der Welt ist die der offenen See
+    // `bootWelle` (das Boot am Anleger; `hsA`, `hsVoll` sind seine Zahlen). Die Dünung der Welt ist die der offenen See
     // (F ≥ `fRef`); ein Wasser mit kürzerer Streichlänge trägt den Anteil Hs(F, U) / Hs(fRef, U) = min(√F, S) / min(√fRef, S) mit
     // S = √F_voll(U), F_voll = (hsVoll/hsA)² · U²/g = 23 066 · U²/g. Der Kern gibt je Ort f = √(min(F, fRef)/fRef); der Stoff
-    // schließt mit dem Wind am Wasser (`stoffUvoll`: U_voll = hsA·√(g·fRef)/hsVoll = 4,609 m/s, darüber ist auch fRef
+    // schließt mit dem Wind am Wasser (`streichUvoll(g)`: U_voll = hsA·√(g·fRef)/hsVoll = 4,61 m/s auf der Erde, darüber ist auch fRef
     // fetch-begrenzt): k = min(f, U/U_voll) / min(1, U/U_voll).
     // F je Ort: je Richtung (16, je 22,5°) die Strecke über Wasser bis zum trockenen Ufer (`trocken`: die Höhe ohne Detail über dem
     // Meeresspiegel; ein Strahl, der auf Land beginnt, zählt ab dem ersten Wasser binnen 100 m), je Wind-Richtung das mit cos²
@@ -8912,7 +8912,11 @@
     // See normiert: alle Strahlen fRef → F = fRef) und davon das MAXIMUM über die Richtungen — die See des Orts, wenn der Wind von
     // dort weht, wo sie am offensten ist. `seegangStreich` liest f bilinear zwischen den Ecken eines 64-m-Gitters (je Ort nur von
     // der Welt-Lage: Main und Faden rechnen dasselbe, Blätter treffen sich an der Naht).
-    const STREICH = Object.freeze({ fRef: 50000, richtungen: 16, sektor: 2, schritt: 25, wachstum: 0.1, landM: 100, gitter: 64, hsA: 0.0016, hsVoll: 0.243, g: 9.8, stoffUvoll: (0.0016 * Math.sqrt(9.8 * 50000)) / 0.243 }); // prettier-ignore
+    const STREICH = Object.freeze({ fRef: 50000, richtungen: 16, sektor: 2, schritt: 25, wachstum: 0.1, landM: 100, gitter: 64, hsA: 0.0016, hsVoll: 0.243 }); // prettier-ignore
+    // der Wind, über dem auch die offene See fetch-begrenzt ist (m/s), bei der Schwere `g` der Welt (m/s², das Vorzeichen zählt nicht)
+    function streichUvoll(g) {
+        return (STREICH.hsA * Math.sqrt(Math.abs(g) * STREICH.fRef)) / STREICH.hsVoll;
+    }
     function streichLaenge(L, x, z, trocken) {
         const S = STREICH;
         const tr = trocken || ((a, b) => hoehe(L, a, b, false) >= L.waterLevel);
@@ -8982,6 +8986,7 @@
     root.__gelaendeCore = Object.freeze({
         STREICH: STREICH,
         streichLaenge: streichLaenge,
+        streichUvoll: streichUvoll,
         seegangStreich: seegangStreich,
         WELT_FELD: WELT_FELD,
         weltFeldRausch: weltFeldRausch,

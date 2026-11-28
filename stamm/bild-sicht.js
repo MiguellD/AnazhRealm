@@ -1423,7 +1423,7 @@ class AnazhRealm_bild_sicht {
         const streichS = uWind
             .mul(
                 (AnazhRealm.WIND_BOE.mitte * globalThis.__phytoCore.WIND_FELD.sturmMS) /
-                    globalThis.__gelaendeCore.STREICH.stoffUvoll
+                    globalThis.__gelaendeCore.streichUvoll(this.state.gravity)
             )
             .max(1e-4);
         const streichK = aStreichV.min(streichS).div(streichS.min(float(1.0)));

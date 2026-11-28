@@ -1540,6 +1540,7 @@ async function wasserBild(o = {}) {
     mGeom.setAttribute("aFlow", fuell(MN * MN, 2, 0));
     mGeom.setAttribute("aDepth", fuell(MN * MN, 1, 20));
     mGeom.setAttribute("aWave", fuell(MN * MN, 1, 1));
+    mGeom.setAttribute("aStreich", fuell(MN * MN, 1, 1)); // die offene See: f = 1 (gelaende-core `seegangStreich` bei F ≥ fRef)
     mGeom.setAttribute("aSlope", fuell(MN * MN, 1, 0));
     mGeom.setIndex(mIdx);
     const meer = new T.Mesh(mGeom, mat);
