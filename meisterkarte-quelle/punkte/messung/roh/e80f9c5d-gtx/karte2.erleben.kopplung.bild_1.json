@@ -1,0 +1,608 @@
+{
+ "plan": "karte2.erleben.kopplung.bild#1",
+ "adapter": "[linse-gpu] nvidia/pascal",
+ "schritte": {
+  "fenster": {
+   "exit": 0,
+   "json": {
+    "ms": 7,
+    "fenster": [
+     1920,
+     1080
+    ],
+    "takte": 0
+   },
+   "rest": "{\n \"ms\": 7,\n \"fenster\": [\n  1920,\n  1080\n ],\n \"takte\": 0\n}\n"
+  },
+  "umstellen": {
+   "exit": 0,
+   "json": {
+    "ms": 795,
+    "ort": "genesis",
+    "sicht": "ego",
+    "pose": null,
+    "welt": null,
+    "spieler": [
+     0,
+     0
+    ],
+    "wiese": null,
+    "takte": 60,
+    "steht": true,
+    "chunks": 81,
+    "gier": -1.5708,
+    "dorfZug": false,
+    "ortTakt": [
+     "_genesisOrt"
+    ],
+    "dorfSchwebt": null,
+    "anlauf": null,
+    "auge": null
+   },
+   "rest": "{\n \"ms\": 795,\n \"ort\": \"genesis\",\n \"sicht\": \"ego\",\n \"pose\": null,\n \"welt\": null,\n \"spieler\": [\n  0,\n  0\n ],\n \"wiese\": null,\n \"takte\": 60,\n \"steht\": true,\n \"chunks\": 81,\n \"gier\": -1.5708,\n \"dorfZug\": false,\n \"ortTakt\": [\n  \"_genesisOrt\"\n ],\n \"dorfSchwebt\": null,\n \"anlauf\": null,\n \"auge\": null\n}\n"
+  },
+  "gang": {
+   "exit": 0,
+   "json": {
+    "ms": 143901,
+    "ergebnis": {
+     "ende": "ok",
+     "ziel": [
+      1000,
+      53.4,
+      1732.1
+     ],
+     "gefaelle": 0.137,
+     "kand": [
+      [
+       0,
+       0.318,
+       false
+      ],
+      [
+       1,
+       0.09,
+       false
+      ],
+      [
+       2,
+       0.137,
+       true
+      ],
+      [
+       3,
+       0.006,
+       false
+      ],
+      [
+       4,
+       0.011,
+       false
+      ],
+      [
+       5,
+       0.012,
+       false
+      ],
+      [
+       6,
+       0.042,
+       false
+      ],
+      [
+       7,
+       0.865,
+       false
+      ],
+      [
+       8,
+       0.034,
+       false
+      ],
+      [
+       9,
+       0.027,
+       false
+      ],
+      [
+       10,
+       0.017,
+       false
+      ],
+      [
+       11,
+       0.044,
+       false
+      ]
+     ],
+     "schritte": [
+      {
+       "d": 2000,
+       "Y": 0.0532,
+       "px": 88,
+       "marke": "false|0|",
+       "sicht": {
+        "frei": false,
+        "imBild": true,
+        "vor": "welt_portal",
+        "ab": 22.03
+       }
+      },
+      {
+       "d": 1950,
+       "Y": 0.08797,
+       "px": 93,
+       "marke": "false|0|",
+       "sicht": {
+        "frei": false,
+        "imBild": true,
+        "vor": "Natur baum_birke",
+        "ab": 62.17
+       }
+      },
+      {
+       "d": 1900,
+       "Y": 0.05782,
+       "px": 99,
+       "marke": "false|0|",
+       "sicht": {
+        "frei": false,
+        "imBild": true,
+        "vor": "Rinde baum_eiche",
+        "ab": 28.17
+       }
+      },
+      {
+       "d": 1850,
+       "Y": 0.03701,
+       "px": 102,
+       "marke": "false|0|",
+       "sicht": {
+        "frei": false,
+        "imBild": true,
+        "vor": "Natur baum_tanne",
+        "ab": 12.57
+       }
+      },
+      {
+       "d": 1800,
+       "Y": 0.06331,
+       "px": 106,
+       "marke": "false|0|",
+       "sicht": {
+        "frei": false,
+        "imBild": true,
+        "vor": "Rinde baum_kiefer",
+        "ab": 66.62
+       }
+      },
+      {
+       "d": 1750,
+       "Y": 0.0626,
+       "px": 114,
+       "marke": "false|0|",
+       "sicht": {
+        "frei": false,
+        "imBild": true,
+        "vor": "Natur baum_eiche",
+        "ab": 8.33
+       }
+      },
+      {
+       "d": 1700,
+       "Y": 0.09799,
+       "px": 126,
+       "marke": "false|0|",
+       "sicht": {
+        "frei": false,
+        "imBild": true,
+        "vor": "fscatter:geroell:L0",
+        "ab": 0.22
+       }
+      },
+      {
+       "d": 1650,
+       "Y": 0.23093,
+       "px": 128,
+       "marke": "false|0|",
+       "sicht": {
+        "frei": false,
+        "imBild": true,
+        "vor": "Laub baum_tanne",
+        "ab": 29.5
+       }
+      },
+      {
+       "d": 1600,
+       "Y": 0.04199,
+       "px": 136,
+       "marke": "false|0|",
+       "sicht": {
+        "frei": false,
+        "imBild": true,
+        "vor": "Natur baum_tanne",
+        "ab": 25.69
+       }
+      },
+      {
+       "d": 1550,
+       "Y": 0.1303,
+       "px": 146,
+       "marke": "false|0|",
+       "sicht": {
+        "frei": false,
+        "imBild": true,
+        "vor": "Gelände",
+        "ab": 7.52
+       }
+      },
+      {
+       "d": 1500,
+       "Y": 0.12315,
+       "px": 158,
+       "marke": "false|0|",
+       "sicht": {
+        "frei": false,
+        "imBild": true,
+        "vor": "an Punkt 1 Boden-Schicht",
+        "ab": 57.19
+       }
+      },
+      {
+       "d": 1450,
+       "Y": 0.07773,
+       "px": 166,
+       "marke": "false|0|",
+       "sicht": {
+        "frei": false,
+        "imBild": true,
+        "vor": "Rinde fscatter:birke:L1",
+        "ab": 57.45
+       }
+      },
+      {
+       "d": 1400,
+       "Y": 0.04913,
+       "px": 180,
+       "marke": "false|0|",
+       "sicht": {
+        "frei": false,
+        "imBild": true,
+        "vor": "Gelände",
+        "ab": 27.64
+       }
+      },
+      {
+       "d": 1350,
+       "Y": 0.15966,
+       "px": 194,
+       "marke": "false|0|",
+       "sicht": {
+        "frei": false,
+        "imBild": true,
+        "vor": "Rinde baum_eiche",
+        "ab": 0.11
+       }
+      },
+      {
+       "d": 1300,
+       "Y": 0.02358,
+       "px": 206,
+       "marke": "false|0|",
+       "sicht": {
+        "frei": false,
+        "imBild": true,
+        "vor": "Rinde grown_busch_hazel_v1",
+        "ab": 0.71
+       }
+      },
+      {
+       "d": 1250,
+       "Y": 0.08039,
+       "px": 225,
+       "marke": "false|0|",
+       "sicht": {
+        "frei": false,
+        "imBild": true,
+        "vor": "Rinde baum_eiche",
+        "ab": 7.8
+       }
+      },
+      {
+       "d": 1200,
+       "Y": 0.07074,
+       "px": 242,
+       "marke": "false|0|",
+       "sicht": {
+        "frei": false,
+        "imBild": true,
+        "vor": "Natur baum_tanne",
+        "ab": 27.78
+       }
+      },
+      {
+       "d": 1150,
+       "Y": 0.03391,
+       "px": 268,
+       "marke": "false|0|",
+       "sicht": {
+        "frei": false,
+        "imBild": true,
+        "vor": "Natur baum_tanne",
+        "ab": 50.3
+       }
+      },
+      {
+       "d": 1100,
+       "Y": 0.16528,
+       "px": 287,
+       "marke": "false|0|",
+       "sicht": {
+        "frei": false,
+        "imBild": true,
+        "vor": "an Punkt 2 Boden-Schicht",
+        "ab": 90.5
+       }
+      },
+      {
+       "d": 1050,
+       "Y": 0.07931,
+       "px": 316,
+       "marke": "false|0|",
+       "sicht": {
+        "frei": false,
+        "imBild": true,
+        "vor": "Natur baum_totholz",
+        "ab": 65.19
+       }
+      },
+      {
+       "d": 1000,
+       "Y": 0.05889,
+       "px": 351,
+       "marke": "false|0|",
+       "sicht": {
+        "frei": false,
+        "imBild": true,
+        "vor": "Laub baum_birke",
+        "ab": 14.78
+       }
+      },
+      {
+       "d": 950,
+       "Y": 0.08694,
+       "px": 388,
+       "marke": "false|0|",
+       "sicht": {
+        "frei": false,
+        "imBild": true,
+        "vor": "an Punkt 1 Natur baum_tanne",
+        "ab": 38.42
+       }
+      },
+      {
+       "d": 900,
+       "Y": 0.23513,
+       "px": 429,
+       "marke": "false|0|",
+       "sicht": {
+        "frei": true,
+        "imBild": true,
+        "vor": null,
+        "ab": null
+       }
+      },
+      {
+       "d": 850,
+       "Y": 0.25025,
+       "px": 489,
+       "marke": "false|0|",
+       "sicht": {
+        "frei": true,
+        "imBild": true,
+        "vor": null,
+        "ab": null
+       }
+      },
+      {
+       "d": 800,
+       "Y": 0.1336,
+       "px": 551,
+       "marke": "false|0|",
+       "sicht": {
+        "frei": false,
+        "imBild": true,
+        "vor": "Boden-Schicht",
+        "ab": 92.68
+       }
+      },
+      {
+       "d": 750,
+       "Y": 0.18229,
+       "px": 619,
+       "marke": "false|0|",
+       "sicht": {
+        "frei": false,
+        "imBild": true,
+        "vor": "Natur baum_birke",
+        "ab": 53.92
+       }
+      },
+      {
+       "d": 700,
+       "Y": 0.04016,
+       "px": 717,
+       "marke": "false|0|",
+       "sicht": {
+        "frei": false,
+        "imBild": true,
+        "vor": "Rinde grown_busch_hazel_v0",
+        "ab": 6.43
+       }
+      },
+      {
+       "d": 650,
+       "Y": 0.21793,
+       "px": 835,
+       "marke": "false|0|",
+       "sicht": {
+        "frei": false,
+        "imBild": true,
+        "vor": "kamm-krone",
+        "ab": 60.75
+       }
+      },
+      {
+       "d": 600,
+       "Y": 0.1225,
+       "px": 973,
+       "marke": "false|0|",
+       "sicht": {
+        "frei": false,
+        "imBild": true,
+        "vor": "Rinde baum_erle",
+        "ab": 10.17
+       }
+      },
+      {
+       "d": 550,
+       "Y": 0.16138,
+       "px": 1156,
+       "marke": "false|0|",
+       "sicht": {
+        "frei": false,
+        "imBild": true,
+        "vor": "Boden-Schicht",
+        "ab": 116.03
+       }
+      },
+      {
+       "d": 500,
+       "Y": 0.10721,
+       "px": 1402,
+       "marke": "false|0|",
+       "sicht": {
+        "frei": false,
+        "imBild": true,
+        "vor": "kamm-krone",
+        "ab": 65.91
+       }
+      },
+      {
+       "d": 450,
+       "Y": 0.11134,
+       "px": 1722,
+       "marke": "false|0|",
+       "sicht": {
+        "frei": false,
+        "imBild": true,
+        "vor": "Laub baum_tanne",
+        "ab": 37.78
+       }
+      },
+      {
+       "d": 400,
+       "Y": 0.02215,
+       "px": 2189,
+       "marke": "false|0|",
+       "sicht": {
+        "frei": false,
+        "imBild": true,
+        "vor": "Rinde grown_busch_hazel_v1",
+        "ab": 3.49
+       }
+      },
+      {
+       "d": 350,
+       "Y": 0.09762,
+       "px": 2861,
+       "marke": "false|0|",
+       "sicht": {
+        "frei": false,
+        "imBild": true,
+        "vor": "Laub baum_erle",
+        "ab": 28.97
+       }
+      },
+      {
+       "d": 300,
+       "Y": 0.0852,
+       "px": 3874,
+       "marke": "false|0|",
+       "sicht": {
+        "frei": false,
+        "imBild": true,
+        "vor": "Laub baum_eiche",
+        "ab": 3.33
+       }
+      },
+      {
+       "d": 250,
+       "Y": 0.1622,
+       "px": 5572,
+       "marke": "false|1176|",
+       "sicht": {
+        "frei": false,
+        "imBild": true,
+        "vor": "fimp:atlas:L2",
+        "ab": 26.64
+       }
+      },
+      {
+       "d": 200,
+       "Y": 0.21423,
+       "px": 8678,
+       "marke": "true|4518|",
+       "sicht": {
+        "frei": false,
+        "imBild": true,
+        "vor": "fscatter:geroell:L0",
+        "ab": 2.07
+       }
+      },
+      {
+       "d": 150,
+       "Y": 0.09782,
+       "px": 15424,
+       "marke": "true|7256|",
+       "sicht": {
+        "frei": false,
+        "imBild": true,
+        "vor": "Natur baum_tanne",
+        "ab": 36.91
+       }
+      },
+      {
+       "d": 100,
+       "Y": 0.26431,
+       "px": 34642,
+       "marke": "true|10624|",
+       "sicht": {
+        "frei": true,
+        "imBild": true,
+        "vor": null,
+        "ab": null
+       }
+      },
+      {
+       "d": 50,
+       "Y": 0.25669,
+       "px": 138817,
+       "marke": "true|14408|",
+       "sicht": {
+        "frei": true,
+        "imBild": true,
+        "vor": null,
+        "ab": null
+       }
+      }
+     ],
+     "uhr": 0.5000000000011134,
+     "wetter": "sunny"
+    }
+   },
+   "rest": ": false,\n     \"imBild\": true,\n     \"vor\": \"Rinde grown_busch_hazel_v1\",\n     \"ab\": 3.49\n    }\n   },\n   {\n    \"d\": 350,\n    \"Y\": 0.09762,\n    \"px\": 2861,\n    \"marke\": \"false|0|\",\n    \"sicht\": {\n     \"frei\": false,\n     \"imBild\": true,\n     \"vor\": \"Laub baum_erle\",\n     \"ab\": 28.97\n    }\n   },\n   {\n    \"d\": 300,\n    \"Y\": 0.0852,\n    \"px\": 3874,\n    \"marke\": \"false|0|\",\n    \"sicht\": {\n     \"frei\": false,\n     \"imBild\": true,\n     \"vor\": \"Laub baum_eiche\",\n     \"ab\": 3.33\n    }\n   },\n   {\n    \"d\": 250,\n    \"Y\": 0.1622,\n    \"px\": 5572,\n    \"marke\": \"false|1176|\",\n    \"sicht\": {\n     \"frei\": false,\n     \"imBild\": true,\n     \"vor\": \"fimp:atlas:L2\",\n     \"ab\": 26.64\n    }\n   },\n   {\n    \"d\": 200,\n    \"Y\": 0.21423,\n    \"px\": 8678,\n    \"marke\": \"true|4518|\",\n    \"sicht\": {\n     \"frei\": false,\n     \"imBild\": true,\n     \"vor\": \"fscatter:geroell:L0\",\n     \"ab\": 2.07\n    }\n   },\n   {\n    \"d\": 150,\n    \"Y\": 0.09782,\n    \"px\": 15424,\n    \"marke\": \"true|7256|\",\n    \"sicht\": {\n     \"frei\": false,\n     \"imBild\": true,\n     \"vor\": \"Natur baum_tanne\",\n     \"ab\": 36.91\n    }\n   },\n   {\n    \"d\": 100,\n    \"Y\": 0.26431,\n    \"px\": 34642,\n    \"marke\": \"true|10624|\",\n    \"sicht\": {\n     \"frei\": true,\n     \"imBild\": true,\n     \"vor\": null,\n     \"ab\": null\n    }\n   },\n   {\n    \"d\": 50,\n    \"Y\": 0.25669,\n    \"px\": 138817,\n    \"marke\": \"true|14408|\",\n    \"sicht\": {\n     \"frei\": true,\n     \"imBild\": true,\n     \"vor\": null,\n     \"ab\": null\n    }\n   }\n  ],\n  \"uhr\": 0.5000000000011134,\n  \"wetter\": \"sunny\"\n }\n}\n"
+  }
+ },
+ "dateien": {}
+}
