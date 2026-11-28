@@ -913,12 +913,45 @@ function mundartGang(FC) {
         ueff: ueff.size,
         orte,
         beispiel,
+        preis: mundartPreis(FC),
     };
+}
+// R15 (sprache-dialekt, der Preis an stadt-voll, Post 28.11. 02:00): DIE MUNDART RECHNET EINMAL JE SENKE UND ORT — `mundartVon`
+// gibt an derselben Senke dasselbe Objekt (105 Wörter × 5 Ebenen × 9 Herde kosteten 374 µs je Ruf, auch warm, an jedem Eingang einer
+// Zelle `_zellEingang`), und die Sprache des Orts (`spracheVon` am Mundart-Objekt des Plans) rechnet warm unter der Hälfte dessen,
+// was ihr alter Schlüssel allein kostete (die 105 Wörter verbunden: 6,2 µs je Ruf, je Name und je Satz) — relativ gemessen, die
+// Wand hängt nicht an der Maschine. Die Täter „die Mundart rechnet je Ruf neu“ und „die Sprache rechnet je Bewohner neu“ fallen in R15.
+function mundartPreis(FC) {
+    const [{ saat, orte: O }] = mundartOrte(),
+        senken = [...new Set(O.filter((o) => !o.nass).map((o) => o.senke))].slice(0, 64),
+        R = Object.keys(FC.SPRACHE_GESETZ),
+        ns = () => Number(process.hrtime.bigint()),
+        M = senken.map((w) => FC.mundartVon(saat, w.x, w.z));
+    let gleich = 0;
+    senken.forEach((w, i) => FC.mundartVon(saat, w.x, w.z) === M[i] && gleich++);
+    const lauf = (f) => {
+        for (let k = 0; k < 3; k++) M.forEach((m) => R.forEach((r) => f(r, m)));
+        let best = Infinity;
+        for (let k = 0; k < 5; k++) {
+            const t = ns();
+            for (let q = 0; q < 10; q++) M.forEach((m) => R.forEach((r) => f(r, m)));
+            best = Math.min(best, (ns() - t) / (10 * M.length * R.length) / 1000);
+        }
+        return best;
+    };
+    const ort = lauf((r, m) => FC.spracheVon(r, m)),
+        schluessel = lauf((r, m) => r + "|" + m.kern + "|" + Array.prototype.join.call(m.worte, ","));
+    return { senken: senken.length, gleich, ortUs: +ort.toFixed(3), schluesselUs: +schluessel.toFixed(3) };
 }
 function mundartUrteil(G, check) {
     check(
         `R13 die Mundart folgt dem Tal — ${G.orte} Orte in ${MUNDART_RAUM.saaten.length} Welten: KL p95 zwischen Nachbarn ${G.kl} (Soll ≤ 0,2), Wort-Isoglossen auf Barrieren ${G.iso} (Soll ≥ 0,7; Basis ${G.basis}), U_eff ${G.ueff} (Soll ≥ 1 000)${G.beispiel.length ? " · " + G.beispiel.join(", ") : ""}`,
         G.kl <= 0.2 && G.iso >= 0.7 && G.ueff >= 1000
+    );
+    const P = G.preis;
+    check(
+        `R15 die Mundart rechnet einmal je Senke und Ort — ${P.gleich} von ${P.senken} Senken geben beim zweiten Ruf dieselbe Mundart (Soll alle), die Sprache des Orts warm ${P.ortUs} µs je Ruf gegen ${P.schluesselUs} µs für den alten Schlüssel allein (Soll < die Hälfte)`,
+        P.senken > 0 && P.gleich === P.senken && P.ortUs < 0.5 * P.schluesselUs
     );
 }
 const KLIMA_TAETER = {
@@ -965,6 +998,9 @@ KLIMA_TAETER["die Trockenheit kennt den Pol nicht"] = [["if (klima.sommer < K.po
 KLIMA_TAETER["die Sprache liest den Raum nicht"] = [["var SPRACH_RAUM = { sigma: 5000, faecher: 0.3 };", "var SPRACH_RAUM = { sigma: 5, faecher: 0 };"]];
 // der Fächer fehlt: jedes Wort eines Tals stammt aus dem Kern-Blatt, die Isoglossen bündeln sich zu einer Linie, U_eff fällt auf die Blätter
 KLIMA_TAETER["die Mundart kennt keinen Fächer"] = [["var SPRACH_RAUM = { sigma: 5000, faecher: 0.3 };", "var SPRACH_RAUM = { sigma: 5000, faecher: 0 };"]];
+// der Preis (R15): die Mundart rechnet je Ruf neu (kein Merkbuch an der Senke) · die Sprache rechnet je Bewohner neu (kein Merkbuch am Ort)
+KLIMA_TAETER["die Mundart rechnet je Ruf neu"] = [["if (M) return M;", ""]];
+KLIMA_TAETER["die Sprache rechnet je Bewohner neu"] = [["if (o) return o;", ""]];
 const KLIMA_SOLL = {
     "die Trockenheit kennt den Pol nicht": "R8",
     "das Dach liest den Himmel nicht": "R12",
@@ -983,6 +1019,8 @@ const KLIMA_SOLL = {
     "der Ort liest die Wortliste nicht": "R11",
     "die Sprache liest den Raum nicht": "R13",
     "die Mundart kennt keinen Fächer": "R13",
+    "die Mundart rechnet je Ruf neu": "R15",
+    "die Sprache rechnet je Bewohner neu": "R15",
 };
 
 

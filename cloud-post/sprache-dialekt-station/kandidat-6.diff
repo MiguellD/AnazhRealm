@@ -1,0 +1,185 @@
+--- a/meisterkarte-quelle/punkte/stationen/k2-mensch-kultur.js
++++ b/meisterkarte-quelle/punkte/stationen/k2-mensch-kultur.js
+@@ -469,7 +469,7 @@
+             }
+         // die Sprache des Plans: seit sprache-dialekt aus der Mundart seines Orts (`P.mundart`), davor aus seinem Samen
+         const L = FC && typeof FC.spracheVon === "function" ? FC.spracheVon(P.region, typeof FC.mundartVon === "function" ? P.mundart : P.seed >>> 0) : null;
+-        orte.push({ name: P.name || null, region: P.region || null, seed: P.seed >>> 0, mundart: P.mundart || null, haeuser: nh, zelle: key, personenNamen: leute, saetze: rede ? [] : saetze, sprache: L ? L.region + "|" + L.blatt : null });
++        orte.push({ name: P.name || null, region: P.region || null, seed: P.seed >>> 0, mundart: P.mundart || null, jahr: P.jahr, spanne: P.spanne, haeuser: nh, zelle: key, personenNamen: leute, saetze: rede ? [] : saetze, sprache: L ? L.region + "|" + L.blatt : null });
+     }
+     const S = [...(r._bewohnerSiedlungen || new Map()).values()].find((Q) => Q && Q.plan && Array.isArray(Q.liste) && Q.liste.length);
+     let gleich = 0, n = 0;
+@@ -591,7 +591,8 @@
+     for (const o of arg.orte || []) {
+         if (typeof o.name !== "string" || !o.name) continue;
+         n++;
+-        const L = FC.spracheVon(o.region, typeof FC.mundartVon === "function" ? o.mundart : o.seed),
++        // seit sprache#6 spricht der Ort die Stufe seines Jahrs (`spracheDesOrts`): der Name trägt ihr Wort
++        const L = typeof FC.spracheDesOrts === "function" ? FC.spracheDesOrts(o) : FC.spracheVon(o.region, typeof FC.mundartVon === "function" ? o.mundart : o.seed),
+             w = o.name.toLowerCase();
+         if (SB.bestimmung.some((b) => w.startsWith(FC.sprachWort(L, b)))) gleich++;
+         else if (fremd.length < 3) fremd.push(o.name + "/" + o.region);
+@@ -631,6 +632,83 @@
+     }
+     return aus;
+ }
++// DIE SPRACHSTUFEN ÜBER EPOCHEN (sprache#6): die Sprache eines Orts ist eine Funktion seines Jahrs (fachwerk `spracheVon(region,
++// mundart, jahr)`; der Leser des Spiels `spracheDesOrts(plan)`: das Ende des Schnitts seiner Chronik). Gemessen: je Sprache einer
++// Stichprobe der Welt (`arg.gitter`² Orte im Abstand `arg.schrittM`, die Mundart des Wirts `r._mundartAm`, je Familie) die
++// verschiedenen Stufen von der Wurzel (`SPRACH_ZEIT.gegenwart − ERSATZ.alter`) bis zur Gegenwart im Schritt `arg.schritt` Jahre
++// (Wortliste, Grundwörter und Gesetze; der Schritt zählt eher zu wenig); der Umfang ist ihr Mittel mal U_eff der Welt (`arg.ueff`,
++// die Seite MUNDART über 307 km). SWADESH: die Retention der Grundliste je 1 000 Jahre an den Blättern des Baums — ein Wort bleibt,
++// wenn es aus dem älteren durch die Lautgesetze dazwischen folgt (Kognat), sonst ist es ersetzt; nur Fenster ab der Wurzel. URSPRACHE:
++// die vergleichende Methode, schlicht — je Bedeutung die häufigste Form der 2^tiefe Töchter der Gegenwart gegen das Wort der Ursprache.
++// DER JAHRESWECHSEL am Spiel: die Leute der geladenen Siedlung sprechen ihren ersten Satz im Jahr ihres Plans und tausend Jahre davor
++// (`_bewohnerLauf` „rede“ am Plan mit dem Jahr) — die Zeit für den Wechsel und der Anteil der Sätze, die die ältere Stufe anders spricht.
++async function sprachZeit(r, T, arg) {
++    const FC = globalThis.__fachwerkCore;
++    if (!FC || typeof FC.spracheDesOrts !== "function" || !FC.SPRACH_ZEIT || !FC.ERSATZ || typeof r._mundartAm !== "function")
++        return { leer: "die Silben-Tafel ist zeitlos: fachwerk spracheDesOrts / SPRACH_ZEIT fehlt, jedes Jahr spricht dieselbe Sprache" };
++    const G0 = FC.SPRACH_ZEIT.gegenwart, W0 = G0 - FC.ERSATZ.alter, R6 = Object.keys(FC.SPRACHE_GESETZ), t0 = performance.now(), jahre = [];
++    for (let j = W0; j <= G0; j += arg.schritt) jahre.push(j);
++    // die Stufen je Sprache der Stichprobe
++    let sprachen = 0, stufen = 0;
++    for (let i = 0; i < arg.gitter; i++)
++        for (let k = 0; k < arg.gitter; k++) {
++            const m = r._mundartAm((i - arg.gitter / 2) * arg.schrittM, (k - arg.gitter / 2) * arg.schrittM);
++            for (const g of R6) {
++                const S = new Set();
++                for (const j of jahre) {
++                    const L = FC.spracheVon(g, m, j);
++                    S.add(L.lex.join(",") + "|" + L.grund.join(",") + "|" + L.wandel.length);
++                }
++                sprachen++;
++                stufen += S.size;
++            }
++        }
++    // die Retention je 1 000 Jahre an den Blättern und die Ursprache aus den Töchtern
++    const N = 1 << FC.SPRACH_BAUM.tiefe, ret = [], mehr = (a) => {
++        const c = new Map();
++        for (const x of a) c.set(x, (c.get(x) || 0) + 1);
++        return [...c].sort((p, q) => q[1] - p[1] || (p[0] < q[0] ? -1 : 1))[0][0];
++    };
++    let ganz = 0, nb = 0;
++    for (const g of R6) {
++        for (let b = 0; b < N; b += 4)
++            for (let j = W0; j + 1000 <= G0; j += 200) {
++                const A = FC.spracheVon(g, FC.mundartBlatt(b), j), B = FC.spracheVon(g, FC.mundartBlatt(b), j + 1000);
++                let k2 = 0;
++                for (let i = 0; i < A.lex.length; i++) {
++                    let w = A.lex[i];
++                    for (let t = A.wandel.length; t < B.wandel.length; t++) w = FC.lautGesetz(B.wandel[t])(w);
++                    if (w === B.lex[i]) k2++;
++                }
++                ret.push(k2 / A.lex.length);
++            }
++        const U = FC.spracheVon(g, null).lex, D = Array.from({ length: N }, (_, b) => FC.spracheVon(g, FC.mundartBlatt(b)).lex);
++        for (let i = 0; i < U.length; i++) (nb++, mehr(D.map((l) => l[i])) === U[i] && ganz++);
++    }
++    // der Jahreswechsel am Spiel: die Leute der geladenen Siedlung, ihr erster Satz jetzt und tausend Jahre davor
++    const Q = [...(r._bewohnerSiedlungen || new Map()).values()].find((x) => x && x.plan && Array.isArray(x.liste) && x.liste.length);
++    const wechsel = { leute: 0, anders: 0, ms: NaN, jahr: null, beleg: [] };
++    if (Q) {
++        // das Jahr des Plans wie es der Leser liest (`spracheDesOrts`: der Schnitt der Chronik, sonst der Export) — die frühe Stufe trägt beide
++        const P = Q.plan, s0 = P.schnitt || P, jetzt = s0.jahr + s0.spanne, L0 = Q.liste.slice(0, 40);
++        const frueh = Object.assign({}, P, { jahr: jetzt - 1000, spanne: 0, schnitt: Object.assign({}, s0, { jahr: jetzt - 1000, spanne: 0 }) });
++        const a = L0.map((b) => r._bewohnerLauf({ plan: P }, b, "rede", 1)), w0 = performance.now();
++        const f = L0.map((b) => r._bewohnerLauf({ plan: frueh }, b, "rede", 1));
++        wechsel.ms = +(performance.now() - w0).toFixed(1);
++        wechsel.jahr = jetzt;
++        a.forEach((s, k) => {
++            wechsel.leute++;
++            if (s !== f[k]) (wechsel.anders++, wechsel.beleg.length < 2 && wechsel.beleg.push(jetzt + " „" + s + "“ ← " + (jetzt - 1000) + " „" + f[k] + "“"));
++        });
++    }
++    const s = sprachen ? stufen / sprachen : 0;
++    return {
++        sprachen, stufenJe: +s.toFixed(1), n: Math.round(s * arg.ueff), ueff: arg.ueff,
++        swadesh: ret.length ? +(ret.reduce((x, y) => x + y, 0) / ret.length).toFixed(3) : NaN, fenster: ret.length,
++        ursprache: nb ? +(ganz / nb).toFixed(3) : NaN,
++        wechsel, ms: Math.round(performance.now() - t0),
++    };
++}
+ async function mundartRaum(r, T, arg) {
+     const FC = globalThis.__fachwerkCore, GC = globalThis.__gelaendeCore;
+     if (typeof r._mundartAm !== "function" || !FC || typeof FC.mundartVon !== "function" || !GC || typeof GC.talWeg !== "function")
+@@ -692,7 +770,8 @@
+         const soll = r._mundartAm((+m[1] + 0.5) * SG.cellM, (+m[2] + 0.5) * SG.cellM);
+         if (JSON.stringify(soll) === JSON.stringify(o.mundart)) zeuge.gleich++;
+         else if (zeuge.fremd.length < 3) zeuge.fremd.push(o.zelle + ": Plan " + o.mundart.kern + " ≠ Ort " + soll.kern);
+-        const S2 = FC.spracheVon(o.region, soll);
++        // seit sprache#6 heißen die Leute in der Stufe des Jahrs ihres Plans (`spracheDesOrts`)
++        const S2 = typeof FC.spracheDesOrts === "function" ? FC.spracheDesOrts({ region: o.region, mundart: soll, jahr: o.jahr, spanne: o.spanne }) : FC.spracheVon(o.region, soll);
+         o.personenNamen.forEach((name, k) => {
+             zeuge.leute++;
+             if (name === FC.sprachName(S2, "vorname", o.seed + ":" + k) + " " + FC.sprachName(S2, "familie", o.seed + ":" + (k % o.haeuser))) zeuge.leuteGleich++;
+@@ -739,7 +818,7 @@
+     F.leiter("mensch.kultur.sprache", {
+         sek: 45,
+         pfad: [...ORT, "stamm/feld-leben.js", "index.html", "gelaende-core.js", "stamm/klang.js", "klang-core.js"],
+-        seite: { ZENSUS: zensus, STUFEN: stufen, ZAEHLE: SPRACHE_LESER, NAMEN: namenFaecher, BAUM: sprachBaum, REDE: redeZeuge, MUNDART: mundartRaum, HOERBAR: hoerbareRede },
++        seite: { ZENSUS: zensus, STUFEN: stufen, ZAEHLE: SPRACHE_LESER, NAMEN: namenFaecher, BAUM: sprachBaum, REDE: redeZeuge, MUNDART: mundartRaum, HOERBAR: hoerbareRede, ZEIT: sprachZeit },
+         messe: async (H, K) => {
+             await K.messort("stadt-voll");
+             const z = await K.welt("return await (" + H.seite.ZENSUS + ")(r, T, " + JSON.stringify({}) + ");", 30000);
+@@ -856,7 +935,7 @@
+                 z.rede.leer = "die Rede der Menge (klang.js _bewohnerLautTakt) spricht nicht den Satz des Lesers: " + z.rede.gleich + " von " + z.rede.sprecher + " Sprechern gleich (Soll alle, ≥ " + ZEUGE_REDE.sprecher + "), " + z.rede.vokaleFremd + " Kerne fremder Vokale" + (z.rede.fremd.length ? " — " + z.rede.fremd.join(" · ") : "");
+             H.zeile("Rede: " + (z.rede.leer || z.rede.gleich + " von " + z.rede.sprecher + " Sprechern der Siedlung " + z.rede.ort + " sprechen den Satz des Lesers (" + z.rede.ms + " ms)") + " · Sätze am Fächer " + z.faecher.reduce((a, o) => a + o.saetze.length, 0) + " in " + new Set(z.faecher.map((o) => o.sprache)).size + " Sprachen");
+             // DER STAMMBAUM AUS DEN WORTLISTEN (sprache#3, kultur-aus-klima): der Zeuge sind die Orte des Fächers — ihr Name liest die Liste
+-            const B = await K.welt("return await (" + H.seite.BAUM + ")(r, T, " + JSON.stringify({ orte: F.orte.map((o) => ({ name: o.name, region: o.region, seed: o.seed, mundart: o.mundart })) }) + ");", 30000);
++            const B = await K.welt("return await (" + H.seite.BAUM + ")(r, T, " + JSON.stringify({ orte: F.orte.map((o) => ({ name: o.name, region: o.region, seed: o.seed, mundart: o.mundart, jahr: o.jahr, spanne: o.spanne })) }) + ");", 30000);
+             if (!B) throw new Error("der Stammbaum der Sprachen: ohne Antwort");
+             if (!B.leer && !(B.zeuge.n >= 20 && B.zeuge.gleich === B.zeuge.n))
+                 throw new Error("der Zeuge des Stammbaums: " + B.zeuge.gleich + " von " + B.zeuge.n + " Ortsnamen des Fächers tragen ein Wort der Liste ihrer Sprache (Soll alle, ≥ 20; fremd " + B.zeuge.fremd.join(", ") + ") — der Baum misst eine Liste, die kein Ort spricht");
+@@ -864,7 +943,7 @@
+             if (!B.leer) H.zeile("Stammbaum: " + B.familien + " Familien × " + B.blaetter + " Blätter × " + B.bedeutungen + " Bedeutungen, U_eff " + B.ueff + ", RF " + B.rf.map((x) => x.R + " " + x.rf).join(" · ") + ", Zeuge " + B.zeuge.gleich + " von " + B.zeuge.n + " Ortsnamen");
+             // DAS DIALEKT-KONTINUUM (sprache#4, sprache-dialekt): die Mundart je Ort über das Gitter der Welt, der Zeuge sind die Pläne des Fächers
+             const MUNDART_GITTER = { gitter: 48, schrittM: 1600, stich: 8 };
+-            z.dialekt = await K.welt("return await (" + H.seite.MUNDART + ")(r, T, " + JSON.stringify({ ...MUNDART_GITTER, faecher: F.orte.map((o) => ({ zelle: o.zelle, region: o.region, seed: o.seed, mundart: o.mundart, haeuser: o.haeuser, personenNamen: o.personenNamen })) }) + ");", 60000);
++            z.dialekt = await K.welt("return await (" + H.seite.MUNDART + ")(r, T, " + JSON.stringify({ ...MUNDART_GITTER, faecher: F.orte.map((o) => ({ zelle: o.zelle, region: o.region, seed: o.seed, mundart: o.mundart, jahr: o.jahr, spanne: o.spanne, haeuser: o.haeuser, personenNamen: o.personenNamen })) }) + ");", 60000);
+             if (!z.dialekt) throw new Error("das Dialekt-Kontinuum: ohne Antwort");
+             // DIE SPRACHEN DER WELT, HÖRBAR (sprache#5, Umfang 7 000): dieselbe Seite MUNDART über 48² Orte im Abstand 6,4 km (307 km
+             // — die Welt ist eine Funktion, der Umfang zählt sie, nicht das Fenster des Dialekts); gezählt nur, wenn jede Familie klingt
+@@ -873,6 +952,10 @@
+             z.hoerbar = await K.welt("return await (" + H.seite.HOERBAR + ")(r, T, " + JSON.stringify({ saat: 1 }) + ");", 30000);
+             if (!z.sprachWelt || !z.hoerbar) throw new Error("die hörbaren Sprachen der Welt: ohne Antwort");
+             if (!z.sprachWelt.leer && !z.hoerbar.leer) H.zeile("Welt: " + z.sprachWelt.orte + " Orte (" + WELT_GITTER.gitter + "² je " + WELT_GITTER.schrittM + " m) in " + z.sprachWelt.senken + " Tälern, U_eff " + z.sprachWelt.ueff + " (" + z.sprachWelt.ms + " ms) · hörbar " + z.hoerbar.hoerbar + " von " + z.hoerbar.familien + " Familien, " + z.hoerbar.konsonanten + " von " + z.hoerbar.segmente + " Segmenten Konsonanten · " + z.hoerbar.beleg.join(" · "));
++            // DIE SPRACHSTUFEN ÜBER EPOCHEN (sprache#6): die Seite ZEIT über 4² Orte der Welt im Abstand 25,6 km, Schritt 25 Jahre
++            z.zeit = z.sprachWelt.leer ? z.sprachWelt : await K.welt("return await (" + H.seite.ZEIT + ")(r, T, " + JSON.stringify({ gitter: 4, schrittM: 25600, schritt: 25, ueff: z.sprachWelt.ueff }) + ");", 60000);
++            if (!z.zeit) throw new Error("die Sprachstufen: ohne Antwort");
++            if (!z.zeit.leer) H.zeile("Zeit: " + z.zeit.sprachen + " Sprachen × " + z.zeit.stufenJe + " Stufen (" + z.zeit.ms + " ms) · Swadesh " + z.zeit.swadesh + " über " + z.zeit.fenster + " Fenster · Ursprache " + z.zeit.ursprache + " · Jahreswechsel " + z.zeit.wechsel.anders + " von " + z.zeit.wechsel.leute + " Sätzen anders in " + z.zeit.wechsel.ms + " ms · " + z.zeit.wechsel.beleg.join(" · "));
+             if (!z.dialekt.leer) {
+                 const Z = z.dialekt.zeuge;
+                 if (!(Z.plaene >= 20 && Z.gleich === Z.plaene && Z.leute >= 20 * 20 && Z.leuteGleich === Z.leute))
+@@ -902,7 +985,21 @@
+                 z.baum.leer ? { n: 3, art: "nicht", wert: () => 0, fehlt: z.baum.leer } : { n: 3, art: "zahl", wert: (z) => z.baum.ueff, zahl: baum, wo: "fachwerk-core.js spracheVon · sprachWort" },
+                 z.dialekt.leer ? { n: 4, art: "nicht", wert: sprachen, fehlt: "Sprachen mit Dialekt-Kontinuum: " + z.dialekt.leer } : { n: 4, art: "zahl", wert: (z) => z.dialekt.ueff, zahl: dialekt, wo: "fachwerk-core.js mundartVon · stamm/siedlung-ort.js _mundartAm" },
+                 { n: 5, art: "auge", um: 7000, wert: (z) => (z.sprachWelt.leer || z.hoerbar.leer || z.hoerbar.hoerbar < z.hoerbar.familien ? 0 : z.sprachWelt.ueff), mass: (z) => "Umfang " + z.sprachWelt.ueff + " hörbare Sprachen (" + z.hoerbar.konsonanten + " von " + z.hoerbar.segmente + " Segmenten Konsonanten)", fehlt: "hörbare Sprachen: " + (z.sprachWelt.leer || z.hoerbar.leer || "kein Laut einer Sprache in der Welt") },
+-                { n: 6, art: "nicht", wert: sprachen, fehlt: "Sprachstufen über Epochen: die Silben-Tafel ist zeitlos (dieselbe in jedem Jahr)" },
++                z.zeit.leer || !(z.zeit.wechsel.leute > 0)
++                    ? { n: 6, art: "nicht", wert: sprachen, fehlt: "Sprachstufen über Epochen: " + (z.zeit.leer || "keine Siedlung spricht im Jahr ihres Plans (kein Bewohner geladen)") }
++                    : {
++                          n: 6,
++                          art: "zahl",
++                          // gezählt nur, wenn das Spiel die Stufe spricht: der Jahreswechsel ändert die Rede der Leute und bleibt unter 1 s (Preis)
++                          wert: (z) => (z.zeit.wechsel.anders > 0 && z.zeit.wechsel.ms <= 1000 ? z.zeit.n : 0),
++                          zahl: (z) => ({
++                              n: z.zeit.wechsel.anders > 0 && z.zeit.wechsel.ms <= 1000 ? z.zeit.n : 0,
++                              werte: { swadesh: z.zeit.swadesh, ursprache: z.zeit.ursprache },
++                              beleg: z.zeit.sprachen + " Sprachen der Welt × " + z.zeit.stufenJe + " Stufen (Schritt 25 J) × U_eff " + z.zeit.ueff + " · Jahreswechsel " + z.zeit.wechsel.anders + " von " + z.zeit.wechsel.leute + " Sätzen anders in " + z.zeit.wechsel.ms + " ms (" + z.zeit.wechsel.jahr + " ↔ " + (z.zeit.wechsel.jahr - 1000) + ")",
++                              taeter: "fachwerk-core.js spracheVon(region, mundart, jahr) · spracheDesOrts · ERSATZ (die Retention je Jahrtausend)",
++                          }),
++                          wo: "fachwerk-core.js spracheDesOrts · stamm/siedlung-bewohner.js _bewohnerLauf",
++                      },
+                 { n: 7, art: "nicht", wert: sprachen, fehlt: "Sprachen über Planeten und fremde Medien: eine Welt, keine fremde Art spricht" },
+             ]);
+         },
+@@ -912,7 +1009,7 @@
+             3: { umfang: { soll: 100, wort: "Sprachen (U_eff)" }, masse: [{ key: "rf", wort: "Robinson-Foulds des Stammbaums", soll: 0.3, richtung: "≤" }, { key: "anteil", wort: "Anteil der Bäume mit RF ≤ 0,3", soll: 0.7, richtung: "≥" }, { key: "familien", wort: "Sprachfamilien", soll: 5, richtung: "≥" }] },
+             4: { umfang: { soll: 1000, wort: "Sprachen (U_eff) mit Dialekt-Kontinua" }, masse: [{ key: "kl", wort: "KL der Laut-Verteilung", soll: 0.2, richtung: "≤" }, { key: "isoglossen", wort: "Isoglossen auf Barrieren", soll: 0.7, richtung: "≥" }] },
+             5: { auge: { pose: POSE, vorbild: "Tonaufnahme einer realen, den Hörern unbekannten Sprache (Linguisten-Blindtest 2AFC ≤ 60 %); Satz ↔ Handlung ≥ 80 %" } },
+-            6: { umfang: { soll: 100000, wort: "Sprachstufen über Epochen" }, masse: [{ key: "swadesh", wort: "Swadesh-Retention je 1 000 J", von: 0.7, bis: 0.86 }, { key: "ursprache", wort: "Ursprache rekonstruiert", soll: 0.6, richtung: "≥" }], erwartet: "nicht", fehlt: "Sprachstufen: die Silben-Tafel ist zeitlos" },
++            6: { umfang: { soll: 100000, wort: "Sprachstufen über Epochen" }, masse: [{ key: "swadesh", wort: "Swadesh-Retention je 1 000 J", von: 0.7, bis: 0.86 }, { key: "ursprache", wort: "Ursprache rekonstruiert", soll: 0.6, richtung: "≥" }] },
+             7: { umfang: { soll: 1000000, wort: "Sprachen über Planeten" }, masse: [{ key: "treffen", wort: "Treffen am genannten Ort", soll: 0.8, richtung: "≥" }, { key: "zipf", wort: "Zipf-Exponent", von: 0.8, bis: 1.2 }], erwartet: "nicht", fehlt: "Sprachen über Planeten: eine Welt" },
+         },
+         proben: {

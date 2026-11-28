@@ -1,6 +1,6 @@
 # Stand-Blatt sprache-dialekt (Sprosse `karte2.mensch.kultur.sprache#4`) — dritte Sitzung, Start 27.11. 11:52 UTC
 
-Basis: main 52937c92 (V18.546.451), Kopf 1 auf 7e73426e, Kopf 2 auf main 9a75d61c (V18.546.457). Status: ZWISCHENSTAND. Karte 2 gebucht 149 von 1 718.
+Basis: main 52937c92 (V18.546.451), Kopf 1 auf 7e73426e, Kopf 2 auf main 9a75d61c (V18.546.457), Kopf 3 2d05e947 auf main 27d2f60e. Status: ZWISCHENSTAND. Karte 2 gebucht 156 von 1 718.
 
 ## Die rote Zeile gilt am heutigen main
 
@@ -112,6 +112,96 @@ Auch das Merkbuch der Sprachen ist gemessen. Die Seite MUNDART ruft `spracheVon`
 0,2 MB. Die 200 MB über dem Band kommen aus keinem der beiden Glieder meines Schnitts. Sie sind offen bis zum Lauf oben. Steht der Heap
 dort bei 505–540 MB, trägt sie die Sitzung der Station (die Seiten #2, #3 und #4 in EINER Sitzung). Steht er ≥ 700 MB, trägt sie die
 Welt, und dann schneide ich als ersten Schnitt von Kopf 3 an der Zahl, die der Lauf nennt.
+
+## Der Preis an stadt-voll (Post 28.11. 02:00) — Kopf 4: gemessen, geschnitten, ehrlich offen
+
+**Gemessen im Haupt-Faden** (Null-Renderer, die Stadt von Hand aufgezogen wie gate:klang-zensus Mk, 1 356 Bewohner, danach
+600 Takte zu 1/60 s, gleiche Pose; je Glied des Wirts Rufe und ms; ABAB):
+
+| Stand | Takt Mittel | Takt p95 | `_tickBewohner` je Takt | `_bewohnerLautTakt` je Takt | `_mundartAm` | Heap gehalten |
+|---|---|---|---|---|---|---|
+| main 27d2f60e (3 Läufe) | 8,35 · 8,54 · 7,42 ms | 15,18 · 14,09 · 11,65 ms | 1,51 · 1,57 · 1,30 ms | 0,25 · 0,27 · 0,24 ms | Ankunft 21×, 16,4 ms · Takt 0× | 116,7 · 116,3 · 116,4 MB |
+| Kopf + Merkbücher (3 Läufe) | 7,34 · 7,66 · 7,77 ms | 11,22 · 12,40 · 11,90 ms | 1,31 · 1,37 · 1,40 ms | 0,24 · 0,24 · 0,23 ms | Ankunft 21×, 4,2 ms · Takt 0× | 115,9 · 115,9 · 116,0 MB |
+| sprache#6 OHNE Merkbuch | 8,95 ms | **19,38 ms** | 1,78 ms | 0,24 ms | Ankunft 20×, 24,5 ms | 116,0 MB |
+
+**Befund, ehrlich:** am main rechnet die Mundart im Takt **nie** (`_mundartAm` 0× in 600 Takten), bei der Ankunft 21× (16 ms
+gesamt). Der Heap mit und ohne meine Schnitte ist gleich (±0,8 MB). Die Rede der Menge kostet 0,24 ms je Takt. Die Mundart im
+Haupt-Faden trägt die vsync-Kante an der GTX nicht; die Streuung main ↔ Kopf liegt im Rauschen der Läufe. Woher 41,7 ↔ 33,4 ms
+an derselben Version und 730 MB gegen 505–540 MB kommen, sagt dieser Lauf nicht: Renderer und GPU fehlen der Wolke (Lehre 16).
+
+**Täter beim Namen (geschnitten, byte-gleich, 28 800 Abfragen 0 verschieden, sha 1204006b = Kopf 3):**
+1. `fachwerk-core.js` `mundartVon` rechnete JEDEN Ruf neu (105 Wörter × 5 Ebenen × 9 Herde): **374 µs je Ruf, auch warm**, an jedem
+   Eingang einer Zelle (`stamm/siedlung-ort.js` `_zellEingang` → `_mundartAm`: Export, Gedächtnis, Melden der Nachbarn in 720 m).
+   Jetzt EINMAL je Senke (`_MUNDART_SENKE`, ≤ 4 096): **2,7 µs**, dasselbe Objekt je Tal.
+2. `fachwerk-core.js` `spracheVon` baute je Ruf den Schlüssel aus 105 Wörtern (6,2 µs je Name, je Satz). Jetzt EINMAL je Ort
+   (`_ORTSPRACHE`, WeakMap am Mundart-Objekt des Plans): **0,6 µs**. Mit sprache#6 hätte derselbe Ruf **702 µs** gekostet (p95 19,4 ms
+   im Lauf oben) — der Preis-Schnitt fängt das, bevor #6 kommt.
+
+**Linse:** gate:settlement **R15** „die Mundart rechnet einmal je Senke und Ort“ (Familie R, neben R13): zwei Rufe an derselben Senke
+geben dasselbe Objekt; die Sprache des Orts warm unter der Hälfte des alten Schlüssels allein (relativ, die Wand hängt nicht an der
+Maschine). Kern 64/64, 0,05 µs gegen 4,6 µs. Täter „die Mundart rechnet je Ruf neu“ 0/64 → ROT, „die Sprache rechnet je Bewohner
+neu“ 5,07 µs → ROT.
+
+**sprache#6 parkt bis Kopf 5** (Commit 347a5c2): mit #6 spricht jeder Ort die Stufe seines Jahrs, die Zeugen von #3/#4 an der
+Station rechnen ohne kandidat-6 die Gegenwart — der Preis-Schnitt soll diese zwei gebuchten Punkte halten, nicht gefährden.
+
+**Offen mit Messname:** „der Lauf selbst“ p95 ≤ 33,3 ms an der GTX 1060 in zwei von zwei Läufen, Heap unter dem Stand vor
+sprache#3 — Station nicht gefahren: GPU. Erwartung ehrlich: die Merkbücher senken die Ankunft und den Bewohner-Takt um wenige Prozent;
+hält die GTX danach weiter auf der Stufe 41,7 ms, liegt der Täter nicht in der Sprache.
+
+## R11-Zuteilung: `karte2.mensch.kopplung.kultur#1` „Baustoff aus Boden und Klima“ — Täter-Zahl (Bau nach Kopf 4)
+
+Soll (Zweig `punkte-maschine`, die Station Zusammenspiel, KULTUR S1): 32 Saaten, passender Baustoff ≥ 85 % (Boden der Zelle: Fels ≥ 0,3 →
+Stein, Wald ≥ 0,5 → Holz, sonst Lehm; der Plan: der Mehrheits-Stil seiner Häuser), Region aus Hausbild ≥ 70 % (Panel).
+Gemessen am Kopf (Null-Renderer, die 32 Zellen der Station um Genesis, `_autoSettlementCellInfo`):
+- Plan wie die Station (`_foundryRequestSettlement({seed, nH})`): **10 von 32 = 31,3 %** passend.
+- Plan mit dem Eingang der Zelle (`_zellEingang`: Klima, Mundart): **11 von 32 = 34,4 %**.
+- Der Boden fordert Holz 27, Lehm 5, Stein 0; die Pläne bauen Holz 10, Stein 7, Lehm 14, Glas 1 (Regionen alpin 8, mitteleuropa 19,
+  mediterran 3, nordisch 2).
+Täter: `fachwerk-core.js` `bauRezept` — der Stil folgt der Region (dem Wurf des Samens im Klima-Band), nie dem Vorrat am Ort; der
+Eingang der Zelle trägt keinen Boden. Der Schnitt gehört an denselben Chokepoint wie die Mundart (`_zellEingang` → `DP` → Plan) und
+verlangt einen Stations-Kandidaten (die Station bestellt ohne Eingang). Er folgt nach Kopf 4, damit Kopf 4 nur den Preis trägt.
+
+## Kopf 3 (2d05e947, sprache#5) — GPU-Probe GRÜN (Post 28.11. 01:34), Urteil offen
+
+Die vier Tore plus webgl-probe auf radeon-890m GRÜN in 1 177 s (das Probe-Blatt zu 2d05e947 im Zweig koordination). Ich warte auf das Urteil
+bzw. GELANDET; Kopf 4 baue ich erst auf dem main danach. Nachtrag 03:05: gelandet im Bündel w28-buendel-nacht (main bbb97563).
+
+## `karte2.mensch.kultur.sprache#6` „Sprachstufen über Epochen“ — gebaut als WIP (b5dd1f9 + Station), geparkt in 347a5c2, Kopf 5
+
+**Täter (am main):** `fachwerk-core.js` `spracheVon(region, mundart)` kennt kein Jahr. Die Sprache eines Orts im Jahr −1500 ist byte-gleich
+der von 1900, und die Station sagt „die Silben-Tafel ist zeitlos“ (`erwartet: "nicht"`).
+
+**Der Schnitt (EINE Quelle):** `spracheVon(region, mundart, jahr)`. Der Stammbaum bekommt eine Zeit (`SPRACH_ZEIT.gegenwart` 2000, die
+Wurzel `ERSATZ.alter` = 4 000 J davor, 800 J je Kante): das Lautgesetz eines Knotens fällt in der ersten Hälfte seiner Kante, ein Wort-
+Ersatz danach bis zum Kantenende. Ohne Jahr (und ab der Gegenwart) ist jedes Blatt **byte-gleich** zum main. Der EINE Leser des Spiels
+ist `spracheDesOrts(plan)`: das Jahr des Plans (Schnitt der Chronik bzw. Export `jahr + spanne`). Ihn lesen Name und Rede der Leute
+(`stamm/siedlung-bewohner.js`), der Klang der Menge (`stamm/klang.js:941`), der Ortsname (`ORTSNAME`) und die Zensus-Sonde.
+
+**Gemessen (node, welt-1):**
+
+| Maß | Wert | Soll |
+|---|---|---|
+| Byte-Beweis ohne Jahr | gleich | gleich |
+| Wurzel = Ursprache | 192/192 | alle |
+| Stufen je Sprache (Schritt 25 J) | 49,5 | – |
+| Umfang (× U_eff 10 116) | ≈ 500 637 | ≥ 100 000 ✅ |
+| Ursprache rekonstruiert (Mehrheit der 32 Töchter) | 0,759 | ≥ 0,6 ✅ |
+| Jahreswechsel am Spiel (40 Leute, `_bewohnerLauf` „rede“) | 25/40 Sätze anders, 28 ms | ≤ 1 s ✅ |
+| Swadesh-Retention je 1 000 J | 0,876 | 0,70–0,86 → ROT |
+
+**Retention ist ROT, mit Grund:** `ERSATZ.halten` = 0,86 nach Swadesh 1955 (100er-Liste, 86 %, Spanne 81–90; Lees 1953 0,805 für die
+200er-Liste). Die Grundwörter der Orte und „haus“ bleiben fest (das Toponym ist die beständigste Schicht), darum liegt das Mittel der
+ganzen Liste über 0,86. Die Wurzel wäre, die Konstante als Retention der GANZEN Liste zu lesen. Das ändert aber jede Wortliste und damit
+jeden Ortsnamen der Welt und die gestempelte Messung von #4. Ich schneide das nicht ohne Wort des Richters.
+
+**Linse:** `gate:settlement` R14 „die Sprache trägt ihre Zeit“ (Wurzel = Ursprache, Blatt = Gegenwart, Rekonstruktion ≥ 0,6, die Pläne
+der Epochen sprechen ihre Stufe). Täter im Selbsttest: „die Sprache kennt keine Zeit“ und „der Ort liest sein Jahr nicht“ → beide ROT beim
+Namen R14, Selbsttest GRÜN in 715 s (probeUrteil GRÜN). Hauptlauf GRÜN 656 s.
+
+**Station:** `cloud-post/sprache-dialekt-station/kandidat-6.diff` (ÜBER `kandidat.diff`): die Seite ZEIT und die #6-Zeile als Zahl.
+**PFLICHT:** Kopf 5 (sprache#6) und kandidat-6 landen ZUSAMMEN; Kopf 4 trägt nur den Preis und braucht keinen Kandidaten. Ohne ihn lesen die Zeugen von #3/#4 die zeitlose Gegenwart, die Orte sprechen aber
+ihr Jahr, und ihre Namen fallen auseinander.
 
 ## Die nächste rote Sprosse: `karte2.mensch.kultur.sprache#5` „hörbare Sprachen“ (Täter-Zahl am main b3740dd5, Post 20:57)
 
