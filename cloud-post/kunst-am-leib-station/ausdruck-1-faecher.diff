@@ -1,18 +1,20 @@
 diff --git a/vision/pruefer/faecher.cjs b/vision/pruefer/faecher.cjs
-index bf57832d1..e14d5519e 100644
+index bf57832d1..cc4cfcd9c 100644
 --- a/vision/pruefer/faecher.cjs
 +++ b/vision/pruefer/faecher.cjs
-@@ -398,6 +398,27 @@ const SPROSSEN = {
+@@ -398,6 +398,29 @@ const SPROSSEN = {
              "H.sort((a, b) => a.d - b.d);" +
              "return { saat, posen: H, lage: 'im Akt einer Kunst um 10 Uhr draußen: Meister ' + je.Meister + ' · Anfänger ' + je['Anfänger'] + ' · dazwischen ' + mitte + ' · drinnen ' + drinnen };",
      },
 +    // Akt und Gemüt am Leib zur Stunde des Feierabends: die Station rechnet je Bewohner sein Soll zu 17:15–18:00 und den Namen, den
 +    // sein Leib dann steht (k2-mensch-leib.js AUSDRUCK — pwalk am Werk = Arbeit, sad im Abend = Müde, fear = Furcht); die Pose steht
-+    // 3,5 m seitlich (die Beuge im Profil), jede zu IHRER Uhr — beide Klassen unter demselben Licht des Abends
++    // 3,5 m seitlich (die Beuge im Profil), jede zu IHRER Uhr — beide Klassen unter demselben Licht des Abends. Der Ort ist der
++    // billigste, den das Gesetz erlaubt (Post 28.11. 03:03): der Satz verlangt keine Stadt, der Leib steht in jedem Ort nach
++    // demselben Tag — das Dorf der Zelle −4,−4 (13 Häuser, 50–101 Bewohner im Zensus), 44 Bilder (je 22 Arbeit und Müde)
 +    "mensch.leib.ausdruck#1": {
-+        ort: "stadt-voll",
++        ort: "dorf",
 +        gesetz: "meisterkarte-quelle/punkte/stationen/k2-mensch-leib.js:422",
-+        faecher: "jeder Bewohner der vollen Stadt zur Stunde des Feierabends (17:15, 17:30, 17:45, 18:00) draußen im Akt, dessen Leib Arbeit, Müde oder Furcht steht, 3,5 m seitlich quer zu seinem Blick, Augenhöhe 1,2 m, Blick auf 1 m, Klassen im Wechsel, je Pose ihre Uhr",
++        faecher: "jeder Bewohner des Dorfs zur Stunde des Feierabends (17:15, 17:30, 17:45, 18:00) draußen im Akt, dessen Leib Arbeit, Müde oder Furcht steht, 3,5 m seitlich quer zu seinem Blick, Augenhöhe 1,2 m, Blick auf 1 m, Klassen im Wechsel, je Pose ihre Uhr",
 +        ordner: "mensch.leib.ausdruck.1-b1",
 +        uhren: [17.25 / 24],
 +        frage: "Was zeigt die Haltung des Menschen in der Bildmitte: arbeitet er, ist er müde vom Tag, oder fürchtet er sich?",
@@ -30,7 +32,7 @@ index bf57832d1..e14d5519e 100644
      // die Talform an 20 Saaten: die Station rechnet je Saat (Land-Lage der Fibonacci-Kugel) × Stelle 1/4 · 1/2 · 3/4 des größten Laufs
      // den Querschnitt (k2-planet.js:2662 PROFIL_AN, V-Tal b < 1,5 ≤ Trog) und nennt die Pose „Ego 8 m über der Sohle, Blick talauf“
      // (:2706) — der Fächer REIST je Saat an ihre Lage (der Satz des Spielers „reise <Breite> <Länge>“, wie die Werkbank ihre Reise-Orte
-@@ -471,7 +492,11 @@ const SPROSSEN = {
+@@ -471,7 +494,11 @@ const SPROSSEN = {
  function faechern(basis, uhren, mehr) {
      const aus = [];
      // die KLASSE (ordnen × klasse): die Wahrheit des Gesetzes an der Adresse reist mit der Pose in die Akte — nie von Hand gesetzt
@@ -43,7 +45,7 @@ index bf57832d1..e14d5519e 100644
      return aus;
  }
  // DIE KLASSEN IM WECHSEL: je Klasse die Adressen nach Abstand, dann Runde um Runde eine je Klasse (höchstens `je` je Klasse) — der
-@@ -728,6 +753,10 @@ function selbsttest() {
+@@ -728,6 +755,10 @@ function selbsttest() {
      t("an der Pose: ein Bild, für das die Werkbank eine andere Kamera wählte (Blick-Wahl ≥ 2 Posen), trägt kein Rahmen-Motiv", AN_DER_POSE("ABNAHME GRÜN · Blick-Wahl 1 Pose") && !AN_DER_POSE("ABNAHME GRÜN · Blick-Wahl 2 Posen") && !AN_DER_POSE("Blick-Wahl 42 Posen") && !PF("ABNAHME GRÜN · Blick-Wahl 37 Posen", { ziel: { art: "eiche", d: 9 } }) && !SPROSSEN["mensch.bau.bedarf#1"].motiv("ABNAHME GRÜN · Blick-Wahl 3 Posen") && SPROSSEN["mensch.bau.bedarf#1"].wahl === 0 && !SPROSSEN["mensch.bau.bedarf#1"].motiv("ABNAHME ROT [Sicht verdeckt 49.5 % (Bau als 1 m): bauSatz 49.5 %] · Ziel Blickziel verdeckt von bauSatz in 1.2 m · Blick-Wahl 1 Pose") && SPROSSEN["mensch.bau.bedarf#1"].motiv("ABNAHME GRÜN · Blick-Wahl 1 Pose") && SPROSSEN["leben.pflanzen.arten#1"].wahl === 0);
      t("das Motiv der Pflanze: ihr eigenes Laub am Ziel trägt, fremdes oder nahes Laub nicht", PF("ABNAHME ROT [Ziel Blickziel verdeckt von Laub fscatter:eiche:L1 in 9.2 m]", { ziel: { art: "eiche", d: 12 } }) && !PF("ABNAHME ROT [Ziel Blickziel verdeckt von Laub fscatter:tanne:L1 in 9.2 m]", { ziel: { art: "eiche", d: 12 } }) && !PF("ABNAHME ROT [Ziel Blickziel verdeckt von Laub fscatter:eiche:L1 in 2.1 m]", { ziel: { art: "eiche", d: 12 } }) && PF("ABNAHME GRÜN", {}));
      t("Meister oder Anfänger: die Klasse ist das Können des Lebenslaufs an den Schwellen des Gesetzes (≥ 1 / < 0,5), ≥ 20 je Klasse im Wechsel", /klasse = k >= 1 \? 'Meister' : k < 0\.5 \? 'Anfänger' : null/.test(SPROSSEN["mensch.sport.kunst#1"].rumpf()) && SPROSSEN["mensch.sport.kunst#1"].je >= 20 && imWechsel([{ klasse: "Meister" }, { klasse: "Meister" }, { klasse: "Anfänger" }], 22).map((x) => x.klasse).join() === "Meister,Anfänger,Meister");

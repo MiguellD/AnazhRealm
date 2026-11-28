@@ -1,11 +1,11 @@
 diff --git a/vision/pruefer/quellen.json b/vision/pruefer/quellen.json
-index 67266b231..1bbed236d 100644
+index 180c39717..be48c5fb6 100644
 --- a/vision/pruefer/quellen.json
 +++ b/vision/pruefer/quellen.json
-@@ -12057,6 +12057,24 @@
+@@ -12189,6 +12189,24 @@
     "liegenGeblieben": [],
-    "stand": "geholt 40 von 40 · gesichtet am Bogen des Satzes (26.11., dritte Welle): 31 tragen das Motiv, 9 fielen (nicht)",
-    "ablage": "2afc/wikimedia-commons/haus-zehn-meter-2"
+    "stand": "ungeholt — geholt wird am Gerät (`--nur hang-schutt`), nie in der Sitzung des Machers · die Kategorie trägt 109 Dateien unmittelbar (Commons categoryinfo 28.11.)",
+    "ablage": "2afc/wikimedia-commons/hang-schutt"
 +  },
 +  {
 +   "id": "haltung-arbeit",
@@ -23,16 +23,7 @@ index 67266b231..1bbed236d 100644
 +    "ohne": "map|diagram|chart|logo|poster|painting|drawing|stamp|sign|museum|statue|sculpture|engraving|illustration|lithograph|postcard|tractor|bulldog|combine|machine|generator|Google Art Project"
 +   },
 +   "dateien": [],
-+   "stand": "Abfrage trocken am 28.11.: 52 von 40 frei (Menschen im Akt der Feldarbeit, draußen, Tageslicht, ganzer Leib auf wenigen Metern — die Pose der Station: ein Bewohner im Akt, 3,5 m seitlich) · ungeholt · ungesichtet"
++   "stand": "ungeholt — geholt wird am Gerät (`--nur haltung-arbeit`), nie in der Sitzung des Machers · die Kategorie trägt 108 Dateien unmittelbar (Commons categoryinfo 28.11.; 2 Unterkategorien liest der Holer nicht), davon 52 frei vor den Wänden (Trocken-Lauf des Holers 28.11.: Menschen im Akt der Feldarbeit, draußen, Tageslicht, der ganze Leib auf wenigen Metern — die Art der Pose der Station)"
    }
   ],
   "liegenGebliebenQuellen": [
-@@ -12297,7 +12315,7 @@
-   }
-  ],
-  "summe": {
--  "saetze": 29,
-+  "saetze": 30,
-   "dateien": 976,
-   "bytes": 269368450,
-   "liegenGeblieben": 83
