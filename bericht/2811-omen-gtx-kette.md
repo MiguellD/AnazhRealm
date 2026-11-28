@@ -1,4 +1,4 @@
-# OMEN GTX 1060 — Messkette 28.11. (Wort des Schöpfers: bis 23:00), Stand 28.11.2026, 12:17:57
+# OMEN GTX 1060 — Messkette 28.11. (Wort des Schöpfers: bis 23:00), Stand 28.11.2026, 13:22:22
 
 Kopf main e80f9c5d (kunst#1 am b56b51f0), pm jeweils jüngster Kopf (vr2 holeStand). Akte NUR bei Richter GRÜN + Preis GRÜN geschoben (vr2 --akte).
 Je Slot: Exit/Sekunden, je Sprosse die Urteils-Zeile wörtlich (gekürzt auf 700 Zeichen) und die Akte-Kurzzeile. Werkzeug: sk/kette/{front,packe,blatt}.cjs.
@@ -15,6 +15,9 @@ Je Slot: Exit/Sekunden, je Sprosse die Urteils-Zeile wörtlich (gekürzt auf 700
 - Beweis Lebenszeichen-Schnitt (pm c7f78b2e / 6e2a38ae, ≥ e20826e1): grossform#1 reiste 5046 m (Ring 4 → -1) und kam ZUM URTEIL (8.43 min, kein „Stille … nach 355 s“); boden#1 reiste 10272 m (Ring 4 → -1), ebenfalls ohne Stille-Tod (2.9 min). `gerendert` steht im Strom: grossform-Sitzung 10:15 in 611 von 611 Zeilen, boden-Sitzung 10:39 in 201 von 201.
 - grossform#1 jetzt ROT am Bild (Orte 15/20 statt 20/20: Laub baum_erle verdeckt die Sicht 24,2 %, Vordergrund 47,4 %), Preis GRÜN p95 25,06 — nicht geschoben.
 - boden#1 (ohne Akte): Bild fällt mit „DIE WELT STEHT NICHT nach dem Himmel des Schusses: zuletzt brach sie: Fege-Takt nahWiese 0/1“ — afcProzent/anteilJeKorpus ungemessen; Korpus-Abruf (hole.cjs) nicht angefasst.
+- NEUE KLASSE nach dem Lebenszeichen-Schnitt: platten#1 (pm d8cc1dd5) und stoerung#3 (pm d6d4f556) liefen nach „die Welt vor …: 27 s“ je ≈ 19 min OHNE eine weitere Zeile bis zum Slot-Ende (exit 124) — ihr Deckel (212 s bzw. 395 s Σ) feuerte nicht mehr: die Welt schreitet (Lebenszeichen), die Probe steht. Die Leine tötet jetzt eine hängende Probe nicht mehr. Beide zum zweiten Mal an Deckel/Stille/Slot-Ende gestorben → nach Regel ÜBERSPRUNGEN (platten#1: 27.11. Deckel 327 s Stille, 28.11. Slot-Ende; stoerung#3: z819 Slot-Ende, stoerunga Slot-Ende).
+- lebenszyklus#2 (ohne Akte, Klasse P): jungProzent 7,143 % gegen Soll ≥ 10 %; „n Tiere des Bestands“ nennt die Zeile NICHT; dazu „Umfang nicht erzeugbar: kein Leib wächst: klein und groß tragen dieselbe Gestalt (Höhe/Länge 0.924 ↔ 0.924)“; Panel ungemessen (Bild: kein nahWiese 0,0 %).
+- bedarf#1: Vorprüfung am ungelandeten Kopf 88bc3c51 (Lauf a, ohne Akte), Zeile wörtlich unten.
 
 ## Gefahrene Plätze
 
@@ -27,7 +30,7 @@ Je Slot: Exit/Sekunden, je Sprosse die Urteils-Zeile wörtlich (gekürzt auf 700
   - KARTE2 keine Akte planet.relief.boden S 1 (karte2.planet.relief.boden#1): der Richter fehlt in der Station: R11 Prüfer: „Blindpaar Ego-Bild gegen Foto (2AFC ≤ 85 %)“ — das Urteil spricht der Blind-Prüfer (eingefrorenes Modell, geeicht an 200 Ankern ≥ 0,8, ≥ 40 Paare: vision/pruefer/pruefer.cjs) an d …
 
 ### plattena — START 10:45:47 · Grenze 10:55:52 · plattena exit 124 nach 1203 s · Kopf d8cc1dd5 · pm d8cc1dd5
-- (keine a.out gefunden — Slot ohne Lauf a oder noch offen)
+- (Slot-Ende vor dem Urteil) letzte Zeilen von Lauf a: „SITZUNG der Grund der Welt: 86 Größen in 0 s“ · „SITZUNG die Welt vor karte2.planet.geologie.platten#1: 27.1 s (779 Takte, 81 Chunks)“
 
 ### zyklusa — START 11:17:19 · Grenze 11:26:24 · zyklusa exit 0 nach 266 s · Kopf 8ecbb545 · pm 8ecbb545
 - ROT  karte2.leben.tiere.lebenszyklus#2 · S2 panel ungemessen gegen Soll ≥ 0,7 ✗ · jungProzent 7,143 % gegen Soll ≥ 10 % ✗ · auge: Pose {"ort":"wiese"} · Vorbild Foto Kitz/Hirsch; Panel ≥ 0,7 · Bild fehlt (/bild: {"ms":13501,"fehler":"ABNAHME ROT [kein nahWiese im Bild: 0.0 % < 15.0 %] · beweis · Sicht 0.0 % · Ziel Blickziel) — R11 Prüfer („Bildpaar Kitz/Hirsch Panel“): das Urteil spricht der Blind-Prüfer, die Station behauptet kein GRÜN · Umfang nicht erzeugbar: kein Leib wächst: klein und groß tragen dieselbe Gestalt (Höhe/Länge 0.924 ↔ 0.924) · Sitzung · Exit 0 · 1.62 min
@@ -38,17 +41,25 @@ Je Slot: Exit/Sekunden, je Sprosse die Urteils-Zeile wörtlich (gekürzt auf 700
   - KARTE2 keine Akte mensch.bau.bedarf S 1 (karte2.mensch.bau.bedarf#1): der Richter fehlt in der Station: R11 Prüfer: „50 Bauten blind nach Funktion“ — das Urteil spricht der Blind-Prüfer (eingefrorenes Modell, geeicht an 200 Ankern ≥ 0,8, ≥ 40 Paare: vision/pruefer/pruefer.cjs) an den Bildern dieser  …
 
 ### stoerunga — START 11:48:31 · Grenze 11:57:03 · stoerunga exit 124 nach 1202 s · Kopf d6d4f556 · pm d6d4f556
-- (keine a.out gefunden — Slot ohne Lauf a oder noch offen)
+- (Slot-Ende vor dem Urteil) letzte Zeilen von Lauf a: „SITZUNG der Grund der Welt: 86 Größen in 0 s“ · „SITZUNG die Welt vor karte2.same.kopplung.stoerung#3: 27 s (779 Takte, 81 Chunks)“
+
+### seeganga — START 12:18:50 · Grenze 12:29:03 · seeganga exit 0 nach 379 s · Kopf 7eb7af14 · pm 7eb7af14
+- ROT  karte2.planet.wasser.seegang#1 · S1 spiegelTreue ungemessen gegen Soll ≥ 0,6 ✗ · posen ungemessen gegen Soll ≥ 12 ✗ · Täter: stamm/wasser-hydro.js _wasserBlick (der Spiegel-Pass) an der Bucht · Sitzung · Exit 0 · 2.44 min
+  - Akte planet.wasser.seegang.1.e80f9c5d-gtx.json: Richter ROT · Preis GRÜN:
+
+### k01 — START 12:36:44 · Grenze 12:44:27 · k01 exit 0 nach 390 s · Kopf a60f7474 · pm a60f7474
+- ROT  karte2.mensch.stadt.form#2 · S2 ROT: Umfang nicht erzeugbar: Großstadt 10⁴ Häuser mit Vierteln aus dem Bodenwert: die Stadt trägt 307 stehende Häuser in 7 Vierteln; dorf 7 9310 steht erst nach ~154 s, über dem Deckel von 60 s (gemessen 307) · [linse-gpu] nvidia/pascal · Sitzung · Exit 0 · 0.34 min
+  - Akte mensch.stadt.form.2.e80f9c5d-gtx.json: Richter ROT · Preis GRÜN:
+
+### k02 — START 12:52:17 · Grenze 13:02:03 · k02 exit 124 nach 1201 s · Kopf 6e2679c6 · pm 6e2679c6
+- (Slot-Ende vor dem Urteil) letzte Zeilen von Lauf a: „SITZUNG der Grund der Welt: 86 Größen in 0 s“ · „SITZUNG die Welt vor karte2.planet.geologie.gebirge#1: 27.9 s (834 Takte, 81 Chunks)“
 
 ## Summe
 
-Urteils-Zeilen: GRÜN 0 · ROT 4 · OFFEN/UNGEMESSEN 0 · Slots mit Schub: keiner
+Urteils-Zeilen: GRÜN 0 · ROT 6 · OFFEN/UNGEMESSEN 0 · Slots mit Schub: keiner
 
 ## Offen (nicht gefahren, Reihenfolge der Reihe)
 
-- seeganga am e80f9c5d: karte2.planet.wasser.seegang#1
-- k01 am e80f9c5d: karte2.mensch.stadt.form#2
-- k02 am e80f9c5d: karte2.planet.geologie.gebirge#1
 - k03 am e80f9c5d: karte2.erleben.klang.musik#1,karte2.same.physik.stoffe#1,karte2.erleben.bild.ferne#1,karte2.planet.erde.gestalt#1,karte2.erleben.spieler.hand#1
 - k04 am e80f9c5d: karte2.erleben.sinn.entdeckung#1,karte2.same.physik.feuer#2,karte2.same.entfaltung.vielfalt#1,karte2.same.massstab.nahe#1,karte2.same.gedaechtnis.alter#1
 - k05 am e80f9c5d: karte2.planet.zeit.archiv#2,karte2.leben.wasser.lebensraeume#2,karte2.leben.wasser.bild#1
