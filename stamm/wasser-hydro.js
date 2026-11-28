@@ -1199,8 +1199,9 @@ class AnazhRealm_wasser_hydro {
             const [ax, az] = [x0 + ux * (d - A.landM), z0 + uz * (d - A.landM)];
             const F = this._anlegerStreich(ax, az, ux, uz);
             const hs = VC.bootWelle(F);
-            const ov = { welle: hs, last: A.last };
-            const R = VC.bootRumpf(ov);
+            const ov0 = { welle: hs, last: A.last };
+            const R = VC.bootRumpf(ov0);
+            const ov = F >= A.segelL * R.L ? Object.assign({ segel: 1 }, ov0) : ov0; // das Segel auf weitem Wasser
             const traegt = (x, z) => {
                 const q = saeule(x, z);
                 return q && q.s - q.g >= R.Tleer + R.kiel + A.luftM ? q : null;
@@ -1336,8 +1337,11 @@ AnazhRealm.REGEN_KLIMA_ZUEGE = 2000;
 // vehicle-core `boot`), die Suche nach dem Ufer (16 Richtungen, je 3 m bis 200 m vom Ort, der Steg liegt 1 m auf dem Ufer und
 // reicht höchstens 6 Felder hinaus), die Streichlänge (7 Strahlen im Fächer ±30°, je 50 m bis 10 km), die Luft unter dem Kiel
 // (0,15 m), der Fender zwischen Steg und Boot (0,25 m), die Last des Boots (zwei Sitzende, 160 kg) und die Schwelle, ab der das
-// Boot dem Spiegel folgt (5 mm — die Stufe des Pegels ist 1 cm, gelaende-core `PEGEL.stufe`).
+// Boot dem Spiegel folgt (5 mm — die Stufe des Pegels ist 1 cm, gelaende-core `PEGEL.stufe`). DAS SEGEL (same.physik.flug#3): reicht
+// die Streichlänge vor dem Steg `segelL` Bootslängen weit (Raum zum Kreuzen: je Schlag ein Vielfaches der Länge, ANNAHME), trägt das
+// Boot Mast, Spritsegel und Seitenschwerter (vehicle-core `bootSegel`) — auf dem Teich bleibt es das Ruderboot.
 AnazhRealm.ANLEGER = Object.freeze({
+    segelL: 20,
     steg: "steg_stegfeld",
     boot: "fahrzeug_boot",
     richtungen: 16,

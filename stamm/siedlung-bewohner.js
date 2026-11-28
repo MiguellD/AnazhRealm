@@ -391,10 +391,11 @@ class AnazhRealm_siedlung_bewohner {
         if (feld === "rede") {
             // DER SATZ, DEN ER SPRICHT (sprache#2): die `tag`-te Rede des Bewohners in der Sprache des Orts — dasselbe Gesetz, das ihn
             // nennt (fachwerk `sprachSatz`: die Wörter der Grundliste seiner Sprache in der Folge ihrer Familie). Leser: die Rede der
-            // Menge (klang.js `_bewohnerLautTakt`: ihre Silben-Kerne sind die Vokale seiner Stimme)
+            // Menge (klang.js `_bewohnerLautTakt`: ihre Silben sind die Laute seiner Stimme). Der Satz spricht von seinem Akt
+            // (`b.akt`, SATZ_GESETZ.handlung — sprache#5 „Satz ↔ Handlung“)
             const FC = globalThis.__fachwerkCore;
             if (!FC || typeof FC.sprachSatz !== "function") return AnazhRealm._kernPflichtBruch("fachwerk:sprachSatz");
-            return FC.sprachSatz(FC.spracheVon(plan.region, plan.mundart), `${b.seed}:${tag}`);
+            return FC.sprachSatz(FC.spracheVon(plan.region, plan.mundart), `${b.seed}:${tag}`, b.akt);
         }
         if (feld === "freunde" || feld === "kreis") {
             // die Sympathie-Gruppe ohne den Haushalt: je Platz ein Mensch eines anderen Hauses des Plans, das Leute trägt. `kreis`
