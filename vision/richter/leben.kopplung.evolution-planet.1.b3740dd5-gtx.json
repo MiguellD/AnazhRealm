@@ -1,0 +1,88 @@
+{
+ "leiter": "leben.kopplung.evolution-planet",
+ "sprosse": 1,
+ "sha": "b3740dd5566793ae66152d955e5a55d9c272884c",
+ "datum": "2026-11-27T23:58:22.541Z",
+ "soll": "≥ 0,9 der Würfe in der Boden-Klasse der Gattung, im Bild gezählt",
+ "station": "karte2.leben.kopplung.evolution-planet#1",
+ "geraete": [
+  {
+   "geraet": "GTX 1060",
+   "richter": {
+    "wert": "S1 anteilImRaum ungemessen gegen Soll ≥ 0,9 ✗ · Bild (Beleg) C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\b3740dd5-gtx\\auge-leben-evo-s1.png · Täter: stamm/kreatur-leben.js _pickFaunaSoulAtPlayer (die Gattung aus der Boden-Klasse)",
+    "urteil": "ROT"
+   },
+   "preis": {
+    "fehlt": "der Preis-Lauf nannte sein Stück nicht (kein Ergebnis von `/lauf`)",
+    "bilder": 0,
+    "fenster": {
+     "von": "2026-11-27T23:53:53.381Z",
+     "bis": "2026-11-27T23:58:22.541Z"
+    },
+    "quelle": "kein Preis: der Preis-Lauf nannte sein Stück nicht (kein Ergebnis von `/lauf`)",
+    "referenz": {
+     "f": 1.217,
+     "fEin": 1.217,
+     "fAlle": 1.061,
+     "vor": {
+      "ein": 97.1,
+      "alle": 234.4,
+      "tor": {
+       "ruhig": true,
+       "s": 0,
+       "kerne": 0.19,
+       "soll": 3,
+       "reihe": [
+        1.03,
+        1.02,
+        0.34,
+        0.33,
+        0.03,
+        0.2
+       ]
+      }
+     },
+     "nach": {
+      "ein": 108.4,
+      "alle": 229.8,
+      "tor": {
+       "ruhig": true,
+       "s": 0,
+       "kerne": 0.19,
+       "soll": 3,
+       "reihe": [
+        1.03,
+        1.02,
+        0.34,
+        0.33,
+        0.03,
+        0.2
+       ]
+      }
+     },
+     "ruhe": {
+      "ein": 89.1,
+      "alle": 220.9,
+      "n": 1194,
+      "von": "2026-11-17"
+     },
+     "nachGruendung": {
+      "f": 1.09,
+      "ein": 97.1,
+      "alle": 234.4,
+      "fahrten": 1,
+      "s": 0.5,
+      "ruhig": true
+     },
+     "umfeld": "sitzung",
+     "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz"
+    },
+    "posten": {
+     "fehler": "Connection closed."
+    },
+    "urteil": "FEHLT",
+    "treppe": "2026-11-23b"
+   }
+  }
+ ]
+}
