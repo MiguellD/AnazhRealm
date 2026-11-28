@@ -4185,8 +4185,8 @@
    ]
   },
   "tiere.K5": {
-   "punkte": 1,
-   "beleg": "Maschine: gehalten: ego (first) 5 Sichtungen in 601 Spiel-s (wesen 440 px 36 m 69 s · wesen 230 px 60 m 231 s · wesen 637 px 31 m 411 s · wesen 306 px 36 m 420 s · wolf 219 px 19 m 543 s), 620 Prüfungen, 39 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 3 Sichtungen in 600 Spiel-s (wolf 843 px 8 m 1 s · wesen 1213 px 48 m 56 s · wesen 310 px 40 m 501 s), 608 Prüfungen, 16 Masken, Bestand bis 20, im Blick erschienen 0 an b7ed8419 gtx",
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: tiere.K5#1 radeon: Station seit der Messung geändert · tiere.K5#1 gtx: ROT: ego (first) 0 Sichtungen in 601 Spiel-s (), 613 Prüfungen, 25 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 5 Sichtungen in 600 Spiel-s (baer 359 px 34 m 143 s · baer 328 px 33 m 146 s · fuchs 290 px 21 m 419 s · wesen 220 px 39 m 586 s · wesen 238 px 38 m 589 s), 620 Prüfungen, 40 Masken, Bestand bis 20, im Blick erschienen 0 an e80f9c5d",
    "stationen": [
     {
      "id": "tiere.K5#1",
@@ -4200,11 +4200,11 @@
     {
      "id": "tiere.K5#1",
      "geraet": "gtx",
-     "gruen": true,
-     "zahl": "ego (first) 5 Sichtungen in 601 Spiel-s (wesen 440 px 36 m 69 s · wesen 230 px 60 m 231 s · wesen 637 px 31 m 411 s · wesen 306 px 36 m 420 s · wolf 219 px 19 m 543 s), 620 Prüfungen, 39 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 3 Sichtungen in 600 Spiel-s (wolf 843 px 8 m 1 s · wesen 1213 px 48 m 56 s · wesen 310 px 40 m 501 s), 608 Prüfungen, 16 Masken, Bestand bis 20, im Blick erschienen 0",
-     "sha": "b7ed8419454b22964d72b81d26f1f56128e41735",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true
+     "gruen": false,
+     "zahl": "ego (first) 0 Sichtungen in 601 Spiel-s (), 613 Prüfungen, 25 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 5 Sichtungen in 600 Spiel-s (baer 359 px 34 m 143 s · baer 328 px 33 m 146 s · fuchs 290 px 21 m 419 s · wesen 220 px 39 m 586 s · wesen 238 px 38 m 589 s), 620 Prüfungen, 40 Masken, Bestand bis 20, im Blick erschienen 0",
+     "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
+     "grund": "ROT: ego (first) 0 Sichtungen in 601 Spiel-s (), 613 Prüfungen, 25 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 5 Sichtungen in 600 Spiel-s (baer 359 px 34 m 143 s · baer 328 px 33 m 146 s · fuchs 290 px 21 m 419 s · wesen 220 px 39 m 586 s · wesen 238 px 38 m 589 s), 620 Prüfungen, 40 Masken, Bestand bis 20, im Blick erschienen 0",
+     "r6": "konsum"
     }
    ]
   },
@@ -33453,7 +33453,7 @@
   },
   "karte2.same.gedaechtnis.pfad": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: nach 100 Gängen (Soll 100): Gras im Trittstreifen ±0,5 m Weg 243143 → 62449 px, daneben 342242 → 342242 px · Büschel Weg 13 → 3, daneben 17 → 17 (Soll Weg ≤ 40 %, daneben 0,85–1,15 ×, im Bild und in der Liste) · [linse-gpu] amd/rdna-3 an 7de938ab radeon · gehalten: nach 100 Gängen (Soll 100): Gras im Trittstreifen ±0,5 m Weg 243289 → 62461 px, daneben 342262 → 342262 px · Büschel Weg 13 → 3, daneben 17 → 17 (Soll Weg ≤ 40 %, daneben 0,85–1,15 ×, im Bild und in der Liste) · [linse-gpu] nvidia/pascal an b7ed8419 gtx — offen: karte2.same.gedaechtnis.pfad#2 radeon: ungemessen (R10) · karte2.same.gedaechtnis.pfad#2 gtx: Station seit der Messung geändert · karte2.same.gedaechtnis.pfad#3 radeon: ungemessen (R10) · karte2.same.gedaechtnis.pfad#3 gtx: ungemessen (R10) · karte2.same.gedaechtnis.pfad#4 radeon: ungemessen (R10) · karte2.same.gedaechtnis.pfad#4 gtx: ungemessen (R10) · karte2.same.gedaechtnis.pfad#5 radeon: ungemessen (R10) · karte2.same.gedaechtnis.pfad#5 gtx: ungemessen (R10) · karte2.same.gedaechtnis.pfad#6 radeon: ungemessen (R10) · karte2.same.gedaechtnis.pfad#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: nach 100 Gängen (Soll 100): Gras im Trittstreifen ±0,5 m Weg 243143 → 62449 px, daneben 342242 → 342242 px · Büschel Weg 13 → 3, daneben 17 → 17 (Soll Weg ≤ 40 %, daneben 0,85–1,15 ×, im Bild und in der Liste) · [linse-gpu] amd/rdna-3 an 7de938ab radeon · gehalten: nach 100 Gängen (Soll 100): Gras im Trittstreifen ±0,5 m Weg 243289 → 62461 px, daneben 342262 → 342262 px · Büschel Weg 13 → 3, daneben 17 → 17 (Soll Weg ≤ 40 %, daneben 0,85–1,15 ×, im Bild und in der Liste) · [linse-gpu] nvidia/pascal an b7ed8419 gtx — offen: karte2.same.gedaechtnis.pfad#2 radeon: ungemessen (R10) · karte2.same.gedaechtnis.pfad#2 gtx: Station seit der Messung geändert — zuletzt an e80f9c5d: Frist der Probe 162 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2 · kein Ergebnis der Sprosse im Lauf der Leiter same.gedaechtnis.pfad) · Täter: @@PUNKTE@@ FRIST 162 s der Probe gerissen — A · karte2.same.gedaechtnis.pfad#3 radeon: ungemessen (R10) · karte2.same.gedaechtnis.pfad#3 gtx: ungemessen (R10) · karte2.same.gedaechtnis.pfad#4 radeon: ungemessen (R10) · karte2.same.gedaechtnis.pfad#4 gtx: ungemessen (R10) · karte2.same.gedaechtnis.pfad#5 radeon: ungemessen (R10) · karte2.same.gedaechtnis.pfad#5 gtx: ungemessen (R10) · karte2.same.gedaechtnis.pfad#6 radeon: ungemessen (R10) · karte2.same.gedaechtnis.pfad#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.same.gedaechtnis.pfad#1",
@@ -33490,7 +33490,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Station seit der Messung geändert — zuletzt an e80f9c5d: Frist der Probe 162 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2 · kein Ergebnis der Sprosse im Lauf der Leiter same.gedaechtnis.pfad) · Täter: @@PUNKTE@@ FRIST 162 s der Probe gerissen — A",
      "ungemessen": true
     },
     {
@@ -37461,10 +37461,12 @@
    ]
   }
  },
- "rueckfall": [],
+ "rueckfall": [
+  "tiere.K5#1 gtx: ego (first) 0 Sichtungen in 601 Spiel-s (), 613 Prüfungen, 25 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 5 Sichtungen in 600 Spiel-s (baer 359 px 34 m 143 s · baer 328 px 33 m 146 s · fuchs 290 px 21 m 419 s · wesen 220 px 39 m 586 s · wesen 238 px 38 m 589 s), 620 Prüfungen, 40 Masken, Bestand bis 20, im Blick erschienen 0 an e80f9c5d (grün gebucht an b7ed8419)"
+ ],
  "r6": {
   "haelften": 3787,
-  "konsum": 304,
+  "konsum": 305,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37596,14 +37598,16 @@
    "karte2.same.kopplung.terraform#1 gtx",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3354
+  "ohne": 3353
  },
  "kopfVoll": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
- "zeit": "2026-11-28T09:16:45.642Z",
+ "zeit": "2026-11-28T09:40:04.799Z",
  "vorher": "e80f9c5d",
  "bilanz": {
   "gewinn": [],
-  "fall": [],
+  "fall": [
+   "tiere.K5 1→0 (tiere.K5#1 gtx: ROT: ego (first) 0 Sichtungen in 601 Spiel-s (), 613 Prüfung)"
+  ],
   "massenFall": false
  }
 }

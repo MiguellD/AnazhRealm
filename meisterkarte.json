@@ -3,11 +3,11 @@
   "kopf": "e80f9c5d",
   "version": "V18.546.466",
   "skala": "2.0",
-  "summe": 219,
+  "summe": 218,
   "max": 330,
   "maschine": {
     "kopf": "e80f9c5d",
-    "zeit": "2026-11-28T09:16:45.642Z",
+    "zeit": "2026-11-28T09:40:04.799Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -191,7 +191,7 @@
     {
       "key": "leben",
       "titel": "II · LEBEN — Pflanze, Tier, Ökologie, Mensch, Affekt, Haar und Fell, Luft und Wasser",
-      "summe": 46,
+      "summe": 45,
       "max": 70,
       "bereiche": [
         "vegetation",
@@ -962,7 +962,7 @@
       "key": "tiere",
       "titel": "Tiere — Verband, Jagd, Gang, Lebensraum, Begegnung",
       "gruppe": "leben",
-      "punkte": 6,
+      "punkte": 5,
       "pfad": "Feature-Stopp bis v1.0 — außer der Kosten-Seite (E)",
       "dateien": "`tetrapoda-core.js` · `stamm/kreatur-*.js` · `scripts/lib/kreatur-proben.cjs` · `worlds/tetrapoda`",
       "aaaa": "Die Herde ist ein DATUM des Gesetzbuchs. 20–30 Hirsche ziehen als Verband mit Leittier über den Hang; der erste, der den Wolf wittert, hebt den Kopf, und binnen 1 s flieht der ganze Verband ausgerichtet (Φ ≥ 0,8, Kohäsion ≥ 0,9) und sammelt sich hinter der Kuppe. Das Rudel aus vier Wölfen umstellt und reißt mit der Quote der Natur (20–40 % gegen den erwachsenen Hirsch) und frisst ≥ 60 s; der Fuchs kommt binnen 120 s ans Aas. Die Fußfolge wechselt mit der Froude-Zahl (Schritt → Trab bei Fr ≈ 0,5, Trab → Galopp bei 2–3). Der Bär steht am Fluss, der Hirsch äst ≈ 50 % des Tages. Auf 10 Spielminuten Gang sieht der Spieler ≥ 3 Tiere, in 30 min eine Herde ≥ 20 — bei ≤ 1 ms KI je 150 Tiere an der GTX. **Wo wir die Besten schlagen:** RDR2 (≈ 6 300 Motions, Tags von Hand) und Horizon (Rollen von Hand); bei uns kommt der Gang aus Froude, der Verband aus Couzin, die Jagd aus MacNulty, der Lebensraum aus dem Gelände-Kern — jede neue Gattung aus dem Studio trägt das ohne eine Zeile Animation, und das Labor zeigt dieselbe Herde.",
@@ -1014,10 +1014,10 @@
         },
         {
           "name": "Begegnung im Bild, Dichte und Kosten beim Namen",
-          "punkte": 1,
+          "punkte": 0,
           "staffel": "1 = ≥ 3 Tier-Sichtungen im Ausgabe-Bild je 10 Spielminuten an einem Gerät · 2 = dazu eine Herde ≥ 20 im Bild in 30 min, updateCreatures ≤ 1,0 ms p95 bei 150 Tieren im 500-m-Ring an der GTX, die Ratsche tier eingerastet, beide Geräte",
           "messung": "Spielgang über 10 Spielminuten (werkbank lauf --wandern kreis, Ego und Third) an Wiese und Genesis; Sichtung = Klassen-Maske tier ≥ 200 px; kein Tier erscheint im Blick; Kosten beim Namen über werkbank zerlegen/takt in Bau-Ereignissen; Prüfbühne mit fester Herde für die Ratsche.",
-          "beleg": "Maschine: gehalten: ego (first) 5 Sichtungen in 601 Spiel-s (wesen 440 px 36 m 69 s · wesen 230 px 60 m 231 s · wesen 637 px 31 m 411 s · wesen 306 px 36 m 420 s · wolf 219 px 19 m 543 s), 620 Prüfungen, 39 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 3 Sichtungen in 600 Spiel-s (wolf 843 px 8 m 1 s · wesen 1213 px 48 m 56 s · wesen 310 px 40 m 501 s), 608 Prüfungen, 16 Masken, Bestand bis 20, im Blick erschienen 0 an b7ed8419 gtx",
+          "beleg": "Maschine: 0 — offen: tiere.K5#1 radeon: Station seit der Messung geändert · tiere.K5#1 gtx: ROT: ego (first) 0 Sichtungen in 601 Spiel-s (), 613 Prüfungen, 25 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 5 Sichtungen in 600 Spiel-s (baer 359 px 34 m 143 s · baer 328 px 33 m 146 s · fuchs 290 px 21 m 419 s · wesen 220 px 39 m 586 s · wesen 238 px 38 m 589 s), 620 Prüfungen, 40 Masken, Bestand bis 20, im Blick erschienen 0 an e80f9c5d",
           "schlupfloch": "„≥ 150 im 500-m-Ring“ erfüllen Tiere hinter dem Hügel: gezählt werden Sichtungen im Ausgabe-Bild; die frei-Ratsche versteckte die Kosten, die Prüfbühne mit fester Herde schließt das.",
           "maschine": true
         }
@@ -4349,7 +4349,7 @@
   ],
   "bestaetigung": {
     "voll": 180,
-    "offen": 39,
+    "offen": 38,
     "kriterien": [
       "affekt.K1+1",
       "ankunft.K2+1",
@@ -4381,7 +4381,6 @@
       "tiere.K1+1",
       "tiere.K2+1",
       "tiere.K3+1",
-      "tiere.K5+1",
       "vegetation.K4+1",
       "wetter.K2+2"
     ],
@@ -4389,7 +4388,7 @@
       "linse": 1,
       "ungemessen": 11,
       "rot": 1,
-      "anderes": 36
+      "anderes": 35
     }
   },
   "ohneHebel": [
@@ -4398,6 +4397,7 @@
     "vegetation.K4+1",
     "tiere.K2+1",
     "tiere.K3+1",
+    "tiere.K5+1",
     "affekt.K1+1",
     "affekt.K4+1",
     "haar.K2+1",
@@ -4607,7 +4607,7 @@
     {
       "stand": "2026-11-28",
       "kopf": "e80f9c5d",
-      "summe": 219,
+      "summe": 218,
       "max": 330,
       "skala": "2.0",
       "was": "Mess-Takt 3 an 8f1802b1 (Züge 29c und 30: Stoff-Tafel, Speicher-Weg, Tier-Gang, Halten K5, Kaskade, Siedlung-Trasse, Nässe unter Dach, GPU-Wand, Leib-Hieb, Kaskaden-Riss, Hänger; headless 66/2, Radeon 27/11, GTX gemessen): stoffe.K1, speicher.K3, halten.K5, siedlung.K3 je +1, leib.K1, oekologie.K1, tiere.K3 → 2; klang.K4 1 → 0 und klang.K5 2 → 1 (2 Stoffe mit ≥ 5 Schritten), siedlung.K5 2 → 0 (nH 300 erstes Haus 974 ms — der Rang des Dorf-Zugs; die Heilung siedlung-k5-erstes-haus fährt in Zug 32)."
