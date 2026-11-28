@@ -1,5 +1,7 @@
 
 
+## 28.11. 02:00 — GPU-PROBE b48bc4ac auf gtx1050-desktop: GRÜN in 2726 s (gate:pruefbuehne-licht GRÜN 108 s auf gtx1050-desktop · gate:weltbild-frost:echt GRÜN 328 s auf gtx1050-desktop · gate:studio-begehen GRÜN 483 s auf gtx1050-desktop · gate:stand-takt GRÜN 504 s auf gtx1050-desktop · gate:webgl-probe GRÜN 92 s auf gtx1050-desktop) → probe-post/kunst-am-leib/b48bc4ac.md
+
 ## 27.11. 23:58 — GPU-PROBE a1a2cff6 auf radeon-890m: ROT in 2069 s (das Bein gpu-probe endete ohne Urteil (cancelled) auf radeon-890m) → probe-post/kunst-am-leib/a1a2cff6.md
 ## 27.11. 23:45 Koordinator — Kopf 4 fährt in z811 (seit 23:16); Kopf 6 a1a2cff6 mischt NICHT mit ihm — Kopf 7 auf dem neuen main; der Prüfer-Lauf kunst#1 fiel an einer Werkzeug-Frist, geheilt im Kandidaten
 
