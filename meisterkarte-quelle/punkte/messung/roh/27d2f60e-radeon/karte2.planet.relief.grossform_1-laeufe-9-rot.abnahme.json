@@ -1,0 +1,122 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.461",
+  "sha": "27d2f60e46a1f78c9b9151bc911f13312be7fce5"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 45,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 4.69,
+   "deckung": 0.2934,
+   "taeter": {
+    "Laub baum_erle": 0.2674,
+    "Rinde baum_erle": 0.026
+   },
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": false,
+  "vor": "Rinde baum_erle",
+  "vorAbstand": 5.06,
+  "leiber": null,
+  "abstand": 9.38,
+  "gestalt": [
+   "wasser"
+  ],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   2122.947,
+   108.994,
+   2138.091
+  ],
+  "blick": [
+   -0.63961,
+   -0.4264,
+   -0.6396
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 78.8,
+  "sigma": 44.7,
+  "schwarz": 0.002,
+  "weiss": 0
+ },
+ "ok": false,
+ "zeile": "ABNAHME ROT [Vordergrund 29.3 % näher als 4.69 m (der halbe Ziel-Abstand): Laub baum_erle 26.7 %, Rinde baum_erle 2.6 % · Ziel Blickziel verdeckt von Rinde baum_erle in 5.06 m] · beweis · Sicht 0.0 % · Ziel Blickziel im Bild VERDECKT 9.38 m · Luma 78.8 σ 44.7 schwarz 0.2 % weiß 0.0 % · Stand 18.546.461 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+ "rot": [
+  {
+   "feld": "sicht.vordergrund.deckung",
+   "grund": "Vordergrund 29.3 % näher als 4.69 m (der halbe Ziel-Abstand): Laub baum_erle 26.7 %, Rinde baum_erle 2.6 %"
+  },
+  {
+   "feld": "ziel.frei",
+   "grund": "Ziel Blickziel verdeckt von Rinde baum_erle in 5.06 m"
+  }
+ ],
+ "urteil": "ROT",
+ "klasse": {
+  "ausdruck": "^(wasserSatz|chunk-water-[a-z]+)$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "kenn": {
+   "n": 8,
+   "tw": 1440,
+   "th": 810,
+   "ms": 1047,
+   "wechsel": 1146359
+  },
+  "rinde": null,
+  "toene": [
+   "wasserSatz=255/80/80"
+  ],
+  "klassen": {
+   "wasserSatz": {
+    "objekte": 1,
+    "pixel": 29909
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\27d2f60e-radeon\\karte2.planet.relief.grossform_1-laeufe-9-rot.maske.png"
+ }
+}
