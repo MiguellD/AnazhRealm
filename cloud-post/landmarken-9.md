@@ -88,11 +88,11 @@ Faden der Ankunft an der teuersten Saat 5 305 → 2 752 ms; die Saaten fahren ge
 
 | Tor | Baum | Urteil | Zeit |
 |---|---|---|---|
-| check:statik | b56b51f0 gemischt · 9885e7c4 gemischt | GRÜN · GRÜN | 581 · 597 s |
-| gate:daten-contract · gate:fachwerk-contract · gate:asset-contract · gate:welt-boot | 9885e7c4 gemischt | GRÜN | 1 · 118 · 269 · 82 s |
+| check:statik | b56b51f0 · 9885e7c4 · bbb97563 gemischt | GRÜN · GRÜN · GRÜN (probeUrteil liest am bbb97563 die Mutanten-Zeile „[H Mutant Objekt-Liste] … ROT“ als rot: Selbsttest, Exit 0) | 581 · 597 · 528 s |
+| gate:daten-contract · gate:fachwerk-contract · gate:asset-contract · gate:welt-boot | 9885e7c4 · bbb97563 gemischt | GRÜN · GRÜN (asset 128 von 128) | 1 · 118 · 269 · 82 s · 1 · 101 · – · 81 s |
 | Kreatur-Linse 1/3 · 2/3 · 3/3 (Stoppuhr, je ≤ 1 150 s) | b56b51f0 gemischt | GRÜN | 976 · 885 · 708 s |
 | herde · lebensraum · querhang · begegnung | 9885e7c4 gemischt | GRÜN, 23 Täter | 32 · 19 · 14 · 57 s |
-| gate:kampf-gefuehl ×3 | 9885e7c4 gemischt | GRÜN 3 von 3 | 80 · 80 · 79 s |
+| gate:kampf-gefuehl ×3 · ×20 · ×1 | 9885e7c4 gemischt · Kopf · bbb97563 gemischt | GRÜN 3 von 3 · 20 von 20 · 1 von 1 | 80 · 80 · 79 s · 77–94 s · 75 s |
 | gate:haus-welt 2/2 | b3740dd5 | GRÜN 21 / 0 | 912 s |
 | gate:schatten-werfer · gate:praegung-welt | b56b51f0 gemischt | GRÜN | 17 · 169 s |
 | gate:studio-begehen (probeUrteil) | b56b51f0 gemischt | GRÜN | 260 s |
