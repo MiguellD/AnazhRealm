@@ -1,0 +1,35 @@
+STATIONS-KANDIDAT landmarken-9 — erleben.sinn.entdeckung#1 (Klasse P: der Blind-Prüfer urteilt, die Station liefert Bild und Zahl)
+
+BASIS
+- kandidat.diff gilt gegen punkte-maschine e20826e1 (28.11. 04:05 UTC): k2-erleben.js Blob e71c1770, faecher.cjs 46b47c4c,
+  quellen.json 0adab4d5. Ergebnis-Blobs 4231612c · 11320f2b · 91a3573a. 129 + / 1 −.
+- Er verträgt sich mit dem wegfindung-Kandidaten (../kandidat.diff): beide nacheinander auf e20826e1 → glatt, node --check grün,
+  k2-erleben.js Blob b849f11f. Die Reihenfolge ist frei (die Hunks liegen 1 900 Zeilen auseinander).
+
+DIE STATION (k2-erleben.js, feldFn Z. 2353 und S1)
+1. feldFn sammelt die Orte des Auges: Ringe 200 · 400 · … · 1 200 m um die Saat × 16 Richtungen (22,5°). Je Ort die stärkste
+   Achse von `r.worldFieldAt` (stamm/feld-leben.js:1804): lebendig → Wald, dichte → Fels (stein_block), magieleitung → Kristall
+   (kristall_geode). Die Glut wirft keinen Körper → gezählt, nie gezeigt; ein Ort unter dem Wasserspiegel → nass, nie gezeigt.
+2. Die Pose steht 25 m vor dem Ort auf Augenhöhe (Boden + 1,7 m), der Blick auf den Boden des Orts + 1 m. Das Wort nennt Klasse,
+   Ring, Richtung und die Klasse 400 m weiter (anders = die Grenze im Bild).
+3. S1 bricht beim Namen, wenn die Saat < 2 Arten mit Körper trägt (die Frage braucht eine Wahl); sonst `L.auge(1, {erzeugt})`.
+   Die Zeile „entdeckung Welt …" trägt je, glut, nass und die Zahl der Orte.
+
+DAS FACH (vision/pruefer/faecher.cjs)
+- `entdeckungGesetz()` liest feldFn aus dem Text der Station (indexOf, wie bodenGesetz/gebirgeGesetz) und wirft beim Namen, wenn
+  `orte.push({` fehlt — nie eine eigene Formel.
+- Sprosse: ort dorf · uhren [0,5] · Frage „Was wächst an diesem Ort: Wald, Fels oder Kristall?" · je 14 · motiv AN_DER_POSE && GRUEN.
+- Gemessen am dorf (main bbb97563, Null-Welt): Wald 21 · Fels 28 · Kristall 21, Glut 26, nass 0 → 70 Posen in 13 ms.
+- Selbsttest 21 GRÜN · 0 ROT (neu: „der Ort der Entdeckung liest das Feld der Station"); Mutant ohne Kristall → 20 GRÜN · 1 ROT.
+
+DIE QUELLEN (vision/pruefer/quellen.json, additiv, Einzug 1 byte-gleich)
+- ort-wald: Commons „Forests in Germany", 240 Dateien unmittelbar, soll 40.
+- ort-fels: Commons „Boulder fields", 40 Dateien unmittelbar, soll 40 — knapp; fällt der Holer darunter, ist das Blatt
+  „Umfang nicht erzeugbar" beim Namen.
+- Kristall: KEIN Satz. Commons „Geodes" (206) sind Handstücke aus der Nähe, nicht die Weite der Pose (25 m) — ein solcher Satz
+  wäre ein falsches Band. Kristall urteilt nur im Klassen-Blatt des Fachs.
+
+EHRLICH OFFEN
+- Die Station lief nicht am Gerät (GPU): das Bild der 70 Posen und das Prüfer-Urteil stehen aus — Richter ist der Lauf am Gerät.
+- Die Sätze sind ungeholt (geholt wird am Gerät mit `--nur ort-wald` / `--nur ort-fels`, nie in der Sitzung des Machers).
+- Zeile P in stationen/auge-klasse.cjs (Z. 60) steht schon; der Kandidat ändert sie nicht.

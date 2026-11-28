@@ -101,6 +101,27 @@ Faden der Ankunft an der teuersten Saat 5 305 → 2 752 ms; die Saaten fahren ge
 | gate:schatten-werfer · gate:praegung-welt | b56b51f0 gemischt | GRÜN | 17 · 169 s |
 | gate:studio-begehen (probeUrteil) | b56b51f0 gemischt | GRÜN | 260 s |
 | gate:pruefbuehne-licht · gate:tag-achse:echt (probeUrteil) | Kopf und main | ROT gleich main (offen) | 76 · 585 s |
+| Kreatur-Linse 1/3 · 2/3 · 3/3 | bbb97563 gemischt | GRÜN · GRÜN · läuft | 846 · 755 s · – |
+
+## GPU-Probe Kopf 2 (5bfc76d4, GTX 1050, Lauf 46103198587) — GRÜN
+
+| Tor | Urteil | Zeit |
+|---|---|---|
+| gate:pruefbuehne-licht | GRÜN (S0 Bild: Feuerkreis aus 2 m, Nacht Luma 44,3) | 100 s |
+| gate:weltbild-frost:echt | GRÜN (608 997 writeBuffer, keiner schief; Täter beim Namen) | 353 s |
+| gate:tag-achse:echt | GRÜN (genesis · wiese) | 254 s |
+| gate:studio-begehen | GRÜN | 493 s — über dem Deckel 480 s und doch grün; die Probe trägt den Deckel nicht als Urteil |
+| gate:webgl-probe (Pflicht der Probe) | GRÜN | 100 s |
+
+Die lokalen Rötungen licht S0 und tag „3601 Takte“ sind an der GPU grün: die Werkbank in der Wolke, nicht der Kopf.
+
+## Stations-Kandidat erleben.sinn.entdeckung#1 (`cloud-post/landmarken-9-station/entdeckung/`)
+
+Gegen punkte-maschine e20826e1, 129 + / 1 − in drei Dateien; verträgt sich mit dem wegfindung-Kandidaten (beide glatt, node --check grün).
+Station: feldFn (k2-erleben.js:2353) sammelt die Orte des Auges aus `worldFieldAt` (Ringe 200–1 200 m × 16 Richtungen, Pose 25 m vor dem
+Ort); am dorf Wald 21 · Fels 28 · Kristall 21, Glut 26, nass 0 → 70 Posen in 13 ms. Fach: Selbsttest 21 GRÜN · 0 ROT, Mutant ohne
+Kristall 20 / 1. Sätze ort-wald (240 Dateien) · ort-fels (40, knapp am Soll); Kristall ohne Foto-Band (Commons-Geoden sind Handstücke).
+Offen: der Lauf am Gerät (Bild + Prüfer-Urteil) und das Holen der Sätze am Gerät.
 
 ## Ehrlich offen (mit Datei und Zeile)
 

@@ -1,0 +1,181 @@
+--- a/meisterkarte-quelle/punkte/stationen/k2-erleben.js
++++ b/meisterkarte-quelle/punkte/stationen/k2-erleben.js
+@@ -2369,7 +2369,52 @@
+                     const ruinen = nah.filter((a) => /ruin/i.test(a.type)).length;
+                     const welten = new Set((r.worldsIndexLoad ? r.worldsIndexLoad() : []).map((w) => w.worldId));
+                     if (st.worldMeta && st.worldMeta.worldId) welten.add(st.worldMeta.worldId);
++                    // DIE ORTE DES FELDS FÜR DAS AUGE (S1, Fach des Prüfers, vision/pruefer/faecher.cjs entdeckung#1): je Ring 200–1 200 m × 16
++                    // Richtungen die vorherrschende Achse am Ort und 400 m weiter (dieselbe Wahl wie `art`) — lebendig wächst Wald, dichte
++                    // Fels, magieleitung Kristall (feld-leben.js `worldFieldAt`); die Glut wirft keinen Körper (`FELD_WURF`) und kein Bild.
++                    // Die Pose: Ego 1,7 m, 25 m vor dem Ort zur Mitte hin, Blick auf 1 m über seinem Grund — ein Ort unter Wasser zählt nass
++                    const KL = { lebendig: "Wald", dichte: "Fels", magieleitung: "Kristall" };
++                    const achse = (x, z) => {
++                        const f = r.worldFieldAt(x, z);
++                        let k = "lebendig";
++                        for (const q of Object.keys(f)) if (f[q] > f[k]) k = q;
++                        return k;
++                    };
++                    const orte = [];
++                    const je = { Wald: 0, Fels: 0, Kristall: 0 };
++                    let glut = 0,
++                        nass = 0;
++                    for (let rr = 200; rr <= 1200; rr += 200)
++                        for (let i = 0; i < 16; i++) {
++                            const a = (i * Math.PI) / 8,
++                                [ux, uz] = [Math.cos(a), Math.sin(a)];
++                            const [qx, qz] = [p.x + rr * ux, p.z + rr * uz];
++                            const k = achse(qx, qz);
++                            if (!KL[k]) {
++                                glut++;
++                                continue;
++                            }
++                            const gq = r.getTerrainHeightAt(qx, qz);
++                            if (gq < st.waterLevel) {
++                                nass++;
++                                continue;
++                            }
++                            const [ex, ez] = [qx - 25 * ux, qz - 25 * uz];
++                            const nb = achse(qx + 400 * ux, qz + 400 * uz);
++                            je[KL[k]]++;
++                            orte.push({
++                                klasse: KL[k],
++                                anders: nb !== k,
++                                d: rr,
++                                pose: { px: +ex.toFixed(2), py: +(r.getTerrainHeightAt(ex, ez) + 1.7).toFixed(2), pz: +ez.toFixed(2), lx: +qx.toFixed(2), ly: +(gq + 1).toFixed(2), lz: +qz.toFixed(2) },
++                                wort: KL[k] + " " + rr + " m bei " + i * 22.5 + "° (" + Math.round(qx) + "/" + Math.round(qz) + "), 400 m weiter " + (KL[nb] || "Glut"),
++                            });
++                        }
+                     return {
++                        orte,
++                        je,
++                        glut,
++                        nass,
+                         mitte,
+                         ring,
+                         anders: ring.filter((x) => x !== mitte).length,
+@@ -2383,12 +2428,19 @@
+                     };
+                 };
+                 const f = await L.ev("return (" + feldFn + ")(r);");
+-                L.zeile("entdeckung Welt " + JSON.stringify(f));
++                const orte = f.orte;
++                delete f.orte;
++                L.zeile("entdeckung Welt " + JSON.stringify(f) + " · Orte des Auges " + orte.length + " (anders als 400 m weiter " + orte.filter((o) => o.anders).length + ")");
+                 const funde = f.wesen + f.selten + f.ruinen;
+                 // ── S1 · ein Ort, der sich aus der Saat vom Nachbarn unterscheidet ──
+                 await L.je(1, async () => {
+                     if (f.anders < P.sprossen[1].umfang.verlangt)
+                         return L.umfang(1, f.anders, "an der Pose " + JSON.stringify(f.pos) + " trägt kein Ort 400 m weiter ein anderes Feld der Saat (" + f.mitte + " gegen " + f.ring.join(", ") + ")");
++                    // das Urteil spricht der Prüfer (auge-klasse.cjs P, Fach entdeckung#1): er nennt am Bild die Art des Orts (Wald · Fels ·
++                    // Kristall); unter zwei Klassen mit Körper hat er nichts zu unterscheiden — die Station nennt den Leser beim Namen
++                    const klassen = Object.keys(f.je).filter((k) => f.je[k] > 0);
++                    if (klassen.length < 2)
++                        return L.leser(1, "das Feld der Saat trägt um " + JSON.stringify(f.pos) + " < 2 Arten mit Körper (" + JSON.stringify(f.je) + ", Glut " + f.glut + ", nass " + f.nass + "): Wald, Fels und Kristall wachsen aus lebendig, dichte und magieleitung (`worldFieldAt`, stamm/feld-leben.js:1804), die Glut wirft keinen Körper");
+                     await L.auge(1, { erzeugt: f.anders });
+                 });
+                 // ── S2 · ein Fund je 100 m Weg ──
+--- a/vision/pruefer/faecher.cjs
++++ b/vision/pruefer/faecher.cjs
+@@ -153,6 +153,19 @@
+     return fn;
+ }
+ 
++// DAS FELD DER ENTDECKUNG (erleben.sinn.entdeckung#1): `feldFn` der Station (k2-erleben.js, im Lauf der Leiter, kein `seite`-Export) — die
++// vorherrschende Achse des Welt-Felds je Ort (Ring 200–1 200 m × 16 Richtungen um den Spieler), Wald · Fels · Kristall, und die Pose 25 m vor
++// dem Ort; der Fächer ruft sie wörtlich, nie eine Abschrift — ändert die Station den Wortlaut, wirft er
++function entdeckungGesetz() {
++    const t = fs.readFileSync(path.join(STATIONEN, "k2-erleben.js"), "utf8");
++    const a = t.indexOf("const feldFn = function (r) {");
++    const e = a < 0 ? -1 : t.indexOf("\n                };\n", a);
++    if (a < 0 || e < 0) throw new Error("Gesetz fehlt: k2-erleben.js trägt feldFn in der Entdeckung nicht mehr");
++    const fn = t.slice(a + "const feldFn = ".length, e + 18).trim();
++    if (!/orte\.push\(\{/.test(fn)) throw new Error("Gesetz fehlt: feldFn gibt die Orte des Auges („orte“) nicht zurück");
++    return fn;
++}
++
+ // JE SPROSSE: der Messort, die Zeile des Gesetzes, der Rumpf in der Seite (r = Welt, T = THREE) → { saat, posen: [{ pose, wort }], lage }
+ const SPROSSEN = {
+     // der Ortsrand: die Station nimmt von 8 Richtungen die mit den meisten Häusern im Kegel der Kamera (k2-mensch-stadt.js:224–236,
+@@ -536,6 +549,27 @@
+             " w.bilder.forEach((s, rang) => { je[klasse] = (je[klasse] || 0) + 1; posen.push({ rang, klasse, reise: 'reise ' + w.breite + ' ' + w.laenge, pose: { px: +(s.x - s.fx * 40).toFixed(2), py: +(s.yEgo + 1.7).toFixed(2), pz: +(s.z - s.fz * 40).toFixed(2), lx: s.x, ly: +(s.y + 4).toFixed(2), lz: s.z }, wort: 'Lage ' + ort + ' (' + w.breite + ' ' + w.laenge + ', ' + w.zone + '): Wand ' + (rang + 1) + ' der steilsten von ' + w.waende + ' Wänden ≥ 40°, ihre Bänke fallen ' + s.einfall + '°, Ego 40 m hangab' }); }); }" +
+             "return { saat, posen, lage: fehlt ? 'Leser fehlt: ' + fehlt : '200 Lagen: ' + JSON.stringify(je) + ', Meer ' + meer + ', weder Kollision noch Kraton ' + sonst + ', ohne Wand ≥ 40° ' + ohneWand };",
+     },
++    // der Ort, der sich aus der Saat vom Nachbarn unterscheidet: die Station liest das Welt-Feld je Ort (k2-erleben.js feldFn — die
++    // vorherrschende Achse von `worldFieldAt`: lebendig wächst Wald, dichte Fels, magieleitung Kristall; die Glut wirft keinen Körper) und
++    // 400 m weiter; der Prüfer nennt am Bild die Art des Orts. Der billigste Ort, den das Gesetz erlaubt (Post 28.11. 03:03): das Dorf der
++    // Zelle −4,−4 — die Ringe 200–1 200 m tragen dort Wald 21 · Fels 28 · Kristall 21 (Glut 26, nass 0; gezählt 28.11. im Null-Boot am
++    // main bbb97563), 42 Bilder (je 14 im Wechsel)
++    "erleben.sinn.entdeckung#1": {
++        ort: "dorf",
++        gesetz: "meisterkarte-quelle/punkte/stationen/k2-erleben.js:2353",
++        faecher: "16 Richtungen × die Ringe 200–1 200 m um den Spieler am Dorf, je Ort die vorherrschende Achse des Welt-Felds (Wald · Fels · Kristall, die Glut ohne Körper fällt), Ego 1,7 m 25 m vor dem Ort zur Mitte hin, Blick auf 1 m über seinem Grund, Klassen im Wechsel",
++        ordner: "erleben.sinn.entdeckung.1-b1",
++        uhren: [0.5],
++        frage: "Was wächst an diesem Ort: Wald, Fels oder Kristall?",
++        je: 14,
++        mehr: {},
++        wahl: 0,
++        motiv: (a) => AN_DER_POSE(a) && GRUEN(a),
++        rumpf: () =>
++            SAAT +
++            "const F = (" + entdeckungGesetz() + ")(r);" +
++            "return { saat, posen: F.orte.map((o) => ({ pose: o.pose, klasse: o.klasse, wort: o.wort })), lage: 'Ringe 200–1 200 m × 16 Richtungen um ' + JSON.stringify(F.pos) + ': ' + JSON.stringify(F.je) + ', Glut ' + F.glut + ', nass ' + F.nass + ', anders als 400 m weiter ' + F.orte.filter((o) => o.anders).length };",
++    },
+     // die Glut: die Station setzt ihre Lava-Tat selbst und schießt am Spawn (k2-planet.js:1228); das Gesetz der Welt stellt keinen
+     // Vulkan (kein Schlüssel am Planet-Faden, kein Leser eines Ausbruchs) — Adressen der Glut sind nur die Lava-Zellen, die die Welt trägt
+     "planet.geologie.vulkan#1": {
+@@ -841,6 +875,7 @@
+     const AU = seiteVon("k2-mensch-leib.js", "mensch.leib.ausdruck", "AUSDRUCK");
+     t("Akt und Gemüt: die Klasse ist der Name, den der Leib steht (Wahl des Wirts), je Pose ihre Uhr, seitlich, ≥ 20 je Klasse", /_koerperMotionName\(false, \{ haltung: KC\.tagesHaltung\(s\.akt, b\.rolle, b\)/.test(AU) && /basis === "sad" && s\.akt === "abend" \? "Müde"/.test(AU) && /uhr: h \/ 24/.test(AU) && /Math\.cos\(y\) \* 3\.5/.test(AU) && /uhr: p\.uhr/.test(SPROSSEN["mensch.leib.ausdruck#1"].rumpf()) && SPROSSEN["mensch.leib.ausdruck#1"].je >= 20);
+     t("die Felswand liest das Gesetz der Station: FELS_AN wörtlich (Zone und die steilsten Wände), die Klasse aus der Zone des Planet-Fadens, je Lage eine Reise", (() => { try { const g = SPROSSEN["planet.geologie.gebirge#1"].rumpf(); return /const FELS_AN = async \(r, T, a, mit\) =>/.test(g) && /w\.zone === 'kollision' \? 'gefaltet' : w\.zone === 'kraton' \? 'flach'/.test(g) && /reise: 'reise '/.test(g) && SPROSSEN["planet.geologie.gebirge#1"].je >= 20; } catch (e) { return false; } })());
++    t("der Ort der Entdeckung liest das Feld der Station: feldFn wörtlich (die Achse von worldFieldAt, Wald · Fels · Kristall, die Glut ohne Körper), Ringe 200–1 200 m × 16, ≥ 40 Bilder", (() => { try { const g = SPROSSEN["erleben.sinn.entdeckung#1"].rumpf(); return /const F = \(function \(r\) \{/.test(g) && /const KL = \{ lebendig: "Wald", dichte: "Fels", magieleitung: "Kristall" \}/.test(g) && /for \(let rr = 200; rr <= 1200; rr \+= 200\)/.test(g) && 3 * SPROSSEN["erleben.sinn.entdeckung#1"].je >= MIN; } catch (e) { return false; } })());
+     t("jede Klassen-Sprosse trägt ihre Frage", Object.values(SPROSSEN).filter((d) => d.je).every((d) => /\?$/.test(d.frage || "")));
+     t("eine feste Uhr (Erntetag) fächert nur über Adressen", faechern(basis(12), [10 / 24], { uhr: 1 }).length === 12 && faechern(basis(12), [10 / 24], {})[0].mehr.uhr === 10 / 24);
+     const png = Buffer.alloc(24);
+--- a/vision/pruefer/quellen.json
++++ b/vision/pruefer/quellen.json
+@@ -12315,6 +12315,44 @@
+    "liegenGeblieben": [],
+    "stand": "ungeholt — geholt wird am Gerät (`--nur ricke`), nie in der Sitzung des Machers · die Suche trägt 30 freie JPEG ≥ 1 280 px (Commons 28.11.) · `hole.cjs --trocken` 28.11.: 25 von 25, liegen geblieben 0 — ungesichtet",
+    "ablage": "2afc/wikimedia-commons/ricke"
++  },
++  {
++   "id": "ort-wald",
++   "art": "2afc",
++   "quelle": "Wikimedia Commons",
++   "fuer": [
++    "erleben.sinn.entdeckung#1"
++   ],
++   "soll": 40,
++   "breite": 1280,
++   "lizenz": "je Datei (gemeinfrei · CC0 · CC BY · CC BY-SA)",
++   "motiv": "ein Wald aus 25 m auf Augenhöhe, Stämme und Kronen im Bild, Tageslicht, Sommer — die Klasse Wald des Fachs (lebendig im Welt-Feld)",
++   "abfrage": {
++    "art": "commons",
++    "kategorie": "Forests in Germany",
++    "ohne": "map|diagram|chart|logo|poster|painting|drawing|stamp|sign|museum|statue|sculpture|engraving|illustration|lithograph|postcard|Google Art Project|aerial|drone|satellite|sign|trail marker|hut|tower|winter|snow"
++   },
++   "dateien": [],
++   "stand": "ungeholt — geholt wird am Gerät (`--nur ort-wald`), nie in der Sitzung des Machers · die Kategorie trägt 240 Dateien unmittelbar (Commons categoryinfo 28.11.; 44 Unterkategorien liest der Holer nicht)"
++  },
++  {
++   "id": "ort-fels",
++   "art": "2afc",
++   "quelle": "Wikimedia Commons",
++   "fuer": [
++    "erleben.sinn.entdeckung#1"
++   ],
++   "soll": 40,
++   "breite": 1280,
++   "lizenz": "je Datei (gemeinfrei · CC0 · CC BY · CC BY-SA)",
++   "motiv": "ein Blockfeld (Felsenmeer) aus 25 m auf Augenhöhe, Blöcke auf dem Boden, Tageslicht — die Klasse Fels des Fachs (dichte im Welt-Feld: stein_block)",
++   "abfrage": {
++    "art": "commons",
++    "kategorie": "Boulder fields",
++    "ohne": "map|diagram|chart|logo|poster|painting|drawing|stamp|sign|museum|statue|sculpture|engraving|illustration|lithograph|postcard|Google Art Project|aerial|drone|satellite"
++   },
++   "dateien": [],
++   "stand": "ungeholt — geholt wird am Gerät (`--nur ort-fels`), nie in der Sitzung des Machers · die Kategorie trägt 40 Dateien unmittelbar (Commons categoryinfo 28.11.; 14 Unterkategorien liest der Holer nicht) — knapp am Soll: fällt der Holer unter 40, ist das Blatt „Umfang nicht erzeugbar“ beim Namen; die Klasse Kristall trägt kein Foto-Band in der Weite der Pose (Commons „Geodes“ 206 Dateien, Handstücke aus der Nähe) — sie urteilt nur im Klassen-Blatt des Fachs"
+   }
+  ],
+  "liegenGebliebenQuellen": [
