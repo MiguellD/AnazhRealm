@@ -1,6 +1,8 @@
+diff --git a/meisterkarte-quelle/punkte/stationen/k2-leben.js b/meisterkarte-quelle/punkte/stationen/k2-leben.js
+index 0930b70..63edb39 100644
 --- a/meisterkarte-quelle/punkte/stationen/k2-leben.js
 +++ b/meisterkarte-quelle/punkte/stationen/k2-leben.js
-@@ -6389,7 +6389,7 @@
+@@ -6399,7 +6399,7 @@ L.perspektive("oeko", (() => {
                      2: {
                          u: { auge: { ort: "wiese" } },
                          soll: [K.soll(SU, 2, "Bildpaar nach 1/5/25 Spieljahren", { key: "jahre", rel: "≥", zahl: 25, einheit: "Spieljahre" })],
@@ -9,9 +11,11 @@
                          taeter: "stamm/feld-brand.js _brandEntfachen (kein Flächenbrand mit Inseln in der Folge)",
                          nicht: "kein 1-km²-Brand mit Überlebenden-Inseln",
                          leser: "stamm/vegetation-wiese.js:2120 _sukzession — EINE Rampe je Zelle, kein Feuer-Regime je Biom, keine Überlebenden",
+diff --git a/vision/pruefer/faecher.cjs b/vision/pruefer/faecher.cjs
+index efba949..37b916e 100644
 --- a/vision/pruefer/faecher.cjs
 +++ b/vision/pruefer/faecher.cjs
-@@ -141,6 +141,23 @@
+@@ -141,6 +141,23 @@ function bodenGesetz() {
      return { an: fn("BODEN_AN"), blick: fn("HANG_BLICK"), posen: t.slice(s, t.indexOf("\n", g)).replace("(Number(u1.posen) || 30)", "N") };
  }
  
@@ -35,7 +39,7 @@
  // JE SPROSSE: der Messort, die Zeile des Gesetzes, der Rumpf in der Seite (r = Welt, T = THREE) → { saat, posen: [{ pose, wort }], lage }
  const SPROSSEN = {
      // der Ortsrand: die Station nimmt von 8 Richtungen die mit den meisten Häusern im Kegel der Kamera (k2-mensch-stadt.js:224–236,
-@@ -463,6 +480,40 @@
+@@ -515,6 +532,40 @@ const SPROSSEN = {
              "const N = [...namen], leser = N.filter((n) => /vulkan|volcan|magma|ausbruch|eruption|roehre/i.test(n)), schl = Object.keys(o).sort().join(',') + ' · delta ' + Object.keys(o.delta || {}).sort().join(',');" +
              "return { saat, posen: [], lage: 'der Planet-Faden trägt ' + (/vulkan/.test(schl) ? 'einen' : 'keinen') + ' Vulkan (' + schl + '), die Welt ' + leser.length + ' Leser eines Ausbruchs; Glut steht nur an einer gesetzten Lava-Tat' };",
      },
@@ -76,7 +80,7 @@
  };
  
  // ───────────────────────── reine Teile (der Selbsttest fährt sie) ─────────────────────────
-@@ -746,6 +797,8 @@
+@@ -823,6 +874,8 @@ function selbsttest() {
      t("die Rümpfe tragen die Seiten-Funktionen der Stationen und sind gültiger Text" + (rumpf.startsWith("FEHLER") ? " — " + rumpf : ""), !rumpf.startsWith("FEHLER") && /_bewohnerSiedlungen/.test(rumpf) && /aus\.alle/.test(rumpf) && /i < 16/.test(rumpf));
      const boden = rumpf.startsWith("FEHLER") ? "" : SPROSSEN["planet.relief.boden#1"].rumpf();
      t("der Boden am Hang liest das Gesetz der Station: BODEN_AN, HANG_BLICK und den Strom der Saat 12345 (100 Posen), nie eine eigene Formel", /BODEN_AN = async \(r, T, a, mit\) =>/.test(boden) && /HANG_BLICK = \(r, x, z\) =>/.test(boden) && /let sz = 12345;/.test(boden) && /p < N; p\+\+/.test(boden) && !/u1\.posen/.test(boden));
@@ -85,74 +89,9 @@
      let wurf = "";
      try {
          seiteVon("k2-mensch-stadt.js", "mensch.stadt.groesse", "GIBTESNICHT");
---- a/vision/pruefer/quellen.json
-+++ b/vision/pruefer/quellen.json
-@@ -12189,6 +12189,24 @@
-    "liegenGeblieben": [],
-    "stand": "ungeholt — geholt wird am Gerät (`--nur hang-schutt`), nie in der Sitzung des Machers · die Kategorie trägt 109 Dateien unmittelbar (Commons categoryinfo 28.11.)",
-    "ablage": "2afc/wikimedia-commons/hang-schutt"
-+  },
-+  {
-+   "id": "yellowstone-1988",
-+   "art": "2afc",
-+   "quelle": "Wikimedia Commons",
-+   "fuer": [
-+    "leben.oeko.sukzession#2"
-+   ],
-+   "soll": 40,
-+   "breite": 1280,
-+   "lizenz": "je Datei (gemeinfrei · CC BY · CC BY-SA)",
-+   "abfrage": {
-+    "art": "liste",
-+    "datei": "vision/pruefer/listen/yellowstone-1988.csv"
-+   },
-+   "dateien": [],
-+   "liegenGeblieben": [],
-+   "stand": "ungeholt · gesichtet in der Vorschau (360 px) am 28.11., Bild für Bild: von 46 Kandidaten (Titel aus 199 Treffern in Commons und NPGallery) und 8 der zweiten Suche (Commons, die späteren Brände des Parks) tragen 28 das Motiv — eine Brandfläche im Lodgepole-Wald, die Jahre seit dem Brand am Foto lesbar (wahrheit): 1–2 a 11 · 9–13 a 9 · 18–31 a 8; die Stufe 5 a trägt kein freies Foto. Korpus 28 von 40"
-   }
-  ],
-  "liegenGebliebenQuellen": [
-@@ -12226,7 +12244,7 @@
-    ],
-    "quelle": "NPS, Yellowstone-Feuer 1988, Fotoreihe (gemeinfrei)",
-    "umfang": "≥ 40 Fotos in drei Zeitstufen",
--   "grund": "nicht geholt: die Zeitstufe je Foto muss von Hand gelesen werden"
-+   "grund": "gelesen am 28.11. als Satz yellowstone-1988 (Liste, die Jahre je Foto): 28 von 40, die Stufe 5 a ohne freies Foto"
-   },
-   {
-    "art": "2afc",
-@@ -12429,7 +12447,7 @@
-   }
-  ],
-  "summe": {
--  "saetze": 29,
-+  "saetze": 36,
-   "dateien": 976,
-   "bytes": 269368450,
-   "liegenGeblieben": 83
-@@ -12647,14 +12665,16 @@
-    "id": "leben.oeko.sukzession#2",
-    "satz": "Bildpaar nach 1/5/25 Spieljahren gegen die Yellowstone-1988-Fotoreihe",
-    "a": null,
--   "fotos": 0,
-+   "fotos": 28,
-    "b": false,
--   "c": "nicht-gelesen",
--   "station": "k2-leben.js",
--   "motiv": "Bildpaar nach 1/5/25 Spieljahren",
--   "saetze": [],
-+   "c": "einzelbild",
-+   "station": "k2-leben.js:6350 M.auge(\"oeko-sukzession-s2\") am Messort wiese",
-+   "motiv": "die Zelle der Tat „brand“ nach 1/5/25 Spieljahren, gerahmt, Ego 1,7 m",
-+   "saetze": [
-+    "yellowstone-1988"
-+   ],
-    "bereitBisAufDenFaecher": false,
--   "fehlt": "a: keine Schwelle im Satz · b: Yellowstone-1988-Fotoreihe mit Zeitstufe je Foto (plan)"
-+   "fehlt": "a: keine Schwelle im Satz · b: 28 von 40 gesichtet (Satz yellowstone-1988), die Stufe 5 a trägt kein freies Foto"
-   },
-   {
-    "id": "leben.evolution.mikroben#1",
+diff --git a/vision/pruefer/listen/yellowstone-1988.csv b/vision/pruefer/listen/yellowstone-1988.csv
+new file mode 100644
+index 0000000..6d79f08
 --- /dev/null
 +++ b/vision/pruefer/listen/yellowstone-1988.csv
 @@ -0,0 +1,31 @@
@@ -187,3 +126,65 @@
 +https://thumb.wikimedia.org/wikipedia/commons/thumb/4/46/Lodgepole_pine_regrowth_after_1988_fire_along_Gibbon_River_%2848793693943%29.jpg/1280px-Lodgepole_pine_regrowth_after_1988_fire_along_Gibbon_River_%2848793693943%29.jpg;gemeinfrei;31;https://commons.wikimedia.org/wiki/File:Lodgepole_pine_regrowth_after_1988_fire_along_Gibbon_River_(48793693943).jpg (Feuer 1988, Foto 2019-08-30 18:56)
 +https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5b/Lodgepole_pine_regrowth_after_1988_fire_along_Gibbon_River_%2848794197667%29.jpg/1280px-Lodgepole_pine_regrowth_after_1988_fire_along_Gibbon_River_%2848794197667%29.jpg;gemeinfrei;31;https://commons.wikimedia.org/wiki/File:Lodgepole_pine_regrowth_after_1988_fire_along_Gibbon_River_(48794197667).jpg (Feuer 1988, Foto 2019-08-30 18:56)
 +https://thumb.wikimedia.org/wikipedia/commons/thumb/4/49/Lodgepole_pine_forest_along_the_Madison_river_%284baffe1a-666d-462a-b9ed-a2a5e3e0ca1e%29.jpg/1280px-Lodgepole_pine_forest_along_the_Madison_river_%284baffe1a-666d-462a-b9ed-a2a5e3e0ca1e%29.jpg;gemeinfrei;26;https://commons.wikimedia.org/wiki/File:Lodgepole_pine_forest_along_the_Madison_river_(4baffe1a-666d-462a-b9ed-a2a5e3e0ca1e).jpg (Feuer 1988, Foto 12 September 2014)
+diff --git a/vision/pruefer/quellen.json b/vision/pruefer/quellen.json
+index 2b40ef1..691acc0 100644
+--- a/vision/pruefer/quellen.json
++++ b/vision/pruefer/quellen.json
+@@ -12273,6 +12273,25 @@
+    "liegenGeblieben": [],
+    "stand": "ungeholt — geholt wird am Gerät (`--nur ricke`), nie in der Sitzung des Machers · die Suche trägt 30 freie JPEG ≥ 1 280 px (Commons 28.11.) · `hole.cjs --trocken` 28.11.: 25 von 25, liegen geblieben 0 — ungesichtet",
+    "ablage": "2afc/wikimedia-commons/ricke"
++  },
++  {
++   "id": "yellowstone-1988",
++   "art": "2afc",
++   "quelle": "Wikimedia Commons",
++   "fuer": [
++    "leben.oeko.sukzession#2"
++   ],
++   "soll": 40,
++   "breite": 1280,
++   "lizenz": "je Datei (gemeinfrei · CC BY · CC BY-SA)",
++   "abfrage": {
++    "art": "liste",
++    "datei": "vision/pruefer/listen/yellowstone-1988.csv"
++   },
++   "dateien": [],
++   "liegenGeblieben": [],
++   "stand": "ungeholt — geholt wird am Gerät (`--nur yellowstone-1988`), nie in der Sitzung des Machers · gelesen aus Commons `Yellowstone fires of 1988` (65 Dateien unmittelbar), `Natural regeneration of Yellowstone` (21), der Commons-Suche und der NPGallery-Suche (199 Kandidaten, 46 nach Titel) und der zweiten Commons-Suche `Maple Fire` (50 Dateien) · gesichtet in der Vorschau (360 px) am 28.11., Bild für Bild: 28 tragen das Motiv — eine Brandfläche im Lodgepole-Wald, die Jahre seit dem Brand am Foto lesbar (wahrheit): 1–2 a 11 · 9–13 a 9 · 18–31 a 8; die Stufe 5 a trägt kein freies Foto. Korpus 28 von 40",
++   "ablage": "2afc/wikimedia-commons/yellowstone-1988"
+   }
+  ],
+  "liegenGebliebenQuellen": [
+@@ -12310,7 +12329,7 @@
+    ],
+    "quelle": "NPS, Yellowstone-Feuer 1988, Fotoreihe (gemeinfrei)",
+    "umfang": "≥ 40 Fotos in drei Zeitstufen",
+-   "grund": "nicht geholt: die Zeitstufe je Foto muss von Hand gelesen werden"
++   "grund": "gelesen am 28.11. als Satz yellowstone-1988 (Liste, die Jahre je Foto): 28 von 40, die Stufe 5 a ohne freies Foto"
+   },
+   {
+    "art": "2afc",
+@@ -12731,14 +12750,16 @@
+    "id": "leben.oeko.sukzession#2",
+    "satz": "Bildpaar nach 1/5/25 Spieljahren gegen die Yellowstone-1988-Fotoreihe",
+    "a": null,
+-   "fotos": 0,
++   "fotos": 28,
+    "b": false,
+-   "c": "nicht-gelesen",
+-   "station": "k2-leben.js",
+-   "motiv": "Bildpaar nach 1/5/25 Spieljahren",
+-   "saetze": [],
++   "c": "einzelbild",
++   "station": "k2-leben.js:6350 M.auge(\"oeko-sukzession-s2\") am Messort wiese",
++   "motiv": "die Zelle der Tat „brand“ nach 1/5/25 Spieljahren, gerahmt, Ego 1,7 m",
++   "saetze": [
++    "yellowstone-1988"
++   ],
+    "bereitBisAufDenFaecher": false,
+-   "fehlt": "a: keine Schwelle im Satz · b: Yellowstone-1988-Fotoreihe mit Zeitstufe je Foto (plan)"
++   "fehlt": "a: keine Schwelle im Satz · b: 28 von 40 gesichtet (Satz yellowstone-1988), die Stufe 5 a trägt kein freies Foto"
+   },
+   {
+    "id": "leben.evolution.mikroben#1",

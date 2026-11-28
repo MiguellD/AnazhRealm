@@ -237,3 +237,10 @@ Karte 2 gebucht 158 von 1 718 · Status ZWISCHENSTAND.
 - **offen:** n von 20 Läufen BLIND vorher ↔ nachher mit gedrosseltem Takt (CPU ×4) läuft.
 
 Karte 2 gebucht 158 von 1 718 · Status ZWISCHENSTAND.
+
+## 28.11. 04:16 — der Pendel der Linse stand-takt: 20 Läufe gedrosselt, vorher ↔ nachher
+- Gemessen (EIN Boot je Messung, 20 Läufe der Mutante hintereinander; vorher = Kopf 4: q = 1, Pendel je Welt-Sekunde, 300 Takte; nachher = Pendel im Bett, Frist am Stand der Welt): **Faden gedrosselt** (jeder Auftrag an den Voxel-Faden 250 ms später, der Bau landet spät wie an der Radeon unter Last) **20 von 20 BLIND → 0 von 20**, nachher je Lauf genau 24 Netz-Wechsel (4 nasse Chunks × 6 Wechsel). CPU ×4 (Haupt-Faden mitgedrosselt) trifft das Rennen nicht: vorher 0 von 20 (94–130), nachher 0 von 20 (24).
+- Geschnitten (Linse allein, kein Gesetz, kein Kern): der Pendel im Bett (größter Abfluss ohne `T.flut`, ohne Schmelze); jeder Wechsel über den Takt des Pegels, dann das EINE Einschwingen (Reihe, Flug, Faden leer), erst dann liest die Linse. Die Zahl ist nun eine Funktion der Welt, nicht des Geräts.
+- **offen:** der Kopf mit dieser Heilung erst nach der Landung von z819 (Kopf 4 fährt dort) · zerfall#2: Quelle gefunden (Vet. Sci. 2020, Wildschwein-Kadaver, CC BY, 38 Felder in 0/3/10/30 Tagen: 2 · 4 · 14 · 18), der Holer liest weder den Wirt noch ein Feld einer Tafel — Korpus 0 von 40 an der Wand.
+
+Karte 2 gebucht 158 von 1 718 · Status ZWISCHENSTAND.

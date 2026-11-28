@@ -2616,28 +2616,54 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                 await __weltStehtNach(takt);
                 // (WN) DAS WASSERNETZ AM BACH STEHT (wetter.K3): je Takt das Netz jedes Chunks binnen 96 m um den Bach nächst der
                 // Mess-Wiese (`_wasserNetz`, das Wasser, das Körper und Nah-Wiese lesen) — nach dem Stand 600 Takte ohne Wechsel;
-                // die Mutante: der Pegel pendelt je Sekunde der Welt-Uhr (sein Takt, `_pegelUhr`) zwischen Ruhe und Krone
+                // die Mutante: der Pegel pendelt sechsmal zwischen Ruhe und Bett — jeder Wechsel geht über den Takt des Pegels (`_pegelUhr`),
+                // dann schwingt die Welt ein (A9: Reihe, Flug und Faden leer) und erst dann liest die Linse die Netze: die Frist ist der Stand
+                // der Welt, nie Wanduhr oder Bild-Zahl (bis pegel-nach-brand 5 pendelte er je Welt-Sekunde, 300 Takte; ein Bau, der länger
+                // brauchte als die halbe Sekunde, kam nie ins Fenster — an der Radeon unter Last 0 Wechsel, BLIND)
                 const Wn = { takte: 600, wechsel: 0 };
                 for (const B of (await window.__seite()).fluss(MESS).slice(0, 1)) {
                     Wn.ort = [Math.round(B.x), Math.round(B.z)];
                     const [vor, K, span] = [new Map(), globalThis.__gelaendeCore, r._voxelChunkConfig(0).span];
                     for (let cz = Math.floor((B.z - 96) / span); cz * span < B.z + 96; cz++)
                         for (let cx = Math.floor((B.x - 96) / span); cx * span < B.x + 96; cx++) vor.set([cx, cz], r._wasserNetz(cx, cz));
+                    const sieh = () => {
+                        for (const [c, o] of vor) {
+                            const neu = r._wasserNetz(...c);
+                            if (neu === o) continue;
+                            const e = neu && o ? neu.pos.findIndex((v, k) => v !== o.pos[k]) : -1;
+                            Wn.wechsel++;
+                            Wn.wo = `Chunk ${c}` + (e < 0 ? "" : `, Ecke (${neu.pos[e - (e % 3)].toFixed(1)}, ${neu.pos[e - (e % 3) + 2].toFixed(1)})`); // prettier-ignore
+                            vor.set(c, neu);
+                        }
+                    };
                     const gang = async (n) => {
-                        for (let i = 0; i < n; i++, takt(), i % 5 || (await sleep(10)))
-                            for (const [c, o] of vor) {
-                                const neu = r._wasserNetz(...c);
-                                if (neu === o) continue;
-                                const e = neu && o ? neu.pos.findIndex((v, k) => v !== o.pos[k]) : -1;
-                                Wn.wechsel++;
-                                Wn.wo = `Chunk ${c}` + (e < 0 ? "" : `, Ecke (${neu.pos[e - (e % 3)].toFixed(1)}, ${neu.pos[e - (e % 3) + 2].toFixed(1)})`); // prettier-ignore
-                                vor.set(c, neu);
-                            }
+                        for (let i = 0; i < n; i++, takt(), i % 5 || (await sleep(10))) sieh();
                     };
                     await gang(600);
-                    const [w0, wo, hoch] = [Wn.wechsel, Wn.wo, K.pegelTafel(r._gelaende(), r._pegelStand.schmelze, { q: new Float64Array(K.LAUF.n).fill(1) })]; // prettier-ignore
-                    const zurueck = leihe(r, { _pegelTafel: () => (Math.floor(st.spielZeit) % 2 ? hoch : null) });
-                    await gang(300).finally(() => (zurueck(), r._pegelTakt()));
+                    // der Pendel IM BETT: der größte Abfluss, dessen Tafel keine Flut trägt (`T.flut` des Gesetzes, halbiert), OHNE die
+                    // Schmelze — sie allein trägt die Tafel der Welt über die Krone (am Ort 0,0156 gegen 0,00055 an der Krone, Flut
+                    // 135–158 m), ein Pendel mit ihr schaltete die Aue mit: je Wechsel 39 Chunks statt der 12 nassen. Nie q = 1: seit
+                    // der Aue (pegel-nach-brand 4) trat er als Flut 9,3 m auf sie.
+                    const [Lg, n] = [r._gelaende(), r._pegelStand.schmelze.a.length];
+                    const tafel = (q) => K.pegelTafel(Lg, { y0: r._pegelStand.schmelze.y0, a: new Float64Array(n) }, { q: new Float64Array(K.LAUF.n).fill(q) }); // prettier-ignore
+                    let [qu, qo] = [0, 1];
+                    for (let i = 0; i < 40; i++) [qu, qo] = tafel((qu + qo) / 2).flut ? [qu, (qu + qo) / 2] : [(qu + qo) / 2, qo];
+                    const [w0, wo, hoch] = [Wn.wechsel, Wn.wo, qu > 0 && tafel(qu)];
+                    if (!hoch || hoch.flut) throw new Error(`(WN) kein Pendel im Bett: q ${qu}`);
+                    let an = false;
+                    const zurueck = leihe(r, { _pegelTafel: () => (an ? hoch : null) });
+                    try {
+                        for (let k = 0; k < 6; k++) {
+                            an = !an;
+                            for (let i = 0; r._pegelTafelGilt !== (an ? hoch : null); i++, takt(), i % 5 || (await sleep(10)))
+                                if (i > 600) throw new Error(`(WN) der Takt des Pegels trägt den Pendel nicht binnen 600 Takten`);
+                            await __weltStehtNach(takt);
+                            sieh();
+                        }
+                    } finally {
+                        zurueck();
+                        r._pegelTakt();
+                    }
                     [Wn.mutante, Wn.wechsel, Wn.wo] = [Wn.wechsel - w0, w0, wo];
                     await __weltStehtNach(takt);
                 }

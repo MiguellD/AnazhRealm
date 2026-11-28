@@ -65,3 +65,16 @@ NACHTRAG zum dritten Kandidaten (28.11. 02:58 MEZ): neu gegen den pm-Kopf 9c09df
 - Geprüft: `git apply --check` an frischen Kopien von 9c09df5e GRÜN, angewendet byte-gleich; Selbsttest des Fächers 17 GRÜN · 0 ROT;
   `listeLesen` 28 Zeilen, 28 frei.
   OFFEN unverändert: die Stufe 5 a trägt kein freies Foto; 28 von 40.
+
+NACHTRAG zum vierten Kandidaten (28.11. 04:06 MEZ): neu gegen den pm-Kopf 9b4b3c91 (die Basis, die der Koordinator um 03:58 nannte).
+- pm rückte (9c09df5e → 9b4b3c91): vier neue Sätze am selben Ort (haltung-arbeit, kitz, hirschkuh, ricke). Der Kandidat steht dahinter,
+  beide Seiten bleiben. `summe` bleibt UNBERÜHRT (29): sie ist das Ergebnis des letzten Holer-Laufs, nicht der Liste — so hält es pm
+  bei jedem neuen Satz (der dritte Kandidat setzte 36, das fällt).
+- Der Satz der Quellen nach dem Muster boden#1 (Kategorien mit Dateizahl im `stand`): Commons `Yellowstone fires of 1988` 65 Dateien
+  unmittelbar · `Natural regeneration of Yellowstone` 21 · Commons- und NPGallery-Suche 199 Kandidaten, 46 nach Titel · zweite
+  Commons-Suche `Maple Fire` 50 Dateien → 28 tragen das Motiv.
+- Ort und Bildzahl (die Regel der Nacht: am billigsten Ort, den das Gesetz erlaubt): Ort `wiese` (der Messort der Station, das
+  Gesetz der Tat liest dort; keine Stadt, kein stadt-voll) · Bildzahl 44 (MAX des Fächers; der Rumpf gibt 48 Posen, 1 a 18 · 5 a 15 ·
+  25 a 15, `imWechsel` hält die Klassen im Wechsel).
+- Geprüft: `git apply --check` an frischen Kopien von 9b4b3c91 GRÜN.
+  OFFEN unverändert: 28 von 40, die Stufe 5 a trägt kein freies Foto — der Kandidat geht erst an die Wand, wenn der Korpus 40 trägt.
