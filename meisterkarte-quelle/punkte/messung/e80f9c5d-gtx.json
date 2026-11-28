@@ -1,7 +1,7 @@
 {
  "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
  "geraet": "gtx",
- "zeit": "2026-11-28T10:54:13.852Z",
+ "zeit": "2026-11-28T11:22:08.150Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "profiband.K4#1": {
@@ -3222,6 +3222,76 @@
    },
    "zeit": "2026-11-28T10:51:43.819Z",
    "abdruck": "7172cf5c24fe",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.glaube#1": {
+   "gruen": false,
+   "zahl": "S1 ROT an Gläubige im Kultbau 0 verfehlt ≥ 0.3 — Täter: der Tag der Bewohner (koerper-core tagesPlan) kennt keinen Gang in den Kultbau und keinen Festtag · Gläubige im Kultbau 0 (Soll ≥ 0.3) · Festtag ÷ Werktag 1.125 (Soll ≥ 3) · Umfang 3 (Soll ≥ 1 Glaube mit Kalender (sein Kultbau steht)) · Stunde 7.5 h · im Kultbau 0 · an ihm 27 · Soll des Tags 0/36 · 7 Tage 27/22/24/24/24/24/24 · Gläubige = alle 1357 Bewohner (kein Bekenntnis am Bewohner) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.87,
+   "grund": "ROT: S1 ROT an Gläubige im Kultbau 0 verfehlt ≥ 0.3 — Täter: der Tag der Bewohner (koerper-core tagesPlan) kennt keinen Gang in den Kultbau und keinen Festtag · Gläubige im Kultbau 0 (Soll ≥ 0.3) · Festtag ÷ Werktag 1.125 (Soll ≥ 3) · Umfang 3 (Soll ≥ 1 Glaube mit Kalender (sein Kultbau steht)) · Stunde 7.5 h · im Kultbau 0 · an ihm 27 · Soll des Tags 0/36 · 7 Tage 27/22/24/24/24/24/24 · Gläubige = alle 1357 Bewohner (kein Bekenntnis am Bewohner) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k037717809c18",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k1ca930620453",
+   "s": 51.2,
+   "fremd": {
+    "s": 54.4,
+    "takte": 25,
+    "fremdS": 14.23,
+    "kerne": 0.262,
+    "fensterKerne": 0.385,
+    "namen": [
+     [
+      "bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \"",
+      3.02
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      1.61
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-e80f9c5d-w121747-s x listen/kandidat-gtx-e80f9c5d-w121747-s.t",
+      1.05
+     ]
+    ],
+    "dienerS": 9.33,
+    "diener": [
+     [
+      "System",
+      4.22
+     ],
+     [
+      "WmiPrvSE.exe",
+      2.5
+     ]
+    ],
+    "geraetS": 23.61,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      16.63
+     ],
+     [
+      "svchost.exe",
+      6.3
+     ],
+     [
+      "SearchIndexer.exe",
+      0.31
+     ]
+    ],
+    "eigenS": 91.14,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-28T11:22:08.150Z",
+   "abdruck": "948639ede276",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
