@@ -33035,7 +33035,7 @@
   },
   "karte2.same.entfaltung.schirm": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.entfaltung.schirm#1 radeon: Station seit der Messung geändert — zuletzt an e80f9c5d: Deckel 114 s gerissen: Stille seit 15 s nach 443.8 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt, kein Schritt der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT stadt 395.9  · karte2.same.entfaltung.schirm#1 gtx: ungemessen (R10) — zuletzt an e80f9c5d: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: Prozess unbekannt · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\f7997654-4c58-4783-8 · karte2.same.entfaltung.schirm#2 radeon: ungemessen (R10) · karte2.same.entfaltung.schirm#2 gtx: ungemessen (R10) · karte2.same.entfaltung.schirm#3 radeon: ungemessen (R10) · karte2.same.entfaltung.schirm#3 gtx: ungemessen (R10) · karte2.same.entfaltung.schirm#4 radeon: ungemessen (R10) · karte2.same.entfaltung.schirm#4 gtx: ungemessen (R10) · karte2.same.entfaltung.schirm#5 radeon: ungemessen (R10) · karte2.same.entfaltung.schirm#5 gtx: ungemessen (R10) · karte2.same.entfaltung.schirm#6 radeon: ungemessen (R10) · karte2.same.entfaltung.schirm#6 gtx: ungemessen (R10) · karte2.same.entfaltung.schirm#7 radeon: ungemessen (R10) · karte2.same.entfaltung.schirm#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.same.entfaltung.schirm#1 radeon: Station seit der Messung geändert — zuletzt an e80f9c5d: Deckel 114 s gerissen: Stille seit 15 s nach 443.8 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt, kein Schritt der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT stadt 395.9  · karte2.same.entfaltung.schirm#1 gtx: ungemessen (R10) — zuletzt an e80f9c5d: Deckel 139 s gerissen: Stille seit 15 s nach 397.7 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt, kein Schritt der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT dorf 353.9 s · karte2.same.entfaltung.schirm#2 radeon: ungemessen (R10) · karte2.same.entfaltung.schirm#2 gtx: ungemessen (R10) · karte2.same.entfaltung.schirm#3 radeon: ungemessen (R10) · karte2.same.entfaltung.schirm#3 gtx: ungemessen (R10) · karte2.same.entfaltung.schirm#4 radeon: ungemessen (R10) · karte2.same.entfaltung.schirm#4 gtx: ungemessen (R10) · karte2.same.entfaltung.schirm#5 radeon: ungemessen (R10) · karte2.same.entfaltung.schirm#5 gtx: ungemessen (R10) · karte2.same.entfaltung.schirm#6 radeon: ungemessen (R10) · karte2.same.entfaltung.schirm#6 gtx: ungemessen (R10) · karte2.same.entfaltung.schirm#7 radeon: ungemessen (R10) · karte2.same.entfaltung.schirm#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.entfaltung.schirm#1",
@@ -33053,7 +33053,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an e80f9c5d: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: Prozess unbekannt · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\f7997654-4c58-4783-8",
+     "grund": "ungemessen (R10) — zuletzt an e80f9c5d: Deckel 139 s gerissen: Stille seit 15 s nach 397.7 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt, kein Schritt der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT dorf 353.9 s",
      "ungemessen": true,
      "beide": true
     },
@@ -37601,7 +37601,7 @@
   "ohne": 3364
  },
  "kopfVoll": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
- "zeit": "2026-11-28T08:24:06.524Z",
+ "zeit": "2026-11-28T08:30:21.899Z",
  "vorher": "e80f9c5d",
  "bilanz": {
   "gewinn": [],
