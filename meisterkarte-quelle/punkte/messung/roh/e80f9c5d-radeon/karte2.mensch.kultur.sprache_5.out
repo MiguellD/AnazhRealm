@@ -1,0 +1,10 @@
+$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
+[linse-gpu] amd/rdna-3
+@@ 6.9 s · am Messort stadt-voll (ego) nach 6.9 s, 239 Takte, Anlauf stand
+@@ 7 s · Sprache: 5 Orte (Lusi/mediterran, Bänmun/mitteleuropa, Daetat/mitteleuropa, Segraus/mitteleuropa, Büschun/mitteleuropa), Namen im DOM 1 von 657 Zeilen, Personennamen 1357 von 1357
+@@ 12.3 s · Namen am Fächer: 32 Zellen (alpin/mitteleuropa/nordisch/mediterran/fernost/antik), Zeuge 50 von 50 Namen der Siedlung Lusi gleich
+@@ PROBE-FEHLER Error: werkbank eval: FC.sprachKerne is not a function or its return value is not iterable ["redeZeuge (werkbank/eval/redeZeuge.js:28:32)","at #evaluate (C:\\Users\\micha\\AnazhRealm-profiband\\node_modules\\puppeteer-core\\lib\\cjs\\puppeteer\\cdp\\ExecutionContext.js:391:56)","at async ExecutionContext.evaluate (C:\\Users\\micha\\AnazhRealm-profiband\\node_modules\\puppeteer-core\\lib\\cjs\\puppeteer\\cdp\\ExecutionContext.js:277:16)","at async IsolatedWorld.evaluate (C:\\Users\\micha\\AnazhRealm-profiband\\node_modules\\puppeteer-core\\lib\\cjs\\puppeteer\\cdp\\IsolatedWorld.js:105:16)"] |     at H.evalWelt (eval at <anonymous> ([eval]:1:1), <anonymous>:65:35) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:942:75) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:832:5)
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
+[linse-gpu] amd/rdna-3
