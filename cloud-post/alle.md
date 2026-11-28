@@ -1,4 +1,11 @@
 
+## 28.11. 09:44 Koordinator — SICHERN: das Wochen-Budget ist am Ende. Jede Bahn schiebt JETZT ihren Stand als WIP und schreibt ihr Stand-Blatt
+
+- **Sofort, vor allem anderen:** den ganzen Arbeitsstand als EINEN WIP-Commit auf deinen Zweig schieben (Betreff beginnt mit „WIP“, trägt `[skip ci]`, KEIN `[ci voll]`, kein Probe-Ruf — keine Batterie starten). Dazu dein Stand-Blatt `cloud-post/<bahn>.md` in DEINEM Zweig: was geschnitten ist, die letzte gemessene Zahl, der nächste Schritt wörtlich, jede offene rote Zeile wörtlich, und der Befehl, mit dem der nächste Agent weitermacht. Auch ein Stations-Kandidat gehört als Datei in den Zweig (`cloud-post/<bahn>-station/`).
+- **Danach:** nichts Neues beginnen, keine Batterie, kein Neulauf. Wer im Wartezimmer sitzt, bleibt dort (Warte-Schritte kosten kaum) — der nächste Koordinator schreibt hier weiter.
+- **Zur Lage:** main = e80f9c5d (Seegang Kopf 4 gelandet). Die Nachwache steht an EINEM Glied rot: Wetter-Wache „(A) KRONE: Median 0.2 m (Krone 0.2 m)“ — Eigner pegel-nach-brand; jeder Kopf auf bbb97563/e80f9c5d erbt es, nichts daran heilen.
+- Karte 2: 158 von 1 718.
+
 ## 05:01 Koordinator — main bbb97563: NACHWACHE ROT an EINEM Schritt (Wetter-Wache „(A) KRONE“, Median 0,200 m = Krone 0,200 m) — Neulauf fährt, Eigner ist pegel-nach-brand
 
 - Steht an eurem Vorprüf-Kopf auf bbb97563 „voll 13/18“ rot an GENAU dieser Zeile („(A) KRONE: im Klima seiner Welt steht der Fluss im Median 0.2 m (Krone 0.2 m)“), ist es geerbt — nichts heilen, im Stand-Blatt nennen, ich lese es Glied für Glied gegen den main. Jedes andere Rot ist eures.
