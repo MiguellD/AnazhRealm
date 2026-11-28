@@ -197,6 +197,13 @@ Karte 2 gebucht 156 von 1 718 · Status ZWISCHENSTAND.
 
 ## 28.11. 01:35 — Wartezimmer (Kopf 4 9395b45); die Brand-Reihe am Mess-Bach von stoerung#3; Zuteilung 00:57 gelesen
 - Brand-Reihe (headless, Kandidat S3: Sturm 20 mm, derselbe Mess-Bach, 8 Punkte; b = der verbrannte Anteil am heißesten der Knoten): 7×7 Zellen (1,25 ha) b 0,074 → ×1,134 · 13×13 (4,3 ha) b 0,170 → ×1,242 · 21×21 (11,3 ha) b 0,304 → ×1,358 · ±400 m b 0,981 → ×1,896. Die 1,3 trägt das Gesetz ab b ≈ 0,25; der Block der Station verbrennt an keinem Knoten mehr als 7,4 %. Soll, Richter und Block bleiben: die Sprosse steht ROT mit dieser Zahl.
-- Zuteilung (alle.md 00:57): sukzession#2 und zerfall#2. Befund sukzession#2: die Narbe `brand` heilt in 72 h ÷ Wuchs ≈ 5,6 Spieljahre (Jahr = 16 Welt-Stunden), der Wald steht ab ~3,4 a; Yellowstone 1988 trägt nach 25 Jahren Jungwald von wenigen Metern und Totholz-Stangen. Der Täter von zerfall#2 ist `stamm/kreatur-leben.js` `_tickLeichname` — die Datei ist dieser Bahn gesperrt (Start-Brief): ich nehme sukzession#2 zuerst, zerfall#2 braucht die Freigabe.
+- Zuteilung (Koordinator an alle, 00:57): sukzession#2 und zerfall#2. Befund sukzession#2: die Narbe `brand` heilt in 72 h ÷ Wuchs ≈ 5,6 Spieljahre (Jahr = 16 Welt-Stunden), der Wald steht ab ~3,4 a; Yellowstone 1988 trägt nach 25 Jahren Jungwald von wenigen Metern und Totholz-Stangen. Der Täter von zerfall#2 ist `stamm/kreatur-leben.js` `_tickLeichname` — die Datei ist dieser Bahn gesperrt (Start-Brief): ich nehme sukzession#2 zuerst, zerfall#2 braucht die Freigabe.
+
+Karte 2 gebucht 156 von 1 718 · Status ZWISCHENSTAND.
+
+## 28.11. 02:05 — sukzession#2, der Gesetz-Schnitt: der Wald nach dem Brand geht seine eigene Uhr
+- Geschnitten (die EINE Uhr der Tat geteilt, kein Zwilling): `TAT_NARBE.brand.waldJahre` 60 — die Tat `brand` lebt, bis ihr Wald steht (`_tatDauer`: 60 Spieljahre ÷ Wuchs); ihr Boden heilt wie bisher nach 72 h ÷ Wuchs (`_tatBoden`, Index `boden`): Narbe, Nährstoff, Asche, Busch und das Brand-Bett lesen ihn, der Jungwuchs die Wald-Uhr (`_sukzession` `sw`, `_sukzessionNaechste` je Rampe ihre Uhr).
+- Gemessen (headless, 16 Orte im Ring wie der Rumpf der Station, Wuchs 0,75): Jungwuchs nach 5 / 25 / 60 a Stufe 0,4 / 0,7 / 0,7 → 0,06 / 0,18 / 0,4 (die 0,18 sind ~3–4 m: Yellowstone nach 24 a, Turner u. a. 2016), der Wald steht nach 6 → 80 a; Asche, Narbe (0,3 → 0 in 6 a), Nährstoff und das Bett (sperrt bis 6 a) byte-gleich; Gegenlauf (Tafel, Marken, Spiegel, Quer) byte-gleich; S3 ×1,134 unverändert. sukzession#3 „Wald ≥ 50 % nach 10–100 a“: im Band 0 → 100 % der Orte (ein Soll von dreien).
+- Offen an sukzession#2: das Fach (Fächer, Prüfer-Urteil, Korpus der NPS-Fotoreihe) · die stehenden Totholz-Stangen (der Körper liegt im Pflanzen-Kern, dieser Bahn gesperrt) · der Flächenbrand mit Überlebenden-Inseln. `--brand` der Linse stand-takt bootet hier nicht (die Welt steht nicht, am main ebenso).
 
 Karte 2 gebucht 156 von 1 718 · Status ZWISCHENSTAND.
