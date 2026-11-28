@@ -56,3 +56,16 @@ Messort der Station: die Gang-Linse fährt an der Pose des Spielers (Preis-Pose 
 - 28.11. 00:27-Post: Kopf 3 fährt in z813 (`w28-tier-bewegung-3`). masse#1-Kopf `tier-bewegung-masse1` f9a12ab gebaut auf main
   b56b51f0 (nur die masse#1-Dateien; merge-tree ohne CONFLICT, atlas/stamm:lint/prettier GRÜN, nahFolgtSelbsttest GRÜN);
   die volle Batterie läuft, geschoben wird erst bei Exit 0.
+
+## ZWISCHENSTAND 28.11. (Bahn tier-bewegung)
+
+- **Kopf 3** gelandet mit z813 (main 27d2f60e).
+- **masse#1-Kopf geschoben:** `tier-bewegung-masse1` 6e1d9d61 auf main b56b51f0 (merge-tree gegen 27d2f60e ohne CONFLICT), Ruf
+  `[gpu-probe: gate:analog-nah,gate:tier-gang] [ci voll]`. Lokal Exit 0: check:statik 600 s · welt-boot 84 s · fachwerk-contract 135 s ·
+  Kreatur 1/2/3 987/1 033/744 s · Atlas · stamm:lint · prettier · nahFolgtSelbsttest. gate:analog-nah: Selbsttest GRÜN, E ROT gleich am
+  main 23b593ac (die Welt steht in diesem Container nicht) — die Radeon urteilt. `zug.sh probe-tag`: liegt in keinem Zweig.
+- **lebenszyklus#2 (Post 00:57):** Stations-Kandidat `tier-bewegung-station/lebenszyklus2.diff` + `BEGRUENDUNG-lebenszyklus2.txt`
+  (Basis pm 6cd4d721): das Fach „Jungtier oder ausgewachsen?“ (Selbsttest 16 GRÜN, Mutante ROT) und die Klasse `FAUNA_MAX_AGE_MS`
+  (gefallen mit c6038905, sechs Stellen in k2-leben.js lasen NaN) geheilt über leben-core `lebensdauerS`. Gemessen: Jungtier-Anteil
+  6,78 % (Soll ≥ 10 %) bei 4,8 Tieren — offen das Gesetz (keine Setzzeit, keine Jugend-Proportion) und der Umfang an der wiese.
+- Karte 2 gebucht: 156 von 1 718 (Stand Koordinator 01:09).
