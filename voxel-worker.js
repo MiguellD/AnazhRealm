@@ -1534,6 +1534,15 @@ function planetOrtAuftrag(msg) {
         // die Stauchung s_v des Orts (planetOrt: Spiel-m = s_v · Erd-m, aus dem Ort-Gesetz gelesen): der Leser rechnet das Meer in
         // Erd-Metern mit der Zahl des Kerns, nie mit einer eigenen (Karte 2 planet.zeit.klimageschichte#2: −21 ka gegen −120 m)
         stauchung: o.stauchung,
+        // DIE ZONE DES ORTS (Karte 2 planet.geologie.gebirge#1): Kollision (das aktive Orogen) oder Kraton (alte Kruste ohne Orogen) —
+        // der Leser der Station misst daran das Einfallen der Wände (gelaende-core `felsEinfall`); dieselbe Probe wie `hoeheM`
+        orogenAktiv: p.orogenAktiv,
+        orogenAlterMa: p.orogenAlterMa,
+        orogenStaerke: p.orogenStaerke,
+        krusteAlterMa: o.krusteAlterMa,
+        // DER GROSS-TERM (gelaende-core `grossTerm`): das Feld der Planeten-Höhe um den Ort, nur auf Wunsch der Geburt (`gross: true`,
+        // die Reise) — 4 225 Punkte, kein Frager einer Station zahlt es
+        ...(msg.gross === true ? { gross: P.planetGrossFeld(S, msg.breite * RAD, msg.laenge * RAD, o.stauchung) } : {}),
         delta: {
             klima: {
                 sommer: d.klima.sommer,

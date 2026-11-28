@@ -1879,7 +1879,7 @@ function buildForest() {
         const wFels = Math.max(sstep(0.16, 0.3, sl), sstep(0.5, 0.85, rk) * 0.7);
         if (wFels > 0) {
             // die Normale der Ebene (lokal z oben) in der Welt: (nx, nz, −ny)
-            GK.felsFarbe(felsB, wx, tp.getZ(i), wz, tn.getX(i), tn.getZ(i), -tn.getY(i), felsK[i], 1, moistAt(wx, wz), TS / SEG, felsT);
+            GK.felsFarbe(felsB, wx, tp.getZ(i), wz, tn.getX(i), tn.getZ(i), -tn.getY(i), felsK[i], 1, moistAt(wx, wz), TS / SEG, felsT, 0, GK.FELS_GEO_HEIMAT);
             c.r += (felsT[0] - c.r) * wFels;
             c.g += (felsT[1] - c.g) * wFels;
             c.b += (felsT[2] - c.b) * wFels;

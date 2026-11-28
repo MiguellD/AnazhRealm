@@ -106,6 +106,7 @@
                 // Die Regler des Gelände-Studios (LANDFORM_REGLER) reisen im Wildnis-Term — fehlt einer, gilt sein def.
                 const w = { art: "wildnis" };
                 for (const r of LANDFORM_REGLER) if (t[r.id] !== undefined) w[r.id] = zahl(t, r.id, r.min, r.max);
+                if (t.gross !== undefined) w.gross = grossNormal(t.gross, nein);
                 return w;
             }
             if (t.art === "insel")
@@ -356,6 +357,63 @@
         return ye + Math.max(-lim, Math.min(lim, h - ye));
     }
 
+    // ══ DER GROSS-TERM (Entscheid 28.11., Karte 2 planet.geologie.platten#1 + gebirge#1) — die Planeten-Höhe in der lokalen Welt ══
+    // Ein Ort trägt das Feld der Planeten-Höhe um seine Mitte (planet-core `planetGrossFeld`: Gitter n × n zu `schrittM`, die Mitte in
+    // der Mitte, Spiel-Meter der Stauchung, gegen die Mitte), einmal bei der Geburt geschrieben, im Wildnis-Term (`gross`). Die Großform
+    // legt es auf die Grundhöhe K (der Lauf der Ebene 0 und ihre Senken folgen ihm) und die Sohle der Ebene 0 steigt mindestens, was der
+    // Planet steigt (`knotenSohle`) — der Gürtel hebt das Land, die Flüsse schneiden es, sein Gefälle bleibt.
+    // DAS FENSTER (die Naht des lokalen Rahmens, kein Rückfall): innerhalb `innenM` ist der Term exakt 0, über `rampeM` wächst er C¹
+    // (glatt) auf den vollen Term. Der Rahmen eines Orts ist seine Ankunft: innen 0, die Rampe 20 km — die Ankunft und die Posen der
+    // Stationen (±500 m: das Gewicht 0,2 %) stehen auf dem Gelände des Orts, die Region trägt den Planeten. Die Heimat trägt das Feld
+    // heute nicht (offen: der Planet-Faden an ihrer Ankunft); ihr Fenster ist gemessen — die Messorte liegen bis 10,8 km um die Mitte
+    // (spec/profiband: stadt-voll −215,7/10 555,3), das Fluss-Netz trägt eine Änderung gut 20 km nach innen (ein Term ab 20 km ändert die
+    // Höhe der Heimat ±9 km, ab 30 km nicht: SHA fc654324, ±13 km 880de67c bei ±500 m Amplitude gleich) — innen 30 km.
+    // DER RAND DES FELDS: das Gitter reicht ±(n−1)/2·schrittM (±128 km); dahinter liest das Feld seine Randzeile — die Reise ist der Weg
+    // über die Kugel, nicht das Laufen über den Rand der Lage.
+    const GROSS_FENSTER = Object.freeze({ innenM: 0, rampeM: 20000 });
+    function grossNormal(g, nein) {
+        if (!g || typeof g !== "object") nein("wildnis.gross ist kein Objekt");
+        const n = g.n;
+        if (!Number.isInteger(n) || n < 5 || n > 257 || n % 2 !== 1) nein(`wildnis.gross.n ${n} (ungerade, 5–257)`);
+        if (!(g.schrittM >= 100 && g.schrittM <= 100000)) nein(`wildnis.gross.schrittM ${g.schrittM} (100–100 000 m)`);
+        if (!Array.isArray(g.h) || g.h.length !== n * n) nein(`wildnis.gross.h trägt ${g.h && g.h.length} Werte, nicht ${n * n}`);
+        let id = 2166136261;
+        for (const v of g.h) {
+            if (typeof v !== "number" || !Number.isFinite(v) || Math.abs(v) > 5000) nein(`wildnis.gross.h ${v} (|h| ≤ 5 000 m)`);
+            const q = Math.round(v * 100);
+            id = Math.imul(id ^ (q & 0xffff), 16777619) >>> 0;
+            id = Math.imul(id ^ ((q >>> 16) & 0xffff), 16777619) >>> 0;
+        }
+        return Object.freeze({ n, schrittM: g.schrittM, h: Float64Array.from(g.h), id: n + ":" + g.schrittM + ":" + id.toString(36) });
+    }
+    // Der Term an (x, z): das Fenster mal Catmull-Rom über das Gitter (C¹ längs jeder Achse) — Leser: `grossform`.
+    function grossTerm(G, x, z) {
+        const r = Math.sqrt(x * x + z * z);
+        if (r <= GROSS_FENSTER.innenM) return 0;   // die Ankunft selbst (r = 0): das Gewicht ist 0
+        const w = glatt(GROSS_FENSTER.innenM, GROSS_FENSTER.innenM + GROSS_FENSTER.rampeM, r);
+        const n = G.n;
+        const m = (n - 1) / 2;
+        const u = Math.min(n - 1, Math.max(0, x / G.schrittM + m));
+        const v = Math.min(n - 1, Math.max(0, z / G.schrittM + m));
+        const i = Math.min(n - 2, Math.floor(u));
+        const j = Math.min(n - 2, Math.floor(v));
+        const fu = u - i;
+        const fv = v - j;
+        const H = G.h;
+        const i0 = i > 0 ? i - 1 : 0, i3 = i + 2 < n ? i + 2 : n - 1;   // die Ränder geklemmt
+        const r0 = (j > 0 ? j - 1 : 0) * n, r1 = j * n, r2 = (j + 1) * n, r3 = (j + 2 < n ? j + 2 : n - 1) * n;
+        return w * grossCr(
+            grossCr(H[r0 + i0], H[r0 + i], H[r0 + i + 1], H[r0 + i3], fu),
+            grossCr(H[r1 + i0], H[r1 + i], H[r1 + i + 1], H[r1 + i3], fu),
+            grossCr(H[r2 + i0], H[r2 + i], H[r2 + i + 1], H[r2 + i3], fu),
+            grossCr(H[r3 + i0], H[r3 + i], H[r3 + i + 1], H[r3 + i3], fu),
+            fv,
+        );
+    }
+    function grossCr(a, b, c, d, t) {
+        return b + 0.5 * t * (c - a + t * (2 * a - 5 * b + 4 * c - d + t * (3 * (b - c) + d - a)));
+    }
+
     // ══ DIE LANDFORM (K16) — der Wildnis-Term als Gesetz: Großform als Daten, das Flussnetz zuerst, das Schicht-Gesetz ══
     //
     // T1 GROSSFORM (Minecraft-1.18-Prinzip): drei glatte Felder — Kontinentalität C (λ ≈ 9 km), Erosion E (λ ≈ 3 km),
@@ -401,6 +459,9 @@
         { id: "pedimentWinkel", gruppe: "kliffs", einheit: "°", min: 0.5, max: 7, step: 0.5, def: 2.5, law: "Neigung des Pediments" },
         { id: "schichtDicke", gruppe: "kliffs", einheit: "m", min: 8, max: 60, step: 1, def: 26, law: "Mächtigkeit einer Schicht" },
         { id: "hartAnteil", gruppe: "kliffs", einheit: "1", min: 0.3, max: 0.7, step: 0.05, def: 0.55, law: "Anteil der harten (kliffbildenden) Lage" },
+        // DIE FALTUNG (Karte 2 planet.geologie.gebirge#1): 0 = flach lagernde Bänke (die Heimat, das Kraton), 1 = die Schenkel der
+        // Falten fallen bis `FALTUNG.grad` — planetOrt setzt sie aus der Gebirgs-Stärke, der Fels-Stoff liest sie (`felsGeologie`).
+        { id: "faltung", gruppe: "kliffs", einheit: "1", min: 0, max: 1, step: 0.05, def: 0, law: "Faltung der Bänke (Schenkel bis 60°)" },
         // RAUHEIT
         { id: "rinnen", gruppe: "rauheit", einheit: "1", min: 0, max: 1.5, step: 0.05, def: 1, law: "Rinnen-Netz (Ebene 2) — Einschnitt" },
         { id: "detail", gruppe: "rauheit", einheit: "1", min: 0, max: 1, step: 0.05, def: 0.6, law: "hang-begrenztes Detail" },
@@ -537,6 +598,9 @@
         const P = landformRegler(L);
         let schl = L.seed + "|" + base + "|" + wl;
         for (const r of LANDFORM_REGLER) schl += "|" + P[r.id];
+        const t0 = L.erbgut && L.erbgut.terme && L.erbgut.terme[0];
+        const GR = t0 && t0.gross ? t0.gross : null;
+        if (GR) schl += "|g" + GR.id;
         const da = NETZE.get(schl);
         if (da && da.noise === L.noise) return da;
         if (NETZE.size >= 6) NETZE.delete(NETZE.keys().next().value);
@@ -559,6 +623,7 @@
             ts: Math.tan((P.schuttWinkel * Math.PI) / 180),
             tc: Math.tan((P.kliffWinkel * Math.PI) / 180),
             schicht: null, // die Schicht-Periode (`schichtMass`), einmal je Netz
+            gross: GR, // der Groß-Term des Orts (`grossTerm`), null in der Heimat
         };
         NETZE.set(schl, N);
         return N;
@@ -609,10 +674,13 @@
                   ) *
                   reliefStil *
                   reliefDecke;
+        // DER GROSS-TERM (oben): auf die Grundhöhe — der Lauf und die Senken der Ebene 0 folgen dem Planeten; ohne Feld dieselben Bytes
+        const g = N.gross ? grossTerm(N.gross, x, z) : 0;
         return {
             off,
             rel,
-            K: N.base + off + 0.3 * rel,
+            g,
+            K: g === 0 ? N.base + off + 0.3 * rel : N.base + off + 0.3 * rel + g,
             U: 0.55 + rel / 240 + Math.max(0, off) / 160,
             stil,
             trog: glatt(95, 175, rel) * P.trog,
@@ -778,6 +846,8 @@
                 // S = ks·U·A^−θ (konkav: das Gefälle fällt mit dem Einzugsgebiet) — die Großform setzt Hebung und Senken.
                 const sMax = ks * Math.pow(knotenA(N, q) * S * S, -N.P.theta);
                 b = Math.max(tb, N.wl - 0.5) + Math.max(0.0004, sMax) * len;
+                // der Groß-Term: die Sohle steigt mindestens, was der Planet zwischen Unterlieger und Knoten steigt
+                if (gf.g !== 0 || knotenGf(N, f).g !== 0) b = Math.max(b, tb + gf.g - knotenGf(N, f).g);
             } else if (q.k === 2) {
                 // Ebene 2 ist Hang-Domäne (A < 0,1 km²): die Rinne folgt dem Hang, ihr Einschnitt wächst mit ihm (≤ 0,22 ×
                 // Hang × Knoten-Kante — nie tiefer, als der Hang je Raster-Schritt fällt: keine Rinne wird zur Grube).
@@ -4237,6 +4307,47 @@
     const FELS_CS = Math.cos(FELS.streichen),
         FELS_SN = Math.sin(FELS.streichen),
         FELS_TE = Math.tan(FELS.einfall);
+    // DIE GEOLOGIE DER LAGE (Karte 2 planet.geologie.gebirge#1): die Bank-Fläche s = y + tan(einfall)·h1 + a·sin(k·h1), h1 quer
+    // zum Streichen des Orts (`streichC`/`streichS`, ohne Streichen die Richtung `FELS.streichen`) — ein Faltenzug der Wellenlänge
+    // `FALTUNG.lambda`, dessen Schenkel bis faltung × `FALTUNG.grad` fallen (a·k = tan). Real: Schichten in Falten-Überschiebungs-
+    // Gürteln fallen meist 20–60°, die Tafel-Deckschichten der Kratone < 5° (Ramsay & Huber 1987; Twiss & Moores 2007). Die Heimat
+    // (faltung 0, ohne Streichen) trägt `FELS_GEO_HEIMAT`: dieselbe Fläche wie vorher, bis aufs Bit. Wer keine Lage hat (die
+    // Fels-Gestalten der Foundry, das Gelände-Studio), liest die Heimat; jeder Leser der Welt liest seine Lage.
+    const FALTUNG = Object.freeze({ grad: 60, lambda: 400 });
+    const FELS_GEO_HEIMAT = Object.freeze({ te: FELS_TE, cs: FELS_CS, sn: FELS_SN, amp: 0, k: 0 });
+    const _felsGeoMemo = new WeakMap();
+    function felsGeologie(L) {
+        if (!L || !L.erbgut) throw new Error("felsGeologie: ohne Lage keine Geologie (K10)");
+        let G = _felsGeoMemo.get(L.erbgut);
+        if (G) return G;
+        const P = landformRegler(L);
+        const m = Math.hypot(P.streichC, P.streichS);
+        if (!(P.faltung > 0) && !(m > 0)) G = FELS_GEO_HEIMAT;
+        else {
+            const fall = m > 0 ? Math.atan2(P.streichS, P.streichC) / 2 + Math.PI / 2 : FELS.streichen;
+            const k = TAU / FALTUNG.lambda;
+            G = Object.freeze({
+                te: FELS_TE,
+                cs: Math.cos(fall),
+                sn: Math.sin(fall),
+                amp: Math.tan((P.faltung * FALTUNG.grad * Math.PI) / 180) / k,
+                k,
+            });
+        }
+        _felsGeoMemo.set(L.erbgut, G);
+        return G;
+    }
+    // Die Bank-Höhe über der Lage (y) an h1 — die Heimat ohne Falte rechnet genau die alte Summe.
+    const bankYO = (o, G, y, h1) => {
+        const s0 = o.add(y, o.mul(G.te, h1));
+        return G.amp === 0 ? s0 : o.add(s0, o.mul(G.amp, o.sin(o.mul(G.k, h1))));
+    };
+    // DAS EINFALLEN an (x, z) der Lage L (rad): die Neigung der Bank-Fläche, |∂s/∂h1| — der Leser der Station (gebirge#1).
+    function felsEinfall(L, x, z) {
+        const G = felsGeologie(L);
+        const h1 = x * G.cs + z * G.sn;
+        return Math.atan(Math.abs(G.te + G.amp * G.k * Math.cos(G.k * h1)));
+    }
     const fz = (a, b, c) => zufall(FELS_SAAT, a, b, c);
     // Trägt ein Netz der Kante `fuss` die Wellenlänge λ? 1 = ganz (fuss ≤ λ/4), 0 = nur ihr Mittel (fuss ≥ λ/2).
     const traegt = (lambda, fuss) => 1 - glatt(0.25 * lambda, 0.5 * lambda, fuss > 0 ? fuss : 0);
@@ -4428,11 +4539,11 @@
     // DIE LAGE IM FELS an (x, y, z) mit der großen Welle `welle` (± 1, Bänke × `fein.welle`): Paket, Bank, die Mächtigkeit der
     // Bank hier und der Abstand zur Fuge unten und oben (m). Die Bank zwischen den Grenzen j − 1 … j + 2 (die Grenzen wandern
     // um weniger als 0,65 Bänke): die oberste darunter, die unterste darüber — wo sich zwei Fugen kreuzen, keilt die Bank aus.
-    function felsLageO(o, x, y, z, welle, aus) {
+    function felsLageO(o, x, y, z, welle, aus, G) {
         const F = FELS;
-        const h1 = o.fest(o.add(o.mul(x, FELS_CS), o.mul(z, FELS_SN))),
-            h2 = o.fest(o.sub(o.mul(z, FELS_CS), o.mul(x, FELS_SN)));
-        const s = o.fest(o.add(o.add(y, o.mul(FELS_TE, h1)), o.mul(o.mul(welle, F.fein.welle), F.bank)));
+        const h1 = o.fest(o.add(o.mul(x, G.cs), o.mul(z, G.sn))),
+            h2 = o.fest(o.sub(o.mul(z, G.cs), o.mul(x, G.sn)));
+        const s = o.fest(o.add(bankYO(o, G, y, h1), o.mul(o.mul(welle, F.fein.welle), F.bank)));
         const p = o.fest(paketAnO(o, s));
         const pa = o.fest(paketGrenzeO(o, p));
         const d = o.fest(paketBankO(o, p));
@@ -4467,7 +4578,7 @@
         aus.oben = o.fest(o.mul(o.sub(hi, u), d));
         return aus;
     }
-    const felsLage = (x, y, z, welle, aus) => felsLageO(ZAHL, x, y, z, welle || 0, aus);
+    const felsLage = (x, y, z, welle, aus, G) => felsLageO(ZAHL, x, y, z, welle || 0, aus, G);
     const _lage = { s: 0, h1: 0, h2: 0, paket: 0, bank: 0, d: 0, dicke: 0, unten: 0, oben: 0 };
     // In der Kluft (0..1, 1 = Mitte): u in Kluft-Abständen, b die halbe Breite.
     const inKluftO = (o, u, b) => o.clamp01(o.sub(1, o.div(o.abs(o.sub(u, o.floor(o.add(u, 0.5)))), b)));
@@ -4507,19 +4618,19 @@
     // Bank relativ zum Grundton). Die große Welle ist DASSELBE Gradienten-Rauschen wie im Vertex (`felsFarbe`, `rausch`) —
     // `felsWelle` an (x, y, z); wer sie schon trägt, reicht sie als `w` (der Shader liest sie EINMAL im Rausch-Atlas, außerhalb
     // der Fels-Funktion: K17-3).
-    function felsWelleO(o, x, y, z) {
+    function felsWelleO(o, x, y, z, G) {
         const F = FELS;
-        const sy = o.add(y, o.mul(FELS_TE, o.add(o.mul(x, FELS_CS), o.mul(z, FELS_SN))));
+        const sy = bankYO(o, G, y, o.add(o.mul(x, G.cs), o.mul(z, G.sn)));
         return o.mul(F.fein.rausch, o.rausch(o.mul(x, F.fein.xz), o.div(o.mul(sy, F.fein.y), F.bank), o.mul(z, F.fein.xz)));
     }
-    function felsFeinO(o, B, x, y, z, welle) {
+    function felsFeinO(o, B, x, y, z, welle, G) {
         const F = FELS;
         const FM = felsMittelWerte();
         const Yl = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
         const aRel = 0.6 * (Yl(B.akzent) / Yl(B.basis) - 1);
         const dRel = 1 - Yl(B.dunkel) / Yl(B.basis);
-        const w = welle === undefined ? felsWelleO(o, x, y, z) : welle;
-        const L = felsLageO(o, x, y, z, w, {});
+        const w = welle === undefined ? felsWelleO(o, x, y, z, G) : welle;
+        const L = felsLageO(o, x, y, z, w, {}, G);
         const K = felsKantenO(o, L, {});
         const hell = o.div(o.add(1, o.mul(F.bankKontrast, o.sub(o.mul(2, fzO(o, L.paket, L.bank, 3)), 1))), FM.hell);
         const akz = o.div(o.add(1, o.mul(aRel, o.sub(1, o.step(F.akzentAnteil, fzO(o, L.paket, L.bank, 5))))), 1 + aRel * FM.akzent);
@@ -4593,7 +4704,7 @@
             he = 0;
         for (let i = 0; i < 64; i++)
             for (let j = 0; j < 64; j++) {
-                const L = felsLage(i * 2.71 + j * 0.37, (i * 64 + j) * 0.0617, j * 1.93 - i * 0.71, 0, _lage);
+                const L = felsLage(i * 2.71 + j * 0.37, (i * 64 + j) * 0.0617, j * 1.93 - i * 0.71, 0, _lage, FELS_GEO_HEIMAT);
                 felsKanten(L, _kanten);
                 ke += _kanten.kehle;
                 ra += _kanten.rand;
@@ -4676,14 +4787,15 @@
         _affinMemo.set(B, A);
         return A;
     }
-    function felsFarbe(B, x, y, z, nx, ny, nz, krumm, himmel, feucht, fuss, out, km) {
+    function felsFarbe(B, x, y, z, nx, ny, nz, krumm, himmel, feucht, fuss, out, km, G) {
+        if (!G) throw new Error("felsFarbe: die Geologie fehlt (felsGeologie(L) oder FELS_GEO_HEIMAT, K10)");
         const F = FELS;
         const T = traegtSatz(fuss);
-        const sy = y + FELS_TE * (x * FELS_CS + z * FELS_SN);
+        const sy = bankYO(ZAHL, G, y, x * G.cs + z * G.sn);
         let L = null;
         if (T.tb > 0 || T.tf > 0 || T.tj > 0) {
             const w = F.fein.rausch * rauschRaum(x * F.fein.xz, (sy * F.fein.y) / F.bank, z * F.fein.xz);
-            L = felsLage(x, y, z, w, _lage);
+            L = felsLage(x, y, z, w, _lage, G);
         }
         // Bank-Pakete (grob) — ihr Mittel ist 1.
         const m = T.tp > 0 ? 1 + T.tp * F.paketKontrast * (2 * fz(L ? L.paket : paketAn(sy), 11, 0) - 1) : 1;
@@ -4828,7 +4940,7 @@
         let s = 0.013;
         let guard = 0;
         while (dicken.length < 2000 && guard++ < 20000) {
-            const L = felsLage(0, s, 0, 0, _lage);
+            const L = felsLage(0, s, 0, 0, _lage, FELS_GEO_HEIMAT);
             if (L.dicke > 1e-3) dicken.push(L.dicke);
             s += L.oben + 1e-4;
         }
@@ -4899,7 +5011,7 @@
         const fe = o && o.feucht != null ? o.feucht : 0.3;
         const tmp = [0, 0, 0];
         for (let i = 0; i < n; i++) {
-            felsFarbe(B, P[3 * i], P[3 * i + 1], P[3 * i + 2], N[3 * i], N[3 * i + 1], N[3 * i + 2], K[i], him, fe, fuss, tmp);
+            felsFarbe(B, P[3 * i], P[3 * i + 1], P[3 * i + 2], N[3 * i], N[3 * i + 1], N[3 * i + 2], K[i], him, fe, fuss, tmp, 0, FELS_GEO_HEIMAT);
             C[3 * i] = tmp[0];
             C[3 * i + 1] = tmp[1];
             C[3 * i + 2] = tmp[2];
@@ -5024,7 +5136,7 @@
     }
     // Das Mittel des Stoffs (die Ferne, wo kein Netz eine Bank trägt): ein senkrechter Fels unter dem Himmel.
     function felsMittel(B, feucht) {
-        return felsFarbe(B, 0, 0, 0, 0, 0, 1, 0, 1, feucht != null ? feucht : 0.3, 1e9, [0, 0, 0]);
+        return felsFarbe(B, 0, 0, 0, 0, 0, 1, 0, 1, feucht != null ? feucht : 0.3, 1e9, [0, 0, 0], 0, FELS_GEO_HEIMAT);
     }
 
     // DAS ZIEL DER GRÖBEREN STUFE (K51-2, der Geomorph der Boden-Stufen nach dem CDLOD-Prinzip): je Vertex des feinen Netzes
@@ -6318,6 +6430,7 @@
     // feuchte(x, z, y) die Feuchte des Wirts. → { schutt: Float32Array(n) (das Gewicht des Schutts, der Detail-Term legt sein
     // Korn auf), feuchte (womit das Moos gerechnet wurde; undefined ohne Fels) }.
     function felsStoff(L, B, o, P, N, I, H, C, n, feuchte) {
+        const G = felsGeologie(L);
         const SW = new Float32Array(n);
         let gx0 = Infinity,
             gx1 = -Infinity,
@@ -6451,7 +6564,7 @@
             if (!(w > 0)) continue;
             const h = H ? H[i] : 1;
             const kr = K && KM[i] ? K[i] : 0;
-            felsFarbe(B, P[3 * i], P[3 * i + 1], P[3 * i + 2], N[3 * i], N[3 * i + 1], N[3 * i + 2], kr, h, h > 0 ? fe : 0, o.fuss, t, km);
+            felsFarbe(B, P[3 * i], P[3 * i + 1], P[3 * i + 2], N[3 * i], N[3 * i + 1], N[3 * i + 2], kr, h, h > 0 ? fe : 0, o.fuss, t, km, G);
             C[3 * i] += (t[0] - C[3 * i]) * w;
             C[3 * i + 1] += (t[1] - C[3 * i + 1]) * w;
             C[3 * i + 2] += (t[2] - C[3 * i + 2]) * w;
@@ -6676,7 +6789,7 @@
             aus.anschnitt = ea;
         }
         if (!(w > 0)) return 0;
-        const t = felsFarbe(B, x, y, z, 0, ny, nz < 0 ? nz : 0, 0, 1, fe, o.fuss, _felsPunkt, km);
+        const t = felsFarbe(B, x, y, z, 0, ny, nz < 0 ? nz : 0, 0, 1, fe, o.fuss, _felsPunkt, km, felsGeologie(L));
         C[0] += (t[0] - C[0]) * w;
         C[1] += (t[1] - C[1]) * w;
         C[2] += (t[2] - C[2]) * w;
@@ -7239,7 +7352,8 @@
     // Δ der Regler des Orts, je Regler geklemmt auf seine Zeile (fehlt er der Heimat: sein def) — EIN Wildnis-Term, die Bühnen-Terme
     // der Heimat (Insel, Rampe, …) stehen an ihren Orten und reisen nicht. Die Geburt der Reise-Welt schreibt es EINMAL in ihr Gesetz
     // (`gesetz.gelaende`): jeder Leser des Erbguts (Wirt, Faden, Netz, Wand, Studio) liest dann die Welt, keiner rechnet Δ nach.
-    function ortErbgut(heimTerme, reglerDelta) {
+    // `gross` (optional): das Feld der Planeten-Höhe des Orts (planet-core `planetGrossFeld`), der Groß-Term der Großform
+    function ortErbgut(heimTerme, reglerDelta, gross) {
         const w = heimTerme && heimTerme[0];
         if (!w || w.art !== "wildnis") throw new Error("ortErbgut: die Heimat trägt keinen Wildnis-Term");
         if (!reglerDelta || typeof reglerDelta !== "object") throw new Error("ortErbgut: das Δ der Regler fehlt");
@@ -7251,6 +7365,7 @@
             const v = dr === undefined ? h : h + dr;
             t[r.id] = Math.min(r.max, Math.max(r.min, v));
         }
+        if (gross !== undefined) t.gross = gross;
         return { terme: [t] };
     }
     function planNormal(roh) {
@@ -9587,6 +9702,12 @@
         felsBankung: felsBankung,
         felsFein: felsFeinO,
         felsWelle: felsWelleO,
+        felsGeologie,
+        felsEinfall,
+        FELS_GEO_HEIMAT,
+        FALTUNG,
+        grossTerm,
+        GROSS_FENSTER,
         schuttKorn: schuttKornO,
         schuttMittel: schuttMittel,
         FELS_SAAT: FELS_SAAT,

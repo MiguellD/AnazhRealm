@@ -1467,12 +1467,13 @@ const server = statikServer();
                     const fuss = FS.netz.fuss; // die Kante des Nah-Netzes, die das Spiel liest (`FELS_STOFF.netz`, kein Zwilling daneben)
                     const KM = GK.moosKlima(r._gelaende()); // das Klima des Mooses (gelaende-core `moosDeckung`), wie `felsStoff` es liest
                     const soll = [0, 0, 0];
+                    const geoL = GK.felsGeologie(r._gelaende()); // die Geologie der Lage (gebirge#1), wie `felsStoff`
                     const pruefe = (i, him, z) => {
                         const x = P3[3 * i],
                             y = P3[3 * i + 1],
                             zz = P3[3 * i + 2];
                         const fe = him > 0 ? FE[i] : 0;
-                        GK.felsFarbe(B, x, y, zz, N3[3 * i], N3[3 * i + 1], N3[3 * i + 2], KR[i], him, fe, fuss, soll, KM);
+                        GK.felsFarbe(B, x, y, zz, N3[3 * i], N3[3 * i + 1], N3[3 * i + 2], KR[i], him, fe, fuss, soll, KM, geoL);
                         const c = [CA.getX(i), CA.getY(i), CA.getZ(i)];
                         if (Math.max(...c.map((q, j) => Math.abs(q - soll[j]))) <= 0.002) return c;
                         z.fremd++;
@@ -1996,8 +1997,8 @@ const server = statikServer();
                     const x = Math.sin(i * 1.37) * 900,
                         y = Math.cos(i * 0.71) * 80,
                         z = Math.sin(i * 0.53) * 900;
-                    const a = GKc.felsFein(O, B, x, y, z),
-                        b = GKc.felsFein(GKc.felsZahl, B, x, y, z);
+                    const a = GKc.felsFein(O, B, x, y, z, undefined, GKc.FELS_GEO_HEIMAT),
+                        b = GKc.felsFein(GKc.felsZahl, B, x, y, z, undefined, GKc.FELS_GEO_HEIMAT);
                     const ka = GKc.schuttKorn(O, x, z),
                         kb = GKc.schuttKorn(GKc.felsZahl, x, z);
                     maxDiff = Math.max(
