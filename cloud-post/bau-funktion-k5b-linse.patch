@@ -1,0 +1,101 @@
+diff --git a/scripts/diag-settlement.cjs b/scripts/diag-settlement.cjs
+index 6c281ce49..b3d20280e 100644
+--- a/scripts/diag-settlement.cjs
++++ b/scripts/diag-settlement.cjs
+@@ -1379,19 +1379,36 @@ async function vorratAmDorf(messort, alt) {
+         const z = r._autoSettlementCellInfo(cx + (i % 5) - 2, cz + Math.floor(i / 5) - 2);
+         if (z) zelle.set(z.seed, z.key);
+     }
+-    const e = { exporte: {}, alle: 0, nachZug: -1, trasse: [], welt: r._gelaende().seed };
++    const e = { exporte: {}, alle: 0, nachZug: -1, spaet: [], trasse: [], welt: r._gelaende().seed };
+     // die Grundriss-Leser neben dem EINEN (`_grundrissVon`), die bis siedlung-k3-hang dieselbe Zeile lasen
+     e.leser = ["_slotGrundriss", "_werkGrundriss"].filter((k) => k in r || k in AnazhRealm);
+     const [req, bereite, ok] = [r._foundryRequestSettlement, r._ortMitTrasse, r._autoSettlementSiteOk];
+     // die alte Wand wörtlich (bis siedlung-k3-hang: `slope > SIEDLUNG.slopeMax`, die EINE Steilheit `_slopeAt`)
+     if (alt === "wand") r._autoSettlementSiteOk = (x, z, ...a) => !(r._slopeAt(x, z) > 0.35) && ok.call(r, x, z, ...a);
++    // der Ruf nach dem Zug beim Namen: Same, Kopf, ob er einen Ort trägt, und sein Rufer (die zwei Rahmen über dem Ruf)
+     r._foundryRequestSettlement = function (dp, ...a) {
+         e.alle++;
++        if (e.vlog) e.vlog.push(["req", zelle.get(dp && dp.seed) || "fremd", e.fenster ? "F" + e.takt : "S" + e.g, !!(dp && dp.ort)]);
++        if (e.fenster)
++            e.spaet.push({
++                seed: dp && dp.seed,
++                kopf: a[0],
++                ort: !!(dp && dp.ort),
++                warten: r._nachbarnWarten | 0,
++                dorf: r._dorfOffen(),
++                wege: !!r._stlWegePending,
++                zelle: zelle.get(dp && dp.seed) || "fremd",
++                imVorrat: r._dorfVorraete.has(zelle.get(dp && dp.seed)),
++                takt: e.takt,
++                hydro: [...(r._hydroBestellt || new Map()).keys()].filter((k) => !st.hydroTiles.has(k)).length,
++                wer: (new Error().stack || "").split("\n").slice(2, 10).map((z) => z.trim().replace(/\(.*\//, "(")),
++            });
+         return req.call(this, dp, ...a);
+     };
+     r._ortMitTrasse = function (dp, ...a) {
+         const k = zelle.get(dp && dp.seed) || "fremd";
+         e.exporte[k] = (e.exporte[k] || 0) + 1;
++        if (e.vlog) e.vlog.push(["trasse", k, e.fenster ? "F" + e.takt : "S" + e.g]);
+         return bereite.call(this, dp, ...a);
+     };
+     const bereiten = r._dorfBereiten;
+@@ -1402,10 +1419,25 @@ async function vorratAmDorf(messort, alt) {
+         };
+     const hook0 = window.__anazhAutoSettlement;
+     window.__anazhAutoSettlement = true;
+-    r._dorfVorraete = new Map();
++    e.alteVorraete = [...(r._dorfVorraete || new Map())].map(([k, v]) => k + ":" + v.da);
++    const vlog = (e.vlog = []);
++    const wann = () => (e.fenster ? "F" + e.takt : "S" + e.g);
++    r._dorfVorraete = new (class extends Map {
++        set(k, v) {
++            vlog.push(["set", k, wann()]);
++            return super.set(k, v);
++        }
++        delete(k) {
++            const s = (new Error().stack || "").split("\n")[2] || "";
++            vlog.push(["del", k, wann(), this.has(k) && super.get(k).da, s.trim().replace(/\(.*\//, "(")]);
++            return super.delete(k);
++        }
++    })();
+     const pm = st.playerMesh.position;
+     pm.set(messort[0], r.getTerrainHeightAt(messort[0], messort[1]) + 1, messort[1]);
++    // still ist das Dorf erst, wenn nichts in ihm offen ist (`_dorfOffen`: auch die Nachbar-Runde, die auf Wasser wartet)
+     const leer = () =>
++        !r._dorfOffen() &&
+         !r._autoSettlementQueue &&
+         !r._autoSettlementPendingKey &&
+         !r._stlWegePending &&
+@@ -1415,12 +1447,15 @@ async function vorratAmDorf(messort, alt) {
+     try {
+         for (let still = 0; still < 20 && gaenge < 600; gaenge++) {
+             const vor = e.alle;
++            e.g = gaenge;
+             r._tickAutoSettlement(pm);
+             still = leer() && e.alle === vor ? still + 1 : 0;
+             await sleep(20);
+         }
+         e.nachZug = -e.alle;
++        e.fenster = true;
+         for (let g = 0; g < 150; g++) {
++            e.takt = g;
+             r._tickAutoSettlement(pm);
+             await sleep(20);
+         }
+@@ -3231,6 +3266,15 @@ hauptLauf(async () => {
+             await __weltDa(() => f && f.ready && f.recipes && f.recipes.alemannisch);
+         });
+     await bereit();
++    if (process.env.NUR_K5B) {
++        for (let i = 0; i < Number(process.env.NUR_K5B); i++) {
++            const k = await page.evaluate(vorratAmDorf, jsonLesen("spec/profiband/haushalt.json").messorte.find((o) => o.id === "dorf").spieler, null);
++            console.log("K5B " + JSON.stringify({ alle: k.alle, nachZug: k.nachZug, exporte: k.exporte, gaenge: k.gaenge, spaet: k.spaet, vlog: k.vlog }));
++        }
++        await browser.close();
++        server.close();
++        process.exit(0);
++    }
+     if (ww) {
+         console.log("=== TEIL WW: DAS JAHR UND DAS WACHSTUM IN DER WELT (siedlung.K4) ===");
+         const W = await jeMarke(weltWachstum);

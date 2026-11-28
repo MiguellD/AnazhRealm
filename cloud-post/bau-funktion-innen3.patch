@@ -1,0 +1,252 @@
+diff --git a/fachwerk-core.js b/fachwerk-core.js
+index af5dd7089..17402c113 100644
+--- a/fachwerk-core.js
++++ b/fachwerk-core.js
+@@ -519,6 +519,7 @@
+   function platte(g,horiz,fixed,a0,a1,y0,y1,role,dick){ if(a1-a0<0.02||y1-y0<0.02)return null; return eben(horiz?beam(g,(a0+a1)/2,(y0+y1)/2,fixed,a1-a0,y1-y0,dick,role):beam(g,fixed,(y0+y1)/2,(a0+a1)/2,dick,y1-y0,a1-a0,role)); }
+ 
+   const solids=[]; const furniture=[]; let chimney=null;
++  let arbeit=null;   // DER RAUM DER ARBEIT als Aussage (innen#3, additiv): sein Raum und die Stücke, die das Gesetz in ihn stellt — gate:settlement B3 liest sie
+   const masse=[];                                                                                       // DIE MASSEN DES BAUS (S3, additiv): je Teil des Grundrisses sein Körper — Rechteck, Höhen, Dach. Der Fernkörper des Gesetzbuchs (koerperListe) liest sie; kein Bau liest sie zurück
+   function addMasse(m){ if(Number.isFinite(m.x0)){ m.x0+=SHIFT; m.x1+=SHIFT; } masse.push(m); return m; }   // die 2. Einheit des Doppelhauses um +W wie ihre Solids
+   const LICHT=[];   // DIE ÖFFNUNGEN DES LICHTS (w28-innenlicht, additiv — nur eine Liste, kein Bau): jede Öffnung, die der Bau in eine Außenwand schneidet, an ihrem EINEN Bauer (`fensterAt`, die Flügel-Tür, der Rundbau) — `raumVon` rechnet daraus das Raum-Licht je Körper; bis hier trug die Liste des Fern-Fensters nur Haupt, Giebel und Anbau (der Flügel und der Hof-Arm der Stufe 0 standen ohne Öffnung)
+@@ -848,11 +849,13 @@
+   const rooms=[];
+   // DAS TOR ÖFFNET EINEN RAUM (BEDARF_GESTALT.tor): Tenne und Werkraum sind das ganze Erdgeschoss — keine Kammer, keine Flurwand, kein
+   // Wohn-Möbel im Weg des Tors (die Diele des niederdeutschen Hallenhauses: EIN Raum vom Tor bis zum Herd)
+-  const TENNE=!!(BG&&BG.tor);
++  // DER RAUM DER ARBEIT (BEDARF_GESTALT.innen): der Raum des Programms an der Straße ist das ganze Erdgeschoss — die Tür führt IN die Arbeit
++  const TENNE=!!(BG&&(BG.tor||BG.innen));
+   layout.forEach((lay,k)=>{ if(k===0&&TENNE) return; const y=levels[k].y,h=levels[k].h; [['L',lay.L],['R',lay.R]].forEach(([side,s])=>{ const zs=[zMinI,...s.cuts,zMaxI];
+       for(let i=0;i<zs.length-1;i++){ const z0=zs[i],z1=zs[i+1]; if(z1-z0<1.2)continue; rooms.push({side,x0:s.x0,x1:s.x1,z0,z1,floor:k,y,h,cx:(s.x0+s.x1)/2,cz:(z0+z1)/2,func:null}); } }); });
++  if(BG&&BG.innen) rooms.push({side:'L',x0:-W/2+0.12,x1:W/2-0.12,z0:zMinI,z1:zMaxI,floor:0,y:levels[0].y,h:levels[0].h,cx:0,cz:(zMinI+zMaxI)/2,func:BG.innen.raum});
+   // Raumfunktionen vergeben
+-  { const eg=rooms.filter(r=>r.floor===0); let kueche=null,kd=1e9;
++  { const eg=rooms.filter(r=>r.floor===0&&!r.func); let kueche=null,kd=1e9;
+     eg.forEach(r=>{ const d=Math.hypot(r.cx-hearthX,r.cz-hearthZ); if(d<kd){kd=d;kueche=r;} });
+     if(kueche)kueche.func='kueche';
+     if(kueche) hearthOZ = Math.sign(kueche.cz - hearthZ) || hearthOZ;                                 // GESETZ: Feuer öffnet in den Raum, dem der Herd dient (nächste Küche), nicht stur Richtung z=0
+@@ -1477,23 +1480,88 @@
+       fass:(x,y,z,vert,nx,nz,S)=>{ S=S||{}; const r=(S.L?S.L/2:0.27)*jit(1,0.10),H=(S.H||0.78)*jit(1,0.08),n=11; for(let i=0;i<n;i++){const a=i/n*Math.PI*2; B('moebel',x+Math.cos(a)*r,y+H/2,z+Math.sin(a)*r,0.085,H,0.085,[0,a,0]);}
+         [0.16,0.5,0.84].forEach(f=>B('dunkel',x,y+H*f,z,r*2.08,0.045,r*2.08)); B('moebel',x,y+H-0.01,z,r*1.7,0.03,r*1.7); if(rndI()<0.4)clutterOn(x,y+H,z,r*0.55,r*0.55,1); furniture.push(aabb(x,y+H/2,z,r*2.1,H,r*2.1)); },
+     };
+-    const hearthBox=[hearthX-0.9,hearthZ-0.7,hearthX+0.9,hearthZ+0.7];
++    const hearthBox=(BG&&BG.ohneFeuer)?null:[hearthX-0.9,hearthZ-0.7,hearthX+0.9,hearthZ+0.7];   // ohne Feuer (BEDARF_GESTALT.ohneFeuer) kein Herd im Weg
++    // ════ DER RAUM DER ARBEIT (bau.innen#3, BEDARF_GESTALT.innen — Maße und Quellen dort): je Raum sein Werkzeug, gestellt, wo der Raum
++    // frei ist (`setz` fragt `fits`: Tür, Treppe, Feuer, Fenster). Die Tür steht in der Mitte der Front (z0), der Blick geht nach z1. ════
++    const kasten=(x,y,z,w,h,d,r)=>{ B(r||'moebel',x,y+h/2,z,w,h,d); furniture.push(aabb(x,y+h/2,z,w,h,d)); };
++    const bankOhne=(x,y,z,l,ax)=>{ const w=ax?0.3:l, d=ax?l:0.3; B('moebel',x,y+0.43,z,w,0.05,d);   // die Wirtshausbank: Brett und zwei Wangen
++      [-1,1].forEach(s2=>B('moebel',ax?x:x+s2*(l/2-0.1),y+0.2,ax?z+s2*(l/2-0.1):z,ax?0.26:0.05,0.4,ax?0.05:0.26)); furniture.push(aabb(x,y+0.23,z,w,0.46,d)); };
++    const hobel=(x,y,z,l,t,h,ax)=>{ const w=ax?t:l, d=ax?l:t; B('lattung',x,y+h-0.05,z,w,0.1,d);   // die Hobelbank: Blatt, vier Beine, Ablage, Vorderzange
++      [-1,1].forEach(i=>[-1,1].forEach(k=>B('holz',x+(ax?k*(t/2-0.08):i*(l/2-0.12)),y+(h-0.1)/2,z+(ax?i*(l/2-0.12):k*(t/2-0.08)),0.1,h-0.1,0.1)));
++      B('holz',x,y+0.18,z,ax?t-0.1:l-0.2,0.05,ax?l-0.2:t-0.1); furniture.push(aabb(x,y+h/2,z,w,h,d)); };
++    const ARBEIT={
++      gaststube:(R,setz,I,reihe)=>{ const y=R.y, S=I.schank, L=Math.min(S[0],(R.x1-R.x0)*0.4), zS=R.z1-0.16-0.9-S[1]/2, zb=zS-S[1]/2;
++        for(const f of [-2,2,-1,1,0,-3,3]) if(setz((x,z)=>{ kasten(x,y,zS,L,S[2],S[1]); B('dunkel',x,y+S[2]+0.025,zS,L+0.08,0.05,S[1]+0.1);   // der Schanktisch, Platte darüber
++            [-1,1].forEach(s2=>F.fass(x+s2*(L/2-0.35),y,R.z1-0.5,false,0,0,{L:0.6,H:0.8})); },(R.x0+R.x1)/2+f*L*0.45,(zb+R.z1-0.6)/2,L,R.z1-0.6-zb)) break;   // die Fässer im Gang des Wirts
++        const T=I.tisch; let n=Math.max(2,Math.floor((R.x1-R.x0)*(zb-R.z0)/((I.m2||1.3)*I.plaetze)));   // die Plätze aus der Zeile: m² je Gast
++        for(let z=R.z0+1.9; n>0&&z+0.9<zb-0.9; z+=2.5) for(let x=R.x0+1.2; n>0&&x+0.8<R.x1-0.2; x+=2.4)   // die Tische, je Tisch zwei Bänke
++          if(setz((cx,cz)=>{ F.tisch(cx,y,cz,false,0,0,{L:T[0],W:T[1]}); [-1,1].forEach(s2=>bankOhne(cx,y,cz+s2*(T[1]/2+0.3),T[0],false)); },x+T[0]/2-0.4,z,T[0],T[1]+1.2,true)) n--; },
++      werkraum:(R,setz,I,reihe)=>{ const y=R.y, WB=BG.werkbank;   // die Hobelbänke am Licht der Seitenwände, das Werkzeug an der Wand, Bretter in der Ecke
++        ['x0','x1'].forEach(w=>reihe(w,WB.l,WB.t,0.6,I.baenke,(x,z)=>hobel(x,y,z,WB.l,WB.t,WB.h,true),true));
++        const wand=(x,z,ax)=>{ B('lattung',x,y+1.45,z,ax?0.04:2.0,1.1,ax?2.0:0.04);   // die Werkzeugwand: Brett mit Sägen, Hobeln, Winkeln
++          for(let i=0;i<6;i++) B('dunkel',ax?x:x-0.85+i*0.34,y+1.4+(i%2)*0.2,ax?z-0.85+i*0.34:z,ax?0.05:0.08,0.5+(i%3)*0.15,ax?0.08:0.05); furniture.push(aabb(x,y+1.45,z,ax?0.1:2.0,1.1,ax?2.0:0.1)); };
++        reihe('z1',2.0,0.12,0.4,2,(x,z)=>wand(x,z,false)) || reihe('x1',2.0,0.12,0.4,1,(x,z)=>wand(x,z,true)) || reihe('x0',2.0,0.12,0.4,1,(x,z)=>wand(x,z,true));
++        reihe('z1',0.5,0.6,0.3,2,(x,z)=>{ for(let i=0;i<5;i++) B('lattung',x+(i-2)*0.08,y+1.1,z,0.03,2.2,0.25,[0.12,0,0]); furniture.push(aabb(x,y+1.1,z,0.45,2.2,0.5)); }); },
++      esse_werkraum:(R,setz,I,reihe,frei)=>{ const y=R.y, A=I.amboss, d0=hearthBD/2+1.4;   // der Amboss vor dem Feuer, der Trog daneben, das Zangen-Gestell — je Stück der erste freie Platz am Feuer, sonst im Raum
++        const amboss=(x,z)=>{ B('holz',x,y+I.block/2,z,0.55,I.block,0.55); B('dunkel',x,y+I.block+A[2]/2,z,A[1],A[2],A[0]*0.6);
++          B('dunkel',x,y+I.block+A[2]-0.06,z-A[0]*0.38,A[1]*0.5,0.12,A[0]*0.3); furniture.push(aabb(x,y+(I.block+A[2])/2,z,0.55,I.block+A[2],A[0])); };
++        [[hearthX+hearthNX*d0,hearthZ],[hearthX+hearthNX*d0,hearthZ+1.0],[hearthX+hearthNX*d0,hearthZ-1.0],[hearthX,hearthZ-hearthBW/2-1.2],[hearthX,hearthZ+hearthBW/2+1.2]]
++          .some(([x,z])=>setz(amboss,x,z,0.7,A[0]+0.1)) || frei(amboss,0.7,A[0]+0.1);
++        const T=BG.trog||[1.35,0.42,0.5], trog=(x,z)=>kasten(x,y,z,T[2],T[1],T[0],'stein');
++        [[hearthX+hearthNX*(hearthBD/2+0.4),hearthZ+hearthBW/2+0.9],[hearthX+hearthNX*(hearthBD/2+0.4),hearthZ-hearthBW/2-0.9]].some(([x,z])=>setz(trog,x,z,T[2],T[0],true)) || frei(trog,T[2],T[0],true);
++        const gestell=(x,z)=>{ B('holz',x,y+0.6,z,1.2,0.06,0.06); [-1,1].forEach(s2=>B('holz',x+s2*0.55,y+0.45,z,0.06,0.9,0.4));   // das Zangen-Gestell: Stange auf zwei Böcken, Zangen und Hämmer daran
++          for(let i=0;i<6;i++) B('dunkel',x-0.45+i*0.18,y+0.45,z+(i%2?0.04:-0.04),0.04,0.42,0.04); furniture.push(aabb(x,y+0.45,z,1.2,0.9,0.4)); };
++        frei(gestell,1.2,0.4,true); },
++      schiff:(R,setz,I,reihe)=>{ const y=R.y, A=I.altar, zA=R.z1-0.16-0.8-A[1]/2;   // die Mensa vor der Rückwand, umschreitbar; das Kreuz darüber; die Bänke beiderseits des Mittelgangs
++        setz((x,z)=>{ B('stein',x,y+0.075,z,A[0]+1.2,0.15,A[1]+1.0); B('stein',x,y+0.15+A[2]/2,z,A[0],A[2],A[1]); B('moebel',x,y+0.15+A[2]+0.02,z,A[0]+0.1,0.04,A[1]+0.1);
++          B('dunkel',x,y+A[2]+1.9,R.z1-0.2,0.12,1.8,0.08); B('dunkel',x,y+A[2]+2.3,R.z1-0.2,0.9,0.12,0.08); furniture.push(aabb(x,y+0.6,z,A[0]+1.2,1.2,A[1]+1.0)); },0,zA,A[0]+1.2,A[1]+1.0);
++        const xa=I.gang/2, seite=(R.x1-R.x0)/2-xa>=I.seite+3*I.platz?I.seite:0.25, xb=R.x1-0.16-seite, l=xb-xa;
++        if(l>=2*I.platz) for(let z=R.z0+2.2; z+I.tief<zA-A[1]/2-1.6; z+=I.tief) [-1,1].forEach(s2=>setz((x,zz)=>{   // die Bank: Sitz, Lehne, Kniebank, Wangen
++          B('moebel',x,y+0.44,zz,l,0.05,0.4); B('moebel',x,y+0.72,zz-0.22,l,0.5,0.05); B('moebel',x,y+0.14,zz+0.34,l,0.05,0.16);
++          [-1,1].forEach(s3=>B('moebel',x+s3*(l/2-0.03),y+0.46,zz,0.06,0.92,0.6)); furniture.push(aabb(x,y+0.46,zz,l,0.92,0.6)); },s2*(xa+l/2),z+0.3,l,0.62,true)); },
++      halle:(R,setz,I,reihe)=>{ const y=R.y, V=I.waage, Bk=I.bank;   // die Stadtwaage in der Halle, die Verkaufsbänke an den Wänden
++        const waage=(x,z)=>{ [-1,1].forEach(s2=>B('holz',x+s2*V.balken*0.6,y+V.h/2,z,0.2,V.h,0.2)); B('holz',x,y+V.h-0.1,z,V.balken*1.2+0.2,0.2,0.2);
++          B('dunkel',x,y+V.h-0.45,z,V.balken,0.1,0.1); [-1,1].forEach(s2=>{ B('dunkel',x+s2*(V.balken/2-0.05),y+V.h-1.05,z,0.03,1.1,0.03); B('dunkel',x+s2*(V.balken/2-0.05),y+0.55,z,V.schale,0.05,V.schale); });
++          furniture.push(aabb(x,y+V.h/2,z,V.balken*1.2+0.2,V.h,V.schale)); };
++        for(const f of [0,-1,1,-2,2]) if(setz(waage,f*1.6,R.z1-0.16-1.4,V.balken*1.2+0.4,V.schale+0.4)) break;
++        ['x0','x1'].forEach(w=>reihe(w,Bk[0],Bk[1],0.8,3,(x,z)=>kasten(x,y,z,Bk[1],Bk[2],Bk[0]),true)); },
++      kontor:(R,setz,I,reihe)=>{ const y=R.y, P2=I.pult;   // die Pulte am Licht der Front, Regale an den Wänden, die Ware hinten
++        const pult=(x,z)=>{ B('moebel',x,y+P2[2]-0.1,z,P2[0],0.05,P2[1],[-0.25,0,0]); B('moebel',x,y+(P2[2]-0.2)/2,z,P2[0]*0.9,P2[2]-0.2,P2[1]*0.6); furniture.push(aabb(x,y+P2[2]/2,z,P2[0],P2[2],P2[1])); };
++        [-1,1].forEach(sx=>{ for(const f of [0,1,2,3]) if(setz(pult,sx*((R.x1-R.x0)/2-1.0-f*0.8),R.z0+1.7,P2[0],P2[1])) break; });
++        ['x0','x1','z1'].forEach(w=>reihe(w,1.0,0.34,0.15,4,(x,z,wd)=>F.regal(x,y,z,wd!=='z1',wd==='x0'?1:wd==='x1'?-1:0,wd==='z1'?-1:0,{L:1.0,W:0.34,H:2.0})));
++        ['x1','x0'].forEach(w=>reihe(w,0.6,0.6,0.05,4,(x,z)=>F.fass(x,y,z,false,0,0,{L:0.6,H:0.8}),true));   // die Fässer der Ware an der Wand
++        let n=0; for(let z=R.z1-2.2; n<6&&z>R.z0+3.0; z-=0.8) for(let x=R.x0+1.2; n<6&&x<R.x1-1.2; x+=0.9)   // die Ware: Ballen auf Ballen
++          if(setz((cx,cz)=>{ kasten(cx,y,cz,0.8,0.6,0.6,'lattung'); if(n%2===0) kasten(cx,y+0.6,cz,0.8,0.55,0.6,'lattung'); },x,z,0.85,0.65)) n++; },
++      laden:(R,setz,I,reihe)=>{ const y=R.y, T=I.theke, L=Math.min(T[0],(R.x1-R.x0)*0.5);   // der Ladentisch vor dem Kunden, die Regale dahinter
++        for(const f of [0,-1,1]) if(setz((x,z)=>{ kasten(x,y,z,L,T[2],T[1]); B('dunkel',x,y+T[2]+0.02,z,L+0.06,0.04,T[1]+0.06); },f*(L*0.7),R.z0+2.4,L,T[1],true)) break;
++        ['z1','x0','x1'].forEach(w=>reihe(w,1.0,0.34,0.1,5,(x,z,wd)=>F.regal(x,y,z,wd!=='z1',wd==='x0'?1:wd==='x1'?-1:0,wd==='z1'?-1:0,{L:1.0,W:0.34,H:2.0}))); },
++    };
+     const tryWall=(room,wall,W_,D_)=>{ const ins=0.16;   // INNENFLÄCHEN-GESETZ: Korpus samt Gesims steht VOR der Wand
+       if(wall==='outer'){ const at=room.side==='L'?room.x0:room.x1, dir=room.side==='L'?1:-1, cx=at+dir*(D_/2+ins), lo=room.z0+ins+W_/2, hi=room.z1-ins-W_/2; if(hi<lo)return null; const cz=lo+rndI()*(hi-lo); return {cx,cz,vert:true,nx:dir,nz:0,fp:[cx-D_/2,cz-W_/2,cx+D_/2,cz+W_/2]}; }
+       const at=wall==='z0'?room.z0:room.z1, dir=wall==='z0'?1:-1, cz=at+dir*(D_/2+ins), lo=room.x0+ins+W_/2, hi=room.x1-ins-W_/2; if(hi<lo)return null; const cx=lo+rndI()*(hi-lo); return {cx,cz,vert:false,nx:0,nz:dir,fp:[cx-W_/2,cz-D_/2,cx+W_/2,cz+D_/2]}; };
+     const furnish=room=>{ const {floor,y}=room; const local=[];
+-      const fits=fp=>{ if(fp[0]<room.x0+0.05||fp[2]>room.x1-0.05||fp[1]<room.z0+0.05||fp[3]>room.z1-0.05)return false;
++      const fits=(fp,unter)=>{ if(fp[0]<room.x0+0.05||fp[2]>room.x1-0.05||fp[1]<room.z0+0.05||fp[3]>room.z1-0.05)return false;
+         for(const p of local)if(fp[0]<p[2]&&fp[2]>p[0]&&fp[1]<p[3]&&fp[3]>p[1])return false;
+         for(const q of GBLK) if((q.f===-1||q.f===floor) && fp[0]<q.fp[2]&&fp[2]>q.fp[0]&&fp[1]<q.fp[3]&&fp[3]>q.fp[1]) return false;
+-        if(floor===0 && fp[0]<hearthBox[2]&&fp[2]>hearthBox[0]&&fp[1]<hearthBox[3]&&fp[3]>hearthBox[1])return false;
++        if(floor===0 && hearthBox && fp[0]<hearthBox[2]&&fp[2]>hearthBox[0]&&fp[1]<hearthBox[3]&&fp[3]>hearthBox[1])return false;
+         if(chimney && fp[0]<chimney.max[0]&&fp[2]>chimney.min[0]&&fp[1]<chimney.max[2]&&fp[3]>chimney.min[2])return false;
+-        for(const c of circR){ if(c.floor===floor && fp[0]<c.x1&&fp[2]>c.x0&&fp[1]<c.z1&&fp[3]>c.z0)return false; }
++        if(!unter) for(const c of circR){ if(c.floor===floor && fp[0]<c.x1&&fp[2]>c.x0&&fp[1]<c.z1&&fp[3]>c.z0)return false; }
+         return true; };
+       const put=(piece,L_,S_,walls,fr)=>{ const Lj=jit(L_,fr==null?0.12:fr), Sj=jit(S_,fr==null?0.10:fr);
+         for(const wl of walls)for(let t=0;t<5;t++){ const pl=tryWall(room,wl,Lj,Sj); if(pl&&fits(pl.fp)){ const ret=piece(pl.cx,y,pl.cz,pl.vert,pl.nx,pl.nz,{L:Lj,W:Sj}); local.push(pl.fp); return ret||true; } } return false; };
+       const putCenter=(piece,w_,d_)=>{ const wj=jit(w_,0.12), dj=jit(d_,0.10); const cx=(room.x0+room.x1)/2,cz=(room.z0+room.z1)/2,fp=[cx-wj/2,cz-dj/2,cx+wj/2,cz+dj/2]; if(fits(fp)){const ret=piece(cx,y,cz,false,0,0,{L:wj,W:dj});local.push(fp);return {cx,cz,ret};} return null; };
+       const chairsAround=(cx,cz,tw,td)=>{ [[0,-1],[0,1],[-1,0],[1,0]].forEach(([ox,oz])=>{ if(rndI()<0.30)return;
+           const sx=cx+ox*(tw/2+0.27), sz=cz+oz*(td/2+0.27), fp=[sx-0.24,sz-0.24,sx+0.24,sz+0.24]; if(fits(fp)){ F.stuhl(sx,y,sz,ox,oz); local.push(fp); } }); };
++      // der Raum der Arbeit: `setz` stellt, wo frei ist — was unter der Brüstung bleibt (`unter`: Bank, Hobelbank, Tisch), darf unter dem Fenster
++      // stehen (die Hobelbank am Licht); `reihe` geht eine Wand entlang (x0 · x1 · z1) und stellt bis `max` Stücke in ihre Lücken
++      const setz=(fn,cx,cz,w,d,unter,wd)=>{ const fp=[cx-w/2,cz-d/2,cx+w/2,cz+d/2]; if(!fits(fp,unter)) return false; fn(cx,cz,wd); local.push(fp); return true; };
++      const reihe=(wd,l,t,gap,max,fn,unter)=>{ let n=0; const lo=wd==='z1'?room.x0:room.z0, hi=wd==='z1'?room.x1:room.z1;
++        for(let a=lo+0.2+l/2; n<max&&a+l/2<hi-0.2; a+=0.3){ const x=wd==='x0'?room.x0+0.16+t/2:wd==='x1'?room.x1-0.16-t/2:a, z=wd==='z1'?room.z1-0.16-t/2:a;
++          if(setz(fn,x,z,wd==='z1'?l:t,wd==='z1'?t:l,unter,wd)){ n++; a+=l+gap-0.3; } } return n; };
++      const frei=(fn,w,d,unter)=>{ for(let z=room.z1-0.3-d/2; z>=room.z0+0.3+d/2; z-=0.3) for(let k=0; k<=(room.x1-room.x0)/0.6; k++){   // der erste freie Platz, von der Rückwand zur Tür, aus der Mitte nach außen
++          const x=(room.x0+room.x1)/2+(k%2?1:-1)*Math.ceil(k/2)*0.3; if(x-w/2<room.x0+0.2||x+w/2>room.x1-0.2) continue; if(setz(fn,x,z,w,d,unter)) return true; } return false; };
++      if(BG&&BG.innen&&room.func===BG.innen.raum&&ARBEIT[room.func]){ if(stZ0>room.z0) local.push([-0.6,room.z0,0.6,stZ0]);   // der Gang von der Tür zum Antritt bleibt frei
++        const n0=furniture.length; ARBEIT[room.func](room,setz,BG.innen,reihe,frei); arbeit={raum:room.func, stuecke:furniture.length-n0}; return; }
+       if(room.func==='kammer'){ put(F.bett,1.95,1.0,['outer','z1','z0']); put(F.truhe,1.1,0.55,['z1','z0','outer']); if(rndI()<0.78)put(F.schrank,1.1,0.55,['z0','z1','outer']); if(rndI()<0.55)put(F.kommode,1.05,0.5,['z1','z0','outer']); if(rndI()<0.4)put(F.hocker,0.36,0.36,['z0','z1']); if(rndI()<0.45)put(F.regal,1.0,0.34,['z1','z0']); }
+       else if(room.func==='stube'){ const tc=putCenter(F.tisch,1.4,0.85); if(tc&&tc.ret&&tc.ret.w){ chairsAround(tc.cx,tc.cz,tc.ret.w,tc.ret.d);
+           const bz1=[tc.cx-tc.ret.w/2,tc.cz+tc.ret.d/2,tc.cx+tc.ret.w/2,tc.cz+tc.ret.d/2+0.36]; if(fits(bz1)){F.bank(tc.cx,y,tc.cz+tc.ret.d/2+0.2,false);local.push(bz1);} }
+@@ -1504,7 +1572,7 @@
+       if(local.length===0){ put(F.regal,1.0,0.34,['outer','z0','z1']) || put(F.kommode,1.0,0.5,['outer','z0','z1']) || put(F.hocker,0.36,0.36,['outer','z0','z1']) || put(F.truhe,0.9,0.5,['outer','z0','z1']); } };
+     const GBLK=[];   // BEWEGUNGSFLÄCHEN-GESETZ (Realität: DIN-Bewegungsflächen): vor jeder Tür, vor dem Feuer, am Treppen-Antritt bleibt Stellfläche frei
+     WALLS.forEach(w=>{ if(w.type==='door'||w.type==='wingdoor'||w.type==='balkdoor'){ const wc=(w.lo+w.hi)/2, dw=Math.max(1.0,(w.hi-w.lo)*0.6), fl=(w.type==='balkdoor')?1:0; GBLK.push({f:fl, fp: w.horiz?[wc-dw/2,w.fixed-1.05,wc+dw/2,w.fixed+1.05]:[w.fixed-1.05,wc-dw/2,w.fixed+1.05,wc+dw/2]}); } });
+-    { const fO=hearthX+hearthNX*(hearthBD/2); GBLK.push({f:0, fp:[Math.min(fO,fO+hearthNX*1.0), hearthZ-hearthBW/2-0.15, Math.max(fO,fO+hearthNX*1.0), hearthZ+hearthBW/2+0.15]}); }   // HERD-BEDIENFLÄCHE — vor der Feueröffnung (x-Normale)
++    if(hearthBox){ const fO=hearthX+hearthNX*(hearthBD/2); GBLK.push({f:0, fp:[Math.min(fO,fO+hearthNX*1.0), hearthZ-hearthBW/2-0.15, Math.max(fO,fO+hearthNX*1.0), hearthZ+hearthBW/2+0.15]}); }   // HERD-BEDIENFLÄCHE — vor der Feueröffnung (x-Normale)
+     GBLK.push({f:-1, fp:[wx0-0.10, stZ0-1.10, wx1+0.10, wz1+0.10]});                                  // TREPPEN-Antritt + Lauf — SCHACHT-GESETZ: über ALLE Geschosse frei (f:-1)
+     if(P.keller) GBLK.push({f:-1, fp:[lxL-0.10, stZ0-1.10, lxR+0.10, wz1+0.20]});                     // Keller-Zustieg — geschossübergreifend
+     if(backDoor) GBLK.push({f:0, fp:[backDoor.cx-0.70, Dp/2-1.05, backDoor.cx+0.70, Dp/2+0.12]});     // HINTERTÜR-Bewegungsfläche (eigener Mechanismus, nicht in WALLS-type)
+@@ -2203,7 +2271,7 @@
+       tuer:(ROUND?null:{x:0,z:-Dp/2,w:doorW,h:doorH,y:baseY, hinten:(backDoor?{x:backDoor.cx,z:Dp/2,w:Math.min(1.0,backDoor.hi-backDoor.lo-0.2)}:null)}),   // DORF-ERLEBNIS (17.07., additiv): die TÜR-ZEILE — Position/Maß der Haustür (Front −z, tueren()-Wahrheit) + Hintertür; exportSettlement reicht sie je Slot an den Host (Blocker-Tür-Lücke + Betreten). ROUND-Bauten tragen keine Haustür (tueren() baut dort nichts).
+       rooms:rooms.map(r=>({side:r.side,cx:r.cx,cz:r.cz,floor:r.floor,x0:r.x0,x1:r.x1,z0:r.z0,z1:r.z1,y:r.y,func:r.func})), stairX0:wx0, stairX1:wx1, stairZ0:stZ0, stairZ1:wz1,
+       flights:flights.map(f=>({base:f.base,x0:f.x0,x1:f.x1,zFoot:f.zFoot,dir:f.dir,N:f.N,rise:f.rise,go:f.go,isLoft:f.isLoft,atLevel:f.atLevel,tr:f.tr})), levelsY:levels.map(L=>L.y),
+-      loft:LOFT?{x0:LOFT.x0,x1:LOFT.x1,z0:LOFT.z0,z1:LOFT.z1,xc:LOFT.xc,base:LOFT.base,top:LOFT.top,N:LOFT.N,rise:LOFT.rise,go:LOFT.go,versatz:LOFT.versatz}:null}, furniture, chimney, roofY, masse,
++      loft:LOFT?{x0:LOFT.x0,x1:LOFT.x1,z0:LOFT.z0,z1:LOFT.z1,xc:LOFT.xc,base:LOFT.base,top:LOFT.top,N:LOFT.N,rise:LOFT.rise,go:LOFT.go,versatz:LOFT.versatz}:null}, furniture, arbeit, chimney, roofY, masse,
+       rahmen:(function(){ const m=mat('holz'); return (m&&m.__role)||_roleByMat.get(m)||'holz'; })(),   // der Rahmen-Stoff des Stils (das Fern-Fenster liest ihn)
+       raum:(function(){ const m=mat('gefach'); return (m&&m.__role)||_roleByMat.get(m)||'gefach'; })() };   // der Wand-Stoff, den die L0 hinter dem Glas zeigt (der Innenkörper der L1 und des Fern-Fensters liest ihn)
+ }
+@@ -3022,20 +3090,34 @@
+     //   laden    „Laden“ heißt mhd. das Brett, das in der Bude niedergelassen die Ware trägt (Wiley-VCH, Geschichte des Handels, Kap. 1);
+     //            der Klappladen teilt die Öffnung des Erdgeschosses waagerecht (Aachener Hausstudie 1930) — Brett 0,6 m, Klappe 0,7 m unter
+     //            20°: Hypothese (ohne Messwert), offen an bedarf#2
++    //   innen    DER RAUM DER ARBEIT (bau.innen#3): der Raum des Programms an der Straße ist das GANZE Erdgeschoss — die Tür führt IN
++    //            die Arbeit, nie in einen Flur (die Diele des Dielenhauses, die Werkstatt, die Schmiede, die Wirtsstube) — und trägt ihr
++    //            Werkzeug; der Blick aus der Tür liest die Funktion
++    //   schank   Schanktisch H 1,05 · T 0,6 m, L ≤ 3 m, der Gang des Wirts 0,9 m dahinter: Hypothese (ohne Messwert), offen an innen#3
++    //   amboss   Amboss L 0,97 · B 0,37 · H 0,36 m auf dem Holzblock 0,40 m (Westfälisches Kettenschmiedemuseum, museum-digital westfalen)
++    //   bankreihe Kirchengestühl: Sitzplatz ≥ 0,54 m, Banktiefe 0,94 m mit Kniebank, Mittelgang ≥ 1,70 m, Seitengang ≥ 1,0 m
++    //            (Handbuch des Kirchenbaus, UB Paderborn, Digitalisat 3184151)
++    //   altar    Mensa H 0,9–1,0 · T ≥ 0,9 · B ≥ 1,3 m, umschreitbar (Erzdiözese Wien, Richtlinien Altarraum 2011); Kloster Isenhagen
++    //            1,80 × 1,20 × 1,19 m — 1,8 × 1,0 × 1,0 m gesetzt
++    //   pult     Stehpult H 1,16 · B 0,60 · T 0,63 m (Museum der Stadt Marsberg, museum-digital westfalen 1306)
++    //   waage    die Stadtwaage in der Halle des Rathauses: Gestell 2,6 m, Balken 2,0 m, Schalen 0,7 m — Hypothese (ohne Messwert)
++    //   theke    Ladentisch H 0,9 · T 0,6 m: Hypothese (ohne Messwert)
+     // prettier-ignore
+     const BEDARF_GESTALT={
+-      gaststube:{ wo:'strasse', fenster:{takt:1, wd:1.3, eg:[1.0,1.3]}, ausleger:{aus:2.02, schild:[0.64,0.75]}, bank:{n:2} },
+-      esse_werkraum:{ wo:'kern', schlot:{b:1.2, t:1.0, ueber:1.0} },
++      gaststube:{ wo:'strasse', fenster:{takt:1, wd:1.3, eg:[1.0,1.3]}, ausleger:{aus:2.02, schild:[0.64,0.75]}, bank:{n:2}, innen:{schank:[3.0,0.6,1.05], tisch:[1.6,0.8], plaetze:6} },
++      esse_werkraum:{ wo:'kern', schlot:{b:1.2, t:1.0, ueber:1.0}, innen:{amboss:[0.97,0.37,0.36], block:0.40} },
+       beschlagstand:{ wo:'strasse', vordach:{tief:2.5, traufe:2.4}, esse:{b:2.1, h:0.75, l:1.75}, trog:[1.35,0.42,0.5] },
+       trinkstube:{ wo:'strasse', saal:{h:4.0}, fenster:{takt:1, wd:1.2, saal:[1.9,2.4]} },
+       sala:{ wo:'strasse', erker:{b:2.4, t:0.9} },
+-      kontor:{ wo:'strasse', stoff:{stil:'stein'} },
++      kontor:{ wo:'strasse', stoff:{stil:'stein'}, innen:{pult:[0.60,0.63,1.16]} },
++      halle:{ wo:'strasse', innen:{waage:{h:2.6, balken:2.0, schale:0.7}, bank:[3.0,0.9,0.85]} },
++      laden:{ wo:'strasse', innen:{theke:[3.0,0.6,0.9]} },
+       uhrturm:{ wo:'turm', uhr:{d:[1.2,1.7]} },
+-      schiff:{ wo:'kern', halle:{fenster:0.62}, fenster:{takt:1, wd:0.9} },
++      schiff:{ wo:'kern', halle:{fenster:0.62}, fenster:{takt:1, wd:0.9}, ohneFeuer:{}, innen:{platz:0.54, tief:0.94, gang:1.7, seite:1.0, altar:[1.8,1.0,1.0]} },
+       chor:{ wo:'kern', chor:{breite:0.62}, kreuz:{h:1.8, b:0.9} },
+       // Feuer: die Feuerordnungen der Frühen Neuzeit verboten Herd und offenes Licht in Scheune und Tenne (Heu und Stroh) — die Tenne baut keinen Herd
+       tenne:{ wo:'kern', tor:{w:[3.2,4.8], h:[3.4,4.4]}, ohneFeuer:{} },
+-      werkraum:{ wo:'strasse', tor:{w:[2.2,2.2], h:[2.3,2.3]}, fenster:{takt:1, wd:1.3, eg:[1.0,1.3]}, laden:{tief:0.6, klappe:0.7, winkel:20}, werkbank:{l:2.0, t:0.61, h:0.84}, stapel:{l:2.4, t:0.9, h:0.9} },
++      werkraum:{ wo:'strasse', tor:{w:[2.2,2.2], h:[2.3,2.3]}, fenster:{takt:1, wd:1.3, eg:[1.0,1.3]}, laden:{tief:0.6, klappe:0.7, winkel:20}, werkbank:{l:2.0, t:0.61, h:0.84}, stapel:{l:2.4, t:0.9, h:0.9}, innen:{baenke:2} },
+     };
+     // die Gestalt einer Nutzung: je Raum ihrer Zeile an seiner Lage die Merkmale des Gesetzes (m² des Raums als `m2`); null ohne Merkmal
+     // prettier-ignore
+diff --git a/scripts/diag-settlement.cjs b/scripts/diag-settlement.cjs
+index e950ce478..2b37b45c4 100644
+--- a/scripts/diag-settlement.cjs
++++ b/scripts/diag-settlement.cjs
+@@ -821,7 +821,7 @@ function bedarfGang(FC, o = {}) {
+         });
+         return h.digest("hex").slice(0, 8);
+     };
+-    const rollen = o.rollen || BEDARF_ROLLEN, haus = {};
++    const rollen = o.rollen || BEDARF_ROLLEN, haus = {}, arbeit = {};
+     for (let s = 1; s <= 24 && rollen.some((r) => !haus[r]); s++)
+         for (const h of FC.DORF({ seed: s, nH: 24 }).houses) if (rollen.includes(h.rolle) && !haus[h.rolle]) haus[h.rolle] = h;
+     const je = {};
+@@ -836,9 +836,19 @@ function bedarfGang(FC, o = {}) {
+         if (r === "wohnhaus") delete w.rolle;
+         for (const L of o.stufen || [0, 2]) z["L" + L] = [abdruck(FC.buildInstance(h.kultur, h.seed, L, h)), abdruck(FC.buildInstance(h.kultur, h.seed, L, w))];
+         je[r] = z;
++        // B3 (innen#3): der Bau der Stufe 0 aus demselben Vektor (hausParams → stapelBau, der Weg von buildInstance) und seine Aussage
++        // `arbeit` — der Raum der Arbeit und die Stücke, die das Gesetz in ihn stellt; daneben der Raum, den das Programm im EG trägt
++        const p = FC.hausParams(FC.PRESETS[h.kultur], h);
++        p.seed = h.seed;
++        const prog = ((FC.BAU_NUTZUNG[r] || {}).raeume || []).find((x) => x[4] === "eg" && (x[5] === "strasse" || x[5] === "kern") && !ARBEIT_NICHT.includes(x[0]));
++        arbeit[r] = { soll: prog ? prog[0] : null, ist: FC.stapelBau(p, { gelaende: false }).H.arbeit || null };
+     }
+-    return { je };
++    return { je, arbeit };
+ }
++// der Raum der Arbeit: ein Raum des Programms im EG an der Straße oder im Kern, der nicht Wohnen, Küche, Tenne oder Stall ist (die
++// Station innen#3 zählt Wohnhaus und Scheune nicht zu den Werk-Bauten; die Trinkstube des Zunfthauses steht im OG)
++const ARBEIT_NICHT = ["wohnen", "kueche", "tenne", "stall"];
++const ARBEIT_STUECKE = 3;
+ // B1 jede Rolle außer dem Wohnhaus zeichnet nah UND fern ein anderes Haus als ihr Wohnhaus-Zwilling · B2 das Wohnhaus bleibt es selbst
+ function bedarfUrteil(B, check) {
+     const rollen = Object.keys(B.je).filter((r) => r !== "wohnhaus");
+@@ -852,6 +862,18 @@ function bedarfUrteil(B, check) {
+     const W = B.je.wohnhaus;
+     if (W !== undefined)
+         check("B2 das Wohnhaus bleibt das Wohnhaus (byte-gleich mit demselben Vektor ohne Rolle, dem Bau des Vertrags cv:6)", W && Object.values(W).every(([a, b]) => a === b), JSON.stringify(W));
++    // B3 DER RAUM DER ARBEIT (innen#3): trägt das Programm im EG einen Raum der Arbeit, steht er hinter der Tür mit seinem Werkzeug
++    // (≥ ARBEIT_STUECKE Stücke); ohne ihn stellt das Gesetz keinen (das Wohnhaus und die Scheune bleiben Haus und Tenne)
++    const A = B.arbeit || {},
++        werk = Object.keys(A).filter((r) => A[r].soll),
++        leer = werk.filter((r) => !A[r].ist || A[r].ist.raum !== A[r].soll || A[r].ist.stuecke < ARBEIT_STUECKE),
++        fremd = Object.keys(A).filter((r) => !A[r].soll && A[r].ist);
++    if (Object.keys(A).length)
++        check(
++            `B3 DER RAUM DER ARBEIT: ${werk.length - leer.length} von ${werk.length} Bauten mit Raum der Arbeit im EG stellen ihn hinter die Tür (≥ ${ARBEIT_STUECKE} Stücke; ${Object.keys(A).filter((r) => !A[r].soll).join(", ")} ohne: Haus, Tenne, Arbeit im OG)`,
++            werk.length > 0 && !leer.length && !fremd.length,
++            [...leer.map((r) => `${r} ${A[r].soll}: ${A[r].ist ? A[r].ist.raum + " " + A[r].ist.stuecke + " Stücke" : "kein Raum"}`), ...fremd.map((r) => `${r} stellt ${A[r].ist.raum} ohne Programm`)].join(" · ")
++        );
+ }
+ // der Täter von main (die Rolle zeichnet die Gestalt nicht), der Übergriff (jede Rolle zeichnet die Gaststube: die Rolle ist nicht
+ // mehr zu lesen) und das gezeichnete Wohnhaus (die Rolle „wohnhaus“ trägt ein Zeichen, das der Bau ohne Rolle nicht trägt)
+@@ -859,8 +881,9 @@ const BEDARF_TAETER = {
+     "die Rolle zeichnet die Gestalt nicht": [["const BG=bedarfGestalt(P.rolle);", "const BG=null;"]],
+     "jede Rolle zeichnet die Gaststube": [["const BG=bedarfGestalt(P.rolle);", "const BG=bedarfGestalt('gasthaus');"]],
+     "das Wohnhaus zeichnet die Gaststube": [["const BG=bedarfGestalt(P.rolle);", "const BG=bedarfGestalt(P.rolle==='wohnhaus'?'gasthaus':P.rolle);"]],
++    "der Raum der Arbeit steht leer": [["ARBEIT[room.func](room,setz,BG.innen,reihe,frei);", ";"]],
+ };
+-const BEDARF_SOLL = { "die Rolle zeichnet die Gestalt nicht": "B1", "jede Rolle zeichnet die Gaststube": "B1", "das Wohnhaus zeichnet die Gaststube": "B2" }; // prettier-ignore
++const BEDARF_SOLL = { "die Rolle zeichnet die Gestalt nicht": "B1", "jede Rolle zeichnet die Gaststube": "B1", "das Wohnhaus zeichnet die Gaststube": "B2", "der Raum der Arbeit steht leer": "B3" }; // prettier-ignore
+ // R13 (sprache-dialekt, Karte 2 mensch.kultur.sprache#4): DIE MUNDART FOLGT DEM TAL — je Welt-Saat von MUNDART_RAUM ein Gitter von
+ // Orten um den Ursprung (die Lage der Saat, gelaende-core `lageGrund`): je trockenem Ort die Senke seines Tals (`talWeg`, der Wirt
+ // `_mundartAm` liest dieselbe) und ihre Mundart (fachwerk `mundartVon`), je Familie seine Sprache (`spracheVon`). Gemessen wie die
+@@ -2353,7 +2376,7 @@ hauptLauf(async () => {
+                 rot = [];
+             if (m.text)
+                 bedarfUrteil(
+-                    bedarfGang(kernAusText(m.text, "bedarf-" + name), { rollen: ["scheune", "wohnhaus"], stufen: [0] }),
++                    bedarfGang(kernAusText(m.text, "bedarf-" + name), { rollen: BEDARF_SOLL[name] === "B3" ? ["schmiede"] : ["scheune", "wohnhaus"], stufen: BEDARF_SOLL[name] === "B3" ? [] : [0] }),
+                     (w, ok, d) => ok || rot.push(`${w} — ${d || ""}`.slice(0, 220))
+                 );
+             check(

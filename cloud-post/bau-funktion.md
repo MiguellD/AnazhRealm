@@ -181,4 +181,26 @@ GRÜN; davor am Kopf mit dem Schnitt der Halle: gate:studio-begehen · gate:haus
   3664 + Würfe 2631) und `dorf 1` 3 600 Takte unverändert, „Hunger … dorf 0/2“, nach der Frist dorf 180 ms — die zehn Läufe am
   main folgen nach Kopf 2.
 
+## Sichern 28.11. (auf Zuruf) — Stand-Blatt
+
+**Geschnitten (am Zweig, WIP):** main bbb97563 hinein (ab5fef49, merge-tree sauber; gate:asset-contract 128 von 128 byte-gleich,
+gate:fachwerk-contract GRÜN am Merge-Kopf). Die wartende Nachbar-Runde zählt im Dorf (`_nachbarnWarten` in `_dorfOffen`,
+siedlung-bewohner.js `_bewohnerMelden`; C-K5b nachZug 3 → 1–2). Gesichert als Patch, NICHT im Baum: das Gesetz innen#3 samt Linse B3
+(`cloud-post/bau-funktion-innen3.patch`, wendet sauber auf ab5fef49) und die Täter-Linse des Rennens
+(`cloud-post/bau-funktion-k5b-linse.patch`: `spaet` je Ruf nach dem Zug mit Zelle, Takt, Hydro, Rufer; `vlog` je set/delete des
+Vorrats; `NUR_K5B` ist Messwerkzeug und fällt vor jedem Kopf).
+
+**Letzte Zahl (gate:settlement, Täter-Linse, Kopf f2b0252d + Schnitt):** die Still-Schleife lief an den Deckel, 600 von 600 Gängen,
+nie 20 Takte still — die Trasse der Zelle −3,−3 fragte ihren Export in Runde 1 im Gang S0, Runde 2 im Gang S555, Runde 3 im Fenster
+im Takt F36 (eine Hydro-Kachel offen); danach Erwachen F139, Nachbar-Ruf F141. Der zweite späte Ruf ist also kein Zähl-Loch, sondern ein
+verhungerter Export: je Trasse-Runde ≈ 550 Takte. Dieselbe Frage wie C-K5 (das erste Haus nach 4449 Takten, `wald 6295` offen).
+
+**Rote Zeilen wörtlich:**
+- `❌ C-K5b: NACH DEM ZUG STEHT DIE WELT — {"exporte":{"-3,-3":1,"-3,-5":1,"-2,-4":1,"-5,-3":1},"alle":8,"nachZug":2,…`
+- `❌ ROT — 1 Verletzung(en): C-K5b: NACH DEM ZUG STEHT DIE WELT`
+
+**Nächster Schritt:** je Trasse-Runde messen, worauf `_foundryRequestSettlement` wartet (Hydro-Kachel · Ort-Faden `reihe` hinter der
+Wald-Schlange `waldAuftraege` · Foundry), den Wartenden am EINEN Chokepoint schneiden; dann die Batterie und Vorprüf-Kopf 2 auf main
+bbb97563 (Golden neu gemintet, Nachricht steht). Offen mit Adresse: innen#3 (Patch oben), huelle#1, C-K5 zehn Läufe.
+
 Karte 2 gebucht 158 von 1 718 (Stand im Zweig `punkte-maschine`) · Status ZWISCHENSTAND
