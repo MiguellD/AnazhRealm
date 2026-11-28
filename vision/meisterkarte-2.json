@@ -5567,10 +5567,10 @@
    "summe": {
     "kriterien": 84,
     "sprossen": 569,
-    "heute": 58,
+    "heute": 59,
     "kern": 0,
     "kernDazu": 0,
-    "anteilHeute": 9.6,
+    "anteilHeute": 9.9,
     "anteilKern": 0
    },
    "perspektiven": [
@@ -11687,7 +11687,7 @@
        "richter": "1 000 Stichproben begehbar ≥ 95 %; Verwechslung mit Referenz-Inszenierung ≥ 50 %"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "ungemessen",
      "beleg": "keine begehbaren Ereignisse",
@@ -20099,7 +20099,7 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 159,
+  "heute": 160,
   "davonKopplungen": 33,
   "kern": 0,
   "kernDazu": 0,
@@ -20114,7 +20114,7 @@
   },
   "gliederLeitern": 9,
   "beide": 76,
-  "nachwache": 83
+  "nachwache": 84
  },
  "zusammengelegt": [
   {

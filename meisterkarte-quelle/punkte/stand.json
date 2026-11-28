@@ -6396,7 +6396,7 @@
   },
   "karte2.erleben.kopplung.bild": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.kopplung.bild#1 radeon: Station seit der Messung geändert — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.bild#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, gelaende-core.js, index.html +46) — zuletzt an e80f9c5d: die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 279 s von karte2.erleben.kopplung.bild#1) — offen, UNGEMESSEN · karte2.erleben.kopplung.bild#2 radeon: ungemessen (R10) · karte2.erleben.kopplung.bild#2 gtx: ungemessen (R10) · karte2.erleben.kopplung.bild#3 radeon: ungemessen (R10) · karte2.erleben.kopplung.bild#3 gtx: ungemessen (R10) · karte2.erleben.kopplung.bild#4 radeon: ungemessen (R10) · karte2.erleben.kopplung.bild#4 gtx: ungemessen (R10) · karte2.erleben.kopplung.bild#5 radeon: ungemessen (R10) · karte2.erleben.kopplung.bild#5 gtx: ungemessen (R10) · karte2.erleben.kopplung.bild#6 radeon: ungemessen (R10) · karte2.erleben.kopplung.bild#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.kopplung.bild#1 radeon: Station seit der Messung geändert — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.bild#1 gtx: ROT: ❌ größter Sprung an markierten Stufenwechseln 2.9 % (1 Wechsel) · an den übrigen Schritten 6.4 % (Soll an jedem ≤ 5 %) · der größte bei 850 m · 4/40 Schritte mit Fenster und freier Sicht · UNGEMESSEN 36 (Sicht auf den Fleck): 2000 m welt_portal in 22.03 m, 1950 m Natur baum_birke in 62.17 m, 1900 m Rinde baum_eiche in 28.17 m, 1850 m Natur baum_tanne in 12.57 m, … · Gefälle 0.137 · Ziel 1000/53.4/1732.1 · UNGÜLTIG · [linse-gpu] nvidia/pascal an e80f9c5d · karte2.erleben.kopplung.bild#2 radeon: ungemessen (R10) · karte2.erleben.kopplung.bild#2 gtx: ungemessen (R10) · karte2.erleben.kopplung.bild#3 radeon: ungemessen (R10) · karte2.erleben.kopplung.bild#3 gtx: ungemessen (R10) · karte2.erleben.kopplung.bild#4 radeon: ungemessen (R10) · karte2.erleben.kopplung.bild#4 gtx: ungemessen (R10) · karte2.erleben.kopplung.bild#5 radeon: ungemessen (R10) · karte2.erleben.kopplung.bild#5 gtx: ungemessen (R10) · karte2.erleben.kopplung.bild#6 radeon: ungemessen (R10) · karte2.erleben.kopplung.bild#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.erleben.kopplung.bild#1",
@@ -6412,10 +6412,9 @@
      "id": "karte2.erleben.kopplung.bild#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, gelaende-core.js, index.html +46) — zuletzt an e80f9c5d: die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 279 s von karte2.erleben.kopplung.bild#1) — offen, UNGEMESSEN",
-     "ungemessen": true,
+     "zahl": "❌ größter Sprung an markierten Stufenwechseln 2.9 % (1 Wechsel) · an den übrigen Schritten 6.4 % (Soll an jedem ≤ 5 %) · der größte bei 850 m · 4/40 Schritte mit Fenster und freier Sicht · UNGEMESSEN 36 (Sicht auf den Fleck): 2000 m welt_portal in 22.03 m, 1950 m Natur baum_birke in 62.17 m, 1900 m Rinde baum_eiche in 28.17 m, 1850 m Natur baum_tanne in 12.57 m, … · Gefälle 0.137 · Ziel 1000/53.4/1732.1 · UNGÜLTIG · [linse-gpu] nvidia/pascal",
+     "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
+     "grund": "ROT: ❌ größter Sprung an markierten Stufenwechseln 2.9 % (1 Wechsel) · an den übrigen Schritten 6.4 % (Soll an jedem ≤ 5 %) · der größte bei 850 m · 4/40 Schritte mit Fenster und freier Sicht · UNGEMESSEN 36 (Sicht auf den Fleck): 2000 m welt_portal in 22.03 m, 1950 m Natur baum_birke in 62.17 m, 1900 m Rinde baum_eiche in 28.17 m, 1850 m Natur baum_tanne in 12.57 m, … · Gefälle 0.137 · Ziel 1000/53.4/1732.1 · UNGÜLTIG · [linse-gpu] nvidia/pascal",
      "r6": "konsum",
      "beide": true
     },
@@ -25884,7 +25883,7 @@
   },
   "karte2.mensch.zeit.erleben": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: Bildpaar an der Kamera -238.1,38.6,-1046.6,-248,26.6,-1064: 91 % des Ausschnitts um ≥ 30 % dunkler (Soll ≥ 50 %) · Asche 1 (Soll ≥ 0,99) · [linse-gpu] amd/rdna-3 an d39e0d6e radeon — offen: karte2.mensch.zeit.erleben#1 gtx: Station seit der Messung geändert — zuletzt an e80f9c5d: die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 139 s von karte2.mensch.zeit.erleben#1) — offen, UNGEMESSEN · karte2.mensch.zeit.erleben#2 radeon: ungemessen (R10) · karte2.mensch.zeit.erleben#2 gtx: ungemessen (R10) · karte2.mensch.zeit.erleben#3 radeon: ungemessen (R10) · karte2.mensch.zeit.erleben#3 gtx: Station seit der Messung geändert · karte2.mensch.zeit.erleben#4 radeon: ungemessen (R10) · karte2.mensch.zeit.erleben#4 gtx: Station seit der Messung geändert · karte2.mensch.zeit.erleben#5 radeon: ungemessen (R10) · karte2.mensch.zeit.erleben#5 gtx: Station seit der Messung geändert · karte2.mensch.zeit.erleben#6 radeon: ungemessen (R10) · karte2.mensch.zeit.erleben#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: Bildpaar an der Kamera -238.1,38.6,-1046.6,-248,26.6,-1064: 91 % des Ausschnitts um ≥ 30 % dunkler (Soll ≥ 50 %) · Asche 1 (Soll ≥ 0,99) · [linse-gpu] amd/rdna-3 an d39e0d6e radeon · Bildpaar an der Kamera -238.1,38.6,-1046.6,-248,26.6,-1064: 88 % des Ausschnitts um ≥ 30 % dunkler (Soll ≥ 50 %) · Asche 1 (Soll ≥ 0,99) · [linse-gpu] nvidia/pascal an e80f9c5d gtx — offen: karte2.mensch.zeit.erleben#2 radeon: ungemessen (R10) · karte2.mensch.zeit.erleben#2 gtx: ungemessen (R10) · karte2.mensch.zeit.erleben#3 radeon: ungemessen (R10) · karte2.mensch.zeit.erleben#3 gtx: Station seit der Messung geändert · karte2.mensch.zeit.erleben#4 radeon: ungemessen (R10) · karte2.mensch.zeit.erleben#4 gtx: Station seit der Messung geändert · karte2.mensch.zeit.erleben#5 radeon: ungemessen (R10) · karte2.mensch.zeit.erleben#5 gtx: Station seit der Messung geändert · karte2.mensch.zeit.erleben#6 radeon: ungemessen (R10) · karte2.mensch.zeit.erleben#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.zeit.erleben#1",
@@ -25899,11 +25898,11 @@
     {
      "id": "karte2.mensch.zeit.erleben#1",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an e80f9c5d: die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 139 s von karte2.mensch.zeit.erleben#1) — offen, UNGEMESSEN",
-     "ungemessen": true,
+     "gruen": true,
+     "zahl": "Bildpaar an der Kamera -238.1,38.6,-1046.6,-248,26.6,-1064: 88 % des Ausschnitts um ≥ 30 % dunkler (Soll ≥ 50 %) · Asche 1 (Soll ≥ 0,99) · [linse-gpu] nvidia/pascal",
+     "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
+     "grund": null,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -37465,7 +37464,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 301,
+  "konsum": 302,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37597,10 +37596,10 @@
    "karte2.same.kopplung.terraform#1 gtx",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3357
+  "ohne": 3356
  },
  "kopfVoll": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
- "zeit": "2026-11-28T09:02:35.042Z",
+ "zeit": "2026-11-28T09:08:55.307Z",
  "vorher": "e80f9c5d",
  "bilanz": {
   "gewinn": [],
