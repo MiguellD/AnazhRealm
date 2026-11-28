@@ -1682,3 +1682,4 @@
 2026-11-28T09:43 karte=219 (gebucht am e80f9c5d, buche.sh) karte2=159
 2026-11-28T09:49 karte=219 (gebucht am e80f9c5d, buche.sh) karte2=159
 2026-11-28T09:56 karte=219 (gebucht am e80f9c5d, buche.sh) karte2=159
+2026-11-28T10:02 karte=219 (gebucht am e80f9c5d, buche.sh) karte2=159
