@@ -1,0 +1,12 @@
+$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
+[linse-gpu] nvidia/pascal
+@@ 10.4 s · am Messort stadt-voll (ego) nach 10.4 s, 244 Takte, Anlauf stand
+@@ 10.5 s · Sprache: 5 Orte (Lusi/mediterran, Bänmun/mitteleuropa, Daetat/mitteleuropa, Segraus/mitteleuropa, Büschun/mitteleuropa), Namen im DOM 1 von 661 Zeilen, Personennamen 1356 von 1356
+@@ 19.7 s · Namen am Fächer: 32 Zellen (alpin/mitteleuropa/nordisch/mediterran/fernost/antik), Zeuge 50 von 50 Namen der Siedlung Lusi gleich
+@@ 21.2 s · Rede: 7 von 7 Sprechern der Siedlung Lusi sprechen den Satz des Lesers (1539 ms) · Sätze am Fächer 640 in 24 Sprachen
+@@ 21.5 s · Stammbaum: 6 Familien × 32 Blätter × 105 Bedeutungen, U_eff 192, RF mitteleuropa 0.155 · alpin 0.017 · mediterran 0.19 · nordisch 0.034 · fernost 0.086 · antik 0.155, Zeuge 32 von 32 Ortsnamen
+@@ 25.2 s · Dialekt: 2283 Orte (48² je 1600 m) in 193 Tälern, U_eff 1150, KL p95 0.096 (Median 0.000), Isoglossen auf Barrieren 1.000 (Basis 0.400), Zeuge 32/32 Pläne · 640/640 Leute (3743 ms)
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal

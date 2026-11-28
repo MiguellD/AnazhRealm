@@ -1,0 +1,373 @@
+{
+ "sha": "27d2f60e46a1f78c9b9151bc911f13312be7fce5",
+ "geraet": "gtx",
+ "zeit": "2026-11-28T00:50:06.690Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "profiband.K4#1": {
+   "gruen": true,
+   "zahl": "Gehen 71 Bilder · max 99.97 ms · 29.58 % > 33 ms · Fahrt 47 Bilder · max 141.61 ms · 87.23 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 29.58 % > 33 ms | Fahrt: 6 Bild(er) > 100 ms (max 141.61), 87.23 % > 33 ms",
+   "exit": 0,
+   "minuten": 1.02,
+   "mass": [
+    {
+     "wort": "Gehen Frame max ms",
+     "wert": 99.97,
+     "soll": 100
+    }
+   ],
+   "gpu": "nvidia/pascal",
+   "konsum": "kad840ed8b274",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k6d997372cecd",
+   "s": 60.6,
+   "fremd": {
+    "s": 69.8,
+    "takte": 30,
+    "fremdS": 33.73,
+    "kerne": 0.484,
+    "fensterKerne": 0.734,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      4.48
+     ],
+     [
+      "bash.exe sk/wacht6.sh",
+      4.02
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-27d2f60e x listen/kandidat-gtx-27d2f60e.txt",
+      3.47
+     ]
+    ],
+    "dienerS": 28.09,
+    "diener": [
+     [
+      "dwm.exe",
+      12.25
+     ],
+     [
+      "System",
+      10.39
+     ]
+    ],
+    "geraetS": 54.31,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      39.42
+     ],
+     [
+      "svchost.exe",
+      13.5
+     ],
+     [
+      "SearchIndexer.exe",
+      0.56
+     ]
+    ],
+    "eigenS": 308.59,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.665,
+     "nach": 0.241,
+     "station": 1.063
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 91.8,
+     "alle": 234.3,
+     "cpuEin": 94,
+     "tor": {
+      "ruhig": true,
+      "kerne": 2.59,
+      "s": 2,
+      "soll": 3,
+      "reihe": [
+       2.02,
+       4.22,
+       6.92,
+       5.4,
+       1.95,
+       0.3
+      ]
+     },
+     "spanne": [
+      1795826773635,
+      1795826774105
+     ]
+    },
+    "nach": {
+     "ein": 96.2,
+     "alle": 210.3,
+     "cpuEin": 94,
+     "tor": {
+      "ruhig": true,
+      "kerne": 2.48,
+      "s": 4,
+      "soll": 3,
+      "reihe": [
+       6.76,
+       3.47,
+       2.75,
+       5.59,
+       1.66,
+       0.09
+      ]
+     },
+     "spanne": [
+      1795826839564,
+      1795826839991
+     ]
+    },
+    "ruhe": {
+     "ein": 89.1,
+     "alle": 220.9,
+     "n": 1190,
+     "von": "2026-11-17"
+    },
+    "f": 1.08,
+    "fEin": 1.08,
+    "fAlle": 1.061,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-28T00:46:11.630Z",
+   "abdruck": "3b3c71fffc8f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K4#2": {
+   "gruen": false,
+   "zahl": "Gehen 71 Bilder · max 99.97 ms · 29.58 % > 33 ms · Fahrt 47 Bilder · max 141.61 ms · 87.23 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 29.58 % > 33 ms | Fahrt: 6 Bild(er) > 100 ms (max 141.61), 87.23 % > 33 ms",
+   "exit": 0,
+   "minuten": 1.02,
+   "grund": "ROT: Gehen 71 Bilder · max 99.97 ms · 29.58 % > 33 ms · Fahrt 47 Bilder · max 141.61 ms · 87.23 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 29.58 % > 33 ms | Fahrt: 6 Bild(er) > 100 ms (max 141.61), 87.23 % > 33 ms",
+   "mass": [
+    {
+     "wort": "Gehen Frame max ms",
+     "wert": 99.97,
+     "soll": 100
+    },
+    {
+     "wort": "Fahrt Frame max ms",
+     "wert": 141.61,
+     "soll": 100
+    }
+   ],
+   "gpu": "nvidia/pascal",
+   "konsum": "kad840ed8b274",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k6d997372cecd",
+   "s": 60.6,
+   "fremd": {
+    "s": 69.8,
+    "takte": 30,
+    "fremdS": 33.73,
+    "kerne": 0.484,
+    "fensterKerne": 0.734,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      4.48
+     ],
+     [
+      "bash.exe sk/wacht6.sh",
+      4.02
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-27d2f60e x listen/kandidat-gtx-27d2f60e.txt",
+      3.47
+     ]
+    ],
+    "dienerS": 28.09,
+    "diener": [
+     [
+      "dwm.exe",
+      12.25
+     ],
+     [
+      "System",
+      10.39
+     ]
+    ],
+    "geraetS": 54.31,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      39.42
+     ],
+     [
+      "svchost.exe",
+      13.5
+     ],
+     [
+      "SearchIndexer.exe",
+      0.56
+     ]
+    ],
+    "eigenS": 308.59,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.665,
+     "nach": 0.241,
+     "station": 1.063
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 91.8,
+     "alle": 234.3,
+     "cpuEin": 94,
+     "tor": {
+      "ruhig": true,
+      "kerne": 2.59,
+      "s": 2,
+      "soll": 3,
+      "reihe": [
+       2.02,
+       4.22,
+       6.92,
+       5.4,
+       1.95,
+       0.3
+      ]
+     },
+     "spanne": [
+      1795826773635,
+      1795826774105
+     ]
+    },
+    "nach": {
+     "ein": 96.2,
+     "alle": 210.3,
+     "cpuEin": 94,
+     "tor": {
+      "ruhig": true,
+      "kerne": 2.48,
+      "s": 4,
+      "soll": 3,
+      "reihe": [
+       6.76,
+       3.47,
+       2.75,
+       5.59,
+       1.66,
+       0.09
+      ]
+     },
+     "spanne": [
+      1795826839564,
+      1795826839991
+     ]
+    },
+    "ruhe": {
+     "ein": 89.1,
+     "alle": 220.9,
+     "n": 1190,
+     "von": "2026-11-17"
+    },
+    "f": 1.08,
+    "fEin": 1.08,
+    "fAlle": 1.061,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-28T00:46:11.630Z",
+   "abdruck": "6fe61218623e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K4#1",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.sprache#3": {
+   "gruen": true,
+   "zahl": "S3 GRÜN · Robinson-Foulds des Stammbaums 0.155 (Soll ≤ 0.3) · Anteil der Bäume mit RF ≤ 0,3 1 (Soll ≥ 0.7) · Sprachfamilien 6 (Soll ≥ 5) · Umfang 192 (Soll ≥ 100 Sprachen (U_eff)) · RF je Familie mitteleuropa 0.155 · alpin 0.017 · mediterran 0.19 · nordisch 0.034 · fernost 0.086 · antik 0.155 (Median gemeldet) · 105 Bedeutungen je Liste · Zeuge 32 von 32 Ortsnamen · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.43,
+   "gpu": "nvidia/pascal",
+   "konsum": "ke43145628fb5",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k6d997372cecd",
+   "s": 25.7,
+   "fremd": {
+    "s": 28.6,
+    "takte": 13,
+    "fremdS": 13.39,
+    "kerne": 0.469,
+    "fensterKerne": 0.571,
+    "namen": [
+     [
+      "bash.exe sk/wacht6.sh",
+      2.53
+     ],
+     [
+      "Explorer.EXE",
+      1.33
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      1.31
+     ]
+    ],
+    "dienerS": 7.5,
+    "diener": [
+     [
+      "System",
+      2.5
+     ],
+     [
+      "dwm.exe",
+      2.47
+     ]
+    ],
+    "geraetS": 19.42,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      13.23
+     ],
+     [
+      "svchost.exe",
+      5.7
+     ],
+     [
+      "SearchIndexer.exe",
+      0.23
+     ]
+    ],
+    "eigenS": 67.7,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-28T00:50:06.690Z",
+   "abdruck": "f15eda0db2dc",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "kad840ed8b274": "bVVdb6MwEPwvebw7unwWY6kPTomUSO0p/QlrWAMNgcgmoZfT/fcTJCQBuq/MeGZn1+bv4oDJDjN6+jR1teCLH4tfC4MnsgzpE+mnT7PgiyhxXPK4+BBdgRDitYMlujg0BspCAsoK8z1ZR91QUT4lPU09ox1IDu1KZFsABWeI25eXKbWUlNZWg4oGok1ewIhPgUeToSQLj6oXu4IDP6Jnh0NfLBbvMdzqiwmxbaHdsvXkMIlVOnbrOBE+h1y0m1chPqYu0wKpscqiMoOuk4aRsvlNq32fcTS21hkpL0lfScQcx5eD2WUXZxfNhKjKozEjMealgcs4QDTFZmSKJG+sg64lVVe4jNzQQb6cp50djpZ6dIRSIpPTrHOkKiM98mB7iboErXr75s9WdQEvxVRkh3vSaFWYX6mR7YWuvGcFAOu5t7JvpJccGvE95jJnROyGDKcu8FSMatt/zAaUaocPyQ2SiZmoSfJC78fxKZ9c2+Nvc4smx5S0tatNc0N7FPq25L3AJoaLF7acMu/NDTNFRPawQMBArNlMsVZNi5qs7HAclsinIAy4EJsZuMH9/mbLY+hxMavVN6wqHVlzIxUEPgf4eblM8yAuV8c6U1HSbbeT0Iumm3TSuLdQZrpQatgGGSQq+m6ZWyobS9Z1M/jwbDsJuoiqxwX43Y9289BTnH34TblsV+NWN7PV7BVq3QymJUrP97nKYgbA1BRd6MZqMckHeOhJIo/D12xOZ9IlZTSKUTkOuimH9nJh4Nw9R+H1uVA/R0t9np9YUBdwZY5mSDhBXwb8m5G0pHcSq93tTWQyIv4mhFi+i+09kGUmVq9ZdzXgxGCcVXy6rMdqfc0uFiJm6ip0oAQOulZF93JCjkeTY9ncfxv//gM=",
+  "k6d997372cecd": "lZXdcpswEIXfxZdNifgNQjO5UEymSTtu3b7BClZAjIGRIOq403fvgA02kJvuFeM5qz18e5D/bBpIDpDh/Zuuqw3bfNp83mh4R0ujekd1/6Y3bBMljose4+cinPMvvSxRRdNqUhaCgKggP6LVqRaL8j4Z2uQD2IFgxDzzbE+IJCcSGz7Vlj8+Lo8pBaa11YLE8RAbvYAiWwo7nYFACzo5DL6IAz/CB4eRoWjMdzGZyiSc7w0xe/qyOExAlc6dO04EDyHj5pVz/nPpMi0AW6ssKj3OddIwkja7ztqtehQY6wSYl6guTUgdxxej2aceSY9p0SjLTuvZMOqlgUsZIdFSm6Eukry1GlULrC5yEbmhA+zJrGhnTWfJW0cgBFCxZJ0DVhmqmQfbS2QP+jddHnqAIyqwKsgv0sj2Qldc2RBCXtZeysH4MGI07nvUpc6ssV/qGXDKZ7Uffs1GlZxilkySbB03neSFOs5xSR9d21sy0DmkqKxDrdtJ6WHo2+L8VbzG5OyDPi07ry827g8A6E1YCCX8ZcVR17I1oNDKmm4MjI9BGDCerdKlWzgeJ1sehfULtH3Ib224kQwCnxFyd0G6wnP+JKwTFiVOmU1CL2Lb2F+K3xUcLRCZKqQcNy+CREYfBdVg2VqirtvRi2fbScCIR6rbZX83fMv57mbPcfnLb8uvd8/z9X/jXz+aUKt2NC5AeL7PpIkpIVQu1YVqLQNJPspDTyCuIJ5QlZjhDKN0HHBTNlwvk0t/fLibhfe02vKpwB5wpTs9Ek7AF8E5HZcUv86Ta1AdBFSH6c6jIkLGeZzxHd/fUPnB+VsjDf+Pyrb9oAYT0qhaFv3NSHLodA5le/2L+PsP",
+  "ke43145628fb5": "bVXRjpswEPyXPLb1GTAcxtI9OOXai9RUuU9Ywxq4EIhsCFWq/nsFCUmA8wM8eNYzzI6Xv6sjJHvI8OnD1tVKrL6svq0snJBYNCc0Tx92JVZR4nrIRL+VmOLYWFoWioKqID8gaU2DRfmUDFD9DE6gBO1eZbajVNMzjbuXl3lpqTCtSQMax0IHWcBxwdHaDBQSaPVAdgUHfoTPrqDD4rHcxvS2ukTKXUe7HX+bHaagSqdqXTeC51DIbiOlfJ+rTAvAhpRFZUdeNw0j7Yg713ZRY6AjZ8C8RHMtQu66vhrFrqWUgzWzQl221k7IOEsDjwtKozk2Q1skeUOOplZYXeEq8kIXxHrpdnZsiX5UBEoBV3Ovc8AqQzPR4LBE90b/4fND93BAA6SC/AqNHBZ66u4NpfRtqaUchA8Uo3CfcY+7k8K+qfTUG5zKydoNm9mI0t24kdwgmVyQ2iQvzGFql/bRc5j4tZRoc0jRkH1tmxuaYeg7SgwEm5hetPD1vPL+cWMPAYA/BIZyKt8WXtpaNx0YJNmxHUPjYxAGQsrNAtzA4XCTxTgsLqZt+qA/yvAiHQS+oPTr5aIsP/pyLcgZixJvuU1CFs0PPxk4EFCZKbQeO6+CREefBbXDsiGqrptRB3OcJBCU0eqx2b+HNm4e+hxn7/72h8xep+3fyLnugaE2zShagWK+L3QWc0q5nqML05AOknyEh0whMtHnbQY9oykxw4mN2nXBS8UwYgaVfQrC6yjQXycBPi+6fC6wN7iyrR0dTsBXgfikJR2avYJqf5t3XEU4xG+9lbupKd+z/hrQE6dTr+LT8N7+HPHx5XEhOmJCj6bWRT8VaQ6tzaFs7r+Bf/8B"
+ }
+}
