@@ -103,3 +103,23 @@ Der Takt kostet gleich. Die EINE Uhr allein hebt jungProzent über 10 % (Mittel)
 - verhalten S5 (:2610, spieltage = max. Lebensdauer / 3 600 s): 0,81 → ~7,4 (Soll ≥ 7) — die längere Spanne trägt diese Zeile.
 Der Kopf `tier-bewegung-uhr` wird erst Vorprüf-Kopf, wenn die zwei Fenster entschieden sind (S7: msDeckel ≥ 18 s, oder die
 Generation am Gesetz statt an der Wand-Zeit; muster: dauerS × 9,14 = 54,8 h Welt-Zeit über das Aufholen, das 0 ms kostet).
+
+## ZWISCHENSTAND 28.11. ~04:45 MEZ — Post 04:26 gelesen; BERICHTIGUNG: die Aufhol-Bahn rechnet in der Probe KEINEN Takt
+
+- **Mein Fehler, beim Namen:** „evolution.erbe: 215 088 s Welt-Zeit in 0 ms — das Fenster hält“ (Blatt ~04:40) war ein SPRUNG, kein
+  Lauf. `_bestandRegion` (stamm/kreatur-leben.js:2364) setzt `R.t` auf `fern` (jetzt − aufholS, Zeile 2374) und holt höchstens die
+  letzten 3 600 s Takt für Takt nach — und auch die nur, solange `_bestandGauSteht` (:2400) die Spur des Gaus am Takt k trägt
+  (`_gauBeuteAm`, kreatur-erbe.js:368). Eine Probe, die `spielZeit` synchron in die Zukunft stellt, findet dort keine Spur (der
+  Gau-Faden rechnet auf Bestellung je Bild): **0 Schritte bei 660 Soll-Takten je Ruf, 0 ms** (Werkbank wiese, Uhr-Kopf d05b4f5,
+  vier nahe Regionen, `_bestandSchritt` gezählt). Die Tiere altern nicht, es wirft keiner.
+- **Folge für die Fenster:** erbe (k2-leben.js:7128) und muster (:7378) laufen über diese Bahn — am alten UND am neuen refS rechnet
+  ihr Fenster 0 Generationen (am Gerät stehen sie in nan3). S7 (:2912) schreitet direkt (`_bestandSchritt` je Takt) und ist darum der
+  einzige ehrliche Lauf. „S7 auf die Aufhol-Bahn“ ist kein Schnitt — die Bahn ist derselbe Takt, gedeckelt und gauabhängig.
+- **Der Schnitt (Kandidat „Fenster in Generationen“, gegen pm 5e895684, k2-leben.js Blob 0930b70 = 9b4b3c91):** EIN Schreiter für
+  alle drei — n × `lebensdauerS` des Gesetzes, Takt für Takt `_bestandSchritt` wie S7; muster 8 Generationen des Hirschs, erbe 10
+  der Region, S7 100. Kosten am Werkbank-Takt 0,0705 ms je Takt und Region: muster 8 × 24 451 s = 19 561 Takte ≈ 1,4 s je Lauf.
+  Wand am alten refS: S7 gleiche Zahlen; muster und erbe rechnen zum ersten Mal (vorher 0 Takte) — das sage ich im Kandidaten an.
+- Kopf `tier-bewegung-uhr` d05b4f5 (WIP, auf main bbb97563): Kalender und Gau lesen `KALENDER.jahrS`, `taktJeJahr` ist EINE
+  Formel im Kern. Offen: Lauf 4 zahlengleich ROT (das Äsungs-Feld läuft in Welt-Sekunden — das Verhältnis Fraß : Leben ändert sich,
+  auch ein Takt als Jahres-Bruchteil hält die Spur nicht: Wolf 24 46 67 102 … gegen 24 44 53 63 …); `--bestand` S1–S15 main ↔ Uhr
+  rechnet (main 629 s bis S13, Uhr 38 400 Takte).
