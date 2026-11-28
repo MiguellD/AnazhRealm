@@ -1,18 +1,18 @@
 {
  "sha": "27d2f60e46a1f78c9b9151bc911f13312be7fce5",
  "geraet": "gtx",
- "zeit": "2026-11-28T02:13:15.270Z",
+ "zeit": "2026-11-28T02:40:13.664Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "profiband.K4#1": {
    "gruen": true,
-   "zahl": "Gehen 71 Bilder · max 99.97 ms · 29.58 % > 33 ms · Fahrt 47 Bilder · max 141.61 ms · 87.23 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 29.58 % > 33 ms | Fahrt: 6 Bild(er) > 100 ms (max 141.61), 87.23 % > 33 ms",
+   "zahl": "Gehen 82 Bilder · max 83.25 ms · 20.73 % > 33 ms · Fahrt 41 Bilder · max 149.99 ms · 95.12 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 20.73 % > 33 ms | Fahrt: 6 Bild(er) > 100 ms (max 149.99), 95.12 % > 33 ms",
    "exit": 0,
-   "minuten": 1.02,
+   "minuten": 1.03,
    "mass": [
     {
      "wort": "Gehen Frame max ms",
-     "wert": 99.97,
+     "wert": 83.25,
      "soll": 100
     }
    ],
@@ -23,124 +23,125 @@
    "konsumGanz": {
     "gelesen": 2
    },
-   "konsumBoot": "k6d997372cecd",
-   "s": 60.6,
+   "konsumBoot": "kff06e4f5a2ae",
+   "s": 60.8,
    "fremd": {
-    "s": 69.8,
-    "takte": 30,
-    "fremdS": 33.73,
-    "kerne": 0.484,
-    "fensterKerne": 0.734,
+    "s": 72.6,
+    "takte": 31,
+    "fremdS": 36.77,
+    "kerne": 0.506,
+    "fensterKerne": 0.723,
     "namen": [
      [
-      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
-      4.48
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.88
      ],
      [
-      "bash.exe sk/wacht6.sh",
-      4.02
+      "claude.exe --output-format stream-json --verbose --input-format stream-json --effort=xhigh",
+      3.78
      ],
      [
-      "sh.exe n0611/kandidat.sh gtx-27d2f60e x listen/kandidat-gtx-27d2f60e.txt",
-      3.47
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.39
      ]
     ],
-    "dienerS": 28.09,
+    "dienerS": 24.61,
     "diener": [
      [
-      "dwm.exe",
-      12.25
+      "System",
+      10.97
      ],
      [
-      "System",
-      10.39
+      "dwm.exe",
+      7.97
      ]
     ],
-    "geraetS": 54.31,
+    "geraetS": 54.97,
     "geraet": [
      [
       "MsMpEng.exe",
-      39.42
+      39.17
      ],
      [
       "svchost.exe",
-      13.5
+      12.36
      ],
      [
       "SearchIndexer.exe",
-      0.56
+      2.05
      ]
     ],
-    "eigenS": 308.59,
+    "eigenS": 328.53,
     "rechnerKerne": 12,
     "spannen": {
-     "vor": 0.665,
-     "nach": 0.241,
-     "station": 1.063
+     "vor": 0.919,
+     "nach": 0.566,
+     "station": 1.049
     }
    },
    "referenz": {
     "vor": {
-     "ein": 91.8,
-     "alle": 234.3,
-     "cpuEin": 94,
+     "ein": 111.4,
+     "alle": 283.1,
+     "cpuEin": 110,
      "tor": {
       "ruhig": true,
-      "kerne": 2.59,
-      "s": 2,
-      "soll": 3,
-      "reihe": [
-       2.02,
-       4.22,
-       6.92,
-       5.4,
-       1.95,
-       0.3
-      ]
-     },
-     "spanne": [
-      1795826773635,
-      1795826774105
-     ]
-    },
-    "nach": {
-     "ein": 96.2,
-     "alle": 210.3,
-     "cpuEin": 94,
-     "tor": {
-      "ruhig": true,
-      "kerne": 2.48,
+      "kerne": 1.42,
       "s": 4,
       "soll": 3,
       "reihe": [
-       6.76,
-       3.47,
-       2.75,
-       5.59,
-       1.66,
+       3.83,
+       7.39,
+       5.84,
+       2.94,
+       0.76,
+       0.57
+      ]
+     },
+     "spanne": [
+      1795833515563,
+      1795833516118
+     ]
+    },
+    "nach": {
+     "ein": 101.7,
+     "alle": 241.7,
+     "cpuEin": 110,
+     "tor": {
+      "ruhig": true,
+      "kerne": 1.52,
+      "s": 4,
+      "soll": 3,
+      "reihe": [
+       6.26,
+       3.84,
+       6.55,
+       3.19,
+       1.02,
        0.09
       ]
      },
      "spanne": [
-      1795826839564,
-      1795826839991
+      1795833581821,
+      1795833582312
      ]
     },
     "ruhe": {
      "ein": 89.1,
-     "alle": 220.9,
+     "alle": 220.7,
      "n": 1190,
-     "von": "2026-11-17"
+     "von": "2026-11-18"
     },
-    "f": 1.08,
-    "fEin": 1.08,
-    "fAlle": 1.061,
+    "f": 1.283,
+    "fEin": 1.25,
+    "fAlle": 1.283,
     "verdraengt": 1,
     "schwankt": false,
     "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
     "umfeld": "sitzung"
    },
-   "zeit": "2026-11-28T00:46:11.630Z",
+   "grund": "GRÜN trotz Last: Referenz f 1,283 (Faden 1,25 · alle Kerne 1,283; vor 111,4/283,1 ms, nach 101,7/241,7 ms, Ruhe 89,1/220,7 ms seit 2026-11-18) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 4,9 CPU-s · claude.exe --output-format stream-json --verbose --input-format stream-json --effort=xhigh 3,8 CPU-s · LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 3,4 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 39,2 CPU-s · svchost.exe 12,4 CPU-s · SearchIndexer.exe 2,1 CPU-s",
+   "zeit": "2026-11-28T02:38:31.546Z",
    "abdruck": "3b3c71fffc8f",
    "port": 7804,
    "bahn": "sitzung",
@@ -724,263 +725,226 @@
   "kff06e4f5a2ae": "lZXdcpswEIXfxZdNifgNQjO5kE2mSTpu3L7BSqyAGAMjQei403fvYBtsIDfdK8ZzVnv49iD/WdUg95Di/bupyhVbfVl9XRn4QMug/kB9/25WbBVJx0WP8XMRzvm3XiZ1XjeGFLkgIErIDmi1usG8uJenNvUAdiAY6Z54uiNEkSOJOz7Whj8+zo8pBCaV1YDC4RAbvYAimwtbk4JAC1p1GnwRB36EDw4jp6Ix38ZkrE5yvutIt6PPs8MElMnUueNE8BAy3r1wzn/OXSY5YGMVeWmGuU4SRspm11nbRY+GzjoCZgXqSxNSx/HFYHbdI+kxzRpV0RozGUa9JHApIySaa1M0ucwaq9aVwPIiF5EbOsDW3YJ2WreWunUEQgAVc9YZYJminniwPal60L/p/NA9HFCDVUJ2kUa2F7riyoYQ8rz0UpyMn0YMxn2PutSZNPZLPQNO+KR2p1/TQaXGmMlRki7jZmSW68MUl/LRtb05A5NBgtraV6YZlR6Gvi3OX8VLTM4+6HreeX2xYX8AQG/CQijhzwuOplJNBxqttG6HwPgYhAHj6SJdpoHDYbTlUVi+QNOH/NaGG6kg8BkhdxekCzznT8I6Yl7gmFkZehHbxP5c/KHhYIFIda7UsHkRSBV9FtQOi8YSVdUMXjzblgEjHilvl/2j4xvOt9c1v8XFL78pXu+epuv/zl8/m1DpZjAuQHi+z1QXU0Komqtz3VgdyGyQh55AXEA8oi4wxQlG5TjgJux0vQwV+8PD3SS8x8WWjzn2gEvTmoGwBF8E53RcUvwyTW6Hei+g3I93HhURMs7jlG/57obKG+fvter4f1S66QfVKEmtK5X3NyPJoDUZFM31L+LvPw==",
   "k4982589b0620": "bVXRjpswEPyXPPbKGTAcxtI9OMe1F6mpcp+whjWQEEA2hCpV/72ChCTA+QEePMuOZ8bL31UN8QFSfN6bqlzx1bfV95WBE1oG9Qn1896s+CqMHRcpF5dFhBBvPSzWed0YUuSSgCwhO6LV6gbz4jkeytQL2L7kpHsX6Y4QRc4k6l5f56WFxKSyGlA4FtpIfYZ8DmxNChItaNXQ7Ar2vRBfHE6GxSKxjchtdbEQu450O/Yx+5iEMpmydZwQXgIuuo0Q4nPOMskBG6vISzP2dZIgVDa/99ouajR01hkwK1Bfi5A5jidHsutezl6aWaEqWmMmzRhNfJdxQsI5NkWTx1lj1bqSWF7hMnQDB/h6qXZat5Z6ZARSApNzrTPAMkU94WDTWPVC/2Hzjx7giBqsErIrNLRp4Mq7NoSQjyWXYiA+tBiJe5S5zJkU9qaSUy9wIiZrN2ymI0p140Z8g6Ri0dTEWa6PU7mUh65N+a8lRZNBgto6VKa5oSkGni0vt2ETkQsXtp5X3g83eggA7CEwhBHxsdDSVKrpQKOV1u0YGg/9wOdCbBbgBo7HGy3KgM6NNE0f9Ecabqh83+OEPF0uyvLQl2thnTEv8JbbOKAhf4vEHHzScLRApjpXanRf+rEKvwprh0VjyapqRi7UtmOfE0rKR8N/D1ZuHryO0k9v+0N079MIbBZ0hg6VbkbiEiT1PK7SiBHC1Byd68bqIM5GeEAlIuV95mbQM+oCU5xIqRwH3IQPY2Zg2SchuI4D9TQJ8Xnh9DnHXuTStGZUOQZP+vwLWzrUBwnl4TbzmAxxiOB6K3ZTUfZ1fxXIiZGpVtFpeG9/jvjo8rjMuhpjUutK5f1kJBm0JoOiuf8W/v0H",
   "k6714039636a8": "bVXRjpswEPyXPLblDBgOY+kenMtVF6mpcp+whrXhQiCyIVSp+u8VJJAA5xeQPLs7zOwuf1cnSA6g8enTVuWKr76tfqwsnNGxaM5onj7tiq/ixPORcnE9RAjx2sESk59qS4pcEpAlZEd0GlNjXjwlfZh6BjeUnLRvQu8JUeRCNu3Lyzy0kJhWTg0Kh0AXaciQz4GN1SDRgUb1xW7gMIjx2eOkP2wjdhsynjYRYt+Sds/eZ8kklOmUrefF8Bxx0W6FEB9zlmkOWDtFXtqhrpdGsXL5vdZuEWOgdS6AWYHmFoTM8wI5kF13cnbSzAJV0Vg7KcZoGvqMExLPsRptnmS1czKVxPIGl7EfecDXS7X1qXHUIyOQEpica50BlhrNhINLE9UJ/YfNkx7giAacErIbNHZp5Mu7NoSQ9yWXoifelxiIB5T5zJsEdqaScydwKiZn31/qAaXa4SIZIVositoky81xKpcK0Hcp/7WkaDNI0TiHytYjmmIUuPI6DdsNuXJh63nk/eMGDwGAPTQMYUS8L7S0lapbMOjoUzM0TYBhFHIhtgtwDcfjSIsyoHMjbd01+iMNP1ZhGHBCvl8HZfnR17FwLpgXOPZtEtF4nvxs4OiA1CZXanBehomKv2rUFovakVVVDzyo6yYhJ5SUj2b/7m3cPvi80R/B7qfQb1P7t2LOu69QmXogLUHSIOBKbxghTM3RuamdFpJsgEdUItKv+vuCpkCNExmV54Gf8n7FjEyD4eX7pIEvy4w5dgKXtrGDwgkEMuRfWNKiOUgoD+O+YzLGvv3WO7GfivKquzEgZ0amWm3O/XP31u/BEybkZCqVd1uQZNDYDIr6/gv49x8=",
-  "kd525ab04fd9b": "bVVdb6MwEPwvebweXT6LsdQHp0RKpPaU/oQ1rIGGQGSTUOV0//0ECUmA7iszntnZtfm7OGCyw4yev0xdLfji1+L3wuCJLEP6RPr5yyz4IkoclzwuPkVXIIR462CJLg6NgbKQgLLCfE/WUTdUlM9JT1MvaAeSQ7sS2RZAwRni9vV1Si0lpbXVoKKBaJMXMOJT4NFkKMnCo+rFruDAj+jF4dAXi8VHDLf6ZkJsW2i3bD05TGKVjt06ToQvIRft5k2Iz6nLtEBqrLKozKDrpGGkbH7Taj9mHI2tdUbKS9JXEjHH8eVgdtnF2UUzIaryaMxIjHlp4DIOEE2xGZkiyRvroGtJ1RUuIzd0kC/naWeHo6UeHaGUyOQ06xypykiPPNheoi5Bq96+edqqLuClmIrscE8arQrzKzWyvdCV96wAYD33VvaN9JJDI77HXOaMiN2Q4dQFnopRbfuP2YBS7fAhuUEyMRM1SV7o/Tg+5ZNre/x9btHkmJK2drVpbmiPQt+WvBfYxHDxwpZT5r25YaaIyB4WCBiINZsp1qppUZOVHY7DEvkUhAEXYjMDN7jf32x5DD0uZrX6gVWlI2tupILA5wBPl8s0D+JydawzFSXddjsJvWi6SSeNewtlpgulhm2QQaKin5a5pbKxZF03gw/PtpOgi6h6XIA//Wg3Dz3F2afflMt2NW51M1vNXqHWzWBaovR8n6ssZgBMTdGFbqwWk3yAh54k8jh8z+Z0Jl1SRqMYleOgm3JoLxcGzt1zFF6fC/U0Wurz/MSCuoArczRDwgn6MuA/jKQlvZNY7W5vIpMR8XchxPJDbO+BLDOxesu6qwEnBuOs4tNlPVbra3axEDFTV6EDJXDQtSq6lxNyPJocy+b+2/j3Hw==",
   "kc2012978ac72": "bVXbjpswEP2XPLZlzXUxlvbBWbbaVI2U/YSxGQMbAsiGUKXqv1eQQALsPPDCmZnDmTPD300N8ggpPn2aqtywzbfNj42BM1oG9Rn106fZsE0kHRc9xq9BOOevPUzqvG4MKXJBQJSQndBqdYN58SSHNPUMdiAY6d54eiBEkQuJOz7FG395WZYpBCaV1YDCsYiNXkCRLYGtSUGgBa0aGt/AgR/hs8PIEDTm+5hM0UnODx3pDvSdc75bFBRQJnP2jhPBc8h4t+OcfyyZJjlgYxV5acbeThJGymb3fvtVjobOugBmBepbElLH8cVIeNvL0ku1SFRFa8ysGfWSwKWMkGiJTdHkMmusWlcCyxtcRG7oANt2K8XTurXUIyMQAqhY6p0BlinqGQfbk6oX+w9dFj3CCTVYJWQ3aGR7oSvu2hBC3tdcioH40GIk7nvUpc4ssR8sOfcCJ3wWh+FlOqLUZDU5QdK15YzMcn2ay6V8dG2P/V5TNBkkqK1jZZoJ7WHo2+K6HbuYXLnQ7TLz/nHjDAGAPhiGUMLfV1qaSjUdaLTSuh1N42MQBozz3QrcwOk00fIoeMtBmqY3+iMNN1JB4DNCvl+XZf3R17WwLpgXOPlWhl7EXmO+BJ81nCwQqc6VGqcvAqmir8zaYdFYoqqakYtn2zLoJSkfB34YRrl7mHWcfvj7n7x7m1tgt6IzdKh0MxIXIDzfZyqNKSFULdG5bqwOZDbCQ08geqz33AJ6QV1gijMpleOAm7Dh1AwseyeEt3Ogvs9MfFlN+pJjL3JpWjOqLMEXAftiLB3qo4DyON09KiJkvzjn2z0/zEX5rPtVGFZmHmf+wTk3pxEfXx/XW1ejJLWuVN5fRpJBazIomvtv4t9/",
   "kd3992c113bfb": "bVVdj5swEPwvPPZKl8/DWLoH53LSRepV6U9YmzXQEIhsCFWq/vcKEnIB6kc86xnPrJc/zgnVAXP69ss2tcOdL85X51RhTa2rGjN8drgTqyCTitcePEG3B+j9XGzyF+erY/FMriVzJnOFpsoPKOTiukAI8TrAlClPrYWqlICyxuJIbmdaKqtvaizTz+jFkkP/JvI9gIYLbPuXl2VpJSlr3BY1TYUehTEjvgR2NkdJLnZ6JLuB4yilZ5/DuNhWfGzhvn4zIfY99Hv2vjhMYp3N1fp+is8JF/3uVYifS5VZidS6VVnbidfPklR7/M7Vf6xqDPbuBamoyNyKiPl+JCexm8HOwZpFoa46a2dkLMzigHGAdInNyZaqaN2TaSTVN7hMg8RHvlm7nZ86Vz8qQimRyaXXBVKdk5lp8EKlB6N/s+WhBzySQbfG4gZNvTAJ5Kc3APC+1lKNwkeKSXgUsoD5s8IhVDgPBmditvbjZj6hdD9tqDskFytSq4rSHOd26YgCL+Tf1xJtgRkZ99DY9o4OKYk8eX0Nuy1ctbDNsvLzclOGiMgeGgYYiPeVl7bRbY+G3PzUTU0TUZzEXIjdCtzi8XiXFTIMl0Hadmj0RxlBquM44gBP14eyvvT1WbgXKiu6961KwnR5+Nng0UWZm1LrKXkZK53+r1F7qlpXNk076Qg9T8UcQqgfw/4xxrh7yHmb/4zaatO/zePfiaXukaEx7SRaogyjiOt8ywCYXqJL07o9qmKCJ6EkCvnQbwvohUxFOc1s1L6PQcah11fdl2HUJLdRoJ9mDXxZpXwpaTC4tp2dHFYYyZj/J5KezEFifbjPOyZTGttv8yH2M0/eXvPhGcB5zg8AZyFehbDH/c27rRBbpm9EJ1JwMo0uh6kIBXa2wKr9/Hv8/Qc="
  },
  "ungemessen": {
-  "profiband.K4#1": {
-   "gruen": false,
-   "zahl": "Last: Referenz f 1,229 (Faden 1,15 · alle Kerne 1,229; vor 102,5/271,2 ms, nach 94,8/217 ms, Ruhe 89,1/220,7 ms seit 2026-11-17) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 4,4 CPU-s · LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 3,1 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 3,1 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 32,1 CPU-s · svchost.exe 11,0 CPU-s · SearchIndexer.exe 0,7 CPU-s — unscharf unter Last: Gehen Frame max ms roh 116,7, entlastet ≥ 58,33 (÷ 2, Karte), Schwelle ≤ 100 — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 73 Bilder · max 116.66 ms · 36.99 % > 33 ms · Fahrt 48 Bilder · max 183.4 ms · 77.08 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 1 Bild(er) > 100 ms (max 116.66), 36.99 % > 33 ms | Fahrt)",
-   "exit": 0,
-   "minuten": 0.97,
-   "grund": "Last: Referenz f 1,229 (Faden 1,15 · alle Kerne 1,229; vor 102,5/271,2 ms, nach 94,8/217 ms, Ruhe 89,1/220,7 ms seit 2026-11-17) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 4,4 CPU-s · LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 3,1 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 3,1 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 32,1 CPU-s · svchost.exe 11,0 CPU-s · SearchIndexer.exe 0,7 CPU-s — unscharf unter Last: Gehen Frame max ms roh 116,7, entlastet ≥ 58,33 (÷ 2, Karte), Schwelle ≤ 100 — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 73 Bilder · max 116.66 ms · 36.99 % > 33 ms · Fahrt 48 Bilder · max 183.4 ms · 77.08 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 1 Bild(er) > 100 ms (max 116.66), 36.99 % > 33 ms | Fahrt)",
-   "mass": [
-    {
-     "wort": "Gehen Frame max ms",
-     "wert": 116.66,
-     "soll": 100
-    }
-   ],
-   "gpu": "nvidia/pascal",
-   "konsum": "kd525ab04fd9b",
-   "konsumN": 29,
-   "konsumSeite": false,
-   "konsumGanz": {
-    "gelesen": 2
-   },
-   "konsumBoot": "k6d997372cecd",
-   "s": 57.2,
-   "fremd": {
-    "s": 69.7,
-    "takte": 30,
-    "fremdS": 28.89,
-    "kerne": 0.415,
-    "fensterKerne": 0.636,
-    "namen": [
-     [
-      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
-      4.41
-     ],
-     [
-      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
-      3.14
-     ],
-     [
-      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      3.08
-     ]
-    ],
-    "dienerS": 25.83,
-    "diener": [
-     [
-      "dwm.exe",
-      12.81
-     ],
-     [
-      "System",
-      8.69
-     ]
-    ],
-    "geraetS": 44.72,
-    "geraet": [
-     [
-      "MsMpEng.exe",
-      32.05
-     ],
-     [
-      "svchost.exe",
-      10.95
-     ],
-     [
-      "SearchIndexer.exe",
-      0.67
-     ]
-    ],
-    "eigenS": 304.56,
-    "rechnerKerne": 12,
-    "spannen": {
-     "vor": 0.287,
-     "nach": 0.176,
-     "station": 0.991
-    }
-   },
-   "referenz": {
-    "vor": {
-     "ein": 102.5,
-     "alle": 271.2,
-     "cpuEin": 94,
-     "tor": {
-      "ruhig": true,
-      "kerne": 2.1,
-      "s": 4,
-      "soll": 3,
-      "reihe": [
-       1.45,
-       5.41,
-       7.89,
-       4.49,
-       1.29,
-       0.47
-      ]
-     },
-     "spanne": [
-      1795831657484,
-      1795831658000
-     ]
-    },
-    "nach": {
-     "ein": 94.8,
-     "alle": 217,
-     "cpuEin": 94,
-     "tor": {
-      "ruhig": true,
-      "kerne": 2.56,
-      "s": 4,
-      "soll": 3,
-      "reihe": [
-       4.43,
-       5.46,
-       3.95,
-       5.55,
-       1.35,
-       0.08
-      ]
-     },
-     "spanne": [
-      1795831720053,
-      1795831720476
-     ]
-    },
-    "ruhe": {
-     "ein": 89.1,
-     "alle": 220.7,
-     "n": 1190,
-     "von": "2026-11-17"
-    },
-    "f": 1.229,
-    "fEin": 1.15,
-    "fAlle": 1.229,
-    "verdraengt": 1,
-    "schwankt": false,
-    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
-    "umfeld": "sitzung"
-   },
-   "ungemessen": true,
-   "zeit": "2026-11-28T02:07:33.478Z",
-   "abdruck": "3b3c71fffc8f",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session"
-  },
   "profiband.K4#2": {
    "gruen": false,
-   "zahl": "Last: Referenz f 1,229 (Faden 1,15 · alle Kerne 1,229; vor 102,5/271,2 ms, nach 94,8/217 ms, Ruhe 89,1/220,7 ms seit 2026-11-17) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 4,4 CPU-s · LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 3,1 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 3,1 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 32,1 CPU-s · svchost.exe 11,0 CPU-s · SearchIndexer.exe 0,7 CPU-s — unscharf unter Last: Gehen Frame max ms roh 116,7, entlastet ≥ 58,33 (÷ 2, Karte), Schwelle ≤ 100 · Fahrt Frame max ms roh 183,4, entlastet ≥ 91,7 (÷ 2, Karte), Schwelle ≤ 100 — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 73 Bilder · max 116.66 ms · 36.99 % > 33 ms · Fahrt 48 Bilder · max 183.4 ms · 77.08 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 1 Bild(er) > 100 ms (max 116.66), 36.99 % > 33 ms | Fahrt)",
+   "zahl": "Last: Referenz f 1,283 (Faden 1,25 · alle Kerne 1,283; vor 111,4/283,1 ms, nach 101,7/241,7 ms, Ruhe 89,1/220,7 ms seit 2026-11-18) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 4,9 CPU-s · claude.exe --output-format stream-json --verbose --input-format stream-json --effort=xhigh 3,8 CPU-s · LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 3,4 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 39,2 CPU-s · svchost.exe 12,4 CPU-s · SearchIndexer.exe 2,1 CPU-s — unscharf unter Last: Fahrt Frame max ms roh 150, entlastet ≥ 75 (÷ 2, Karte), Schwelle ≤ 100 — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 82 Bilder · max 83.25 ms · 20.73 % > 33 ms · Fahrt 41 Bilder · max 149.99 ms · 95.12 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 20.73 % > 33 ms | Fahrt: 6 Bild(er) > 100 ms (max 149.99))",
    "exit": 0,
-   "minuten": 0.97,
-   "grund": "Last: Referenz f 1,229 (Faden 1,15 · alle Kerne 1,229; vor 102,5/271,2 ms, nach 94,8/217 ms, Ruhe 89,1/220,7 ms seit 2026-11-17) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 4,4 CPU-s · LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 3,1 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 3,1 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 32,1 CPU-s · svchost.exe 11,0 CPU-s · SearchIndexer.exe 0,7 CPU-s — unscharf unter Last: Gehen Frame max ms roh 116,7, entlastet ≥ 58,33 (÷ 2, Karte), Schwelle ≤ 100 · Fahrt Frame max ms roh 183,4, entlastet ≥ 91,7 (÷ 2, Karte), Schwelle ≤ 100 — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 73 Bilder · max 116.66 ms · 36.99 % > 33 ms · Fahrt 48 Bilder · max 183.4 ms · 77.08 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 1 Bild(er) > 100 ms (max 116.66), 36.99 % > 33 ms | Fahrt)",
+   "minuten": 1.03,
+   "grund": "Last: Referenz f 1,283 (Faden 1,25 · alle Kerne 1,283; vor 111,4/283,1 ms, nach 101,7/241,7 ms, Ruhe 89,1/220,7 ms seit 2026-11-18) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 4,9 CPU-s · claude.exe --output-format stream-json --verbose --input-format stream-json --effort=xhigh 3,8 CPU-s · LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 3,4 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 39,2 CPU-s · svchost.exe 12,4 CPU-s · SearchIndexer.exe 2,1 CPU-s — unscharf unter Last: Fahrt Frame max ms roh 150, entlastet ≥ 75 (÷ 2, Karte), Schwelle ≤ 100 — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 82 Bilder · max 83.25 ms · 20.73 % > 33 ms · Fahrt 41 Bilder · max 149.99 ms · 95.12 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 20.73 % > 33 ms | Fahrt: 6 Bild(er) > 100 ms (max 149.99))",
    "mass": [
     {
      "wort": "Gehen Frame max ms",
-     "wert": 116.66,
+     "wert": 83.25,
      "soll": 100
     },
     {
      "wort": "Fahrt Frame max ms",
-     "wert": 183.4,
+     "wert": 149.99,
      "soll": 100
     }
    ],
    "gpu": "nvidia/pascal",
-   "konsum": "kd525ab04fd9b",
+   "konsum": "kad840ed8b274",
    "konsumN": 29,
    "konsumSeite": false,
    "konsumGanz": {
     "gelesen": 2
    },
-   "konsumBoot": "k6d997372cecd",
-   "s": 57.2,
+   "konsumBoot": "kff06e4f5a2ae",
+   "s": 60.8,
    "fremd": {
-    "s": 69.7,
-    "takte": 30,
-    "fremdS": 28.89,
-    "kerne": 0.415,
-    "fensterKerne": 0.636,
+    "s": 72.6,
+    "takte": 31,
+    "fremdS": 36.77,
+    "kerne": 0.506,
+    "fensterKerne": 0.723,
     "namen": [
      [
-      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
-      4.41
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.88
+     ],
+     [
+      "claude.exe --output-format stream-json --verbose --input-format stream-json --effort=xhigh",
+      3.78
      ],
      [
       "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
-      3.14
-     ],
-     [
-      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      3.08
+      3.39
      ]
     ],
-    "dienerS": 25.83,
+    "dienerS": 24.61,
     "diener": [
      [
-      "dwm.exe",
-      12.81
+      "System",
+      10.97
      ],
      [
-      "System",
-      8.69
+      "dwm.exe",
+      7.97
      ]
     ],
-    "geraetS": 44.72,
+    "geraetS": 54.97,
     "geraet": [
      [
       "MsMpEng.exe",
-      32.05
+      39.17
      ],
      [
       "svchost.exe",
-      10.95
+      12.36
      ],
      [
       "SearchIndexer.exe",
-      0.67
+      2.05
      ]
     ],
-    "eigenS": 304.56,
+    "eigenS": 328.53,
     "rechnerKerne": 12,
     "spannen": {
-     "vor": 0.287,
-     "nach": 0.176,
-     "station": 0.991
+     "vor": 0.919,
+     "nach": 0.566,
+     "station": 1.049
     }
    },
    "referenz": {
     "vor": {
-     "ein": 102.5,
-     "alle": 271.2,
-     "cpuEin": 94,
+     "ein": 111.4,
+     "alle": 283.1,
+     "cpuEin": 110,
      "tor": {
       "ruhig": true,
-      "kerne": 2.1,
+      "kerne": 1.42,
       "s": 4,
       "soll": 3,
       "reihe": [
-       1.45,
-       5.41,
-       7.89,
-       4.49,
-       1.29,
-       0.47
+       3.83,
+       7.39,
+       5.84,
+       2.94,
+       0.76,
+       0.57
       ]
      },
      "spanne": [
-      1795831657484,
-      1795831658000
+      1795833515563,
+      1795833516118
      ]
     },
     "nach": {
-     "ein": 94.8,
-     "alle": 217,
+     "ein": 101.7,
+     "alle": 241.7,
+     "cpuEin": 110,
+     "tor": {
+      "ruhig": true,
+      "kerne": 1.52,
+      "s": 4,
+      "soll": 3,
+      "reihe": [
+       6.26,
+       3.84,
+       6.55,
+       3.19,
+       1.02,
+       0.09
+      ]
+     },
+     "spanne": [
+      1795833581821,
+      1795833582312
+     ]
+    },
+    "ruhe": {
+     "ein": 89.1,
+     "alle": 220.7,
+     "n": 1190,
+     "von": "2026-11-18"
+    },
+    "f": 1.283,
+    "fEin": 1.25,
+    "fAlle": 1.283,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-28T02:38:31.546Z",
+   "abdruck": "6fe61218623e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K4#1",
+   "modus": "session"
+  },
+  "karte2.planet.kosmos.himmelsmechanik#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 678 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0,0.01,0.02,0. (100 Uhren) · 52.2 s · 668.0 s) · Wirt-Wache: die Arbeit der Probe läuft noch: /eval werkbank/eval/ruf-22.js (Rufer tot seit 33.4 s) · den Kontext der Probe hält noch: window.__linse___aufnahmeRuhig = window.__aufnahmeRuhig; window.__aufnahmeRuhig = function ausgabeAufnahme(W, H, warm, o | return await __tagKurve({\"uhren\":[0.082,0.084,0.086,0.088,0.092,0.094,0.096,0.098,0.102,0.104,0.106,0.108,0.112,0.114,0. — Heap nach der Rücknahme 251.5 → 1205.3 MB (+953.8 > 64)",
+   "exit": 1,
+   "minuten": 11.31,
+   "grund": "Deckel 678 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0,0.01,0.02,0. (100 Uhren) · 52.2 s · 668.0 s) · Wirt-Wache: die Arbeit der Probe läuft noch: /eval werkbank/eval/ruf-22.js (Rufer tot seit 33.4 s) · den Kontext der Probe hält noch: window.__linse___aufnahmeRuhig = window.__aufnahmeRuhig; window.__aufnahmeRuhig = function ausgabeAufnahme(W, H, warm, o | return await __tagKurve({\"uhren\":[0.082,0.084,0.086,0.088,0.092,0.094,0.096,0.098,0.102,0.104,0.106,0.108,0.112,0.114,0. — Heap nach der Rücknahme 251.5 → 1205.3 MB (+953.8 > 64)",
+   "s": 678.4,
+   "fremd": {
+    "s": 687.4,
+    "takte": 315,
+    "fremdS": 206.19,
+    "kerne": 0.3,
+    "fensterKerne": 0.737,
+    "namen": [
+     [
+      "bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \"",
+      37.97
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      24.92
+     ],
+     [
+      "Explorer.EXE",
+      13.53
+     ]
+    ],
+    "dienerS": 174.77,
+    "diener": [
+     [
+      "System",
+      99.59
+     ],
+     [
+      "WmiPrvSE.exe",
+      31.08
+     ]
+    ],
+    "geraetS": 334.86,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      231.59
+     ],
+     [
+      "svchost.exe",
+      88.33
+     ],
+     [
+      "SearchIndexer.exe",
+      4.77
+     ]
+    ],
+    "eigenS": 1223.52,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.19,
+     "nach": 0.163,
+     "station": 1.361
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 95.9,
+     "alle": 239.5,
      "cpuEin": 94,
      "tor": {
       "ruhig": true,
@@ -988,39 +952,60 @@
       "s": 4,
       "soll": 3,
       "reihe": [
-       4.43,
-       5.46,
-       3.95,
-       5.55,
-       1.35,
-       0.08
+       5.3,
+       4.66,
+       3.46,
+       3.24,
+       3.13,
+       1.28
       ]
      },
      "spanne": [
-      1795831720053,
-      1795831720476
+      1795833617677,
+      1795833618144
+     ]
+    },
+    "nach": {
+     "ein": 120.9,
+     "alle": 338.4,
+     "cpuEin": 126,
+     "tor": {
+      "ruhig": true,
+      "kerne": 1.15,
+      "s": 0,
+      "soll": 3,
+      "reihe": [
+       1.15,
+       1.08,
+       1.3,
+       1.39,
+       0.97,
+       1.1
+      ]
+     },
+     "spanne": [
+      1795834296553,
+      1795834297159
      ]
     },
     "ruhe": {
      "ein": 89.1,
-     "alle": 220.7,
-     "n": 1190,
-     "von": "2026-11-17"
+     "alle": 220.9,
+     "n": 1192,
+     "von": "2026-11-18"
     },
-    "f": 1.229,
-    "fEin": 1.15,
-    "fAlle": 1.229,
+    "f": 1.532,
+    "fEin": 1.357,
+    "fAlle": 1.532,
     "verdraengt": 1,
-    "schwankt": false,
+    "schwankt": true,
     "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
     "umfeld": "sitzung"
    },
-   "ungemessen": true,
-   "zeit": "2026-11-28T02:07:33.478Z",
-   "abdruck": "6fe61218623e",
+   "zeit": "2026-11-28T02:40:13.664Z",
+   "abdruck": "c2532e791c76",
    "port": 7804,
    "bahn": "sitzung",
-   "zwilling": "profiband.K4#1",
    "modus": "session"
   }
  }
