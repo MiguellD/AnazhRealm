@@ -2605,7 +2605,9 @@ L.perspektive("tiere", (() => {
                         });
                         aus.sinn.ohne = allein(rich);
                         aus.feldM = F;
-                        aus.lebensdauerS = A.FAUNA_MAX_AGE_MS / 1000;
+                        // die Lebensdauer aus dem Gesetz des Spiels (leben-core `lebensdauerS` am Art-Mittel M̄ = `_gattungKg`, die
+                        // langlebigste Gattung des Lebensraums): `A.FAUNA_MAX_AGE_MS` fiel mit c6038905, die Probe las NaN
+                        aus.lebensdauerS = Math.max(...Object.keys(A._lebensraumGesetz().L.gattung).map((g) => A._lebenKern().lebensdauerS(r._gattungKg(g))));
                         aus.spieltagS = dayS;
                         return aus;
                     };
@@ -2812,14 +2814,22 @@ L.perspektive("tiere", (() => {
                         const { s, A, pm, r3, welt, takt, land, tier, stelle, stillFeld, ruhigSpieler, flick } = G;
                         stillFeld();
                         const aus = {};
-                        const maxS = A.FAUNA_MAX_AGE_MS / 1000;
+                        // DIE LEBENSDAUER LIEST DAS GESETZ DES SPIELS: `A.FAUNA_MAX_AGE_MS` steht am main in keiner Datei mehr (gefallen mit
+                        // c6038905, git grep leer) — die Probe las NaN, `jung` blieb 0 und keine Generation zählte. Jetzt je Tier seine
+                        // Lebensdauer aus dem Erbe (leben-core `lebensdauerS(M∞)`, gelesen stamm/kreatur-erbe.js `_bestandErbe(t).tod`);
+                        // ein Jungtier ist jünger als der Bruchteil SEINES Lebens und noch nicht reif (`reif`, das Gesetz der Mutterschaft) —
+                        // dieselbe Klasse, die der Fächer des Prüfers schießt (vision/pruefer/faecher.cjs leben.tiere.lebenszyklus#2). Die
+                        // Generation ist das Mittel der Lebensdauern des nahen Bestands; ohne Tier des Bestands wirft die Probe beim Namen.
                         const F = r._bestandRegionen().regionen;
-                        let [jung, alle] = [0, 0];
-                        for (const k of r._bestandNah())
-                            for (const t of (F[k] || { tiere: [] }).tiere) {
-                                alle++;
-                                if (t.alterS < a.jungBruch * maxS) jung++;
-                            }
+                        const nahT = [];
+                        for (const k of r._bestandNah()) for (const t of (F[k] || { tiere: [] }).tiere) nahT.push(t);
+                        if (!nahT.length) throw new Error("kein Tier des Bestands in den nahen Regionen (_bestandNah) — keine Lebensdauer, kein Jungtier");
+                        const maxS = nahT.reduce((x, t) => x + r._bestandErbe(t).tod, 0) / nahT.length;
+                        const istJung = (t) => {
+                            const E = r._bestandErbe(t);
+                            return t.alterS < Math.min(a.jungBruch * E.tod, E.reif);
+                        };
+                        const [jung, alle] = [nahT.filter(istJung).length, nahT.length];
                         aus.jung = { jung, alle, prozent: alle ? r3((100 * jung) / alle) : null };
                         const ort = land(pm.x, pm.z, 20, 40);
                         if (!ort) throw new Error("kein trockenes Land 40–600 m um den Spieler");
@@ -2959,9 +2969,9 @@ L.perspektive("tiere", (() => {
                         u: { auge: AUGE_ORT },
                         soll: [K.soll(LZ, 2, "Bildpaar Kitz/Hirsch Panel ≥ 0,7", { key: "panel" }), K.soll(LZ, 2, "Jungtiere ≥ 10 % einer Herde im Frühsommer", { key: "jungProzent", einheit: "%" })],
                         auge: { pose: "Third auf eine Herde mit Kitz aus 15 m im Frühsommer (heute: die Wiese)", vorbild: "Foto Kitz/Hirsch; Panel ≥ 0,7" },
-                        taeter: "stamm/kreatur-leben.js _creatureNaturalBirth (die Größe fällt bei der Geburt, nie mit dem Alter)",
+                        taeter: "stamm/kreatur-erbe.js _bestandBs (der Leib wächst nur isometrisch: bs = (m(alterS) / M̄)^⅓ — das Jungtier ist ein verkleinertes Alttier) / tetrapoda-core.js VERHALTEN (die Geburt kennt keine Setzzeit: kein Kitz-Gipfel im Frühsommer)",
                         nicht: "ein sichtbares Jungtier, das wächst",
-                        leser: "stamm/kreatur-leben.js:1993 `_creatureBodySize` — die Größe des Geworfenen fällt einmal aus dem Strom; kein Leser liest `alterS` für Größe und Proportion",
+                        leser: "stamm/kreatur-erbe.js:77 `_bestandBs` — die Größe liest das Alter (leben-core masseZurZeit), die Proportion nicht: kein Leser liest `alterS` für Kopf, Bein und Rumpf",
                         gruen: gut({ panel: 0.8, jungProzent: 15, proportionAbw: 20 }, 300),
                         attrappen: atr({ panel: 0.8, jungProzent: 15, proportionAbw: 20 }, 300),
                     },
@@ -7107,7 +7117,14 @@ L.perspektive("evolution", (() => {
                         const stand = keys.map((k) => sichern(F[k]));
                         const tod = new Map();
                         const ELTERN = ["eltern", "mutter", "vater", "ahn", "elter"];
-                        const lebensS = C.FAUNA_MAX_AGE_MS / 1000;
+                        // die Generation aus dem Gesetz des Spiels: das Mittel der Lebensdauern der Region (leben-core `lebensdauerS(M∞)`,
+                        // `_bestandErbe(t).tod`) — `C.FAUNA_MAX_AGE_MS` fiel mit c6038905, die Probe las NaN und der Lauf lief 0 Takte
+                        const lebenR = (key) => {
+                            const T0 = (F[key] || { tiere: [] }).tiere;
+                            if (!T0.length) throw new Error("die Region " + key + " trägt kein Tier — keine Lebensdauer, keine Generation");
+                            return T0.reduce((x, t) => x + r._bestandErbe(t).tod, 0) / T0.length;
+                        };
+                        const lebensS = lebenR(hier);
                         const lauf = (key, dauer) => {
                             const R = F[key];
                             const geb = [];
@@ -7383,8 +7400,14 @@ L.perspektive("evolution", (() => {
                         try {
                             r._depositLife = function () {};
                             r._depositEmotion = function () {};
-                            const lebensS = C.FAUNA_MAX_AGE_MS / 1000;
-                            const raeuber = (k) => F[k].tiere.filter((t) => t.g === "wolf" || t.g === "bear").length;
+                            // die Generation des Hirschs aus dem Gesetz des Spiels: das Mittel der Lebensdauern der Hirsche der Region
+                            // (leben-core `lebensdauerS(M∞)`, `_bestandErbe(t).tod`) — `C.FAUNA_MAX_AGE_MS` fiel mit c6038905 (NaN)
+                            const lebenHirsch = (k) => {
+                                const D = F[k].tiere.filter((t) => t.g === "deer");
+                                if (!D.length) throw new Error("die Region " + k + " trägt keinen Hirsch — keine Generation");
+                                return D.reduce((x, t) => x + r._bestandErbe(t).tod, 0) / D.length;
+                            };
+                            const raeuber =(k) => F[k].tiere.filter((t) => t.g === "wolf" || t.g === "bear").length;
                             const kandidat = keys.filter((k) => F[k].tiere.filter((t) => t.g === "deer").length >= 2).sort((a, b) => raeuber(b) - raeuber(a));
                             const ort = kandidat[0] || hier;
                             aus.raeuberImOrt = raeuber(ort);
@@ -7400,7 +7423,7 @@ L.perspektive("evolution", (() => {
                             const m2 = mittel(hirsch());
                             stand.forEach(zurueck);
                             aus.selektion = { m0, mit: m1, ohne: m2, dMit: m1 - m0, dOhne: m2 - m0, nMit, geb: mit.geb + ohne.geb, eltern: mit.eltern + ohne.eltern };
-                            aus.generationen = A.dauerS / lebensS;
+                            aus.generationen = A.dauerS / lebenHirsch(ort);
                             const inseln = keys.map((k) => F[k].tiere.filter((t) => t.g === "deer").map((t) => t.bs)).filter((l) => l.length >= 2).sort((a, b) => a.length - b.length);
                             aus.inseln = inseln.map((l) => l.length);
                             aus.auc = inseln.length >= 2 ? auc(inseln[0], inseln[inseln.length - 1]) : undefined;
@@ -7927,7 +7950,9 @@ L.perspektive("evolution", (() => {
                             const flieger = ["_vogelGesetz", "_bestaeuberGesetz"].filter((k) => typeof C[k] === "function").length;
                             aus.arten = gattungen.length + flieger + (typeof C._fischGesetz === "function" ? 1 : 0);
                             aus.fliegerAnteil = flieger / aus.arten;
-                            aus.lebensS = C.FAUNA_MAX_AGE_MS / 1000;
+                            // die Lebensdauer je Gattung aus dem Gesetz des Spiels (leben-core `lebensdauerS` am Art-Mittel M̄ =
+                            // `_gattungKg`; `C.FAUNA_MAX_AGE_MS` fiel mit c6038905, die Probe las NaN) — genannt die langlebigste
+                            aus.lebensS = Math.max(...gattungen.map((g) => C._lebenKern().lebensdauerS(r._gattungKg(g))));
                             await r._fadenQuelle();
                             const an = await r._planetAnker();
                             const grad = (x) => Math.round(((x * 180) / Math.PI) * 100) / 100;
