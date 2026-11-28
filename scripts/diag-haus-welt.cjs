@@ -1610,12 +1610,14 @@ async function proben(phasen) {
         stell(start.x, start.y + 3, start.z);
         await pumpe(60);
         // die Streu steht vor dem Dorf (wie im Spiel): jede Region unter dem Dorf-Ort gebaut (`regionenStehen`)
-        // der Ort des fernen Dorfs: der dichteste 40-m-Kreis der Zellen 200–360 m vom Start, auf Land, jede Region unter ihm
-        // in Reichweite (`_streuWartet`) — die Probe braucht Zellen unter den Häusern
+        // der Ort des fernen Dorfs: der dichteste 40-m-Kreis der BAUM-Zellen (`promotable`) 200–360 m vom Start, auf Land, jede
+        // Region unter ihm in Reichweite (`_streuWartet`) — die Probe braucht Baum-Zellen unter den Häusern: nur sie erreicht die
+        // Promotion (W4b Promotion). Vorher zählte jede Zelle; an Start 34/−34 wählte der dichteste Kreis Unterholz (56 Zellen),
+        // unter den Häusern standen 4 Zellen, 3 davon „under“, und der Selbsttest „promotion“ war blind.
         const p0 = { x: start.x, z: start.z };
         await warteBis(() => !(r._streuWartet(p0) > 0), 4, 1500);
         const voll = [];
-        for (const c of streuZellen().filter(lebt)) voll.push(c);
+        for (const c of streuZellen().filter(lebt)) if (c.promotable) voll.push(c);
         let best = null;
         for (const c of voll) {
             const d = Math.hypot(c.x - start.x, c.z - start.z);

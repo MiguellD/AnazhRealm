@@ -1726,7 +1726,9 @@ class AnazhRealm_vegetation_wiese {
     }
 
     // Ein Kachel-Block tritt ein (Matrizen n×16, Farben n×3 bei Tint-Senken, die Ernte-Identität je Pflanze, Fuß und Weite
-    // je Pflanze n×3): die Senke merkt ihn, ihr Bestand schreibt ihn bei seiner Geburt (`_nahStreuBestand`).
+    // je Pflanze n×3): die Senke merkt ihn, ihr Bestand schreibt ihn bei seiner Geburt (`_nahStreuBestand`). Die werfende
+    // Senke (`wurf`, Holz und Stein) trägt je Block die Hülle seiner Pflanzen (`huelle`: die Kugel des Teils je Matrix, einmal je
+    // Eintritt) — die Box der Kaskaden liest sie (`_kaskadenHuellen`), sonst verlöre der Werfer über der nahen Ebene seinen Schatten.
     _streuNahEin(a, kachelKey, matrizen, farben, ids, fuss) {
         const n = matrizen.length / 16;
         if (a.tint && (!farben || farben.length !== n * 3))
@@ -1735,7 +1737,22 @@ class AnazhRealm_vegetation_wiese {
             throw new Error(`_streuNahEin(${a.name}, ${kachelKey}): je Pflanze eine Ernte-Identität`);
         if (!fuss || fuss.length !== n * 3)
             throw new Error(`_streuNahEin(${a.name}, ${kachelKey}): je Pflanze Fuß und Weite (n×3)`);
-        a.bloecke.set(kachelKey, { n, ids, matrizen, farben: a.tint ? farben : null, fuss });
+        let huelle = null;
+        if (a.wurf && n) {
+            if (!a.geo.boundingSphere) a.geo.computeBoundingSphere();
+            const ks = a.geo.boundingSphere;
+            const kr = ks.center.length() + ks.radius;
+            huelle = new THREE.Box3();
+            const v = new THREE.Vector3();
+            for (let i = 0, o = 0; i < n; i++, o += 16) {
+                const m = matrizen;
+                const sk = Math.sqrt(Math.max(m[o] ** 2 + m[o + 1] ** 2 + m[o + 2] ** 2, m[o + 4] ** 2 + m[o + 5] ** 2 + m[o + 6] ** 2, m[o + 8] ** 2 + m[o + 9] ** 2 + m[o + 10] ** 2)); // prettier-ignore
+                const r = kr * sk;
+                huelle.expandByPoint(v.set(m[o + 12] - r, m[o + 13] - r, m[o + 14] - r));
+                huelle.expandByPoint(v.set(m[o + 12] + r, m[o + 13] + r, m[o + 14] + r));
+            }
+        }
+        a.bloecke.set(kachelKey, { n, ids, matrizen, farben: a.tint ? farben : null, fuss, huelle });
         this.state.nahStreu.bestandNeu = true;
     }
 
@@ -3013,8 +3030,11 @@ class AnazhRealm_vegetation_wiese {
     // Die GEBORENEN Darts einer Zelle, reine Funktion von (cx, cz, seed): standDensity-Wurf → Boden/Wasser → Slope →
     // Arten-Nische → reverse-J-Größe → Mammut (phyto-core `planForestCell`). Nur geborene Darts treten in die
     // Kronen-Schüchternheit ein (`forestStehende`); ihr Leser ist der Bestand (`_forestCellDarts`). `vorlaeufig`: die Antwort
-    // steht vor der Wahrheit des Gesetzes (oder ohne die Kacheln ihrer Nachbarn) und wird nie gemerkt.
-    _forestGeborene(cx, cz, seedInt, vorlaeufig) {
+    // steht vor der Wahrheit des Gesetzes (oder ohne die Kacheln ihrer Nachbarn) und wird nie gemerkt. `boden` (optional): der
+    // FERN-LESER des Bodens, mit dem die Ferne ihren Wald plant (die Kamm-Krone im Faden, voxel-worker `kammKrone`: das Gesetz ohne
+    // Detail, Steilheit ±2 m) — sein Leser ist die Sicht der Landmarke (`_landmarkeSicht`) jenseits der Nah-Streu; ohne ihn die
+    // Oberfläche der Voxel-Welt, wie der Bestand sie zeichnet.
+    _forestGeborene(cx, cz, seedInt, vorlaeufig, boden) {
         // Die Pflanz-Logik lebt EINMAL in phyto-core (planForestCell); hier nur die Welt-Reads als ctx-
         // Funktionen (Oberfläche · Wasser · Slope · Feuchte · fbm). Ohne Kern → leerer Wald.
         const core = typeof globalThis !== "undefined" && globalThis.__phytoCore;
@@ -3027,6 +3047,7 @@ class AnazhRealm_vegetation_wiese {
         let bodenZ = NaN;
         let bodenY = null;
         const raender = this._ortRaender(); // die Ränder der Siedlungen (die Waldgrenze am Siedlungsrand, phyto-core `forestOrt`)
+        const grund = boden || ((x, z) => this._voxelSurfaceY(x, z));
         const out =
             core && typeof core.planForestCell === "function"
                 ? core.planForestCell(cx, cz, seedInt, {
@@ -3044,14 +3065,14 @@ class AnazhRealm_vegetation_wiese {
                       surfaceYAt: (x, z) => {
                           bodenX = x;
                           bodenZ = z;
-                          bodenY = this._voxelSurfaceY(x, z);
+                          bodenY = grund(x, z);
                           return bodenY;
                       },
                       waterYAt: (x, z) =>
-                          this._landSpiegelAt(x, z, x === bodenX && z === bodenZ ? bodenY : this._voxelSurfaceY(x, z)),
+                          this._landSpiegelAt(x, z, x === bodenX && z === bodenZ ? bodenY : grund(x, z)),
                       slopeAt: (x, z) =>
                           typeof this._slopeAt === "function"
-                              ? this._slopeAt(x, z, (px, pz) => this.getTerrainHeightAt(px, pz), 2)
+                              ? this._slopeAt(x, z, boden || ((px, pz) => this.getTerrainHeightAt(px, pz)), 2)
                               : 0,
                       feuchteAt: (x, z, sy) => (typeof this._feuchteAt === "function" ? this._feuchteAt(x, z, sy) : 0),
                       // der Ort vor dem Wald (K10): keine Krone über dem Grund eines Orts (`_ortFrei`, der Erdbau)

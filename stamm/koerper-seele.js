@@ -370,9 +370,9 @@ class AnazhRealm_koerper_seele {
         // Das dritte Verb: der Todesort trägt eine Lebens-Spur ins Feld.
         const pm = this.state.playerMesh;
         if (pm && pm.position) this._lebenGabe(pm.position.x, pm.position.z, AnazhRealm.LIFE_FIELD.pulseCenter, null);
-        // Rückkehr an der Mitte des Genesis-Orts (`_genesisAnkunft`: der Plan der Welt, Grund + 1,2 m — dieselbe Ankunft wie
-        // beim ersten Spawn)
-        const anker = this._genesisAnkunft();
+        // Rückkehr an der Mitte des Genesis-Orts (`_genesisAnkunft`: der Plan der Welt, am Auge des Gesetzes — dieselbe Ankunft wie
+        // beim ersten Spawn, gemerkt je Welt-Stand; ein neuer Stand fragt den Wald-Faden)
+        const ankunft = this._genesisAnkunft();
         // Die Lebenswerte kehren voll zurück (das Maximum der verwundeten Gestalt) — die WUNDE (Stat-Penalty,
         // 10-min-Regen) trägt die Erinnerung, nicht ein HP-Malus.
         this.recomputePlayerStats({ voll: true });
@@ -384,9 +384,14 @@ class AnazhRealm_koerper_seele {
                 at: now,
             }
         );
-        this.log(
-            `Tod (${source || "unbekannt"}) → Rückkehr am Genesis-Ort (${anker.x.toFixed(0)}, ${anker.z.toFixed(0)})`,
-            "INFO"
+        ankunft.then(
+            (anker) =>
+                anker &&
+                this.log(
+                    `Tod (${source || "unbekannt"}) → Rückkehr am Genesis-Ort (${anker.x.toFixed(0)}, ${anker.z.toFixed(0)})`,
+                    "INFO"
+                ),
+            (e) => this._stoffBruch("die Rückkehr nach dem Tod (die Ankunft am Genesis-Ort)", e)
         );
     }
 
@@ -398,6 +403,16 @@ class AnazhRealm_koerper_seele {
         if (currentTime - (this.state.player.deathLastTick || -Infinity) < 1.0) return;
         const dt = Math.max(0.1, Math.min(10, currentTime - this.state.player.deathLastTick));
         this.state.player.deathLastTick = currentTime;
+        // die Rückkehr nach dem Tod steht vorgebacken (Lehre 14): wechselt der Stand der Ankunft (Wald, Hydrosphäre, Heimat; eine
+        // geladene Welt), fragt sie nach dem ersten Weltbild neu (`_ankunft`, Rang 1 hinter dem Wald des Bilds) — der Tod setzt den
+        // Leib im selben Takt (`_genesisAnkunft`), nie ein Bild am Ort des Tods. Die Kosten binden an die Änderung: sonst ein Schlüssel.
+        const M = this.state._weltbildDa && this._genesisMitte();
+        if (M) {
+            const vor = this._ankunftStand;
+            const an = this._ankunft(M, 1);
+            if (!vor || an !== vor.ankunft)
+                an.catch((e) => this._stoffBruch("das Vorbacken der Rückkehr (die Ankunft am Genesis-Ort)", e));
+        }
         // Welle 6.D Etappe 3a+ — Wunde regenerieren UNABHÄNGIG von der
         // Respawn-Rückkehr. Die Stat-Wunde bleibt 10 min als Erinnerung.
         const woundIntensity = this.state.player.deathWoundIntensity || 0;

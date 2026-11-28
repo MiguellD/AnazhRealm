@@ -65,10 +65,35 @@ class AnazhRealm_gelaende_boden {
             k.j0 = T - az * ce.dim * T;
             [k.E, k.ax, k.az, k.st] = [E, ax, az, undefined];
         }
-        let a = this._bodenFlaeche(n, gx, gz, lod),
-            b = this._bodenFlaeche(n, gx + 1, gz, lod),
-            c = this._bodenFlaeche(n, gx, gz + 1, lod),
-            d = this._bodenFlaeche(n, gx + 1, gz + 1, lod);
+        // DER RAND DER GRÖBEREN KARTE TRÄGT NICHT, WO EINE FEINERE DIE ZELLE GANZ TRÄGT (landmarken-9): trägt eine Karte alle vier
+        // Ecken der Zelle, zeichnet ihr Netz die Zelle — eine GRÖBERE Karte, die dort nur eine Kante trägt, steht mit ihrem Rand
+        // darüber: an der Vier-Chunk-Ecke 216/44,1 (Stufen L1,L1 über L0,L0) trug die L1-Karte des x-Nachbarn die obere Kante 0,54 m
+        // über der L0-Karte, die die Zelle zeichnet — das Maximum je Ecke hob den Leser bis 0,47 m über den gezeichneten Boden
+        // (gate:koerper-stand K6: 6 von 792 Punkten). Ein Nachbar DERSELBEN oder einer feineren Stufe zeichnet dagegen den
+        // Rand-Streifen (K07, oben): er trägt je Ecke mit, wie bisher (die Klasse aller Karten fiel mit dem ersten Schnitt und
+        // nahm die Fläche des Streifens — gate:kreatur-takt querhang: Stand-Schlupf des Wolfs 0,024 → 0,178). Trägt keine Karte
+        // die ganze Zelle (die Stufen-Naht, w28-pop-treue), nimmt jede Ecke die oberste Fläche aller Karten.
+        const E4 = this._bodenEcken4 || (this._bodenEcken4 = [[], [], [], []]);
+        let ganz = Infinity;
+        for (let q = 0; q < n; q++) {
+            const Y = E4[q];
+            Y[0] = this._bodenFlaeche(n, gx, gz, lod, q);
+            Y[1] = this._bodenFlaeche(n, gx + 1, gz, lod, q);
+            Y[2] = this._bodenFlaeche(n, gx, gz + 1, lod, q);
+            Y[3] = this._bodenFlaeche(n, gx + 1, gz + 1, lod, q);
+            if (Y[0] > -Infinity && Y[1] > -Infinity && Y[2] > -Infinity && Y[3] > -Infinity)
+                ganz = Math.min(ganz, K[q].el);
+        }
+        let a = -Infinity,
+            b = -Infinity,
+            c = -Infinity,
+            d = -Infinity;
+        for (let q = 0; q < n; q++) {
+            const Y = E4[q];
+            if (K[q].el > ganz && !(Y[0] > -Infinity && Y[1] > -Infinity && Y[2] > -Infinity && Y[3] > -Infinity))
+                continue;
+            [a, b, c, d] = [Math.max(a, Y[0]), Math.max(b, Y[1]), Math.max(c, Y[2]), Math.max(d, Y[3])];
+        }
         // DIE FUGE DER NETZE (w28-pop-treue): wo ein feines Netz an die Rand-Ecke eines groben stößt, klafft zwischen ihnen ein
         // Splitter (Mess-Wiese: 1–12 cm an 5 Ecken von 81 Chunks) — der Rasterpunkt in ihm trägt keine Karte. Trägt GENAU EINE Ecke
         // der Zelle nicht, liest die Zelle die Ebene ihrer drei tragenden Ecken; vorher fiel die ganze Zelle (3,2 m² in Stufe 2).
@@ -127,10 +152,11 @@ class AnazhRealm_gelaende_boden {
     // derselben oder einer feineren Stufe trägt den Punkt selbst (die Raster aller Stufen liegen ineinander: Schritt
     // 1,8 · 2^Stufe, Ursprung Chunk − Schritt, der Chunk ein Vielfaches), eine gröbere in ihrer Zelle (`_bodenKarteEcke`). Den
     // Geomorph ihrer Stufe (`_bodenStufeMisch`) fragt eine Karte beim ersten Punkt, den sie trägt.
-    _bodenFlaeche(n, G, J, c) {
+    // `nur` (optional): die Fläche EINER Karte der Lesung (ihr Index) — die Frage, ob sie die ganze Zelle trägt (`_bodenSichtAt`).
+    _bodenFlaeche(n, G, J, c, nur) {
         const K = this._bodenKarten;
         let y = -Infinity;
-        for (let q = 0; q < n; q++) {
+        for (let q = nur === undefined ? 0 : nur; q < (nur === undefined ? n : nur + 1); q++) {
             const k = K[q];
             let v;
             if (k.el <= c) {
@@ -631,29 +657,69 @@ class AnazhRealm_gelaende_boden {
         return n;
     }
 
-    // DIE ANKUNFT AM GENESIS-ORT (Pflicht F): der Spieler steht an der Mitte des Plans auf dem Grund (das EINE Boden-Gesetz samt
-    // dem Erdbau des Kerns, `getTerrainHeightAt`) + 1,2 m, ruhend — die erste Ankunft einer Welt (die Weltgen) und jede Rückkehr
-    // nach dem Tod (`_playerDeathRespawn`). Ohne Plan oder Grund bricht sie laut (`_bruchMelden`): der Plan entsteht mit der Welt
-    // im Faden, nie ein Ersatz-Ort. → {x, y, z}
+    // DIE ANKUNFT AM GENESIS-ORT (Pflicht F): der Spieler steht am Stand des Ankunfts-Gesetzes um die Mitte des Plans
+    // (`_ankunft`: die Heimat, oder ihr Ring-Stand mit freier Sicht — gerechnet im Wald-Faden, gemerkt je Welt-Stand) auf dem Grund
+    // ruhend dort, wo das Gesetz SAH: das Body-Zentrum `EGO_AUGE_M` unter seinem Auge (Grund samt Erdbau + Box-halfExtent 0,5,
+    // `getTerrainHeightAt`) — der erste Blick der Kamera IST die Gerade des Gesetzes (landmarken-9: der frühere Stand Grund + 1,2 m
+    // hob das Auge 0,70 m über das des Gesetzes, die Gerade der Kamera traf an Saat s1-2 die Tanne in 82 m, die des Gesetzes lief unter
+    // ihrer Krone); nie unter dem Grund, falls das Mesh seit der Bestellung wuchs. Den Blick (Gier, Neigung 0) auf
+    // seiner tragenden Landmarke — die erste Ankunft einer Welt (die Weltgen wartet auf sie) und jede Rückkehr nach dem Tod
+    // (`_playerDeathRespawn`). Ohne Plan oder Grund bricht sie laut (`_bruchMelden`): der Plan entsteht mit der Welt im Faden, nie
+    // ein Ersatz-Ort. Kommt die Antwort, nachdem eine andere Welt begann (ein anderes `worldMeta`), setzt sie nichts.
+    // → das Versprechen {x, y, z, yaw, glied, marke} (null: eine neuere Welt kam ihr zuvor)
     _genesisAnkunft() {
         const M = this._genesisMitte();
-        const g = M ? this.getTerrainHeightAt(M.x, M.z) : NaN;
-        if (!Number.isFinite(g)) {
-            const text = M
-                ? `GENESIS-ORT: kein Grund an der Mitte ${M.x}/${M.z}`
-                : "GENESIS-ORT: die Ankunft ohne Plan — der Plan entsteht mit der Welt im Faden";
+        if (!M) {
+            const text = "GENESIS-ORT: die Ankunft ohne Plan — der Plan entsteht mit der Welt im Faden";
             this._bruchMelden(text);
-            throw new Error(text);
+            return Promise.reject(new Error(text));
         }
-        const a = { x: M.x, y: g + 1.2, z: M.z };
-        const pm = this.state.playerMesh;
-        if (pm) {
-            pm.position.set(a.x, a.y, a.z);
-            // Feld-nativ: Velocity nullen + vertikalen Feld-Zustand zurück (kein Ammo-Body).
-            if (this.state.playerVel) this.state.playerVel.setValue(0, 0, 0);
-            this.state._fieldVy = 0;
+        const welt = this.state.worldMeta;
+        const setzen = (an) => {
+            if (this.state.worldMeta !== welt) return null;
+            const g = this.getTerrainHeightAt(an.x, an.z);
+            if (!Number.isFinite(g)) {
+                const text = `GENESIS-ORT: kein Grund an der Ankunft ${an.x}/${an.z}`;
+                this._bruchMelden(text);
+                throw new Error(text);
+            }
+            const t0 = performance.now();
+            // die Marke des ersten Blicks reist mit (der Leser der Station: das Blickziel IST die Wahl des Gesetzes, nie eine zweite)
+            const a = {
+                x: an.x,
+                y: Math.max(g + 0.5, an.auge.y - AnazhRealm.EGO_AUGE_M),
+                z: an.z,
+                yaw: an.yaw,
+                glied: an.glied,
+                marke: an.marke,
+            };
+            this.state.yaw = an.yaw;
+            this.state.pitch = 0;
+            const pm = this.state.playerMesh;
+            if (pm) {
+                pm.position.set(a.x, a.y, a.z);
+                // Feld-nativ: Velocity nullen + vertikalen Feld-Zustand zurück (kein Ammo-Body).
+                if (this.state.playerVel) this.state.playerVel.setValue(0, 0, 0);
+                this.state._fieldVy = 0;
+            }
+            this._zielGangBeginn(an.marke); // der Gang zur Marke des ersten Blicks (erleben.spieler.wegfindung#2)
+            // die Kosten im Haupt-Faden je Ankunft (landmarken-9): die Bestellung (Marken, Stände, Kegel) + das Setzen
+            an.kosten.gesetzt = performance.now() - t0;
+            this.state.ankunftKosten = an.kosten;
+            return a;
+        };
+        // trifft die Ankunft das Gedächtnis mit gekommener Antwort (die Rückkehr nach dem Tod in derselben Welt), setzt sie im
+        // selben Takt: der Leib steht am Anker, bevor das nächste Bild läuft — nur die neue Frage wartet auf den Faden
+        const ankunft = this._ankunft(M);
+        const st = this._ankunftStand;
+        if (st && st.ankunft === ankunft && st.wert) {
+            try {
+                return Promise.resolve(setzen(st.wert));
+            } catch (e) {
+                return Promise.reject(e);
+            }
         }
-        return a;
+        return ankunft.then(setzen);
     }
 
     // ### Terrain-Erweiterung ###
@@ -3464,3 +3530,7 @@ AnazhRealm.EXPLORE = Object.freeze({
     maxRegions: 4000, // die visitedRegions-Map bounded halten
     pruneRegions: 1000, // beim Überlauf die ältesten Regionen vergessen
 });
+
+// DAS BAND DER ANKUNFT (`_ankunft`): die Mittelsicht beginnt beim `mittelsichtBaumX`-fachen der Höhe des herrschenden Baums
+// (Higuchi; die Higuchi-Viewsheds bei Wheatley & Gillings 2000, „Vision, perception and GIS“: nah bis 60 ×, fern ab 1 100 ×).
+AnazhRealm.ANKUNFT_SICHT = Object.freeze({ mittelsichtBaumX: 60 });

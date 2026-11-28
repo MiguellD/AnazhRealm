@@ -2302,13 +2302,24 @@ async function WELLE_L(ort) {
                 gnade: p.respawnGraceUntil,
                 ort: { x: pm.position.x, y: pm.position.y, z: pm.position.z },
             };
+            // DER WOLF STEHT IM RING DER HETZE, WINDAB (landmarken-9 Kopf 2): 0,8 × jagd.hetzM vom Spieler (das Gesetz hetzt ab
+            // d ≤ hetzM), in der Richtung, in die der Wind seine Witterung trägt (`_rauchWindAt` am Spieler, die Uhr der Witterung
+            // `_scentAt`: cos > 0 heißt windab; in Windstille trägt der Mäander nach allen Seiten, dann Norden). Bis hier stand er
+            // 6,01 m fern — GENAU auf dem Ring hetzM 6 m: lag sein Platz nach der Geburt knapp darüber, pirschte er zum Ring und
+            // stand dort 1 500 Takte in „jagd“ auf 6,0 m (Spur `jagdSpur`, Posten 5 „kein Biss im Takt“ in 3 von 7 Läufen)
+            const wolfAb = (() => {
+                const wd = {};
+                r._rauchWindAt(pm.position.x, pm.position.z, s._simZeit, A.SCENT.hoeheM, null, wd);
+                const [n, m] = [Math.hypot(wd.x, wd.z), 0.8 * A._verhaltenGesetz().jagd.hetzM];
+                return wd.ms > 0 && n > 0 ? { x: (m * wd.x) / n, z: (m * wd.z) / n } : { x: 0, z: m };
+            })();
             // der Spieler steht auf dem Boden (seine Füße auf der Höhe, auf der auch die Tiere stehen), auf freiem Feld: kein Bau
             // in 12 m um ihn und den Wolf (die Start-Plattform stünde zwischen ihnen)
             const frei = (x, z) =>
                 s.architectures.every(
                     (e) =>
                         Math.hypot(e.position.x - x, e.position.z - z) > 12 &&
-                        Math.hypot(e.position.x - x - 0.4, e.position.z - z - 6) > 12
+                        Math.hypot(e.position.x - x - wolfAb.x, e.position.z - z - wolfAb.z) > 12
                 );
             let fx = pm.position.x,
                 fz = pm.position.z;
@@ -2333,11 +2344,30 @@ async function WELLE_L(ort) {
                 r.setGameMode("pfad");
                 for (const c of tiere) if (c.parent) parke(c);
                 // (a) die Jagd auf den stehenden Spieler
-                const wolf = neu("wolf", P.x + 0.4, P.z + 6, 1);
+                const wolf = neu("wolf", P.x + wolfAb.x, P.z + wolfAb.z, 1);
                 if (wolf) {
-                    wolf.rotation.set(0, Math.PI, 0);
+                    wolf.rotation.set(0, Math.atan2(-wolfAb.x, -wolfAb.z), 0);
                     mitBiss.spieler = wolf;
-                    for (let k = 0; k < 1500 && bisse.jagd.length < 3; k++) tickT23();
+                    const spur = new Map();
+                    for (let k = 0; k < 1500 && bisse.jagd.length < 3; k++) {
+                        tickT23();
+                        const u = wolf.userData,
+                            sch = `${u._motionZustand || "–"}|${u._verhaltenAktion?.bissAkt ? "biss" : u._verhaltenAktion ? "akt" : "–"}|${u.state || u.mode || "–"}`;
+                        const e = spur.get(sch) || { n: 0, d: [] };
+                        e.n++;
+                        if (e.n % 100 === 1)
+                            e.d.push(
+                                +Math.hypot(wolf.position.x - pm.position.x, wolf.position.z - pm.position.z).toFixed(1)
+                            );
+                        spur.set(sch, e);
+                    }
+                    bisse.jagdSpur = Object.fromEntries(spur);
+                    bisse.jagdSpur.ort = [+P.x.toFixed(1), +P.z.toFixed(1)];
+                    {
+                        const wd = {};
+                        r._rauchWindAt(P.x, P.z, s._simZeit, A.SCENT.hoeheM, null, wd);
+                        bisse.jagdSpur.wind = [+wd.x.toFixed(2), +wd.z.toFixed(2), +wd.ms.toFixed(2)];
+                    }
                     mitBiss.spieler = null;
                     r.removeCreature(wolf);
                 }
@@ -2614,14 +2644,17 @@ async function WELLE_L(ort) {
                     // Sprung (das Kleinste zählt); die Gegenprobe waagrecht in der Weite des Ansprungs
                     {
                         const P0 = { x: P.x, y: P.y, z: P.z };
-                        const wolfS = neu("wolf", P.x + 0.4, P.z + 6, 1);
+                        // im Ring der Hetze wie (a) (`wolfAb`): auf dem Ring hetzM pirschte er an der Schwelle fest (4,8 m waagrecht)
+                        const wolfS = neu("wolf", P.x + wolfAb.x, P.z + wolfAb.z, 1);
                         const trocken = (x, z) => {
                             wolfS.position.set(x, r.getTerrainHeightAt(x, z), z);
                             return r._kreaturSchwimmt(wolfS, r._creatureGroundY(wolfS)) === null;
                         };
                         const ort = wolfS
                             ? ringe8([57, 70]).find(
-                                  ([ox, oz]) => trocken(P0.x + ox, P0.z + oz) && trocken(P0.x + ox + 0.4, P0.z + oz + 6)
+                                  ([ox, oz]) =>
+                                      trocken(P0.x + ox, P0.z + oz) &&
+                                      trocken(P0.x + ox + wolfAb.x, P0.z + oz + wolfAb.z)
                               )
                             : null;
                         if (wolfS && ort) {
@@ -2629,8 +2662,9 @@ async function WELLE_L(ort) {
                             P.z = P0.z + ort[1];
                             P.y = r.getTerrainHeightAt(P.x, P.z) + A.PLAYER_FOOT_OFFSET + 3.5;
                             halte();
-                            wolfS.position.set(P.x + 0.4, r.getTerrainHeightAt(P.x + 0.4, P.z + 6), P.z + 6);
-                            wolfS.rotation.set(0, Math.PI, 0);
+                            const [wx, wz] = [P.x + wolfAb.x, P.z + wolfAb.z];
+                            wolfS.position.set(wx, r.getTerrainHeightAt(wx, wz), wz);
+                            wolfS.rotation.set(0, Math.atan2(-wolfAb.x, -wolfAb.z), 0);
                             wolfS.userData._steuer = null;
                             let letzte = null,
                                 n = 0,
@@ -3221,8 +3255,9 @@ async function WELLE_L(ort) {
 // erste mit der Tafel des Leerlaufs bei 60 Hz, der zweite ohne Leerlauf (die Last) bei 15 Hz — Kipp-Winkel und Höhe bei
 // 0,6 s Kreatur-Uhr. (tod) vor dem Tod Holz, Stein und ein Fuchs, den die Geste bindet (85 m abseits, außer Witterung); der
 // Wolf jagt den Spieler am Rand seines Lebens über den Biss-Weg, die Rückkehr (Leben, Wunde, Gnade, Lebens-Spur, Seele,
-// Trauer, Journal, Wunde senkt hpMax, der Vitals-Takt heilt sie und füllt die Ausdauer) und ihr Abstand zum Genesis-Anker
-// (`_genesisMitte`, die Mitte des Plans der Welt — fehlt sie, wirft die Probe); die Landung am Ort der Rückkehr, verwundet, und ein
+// Trauer, Journal, Wunde senkt hpMax, der Vitals-Takt heilt sie und füllt die Ausdauer) und ihr Abstand zum Anker — der Ankunft
+// des Gesetzes im selben Takt (`_ankunftStand`, vorgebacken; um die Mitte des Plans, `_genesisMitte` — fehlt sie, wirft die
+// Probe); die Landung am Ort der Rückkehr, verwundet, und ein
 // Takt des Lebenszyklus lang (taktS Spiel-Zeit, auch ohne Bild-Schleife: an der Uhr des Stands zählte eine Wiederkehr ohne
 // Marke sein Intervall ein zweites Mal, `wiederkehr-alter`), dann `saveState`. `abdruck` ist K5_ABDRUCK.
 async function K5_VOR(abdruck) {
@@ -3287,13 +3322,21 @@ async function K5_VOR(abdruck) {
     r.assignCreatureTask(fuchs, "follow_player");
     K.vorTod = abdruck();
     const hpMax0 = ruhe(1e-4) / 1e-4;
-    const [wolf, seele] = [neu("wolf", 0.4, 6, Math.PI), p.soul];
+    // der Wolf im Ring der Hetze (0,8 × jagd.hetzM, landmarken-9 Kopf 2): auf 6,01 m stand er GENAU auf dem Ring hetzM 6 m —
+    // knapp darüber pirscht ein einzelner Jäger zum Ring und steht dort (T23 Posten 5: 1 500 Takte „jagd“ auf 6,0 m)
+    const wolfM = (0.8 * AnazhRealm._verhaltenGesetz().jagd.hetzM) / Math.hypot(0.4, 6);
+    const [wolf, seele] = [neu("wolf", 0.4 * wolfM, 6 * wolfM, Math.PI), p.soul];
     for (let k = 0; k < 1200 && !(p.respawnGraceUntil > s.spielZeit); k++) takt(1 / 60);
-    const [e, a] = [p.emotions, r._genesisMitte()];
-    if (!a) throw new Error("K5: kein Genesis-Ort (der Plan der Welt)");
+    const [e, M] = [p.emotions, r._genesisMitte()];
+    if (!M) throw new Error("K5: kein Genesis-Ort (der Plan der Welt)");
+    // der Anker ist die Ankunft des Gesetzes (`_ankunft`: die Heimat oder ihr Ring-Stand mit freier Sicht), gemerkt je Stand
+    // der Welt; stand sie im Tod nicht im Gedächtnis, wartete die Rückkehr auf den Faden — der Leib stünde am Ort des Tods
+    const a = r._ankunftStand && r._ankunftStand.wert;
     K.tod = {
         q: quelle,
-        anker: Math.hypot(pm.position.x - a.x, pm.position.z - a.z),
+        anker: a ? Math.hypot(pm.position.x - a.x, pm.position.z - a.z) : "ohne Gedächtnis",
+        mitte: Math.round(Math.hypot(pm.position.x - M.x, pm.position.z - M.z) * 10) / 10,
+        glied: a ? a.glied : null,
         rueckkehr: [
             p.hp === p.hpMax,
             p.deathWoundIntensity === 1,

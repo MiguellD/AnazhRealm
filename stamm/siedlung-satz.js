@@ -1466,6 +1466,13 @@ class AnazhRealm_siedlung_satz {
         // DIE WELT IST EINE FUNKTION (speicher.K3, Gebot 7): was Saat und Gesetz setzen (`opts.ausGesetz`: Wurf des Felds, Streu,
         // Ort), rechnet jeder Boot neu — der Stand trägt es nie, nur die Tat an ihm (`harvestArchitecture`); die Marke reist nie.
         if (opts.ausGesetz === true) entry._ausGesetz = true;
+        // DIE LANDMARKE IM REGISTER IHRES CHUNKS (landmarken-geologie-7, `_landmarkeChunk`): ihr Abschied ist die Zelle des Registers
+        // (ZELL_GEDAECHTNISSE „_landmarkeWurf“), nie die Saat des Chunks
+        if (typeof opts.landmarke === "string") {
+            entry._landmarke = opts.landmarke;
+            const L = this._landmarkeWurf && this._landmarkeWurf.get(opts.landmarke);
+            if (L) L.push(entry);
+        }
         // Affordances EINMAL beim Spawn berechnen (nicht pro Frame); Welt-Reaktionen lesen entry.affordances.
         // Bauplan-Edits wirken nur auf NEUE Spawns (Snapshot wie precisionCap).
         const bp = this.state.blueprints && this.state.blueprints[type];

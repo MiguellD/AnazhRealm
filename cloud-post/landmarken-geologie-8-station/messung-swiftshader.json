@@ -1,0 +1,964 @@
+{
+ "kopf": 5,
+ "datum": "2026-11-27",
+ "geraet": "Werkbank swiftshader (Wolke; GPU-Prozess am Boot verloren, Mechanik)",
+ "s1_ms": {
+  "vorher_kopf4": 39035,
+  "nachher": 29737
+ },
+ "lauf_ms": 41816,
+ "wiese": "Attrappe 12 s (die Wolke wächst keine Wiese)",
+ "zeilen": [
+  "ZEILE wegfindung S1 die Saaten · Lebenszeichen nach 5123 ms: {\"saat\":\"erleben.spieler.wegfindung-s1-7\",\"welt\":\"5109855e-16d7-469d-a3dc-09aa3ec85dde\",\"chunks\":null}",
+  "ZEILE wegfindung S1 die Saaten · Lebenszeichen nach 10266 ms: {\"saat\":\"erleben.spieler.wegfindung-s1-16\",\"welt\":\"29660674-1b47-4fbd-b5b8-709afd6e78e5\",\"chunks\":null}",
+  "ZEILE wegfindung S1 die Saaten · Lebenszeichen nach 15363 ms: {\"saat\":\"erleben.spieler.wegfindung-s1-26\",\"welt\":\"0a4d1bfa-90c9-4e55-b590-194f0a9d7d14\",\"chunks\":null}",
+  "ZEILE wegfindung S1 die Saaten · Lebenszeichen nach 20717 ms: {\"saat\":\"erleben.spieler.wegfindung-s1-35\",\"welt\":\"cddf2edc-408f-4e83-a702-afbbd9c52c47\",\"chunks\":null}",
+  "ZEILE wegfindung S1 die Saaten · Lebenszeichen nach 25955 ms: {\"saat\":\"erleben.spieler.wegfindung-s1-45\",\"welt\":\"988c4a1e-38bd-4d80-8945-6919d6333741\",\"chunks\":null}",
+  "ZEILE wegfindung S1: Ankunft 51 Adressen (50 betreten + die warme Welt) in 29737 ms · Gesetz stamm/gelaende-chunks.js `_ankunft` · Leser stamm/gelaende-boden.js `_genesisAnkunft` · Zeuge der Karte 50/50 gleich · Glieder {\"blick\":16,\"heimat\":34,\"ort\":1} · je Saat 687 · 546 · 490 · 488 · 525 · 430 · 503 · 373 · 334 · 390 · 362 · 363 · 411 · 382 · 476 · 614 · 492 · 350 · 405 · 393 · 392 · 372 · 393 · 403 · 410 · 455 · 383 · 373 · 398 · 329 · 386 · 349 · 502 · 400 · 551 · 413 · 386 · 459 · 377 · 363 · 568 · 394 · 330 · 324 · 410 · 414 · 327 · 395 · 409 · 386 ms, Heimweg 481 ms (zurück true) · Kontrast (Leser stamm/vegetation-baum.js `_landmarkeKontrast`) Median null, sichtbar 1, zu schwach 0",
+  "ZEILE wegfindung S1 Ursache je Adresse (Glied, Stand x/z/Gier, Ursache): s1-1 blick 0/0/1.175 sichtbar 1126 m · s1-2 blick 0/0/-2.956 sichtbar 1047 m · s1-3 heimat 0/0/0 sichtbar 1939 m · s1-4 heimat 0/0/0 sichtbar 1176 m · s1-5 heimat 8/8/0 sichtbar 1597 m · s1-6 heimat 0/0/0 sichtbar 2224 m · s1-7 heimat 0/0/0 sichtbar 1677 m · s1-8 blick 0/0/1.763 sichtbar 1142 m · s1-9 heimat 0/0/0 sichtbar 1950 m · s1-10 heimat 0/0/0 sichtbar 2184 m · s1-11 blick 0/0/-2.203 sichtbar 1235 m · s1-12 heimat 0/0/0 sichtbar 1656 m · s1-13 heimat 0/0/0 sichtbar 1467 m · s1-14 heimat 0/0/0 sichtbar 1465 m · s1-15 heimat 0/0/0 sichtbar 2164 m · s1-16 heimat 0/0/0 sichtbar 2112 m · s1-17 blick 12/0/1.414 sichtbar 2785 m · s1-18 heimat 0/0/0 sichtbar 1386 m · s1-19 heimat 0/0/0 sichtbar 1587 m · s1-20 heimat 0/0/0 sichtbar 1428 m · s1-21 heimat 0/0/0 sichtbar 2016 m · s1-22 blick -8/-8/3.073 sichtbar 1406 m · s1-23 blick 0/0/-2.942 sichtbar 1473 m · s1-24 heimat 0/0/0 sichtbar 2623 m · s1-25 ort 102/-102/-1.533 sichtbar 2612 m · s1-26 heimat 0/0/0 sichtbar 1081 m · s1-27 heimat 0/0/0 sichtbar 1407 m · s1-28 heimat 0/0/0 sichtbar 1988 m · s1-29 blick 0/0/2.967 sichtbar 1518 m · s1-30 blick 0/0/2.201 sichtbar 2350 m · s1-31 heimat 0/0/0 sichtbar 1900 m · s1-32 blick 0/0/-2.419 sichtbar 2935 m · s1-33 heimat 12/0/0 sichtbar 1010 m · s1-34 heimat 0/0/0 sichtbar 1956 m · s1-35 heimat 0/0/0 sichtbar 2106 m · s1-36 heimat 0/0/0 sichtbar 2187 m · s1-37 heimat 0/0/0 sichtbar 1392 m · s1-38 blick 0/0/2.021 sichtbar 1197 m · s1-39 heimat 0/0/0 sichtbar 1228 m · s1-40 blick 0/0/-1.827 sichtbar 2722 m · s1-41 heimat 0/0/0 sichtbar 1429 m · s1-42 blick 0/0/-2.664 sichtbar 1479 m · s1-43 heimat 0/0/0 sichtbar 2410 m · s1-44 blick 0/0/-2.92 sichtbar 1189 m · s1-45 heimat 0/0/0 sichtbar 1038 m · s1-46 blick 0/0/-2.273 sichtbar 1809 m · s1-47 blick 0/0/1.61 sichtbar 2683 m · s1-48 heimat 12/0/0 sichtbar 1247 m · s1-49 heimat 0/0/0 sichtbar 2073 m · s1-50 heimat 0/0/0 sichtbar 1902 m · geladen heimat 0/0/0 sichtbar 2049 m",
+  "ZEILE wegfindung S1 Zeuge der warmen Welt (Register `_landmarkeWurf`): 11 Chunks mit Würfen in 1–3 km — gleich 0 · wartend 10 · ungeworfen 1 · anders 0",
+  "LESER 1 (undefined): der Zeuge der warmen Welt: kein Chunk in 1–3 km trägt seine Würfe im Register des Spiels (gleich 0 von 11, wartend 10, ungeworfen 1) — der Leser des Spiels ist unbelegt",
+  "ZEILE wegfindung die Wiese wächst · Lebenszeichen nach 5081 ms: {\"saat\":\"anazh-realm-seed\",\"welt\":\"d9cf583c-b91a-41d3-80a6-6a111cf3b93a\",\"chunks\":null}",
+  "ZEILE wegfindung die Wiese wächst · Lebenszeichen nach 10161 ms: {\"saat\":\"anazh-realm-seed\",\"welt\":\"d9cf583c-b91a-41d3-80a6-6a111cf3b93a\",\"chunks\":null}",
+  "ZEILE wegfindung: die Wiese wuchs in 12003 ms",
+  "ZEILE Wegfindung an der Wiese: {\"samen\":\"anazh-realm-seed\",\"breite\":-0.88,\"mittag\":[],\"polHoehe\":0,\"lm1\":0,\"max\":0}",
+  "LAUF-ZEIT 41816 ms"
+ ],
+ "kopf4": {
+  "wie": "Werkbank swiftshader (Mechanik, nie Bild), dieselbe Sitzung: je Saat „neue welt saat <s>“ (SAATEN), gemessen an der Kamera des Spiels nach `_genesisAnkunft`; vorher = die alte Ankunft (die Mitte des Plans, Gier 0) durch eine lokale Abwandlung des Kandidaten, nachher = der Kandidat (diff.txt) auf dem Gesetz `_ankunft`. Die Wiese-Statistik der Leiter (Sternfeld) lief nicht: die Werkbank der Wolke trägt kein Sternfeld.",
+  "vorher": {
+   "akte": "wegfindung S1 (die Wiese wuchs in 0 ms): Ankunft 51 Adressen (50 betreten + die warme Welt) in 37035 ms · Gesetz stamm/gelaende-chunks.js `_ankunft` · Leser stamm/gelaende-boden.js `_genesisAnkunft` · Zeuge der Karte 33/50 gleich · Glieder {\"alt\":51} · je Saat 771 · 501 · 490 · 471 · 518 · 548 · 488 · 472 · 471 · 528 · 393 · 398 · 536 · 409 · 419 · 377 · 477 · 388 · 659 · 455 · 427 · 430 · 511 · 460 · 482 · 511 · 393 · 448 · 420 · 376 · 436 · 402 · 651 · 447 · 506 · 542 · 449 · 548 · 508 · 513 · 352 · 488 · 440 · 396 · 485 · 594 · 457 · 411 · 387 · 392 ms, Heimweg 412 ms (zurück true) · ungemessen: Kontrast ≥ 0,1 der Landmarke gegen ihren Grund — C₀·Durchlass fehlt an C₀ (die Leuchtdichte der Marke hat keinen CPU-Leser, `_weltLicht` ist ein TSL-Knoten); der Zeuge am Gerät |Kontrast Gesetz − Kontrast Pixel| ≤ 0,03 an ≥ 3 Saaten mit Bild und Maske",
+   "zeuge_wurf": "wegfindung S1 Zeuge der warmen Welt (Register `_landmarkeWurf`): 11 Chunks mit Würfen in 1–3 km — gleich 8 · wartend 3 · ungeworfen 0 · anders 0",
+   "urteil": "LESER 1 (undefined): der Zeuge der Karte: in 17 von 50 betretenen Welten kam der Spieler nicht am Gesetz der Ankunft an (erleben.spieler.wegfindung-s1-1: {\"abstand\":0,\"gier\":1.175}) — die Station mäße eine andere Ankunft als das Spiel · Ankunft 51 Adressen (50 betreten + die warme Welt) in 37035 ms · Gesetz stamm/gelaende-chunks.js `_ankunft` · Leser stamm/gelaende-boden.js `_genesisAnkunft` · Zeu",
+   "je": [
+    {
+     "saat": "s1-1",
+     "glied": "alt",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 1401
+    },
+    {
+     "saat": "s1-2",
+     "glied": "alt",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "verdeckt",
+     "d": null
+    },
+    {
+     "saat": "s1-3",
+     "glied": "alt",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 1939
+    },
+    {
+     "saat": "s1-4",
+     "glied": "alt",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 1176
+    },
+    {
+     "saat": "s1-5",
+     "glied": "alt",
+     "x": 8,
+     "z": 8,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 1597
+    },
+    {
+     "saat": "s1-6",
+     "glied": "alt",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 2224
+    },
+    {
+     "saat": "s1-7",
+     "glied": "alt",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 1677
+    },
+    {
+     "saat": "s1-8",
+     "glied": "alt",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "verdeckt",
+     "d": null
+    },
+    {
+     "saat": "s1-9",
+     "glied": "alt",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 1950
+    },
+    {
+     "saat": "s1-10",
+     "glied": "alt",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 2184
+    },
+    {
+     "saat": "s1-11",
+     "glied": "alt",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "verdeckt",
+     "d": null
+    },
+    {
+     "saat": "s1-12",
+     "glied": "alt",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 1656
+    },
+    {
+     "saat": "s1-13",
+     "glied": "alt",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 1467
+    },
+    {
+     "saat": "s1-14",
+     "glied": "alt",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 1465
+    },
+    {
+     "saat": "s1-15",
+     "glied": "alt",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 2164
+    },
+    {
+     "saat": "s1-16",
+     "glied": "alt",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 2112
+    },
+    {
+     "saat": "s1-17",
+     "glied": "alt",
+     "x": 12,
+     "z": 0,
+     "gier": 0,
+     "ursache": "verdeckt",
+     "d": null
+    },
+    {
+     "saat": "s1-18",
+     "glied": "alt",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 1386
+    },
+    {
+     "saat": "s1-19",
+     "glied": "alt",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 1587
+    },
+    {
+     "saat": "s1-20",
+     "glied": "alt",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 1428
+    },
+    {
+     "saat": "s1-21",
+     "glied": "alt",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 2016
+    },
+    {
+     "saat": "s1-22",
+     "glied": "alt",
+     "x": -8,
+     "z": -8,
+     "gier": 0,
+     "ursache": "verdeckt",
+     "d": null
+    },
+    {
+     "saat": "s1-23",
+     "glied": "alt",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "verdeckt",
+     "d": null
+    },
+    {
+     "saat": "s1-24",
+     "glied": "alt",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 2623
+    },
+    {
+     "saat": "s1-25",
+     "glied": "alt",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "verdeckt",
+     "d": null
+    },
+    {
+     "saat": "s1-26",
+     "glied": "alt",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 1081
+    },
+    {
+     "saat": "s1-27",
+     "glied": "alt",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 1407
+    },
+    {
+     "saat": "s1-28",
+     "glied": "alt",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 1988
+    },
+    {
+     "saat": "s1-29",
+     "glied": "alt",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "verdeckt",
+     "d": null
+    },
+    {
+     "saat": "s1-30",
+     "glied": "alt",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "verdeckt",
+     "d": null
+    },
+    {
+     "saat": "s1-31",
+     "glied": "alt",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 1900
+    },
+    {
+     "saat": "s1-32",
+     "glied": "alt",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "verdeckt",
+     "d": null
+    },
+    {
+     "saat": "s1-33",
+     "glied": "alt",
+     "x": 12,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 1010
+    },
+    {
+     "saat": "s1-34",
+     "glied": "alt",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 1956
+    },
+    {
+     "saat": "s1-35",
+     "glied": "alt",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 2106
+    },
+    {
+     "saat": "s1-36",
+     "glied": "alt",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 2187
+    },
+    {
+     "saat": "s1-37",
+     "glied": "alt",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 1392
+    },
+    {
+     "saat": "s1-38",
+     "glied": "alt",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "verdeckt",
+     "d": null
+    },
+    {
+     "saat": "s1-39",
+     "glied": "alt",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 1228
+    },
+    {
+     "saat": "s1-40",
+     "glied": "alt",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "verdeckt",
+     "d": null
+    },
+    {
+     "saat": "s1-41",
+     "glied": "alt",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 1429
+    },
+    {
+     "saat": "s1-42",
+     "glied": "alt",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "verdeckt",
+     "d": null
+    },
+    {
+     "saat": "s1-43",
+     "glied": "alt",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 2410
+    },
+    {
+     "saat": "s1-44",
+     "glied": "alt",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "verdeckt",
+     "d": null
+    },
+    {
+     "saat": "s1-45",
+     "glied": "alt",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 1038
+    },
+    {
+     "saat": "s1-46",
+     "glied": "alt",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "keine_im_kegel",
+     "d": null
+    },
+    {
+     "saat": "s1-47",
+     "glied": "alt",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "verdeckt",
+     "d": null
+    },
+    {
+     "saat": "s1-48",
+     "glied": "alt",
+     "x": 12,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 1247
+    },
+    {
+     "saat": "s1-49",
+     "glied": "alt",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 2073
+    },
+    {
+     "saat": "s1-50",
+     "glied": "alt",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 1902
+    },
+    {
+     "saat": "geladen",
+     "glied": "alt",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 2049
+    }
+   ],
+   "anteil": 0.686
+  },
+  "nachher": {
+   "akte": "wegfindung S1 (die Wiese wuchs in 0 ms): Ankunft 51 Adressen (50 betreten + die warme Welt) in 39035 ms · Gesetz stamm/gelaende-chunks.js `_ankunft` · Leser stamm/gelaende-boden.js `_genesisAnkunft` · Zeuge der Karte 50/50 gleich · Glieder {\"blick\":16,\"heimat\":34,\"ort\":1} · je Saat 902 · 738 · 552 · 497 · 623 · 427 · 464 · 427 · 447 · 454 · 499 · 591 · 424 · 383 · 422 · 443 · 435 · 542 · 420 · 410 · 350 · 342 · 437 · 426 · 715 · 535 · 358 · 383 · 537 · 393 · 591 · 417 · 409 · 421 · 501 · 507 · 410 · 479 · 531 · 482 · 388 · 404 · 367 · 355 · 584 · 509 · 411 · 381 · 434 · 396 ms, Heimweg 389 ms (zurück true) · ungemessen: Kontrast ≥ 0,1 der Landmarke gegen ihren Grund — C₀·Durchlass fehlt an C₀ (die Leuchtdichte der Marke hat keinen CPU-Leser, `_weltLicht` ist ein TSL-Knoten); der Zeuge am Gerät |Kontrast Gesetz − Kontrast Pixel| ≤ 0,03 an ≥ 3 Saaten mit Bild und Maske",
+   "zeuge_wurf": "wegfindung S1 Zeuge der warmen Welt (Register `_landmarkeWurf`): 11 Chunks mit Würfen in 1–3 km — gleich 8 · wartend 3 · ungeworfen 0 · anders 0",
+   "urteil": "LESER 1 (50): Kontrast ≥ 0,1 der Landmarke gegen ihren Grund: C₀ fehlt — die Leuchtdichte der Marke hat keinen CPU-Leser (`_weltLicht` ist ein TSL-Knoten; der Himmel steht auf der CPU, `_skyEnvData`); gemessen die Obergrenze 1 und der Durchlass min 0.589 · Ankunft 51 Adressen (50 betreten + die warme Welt) in 39035 ms · Gesetz stamm/gelaende-chunks.js `_ankunft` · Leser stamm/gelaende-boden.js `_g",
+   "je": [
+    {
+     "saat": "s1-1",
+     "glied": "blick",
+     "x": 0,
+     "z": 0,
+     "gier": 1.175,
+     "ursache": "sichtbar",
+     "d": 1126
+    },
+    {
+     "saat": "s1-2",
+     "glied": "blick",
+     "x": 0,
+     "z": 0,
+     "gier": -2.956,
+     "ursache": "sichtbar",
+     "d": 1047
+    },
+    {
+     "saat": "s1-3",
+     "glied": "heimat",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 1939
+    },
+    {
+     "saat": "s1-4",
+     "glied": "heimat",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 1176
+    },
+    {
+     "saat": "s1-5",
+     "glied": "heimat",
+     "x": 8,
+     "z": 8,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 1597
+    },
+    {
+     "saat": "s1-6",
+     "glied": "heimat",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 2224
+    },
+    {
+     "saat": "s1-7",
+     "glied": "heimat",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 1677
+    },
+    {
+     "saat": "s1-8",
+     "glied": "blick",
+     "x": 0,
+     "z": 0,
+     "gier": 1.763,
+     "ursache": "sichtbar",
+     "d": 1142
+    },
+    {
+     "saat": "s1-9",
+     "glied": "heimat",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 1950
+    },
+    {
+     "saat": "s1-10",
+     "glied": "heimat",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 2184
+    },
+    {
+     "saat": "s1-11",
+     "glied": "blick",
+     "x": 0,
+     "z": 0,
+     "gier": -2.203,
+     "ursache": "sichtbar",
+     "d": 1235
+    },
+    {
+     "saat": "s1-12",
+     "glied": "heimat",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 1656
+    },
+    {
+     "saat": "s1-13",
+     "glied": "heimat",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 1467
+    },
+    {
+     "saat": "s1-14",
+     "glied": "heimat",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 1465
+    },
+    {
+     "saat": "s1-15",
+     "glied": "heimat",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 2164
+    },
+    {
+     "saat": "s1-16",
+     "glied": "heimat",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 2112
+    },
+    {
+     "saat": "s1-17",
+     "glied": "blick",
+     "x": 12,
+     "z": 0,
+     "gier": 1.414,
+     "ursache": "sichtbar",
+     "d": 2785
+    },
+    {
+     "saat": "s1-18",
+     "glied": "heimat",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 1386
+    },
+    {
+     "saat": "s1-19",
+     "glied": "heimat",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 1587
+    },
+    {
+     "saat": "s1-20",
+     "glied": "heimat",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 1428
+    },
+    {
+     "saat": "s1-21",
+     "glied": "heimat",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 2016
+    },
+    {
+     "saat": "s1-22",
+     "glied": "blick",
+     "x": -8,
+     "z": -8,
+     "gier": 3.073,
+     "ursache": "sichtbar",
+     "d": 1406
+    },
+    {
+     "saat": "s1-23",
+     "glied": "blick",
+     "x": 0,
+     "z": 0,
+     "gier": -2.942,
+     "ursache": "sichtbar",
+     "d": 1473
+    },
+    {
+     "saat": "s1-24",
+     "glied": "heimat",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 2623
+    },
+    {
+     "saat": "s1-25",
+     "glied": "ort",
+     "x": 102,
+     "z": -102,
+     "gier": -1.533,
+     "ursache": "sichtbar",
+     "d": 2612
+    },
+    {
+     "saat": "s1-26",
+     "glied": "heimat",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 1081
+    },
+    {
+     "saat": "s1-27",
+     "glied": "heimat",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 1407
+    },
+    {
+     "saat": "s1-28",
+     "glied": "heimat",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 1988
+    },
+    {
+     "saat": "s1-29",
+     "glied": "blick",
+     "x": 0,
+     "z": 0,
+     "gier": 2.967,
+     "ursache": "sichtbar",
+     "d": 1518
+    },
+    {
+     "saat": "s1-30",
+     "glied": "blick",
+     "x": 0,
+     "z": 0,
+     "gier": 2.201,
+     "ursache": "sichtbar",
+     "d": 2350
+    },
+    {
+     "saat": "s1-31",
+     "glied": "heimat",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 1900
+    },
+    {
+     "saat": "s1-32",
+     "glied": "blick",
+     "x": 0,
+     "z": 0,
+     "gier": -2.419,
+     "ursache": "sichtbar",
+     "d": 2935
+    },
+    {
+     "saat": "s1-33",
+     "glied": "heimat",
+     "x": 12,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 1010
+    },
+    {
+     "saat": "s1-34",
+     "glied": "heimat",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 1956
+    },
+    {
+     "saat": "s1-35",
+     "glied": "heimat",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 2106
+    },
+    {
+     "saat": "s1-36",
+     "glied": "heimat",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 2187
+    },
+    {
+     "saat": "s1-37",
+     "glied": "heimat",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 1392
+    },
+    {
+     "saat": "s1-38",
+     "glied": "blick",
+     "x": 0,
+     "z": 0,
+     "gier": 2.021,
+     "ursache": "sichtbar",
+     "d": 1197
+    },
+    {
+     "saat": "s1-39",
+     "glied": "heimat",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 1228
+    },
+    {
+     "saat": "s1-40",
+     "glied": "blick",
+     "x": 0,
+     "z": 0,
+     "gier": -1.827,
+     "ursache": "sichtbar",
+     "d": 2722
+    },
+    {
+     "saat": "s1-41",
+     "glied": "heimat",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 1429
+    },
+    {
+     "saat": "s1-42",
+     "glied": "blick",
+     "x": 0,
+     "z": 0,
+     "gier": -2.664,
+     "ursache": "sichtbar",
+     "d": 1479
+    },
+    {
+     "saat": "s1-43",
+     "glied": "heimat",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 2410
+    },
+    {
+     "saat": "s1-44",
+     "glied": "blick",
+     "x": 0,
+     "z": 0,
+     "gier": -2.92,
+     "ursache": "sichtbar",
+     "d": 1189
+    },
+    {
+     "saat": "s1-45",
+     "glied": "heimat",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 1038
+    },
+    {
+     "saat": "s1-46",
+     "glied": "blick",
+     "x": 0,
+     "z": 0,
+     "gier": -2.273,
+     "ursache": "sichtbar",
+     "d": 1809
+    },
+    {
+     "saat": "s1-47",
+     "glied": "blick",
+     "x": 0,
+     "z": 0,
+     "gier": 1.61,
+     "ursache": "sichtbar",
+     "d": 2683
+    },
+    {
+     "saat": "s1-48",
+     "glied": "heimat",
+     "x": 12,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 1247
+    },
+    {
+     "saat": "s1-49",
+     "glied": "heimat",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 2073
+    },
+    {
+     "saat": "s1-50",
+     "glied": "heimat",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 1902
+    },
+    {
+     "saat": "geladen",
+     "glied": "heimat",
+     "x": 0,
+     "z": 0,
+     "gier": 0,
+     "ursache": "sichtbar",
+     "d": 2049
+    }
+   ],
+   "anteil": 1
+  }
+ }
+}

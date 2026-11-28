@@ -905,10 +905,15 @@ function probe(selbsttest) {
     // ihre Scheibe verfehlt (aus der Welt gesucht: das Frustum allein trifft ihn, das Gesetz nicht — für eine Kugel 4,5 m, die
     // jede Probe umschließt). Dort wirft kein Werfer eines Bündels (eine Box 1 m) in diese Kaskade, und in jeder Kaskade
     // zeichnet der Boden-Satz genau die Zellen des Gesetzes; `kapselSchnitt` zählt die Zellen, die das Frustum allein zöge
-    // (nicht vakuös). `abweichung` lässt EINEN Leser nach der alten Box urteilen (die Lage ohne Scheibe) — der Selbsttest
+    // und die der Vergleich wägt (nicht vakuös): eine Höhlen-Zelle nur, wenn die Höhlen-Sicht des Passes sie stempelte —
+    // eine ungestempelte zählt in keinem Soll und in keinem Ist, ihr Schnitt sieht keinen Leser (landmarken-9: am Ort der
+    // Ankunft 34/142 waren alle 19 geschnittenen Zellen solche, W9 und S10 „Zellen falsch 0" waren blind). Schneidet die
+    // Kapsel am Mittag mit Blick 0 keine solche Zelle, dreht der Blick (Mittag in vier Richtungen, dann die Lage der W7-Probe)
+    // — EINE Lage für W9 und S10, die erste, in der die Kapsel schneidet (am Ort 34/142 schneidet sie in 18 von 20 Lagen). `abweichung` lässt EINEN Leser nach der alten Box urteilen (die Lage ohne Scheibe) — der Selbsttest
     // S10. Den dritten Leser, die Instanzen der globalen Gruppen, wählt die GPU (`PASS_WAHL_WGSL`, w25-gpu-wahl). ──
-    const w9 = (abweichung) => {
-        const res = { punkt: null, kaskade: -1, werfer: null, zellenFalsch: 0, kapselSchnitt: 0 };
+    const w9 = (abweichung, sonne) => {
+        const res = { punkt: null, kaskade: -1, werfer: null, zellenFalsch: 0, kapselSchnitt: 0, sonne };
+        const lage = () => (tag(sonne[0]), blick(sonne[1]));
         const P = Object.getPrototypeOf(r);
         const ohneKapsel = (L, fn) => {
             const fit = L ? L.fit : null;
@@ -935,7 +940,7 @@ function probe(selbsttest) {
         const map9 = st._regionBundles;
         let bg = null;
         try {
-            mittag();
+            lage();
             neuGepasst();
             // der Punkt: die ferne Kaskade zuerst (ihre Box umschließt den nahen Boden), dann die nahe
             for (let i = csm.lights.length - 1; i >= 0 && !res.punkt; i--) {
@@ -978,8 +983,10 @@ function probe(selbsttest) {
                 const L = lageVon(i);
                 // das Soll der Zellen (das Gesetz) und der Schnitt der Kapsel (das Frustum allein zöge mehr)
                 const soll = new Map();
+                const schnitt = new Map();
                 for (const sz of saetze) {
                     const menge = new Set();
+                    const ab = new Set();
                     for (const b of sz.ordnung) {
                         if (!b.huelle || b.huelle.isEmpty()) continue;
                         const bGesetz = r._passTrifftBox(L, b.huelle, 0);
@@ -988,19 +995,20 @@ function probe(selbsttest) {
                             if (zl.huelle.isEmpty()) continue;
                             const g = bGesetz && r._passTrifftBox(L, zl.huelle, 0);
                             if (g) menge.add(zl);
-                            else if (bBox && ohneKapsel(L, () => r._passTrifftBox(L, zl.huelle, 0))) res.kapselSchnitt++;
+                            else if (bBox && ohneKapsel(L, () => r._passTrifftBox(L, zl.huelle, 0))) ab.add(zl);
                         }
                     }
                     soll.set(sz, menge);
+                    schnitt.set(sz, ab);
                 }
                 r._passSicht(kam, false);
                 if (i === res.kaskade) res.werfer = bg.visible === true && kiste.visible === true;
                 for (const sz of saetze) {
                     // eine Höhlen-Zelle zählt nur, wenn die Höhlen-Sicht DIESES Passes sie gestempelt hat (W7)
                     const stempel = sz.hoehle ? sz.hoehle.stempel : 0;
-                    const menge = new Set(
-                        [...soll.get(sz)].filter((zl) => zl.knoten === undefined || zl.knoten.sicht === stempel)
-                    );
+                    const gewogen = (zl) => zl.knoten === undefined || zl.knoten.sicht === stempel;
+                    const menge = new Set([...soll.get(sz)].filter(gewogen));
+                    for (const zl of schnitt.get(sz)) if (gewogen(zl)) res.kapselSchnitt++;
                     const a = sz.abschnitte.get("k" + i);
                     const ist = new Set(a && sz.mesh.visible ? a.liste : []);
                     let gleich = ist.size === menge.size;
@@ -1021,8 +1029,17 @@ function probe(selbsttest) {
             neuGepasst();
         }
     };
-    aus.w9 = w9(null);
-    if (selbsttest) aus.s10 = ["zellen", "werfer"].map((x) => Object.assign({ leser: x }, w9(x)));
+    for (const sonne of [
+        [0.5, 0],
+        [0.5, Math.PI / 2],
+        [0.5, Math.PI],
+        [0.5, -Math.PI / 2],
+        [0.72, Math.PI / 2],
+    ]) {
+        aus.w9 = w9(null, sonne);
+        if (aus.w9.punkt && aus.w9.kapselSchnitt > 0) break;
+    }
+    if (selbsttest) aus.s10 = ["zellen", "werfer"].map((x) => Object.assign({ leser: x }, w9(x, aus.w9.sonne)));
 
     // ── W6: jeder Werfer ist der Box bekannt — ein Bundle-Kind (Werfer-Hülle), ein Kind der Gruppe der GPU-Wahl (`_gpuWahlWirt`,
     // dieselbe Werfer-Hülle in `_kaskadenHuellen`), ein Boden-Bereich, ein freier Werfer
@@ -1059,14 +1076,34 @@ function probe(selbsttest) {
         const satzWerfer = new Set();
         if (st.chunkSaetze)
             for (const s of st.chunkSaetze.values()) if (s.spec.schatten === true) satzWerfer.add(s.mesh);
-        const fremd = [];
-        for (const top of st.scene.children) {
-            if (top.isBundleGroup || top === st.gpuWahlWirt || frei.has(top) || satzWerfer.has(top)) continue;
-            top.traverse((o) => {
-                if (o.isMesh && o.castShadow === true) fremd.push((top.name || top.type) + " > " + (o.name || o.type));
-            });
+        // jede werfende Nah-Streu, deren Hüllen die Box LIEST (`_kaskadenHuellen`, der Konsum — nie die Liste der Senken): ihre
+        // Familie ist bekannt, jede Stufe trägt dieselben Pflanzen (landmarken-9: `streuNah:geroell` am Ring-Stand der Ankunft)
+        const fremdVon = (huellen) => {
+            const bekannt = new Set(satzWerfer);
+            let streu = 0;
+            for (const fam of st.nahStreu ? st.nahStreu.familien.values() : [])
+                if (fam.senken.some((a) => a.wurf && [...a.bloecke.values()].some((b) => huellen.has(b.huelle))))
+                    for (const a of fam.senken) a.mesh && (bekannt.add(a.mesh), streu++);
+            const fremd = [];
+            for (const top of st.scene.children) {
+                if (top.isBundleGroup || top === st.gpuWahlWirt || frei.has(top) || bekannt.has(top)) continue;
+                top.traverse((o) => {
+                    if (o.isMesh && o.castShadow === true) fremd.push((top.name || top.type) + " > " + (o.name || o.type));
+                });
+            }
+            return { fremd, streu };
+        };
+        const { fremd, streu } = fremdVon(new Set(r._kaskadenHuellen({ huellen: [] })));
+        aus.w6 = { fremd: fremd.slice(0, 8), n: fremd.length, tot: aus.w6Tot, totOben: aus.w6TotOben, streu };
+        // die Mutante: die Box ohne die Hüllen der Nah-Streu (der Stand bis landmarken-9) — W6 nennt jede werfende Senke
+        if (selbsttest) {
+            const ns = st.nahStreu;
+            st.nahStreu = null;
+            const ohne = new Set(r._kaskadenHuellen({ huellen: [] }));
+            st.nahStreu = ns;
+            const m = fremdVon(ohne).fremd.filter((x) => x.startsWith("streuNah:"));
+            aus.s6 = { n: m.length, erster: m[0] || null };
         }
-        aus.w6 = { fremd: fremd.slice(0, 8), n: fremd.length, tot: aus.w6Tot, totOben: aus.w6TotOben };
         if (tot?.parent) r.removeCreature(tot);
     }
 
@@ -1372,14 +1409,16 @@ function probe(selbsttest) {
         );
         check(
             "W6 jeder Werfer ist der Box bekannt (Bundle · Satz · Tier, lebend und gefallen · Spieler · Bauplan-Bau)",
-            a.w6.n === 0 && a.w6.tot === true && a.w6.totOben === true,
+            a.w6.n === 0 && a.w6.tot === true && a.w6.totOben === true && a.w6.streu > 0,
             a.w6.n
                 ? a.w6.fremd.join(" | ")
+                : !(a.w6.streu > 0)
+                  ? "keine werfende Nah-Streu, deren Hüllen die Box liest (die Probe ist für die Streu vakuös)"
                 : !a.w6.tot
                   ? "kein Gefallener in der Szene (die Probe ist für die Gefallenen vakuös)"
                   : !a.w6.totOben
                     ? "der Gefallene wirft, aber die Box kennt ihn nicht (_kaskadenWerferOben liest nur die Wesen)"
-                    : "keine fremde Werfer-Klasse, die Box kennt den Gefallenen"
+                    : `keine fremde Werfer-Klasse, die Box kennt den Gefallenen und ${a.w6.streu} Senken der werfenden Nah-Streu`
         );
         const w10t = (w) =>
             `Masken ${w.masken.join("/")} (Soll ${w.soll}) · ${w.gesehen} gesehen, ${w.werfer} Werfer, ${w.lichter} Lichter` +
@@ -1413,7 +1452,7 @@ function probe(selbsttest) {
             !!a.w7 && a.w7[1].hinterWirft === true
         );
         const w9t = (w) =>
-            `P ${JSON.stringify(w.punkt)} in k${w.kaskade} · Werfer ${w.werfer} · Zellen falsch ${w.zellenFalsch} · Kapsel-Schnitt ${w.kapselSchnitt} Zellen`;
+            `Sonne ${JSON.stringify(w.sonne.map((v) => Math.round(v * 100) / 100))} · P ${JSON.stringify(w.punkt)} in k${w.kaskade} · Werfer ${w.werfer} · Zellen falsch ${w.zellenFalsch} · Kapsel-Schnitt ${w.kapselSchnitt} Zellen`;
         check(
             "W9 das EINE Gesetz, zwei Leser der CPU: am Punkt in der Box, dessen Licht-Kapsel die Scheibe verfehlt, wirft kein Bündel-Werfer, der Boden-Satz zeichnet in jeder Kaskade genau die Zellen des Gesetzes (es schneidet Zellen)",
             !!a.w9 &&
@@ -1458,6 +1497,11 @@ function probe(selbsttest) {
                 "S3 Selbsttest: die alte Hüllen-Regel (nur Bundles) macht W5 rot",
                 !!a.s3 && a.s3.talDrin === false && a.s3.hangWirft === false,
                 a.s3
+            );
+            check(
+                "S6 Selbsttest: die Box ohne die Hüllen der Nah-Streu (bis landmarken-9) macht W6 rot und nennt die Senke",
+                !!a.s6 && a.s6.n > 0,
+                a.s6 ? `${a.s6.n} Senken fremd, zuerst ${a.s6.erster}` : "kein Lauf"
             );
             check(
                 "S8 Selbsttest: die alte Regel (der ganze Ring in jedem Pass) macht W7 rot",

@@ -2678,8 +2678,8 @@ hauptLauf(async () => {
             // der Zwillings-Leser beim Vorher: die Rückkehr liest den Genesis-Ort selbst
             [
                 "_playerDeathRespawn",
-                "const anker = this._genesisAnkunft();",
-                "const anker = this._genesisAnkunft();\n        const ortSelbst = this.state.worldMeta.genesisOrt;",
+                "const ankunft = this._genesisAnkunft();",
+                "const ankunft = this._genesisAnkunft();\n        const ortSelbst = this.state.worldMeta.genesisOrt;",
             ],
             // der Warte-Poll der Hand beim Vorher: sie fragte alle 150 ms, ob das Buch steht
             [

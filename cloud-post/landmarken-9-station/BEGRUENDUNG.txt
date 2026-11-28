@@ -1,0 +1,71 @@
+STATIONS-KANDIDAT landmarken-9 — erleben.spieler.wegfindung#1 (S1, LANDMARKE_AN in meisterkarte-quelle/punkte/stationen/k2-erleben.js)
+
+BASIS UND SCHICHTEN
+- kandidat.diff gilt gegen punkte-maschine 6bbccfe3, Blob e71c1770 (die Station am 27.11. 16:20 UTC unverändert) und trägt drei Schichten:
+  1. die S1-Station der Bahn (landmarken-geologie-8-station/diff.txt, Blob 6d514937 → cc8f5e1a; sie gilt glatt auf e71c1770),
+  2. den Zeugen am Gerät (landmarken-zeuge-station eb3a532, zeuge.diff, Ergebnis Blob 2975b938 — die Station, die die GTX am f07abc1a fuhr),
+  3. die eigene Schicht (kandidat-eigen.diff, 2975b938 → 1197c4b1, 31 + / 6 −).
+- Gesetzt wird nach der Landung des Vorprüf-Kopfs landmarken-9: der Kopf macht `_genesisAnkunft` zum Versprechen (die Ankunft
+  rechnet im Wald-Faden). Die Station der GTX ruft sie synchron (`const an = r._genesisAnkunft()`, Zeile 99 von 2975b938) und
+  liest `an.x` von einem Versprechen → ohne Schicht 3 bricht S1 an jeder Saat mit TypeError. Kopf und Station gehören zusammen.
+
+DIE ZEILEN DER EIGENEN SCHICHT UND IHR GRUND
+1. Z. 51–52 (neu): fehlt `r._landmarkeSicht`, nennt S1 das beim Namen (die Frage der Sicht ist ein Gesetz des Spiels).
+2. Z. 101–104: `await r._genesisAnkunft()`; null (die Welt wechselte während des Gesetzes) → fehlt beim Namen. Nach dem Schuss
+   (a.schuss) liest S1 die Marke der Ankunft davor aus `st.zielGang.ziel` (gesetzt von `_zielGangBeginn(an.marke)`).
+3. Z. 144–151 `strahl`: VERDECKT ist, was das EINE Sicht-Gesetz des Spiels verdeckt nennt — `r._landmarkeSicht(auge, q)` (phyto-core
+   `landmarkeSicht`: Grund alle 25 m UND die Kronen am Strahl), dieselbe Frage, mit der die Ankunft wählt. Der Grund-Marsch allein
+   (die alte Zeile 140) war der zweite Sichttest: er nannte den Baum 74/100 m und die Kamm-Krone 390 m frei, das Bild sah sie
+   (GTX 27.11. f07abc1a: „Blickziel verdeckt“ an 3 von 3 Saaten). „hinter“ (Hang oder Himmel jenseits des Gipfels) bleibt der Grund.
+4. Z. 158–188: das BLICKZIEL ist die Wahl der Ankunft (`an.marke`) — in `offen` vorn (stabil sortiert), der Kontrast misst sie
+   zuerst; erst unter 0,1 misst S1 die nächsten sichtbaren (der Soll der Sprosse: irgendeine sichtbare Marke im ersten Blick).
+   S1 wählt keine eigene Marke mehr. `verdecker` zählt je Art des Verdeckers (grund · baum_<art>).
+5. Z. 230–237: `w.blickziel` = { ziel: frei · verdeckt_<von> · nicht_im_kegel · nicht_im_band · keine, marke, traegt, verdecker }.
+
+DIE WURZEL IM SPIEL (im Kopf, nicht in der Station): das Auge der Kamera stand 0,70 m über dem des Gesetzes. `_genesisAnkunft`
+setzte den Leib auf Grund + 1,2 m (Kamera Grund + 2,8), das Gesetz sah von Grund + 0,5 + EGO_AUGE_M (+ 2,1). An Saat s1-2 lief die
+Gerade des Gesetzes unter der Krone einer Tanne in 82 m durch, die Gerade der Kamera traf sie. Jetzt steht der Leib dort, wo das
+Gesetz sah (stamm/gelaende-boden.js `_genesisAnkunft`: y = max(Grund + 0,5, auge.y − EGO_AUGE_M)): Kamera − Auge des Gesetzes 0,00 m
+an s1-1 und s1-2 (vorher 0,70 m).
+
+GEMESSEN (Werkbank, swiftshader, Kandidat 1197c4b1 am Kopf landmarken-9, Saaten erleben.spieler.wegfindung-s1-<n>)
+- n = 1…7: das Blickziel der Ankunft frei nach S1 an 7 von 7 und trägt den Wert an 7 von 7 (blickziel.ziel „frei“, traegt true);
+  n = 9 (Gesetz: glied „keine“): ziel „keine“, ursache „verdeckt“ (5 im Kegel, alle von Kronen verdeckt).
+- Kontrast in der Werkbank ungemessen („der Himmel auf der CPU (`_skyEnvData`) ist noch nicht gelesen“) — die GTX misst ihn.
+- Preis der Station: S1 je Saat 0,6–8,4 s (der Kronen-Leser im Haupt-Faden, `_landmarkeSicht` → `_sichtWald`, auch für die
+  Erde-Decke im 200-m-Gitter). Vorher (nur Grund) nicht gemessen; ehrlich offen: das Gitter der Erde-Decke fragt jetzt Kronen mit.
+
+MUTANTEN (je Zeile, gemessen am Kopf landmarken-9 in der Werkbank; „sichtbar“ = Marken im Kegel, die S1 frei nennt)
+- M1 `strahl` wieder nur Grund (Zeile 3 zurück): S1 nennt Marken frei, die das Gesetz von Kronen verdeckt nennt — sichtbar
+  s1-3 2 → 3, s1-4 1 → 4, s1-7 4 → 5 (Kandidat → Mutant). Das Blickziel bleibt dort die Marke der Ankunft (sie steht vorn und ist
+  frei); M1 trifft den Wert, sobald S1 hinter sie greift (Kontrast unter 0,1) — dann misst es eine Marke, die das Bild verdeckt
+  zeigt (der GTX-Befund vom f07abc1a: „Ziel … verdeckt von …“).
+- M2 S1 wählt die nächste sichtbare statt der Marke der Ankunft (Zeile 4 zurück): an s1-3, s1-4, s1-7 KEIN Unterschied (die Marke
+  der Ankunft ist dort auch die nächste freie). Ehrlich: dieser Mutant fällt an diesen Saaten nicht; er fällt erst an einer Saat,
+  deren Ankunfts-Marke nicht die nächste freie ist (das Gesetz ordnet nach h/d, nicht nach d).
+- M1 + M2 zusammen (die Station der GTX ohne die Schicht 3): ungemessen in der Werkbank (der Lauf brach an `an.x.toFixed` — die alte
+  Zeile liest das Versprechen synchron, s. BASIS); auf der GTX gemessen: Blickziel verdeckt an 3 von 3 Saaten.
+- M3 (Spiel) Leib wieder auf Grund + 1,2 m: an s1-2 ziel „verdeckt_baum_tanne“ (d 81,6 m), traegt false — gemessen vor dem Schnitt;
+  danach frei, Kamera − Auge des Gesetzes 0,70 → 0,00 m.
+- M4 (Spiel) `_genesisAnkunft` ohne `marke`: blickziel.ziel „keine“ an jeder Saat (Lesart des Kandidaten, Zeile 4).
+
+KOPF 2 — DIE FRIST DER 50 SAATEN (GTX 1050 an dd490d1e: 43 von 50 Saaten in 544 s, je Saat Median ≈ 3,4 s, max 15,9 s)
+Zwei Schnitte, die Frist und die Zahl der Saaten bleiben, wie die Karte sie setzt:
+6. Die Erde-Decke im 200-m-Gitter fragt nur das OB (`r._landmarkeSicht(auge, q, { nurOb: true })`, phyto-core `landmarkeSicht`
+   Option `nurOb`): trifft die Gerade den Grund, plant das Gesetz keine Kronen-Zelle davor. Das Urteil jeder Geraden ist gleich
+   (verdeckt bleibt verdeckt, frei bleibt frei — die Kronen fragt das Gesetz weiter, wo der Grund frei ist); dieselbe Option trägt
+   die Wahl der Ankunft im Faden (voxel-worker `ankunftRechnen`).
+   Gemessen (Werkbank swiftshader, 12 Saaten, Wahl 12/12 gleich): Wand-Zeit je Saat (Welt + LANDMARKE_AN) 6,68 → 5,97 s im Mittel;
+   der Faden der Ankunft an der teuersten Saat 5 305 → 2 752 ms, geplante Zellen 6 405 → 2 737; das Gitter an der teuersten von
+   6 Saaten 8 592 → 6 928 ms.
+7. Die Saaten fahren GESTAFFELT in zwei Teilen der Sitzung (Teil 1: Saaten 1–25 und die warme Welt, Teil 2: 26–50, Heimweg,
+   Kontrast, Zeuge am Gerät): jeder Teil trägt die volle Frist seines Teils (punkte.cjs `grundDeckel`), `L.j.saatenTeil1` reicht
+   die erste Hälfte an den zweiten. Vorher fuhr EIN Teil alle 50 Saaten gegen eine Frist.
+
+DIE ZEILE, DIE DER RICHTER NACH DEM SETZEN WÖRTLICH ZEIGEN SOLL
+„GRÜN karte2.erleben.spieler.wegfindung#1 · S1 · die Welt wechselte am Ort in 50 von 50 Saaten (Teil 1/3: 25, Teil 2/3: 25) ·
+Blickziel frei …“ — die Zahl 50 von 50 und die zwei Teil-Zeilen.
+
+MUTANTEN KOPF 2
+- M5 Gitter ohne `nurOb`: Urteil gleich, Zeit zurück auf 6,68 s je Saat (gemessen, s. 6).
+- M6 ohne Staffel (ein Teil): an der GTX 1050 43 von 50 in der Frist (der Befund vom 27.11. 18:57).

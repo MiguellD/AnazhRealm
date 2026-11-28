@@ -1,0 +1,92 @@
+diff --git a/meisterkarte-quelle/punkte/stationen/k2-erleben.js b/meisterkarte-quelle/punkte/stationen/k2-erleben.js
+index 2975b93..1197c4b 100644
+--- a/meisterkarte-quelle/punkte/stationen/k2-erleben.js
++++ b/meisterkarte-quelle/punkte/stationen/k2-erleben.js
+@@ -48,6 +48,8 @@ const LANDMARKE_AN = async (r, T, a) => {
+         return { fehlt: "die gezeichnete Höhe der Landmarke: stamm/vegetation-baum.js `_landmarkeHoehe` fehlt (landmarken-geologie-8 Kopf 4)" };
+     if (typeof r._ankunft !== "function" || typeof r._genesisAnkunft !== "function" || !/_ankunft\(/.test(String(r._genesisAnkunft)))
+         return { fehlt: "die Ankunft ist kein Gesetz: stamm/gelaende-chunks.js `_ankunft(heim)`, gerufen von stamm/gelaende-boden.js `_genesisAnkunft`, fehlt (landmarken-geologie-8 Kopf 4)" };
++    if (typeof r._landmarkeSicht !== "function")
++        return { fehlt: "die freie Sicht auf die Landmarke ist kein Gesetz: stamm/vegetation-baum.js `_landmarkeSicht` (phyto-core `landmarkeSicht`: Grund UND Kronen am Strahl) fehlt (landmarken-9)" };
+     const wm = st.worldMeta;
+     if (!wm || a.saat !== wm.seed) return { fehlt: "die Adresse " + a.saat + " ist nicht die geladene Welt (" + (wm && wm.seed) + ") — die Ankunft liest nur die Welt, in die der Spieler kam" };
+     const L2 = r._gelaende();
+@@ -96,7 +98,10 @@ const LANDMARKE_AN = async (r, T, a) => {
+     // EINE KAMERA FÜR BILD UND GESETZ (der Zeuge am Gerät, Gebot 4): nach dem Schuss (`a.schuss` = Auge, ivp und Maß der Tiefe DESSELBEN
+     // Schusses, `__letzteSpiegel`) rechnet das Gesetz unter dessen Kamera — keine zweite Ankunft, kein zweites Loop-Bild (zeuge3, GTX
+     // 27.11.: die Kamera der dritten Person glättet über die Zeit, `_kamT`; das zweite `_loopCamera` stand 0,17 m neben dem Bild)
+-    const an = a.schuss ? { glied: "schuss", x: p.x, z: p.z, yaw: st.yaw } : r._genesisAnkunft();
++    // die Ankunft ist ein Versprechen (landmarken-9: sie rechnet im Wald-Faden, `ankunftRechnen`); nach dem Schuss liest die Station das
++    // Blickziel der Ankunft davor (`zielGang.ziel`, gesetzt von `_genesisAnkunft` → `_zielGangBeginn(an.marke)`)
++    const an = a.schuss ? { glied: "schuss", x: p.x, z: p.z, yaw: st.yaw, marke: st.zielGang && st.zielGang.ziel } : await r._genesisAnkunft();
++    if (!an) return { fehlt: "die Ankunft endete ohne Stand: die Welt wechselte während des Gesetzes (`_genesisAnkunft` → null)" };
+     if (!a.schuss) r._loopCamera(performance.now());
+     // der Kegel der Kamera, wie die Welt steht: ihre Weite die des Fern-Rings (`_weltKameraFern`, stamm/bild-sicht.js) — eine frische
+     // Welt (und jede headless) trägt bis zum Ring ihr Boot-far 1 000 m, die Marke in 1–3 km fiele am Ladezustand, nie an der Sicht
+@@ -136,11 +141,14 @@ const LANDMARKE_AN = async (r, T, a) => {
+         }
+     if (ohneHuelle) return { fehlt: "die gezeichnete Höhe der Landmarke: " + ohneHuelle + " trägt keine Hülle (`_felsHuellBoxen`)" };
+     liste.sort((u, v) => u.d - v.d);
+-    // die Gerade vom Auge durch den Gipfel: frei bis vor den Fuß (die letzten 30 m trägt die Landmarke selbst), dahinter der Grund
++    // die Gerade vom Auge durch den Gipfel: FREI ist, was das EINE Sicht-Gesetz des Spiels frei nennt (`_landmarkeSicht`: Grund alle
++    // 25 m UND die Kronen am Strahl, dieselbe Frage, mit der die Ankunft wählt — landmarken-9; der frühere Grund-Marsch allein übersah
++    // den Baum 74/100 m und die Kamm-Krone 390 m, GTX 27.11. f07abc1a), dahinter der Grund
+     const strahl = (q) => {
+         const [vx, vy, vz] = [q.x - auge.x, q.y - auge.y, q.z - auge.z];
+         const d = Math.hypot(vx, vz);
+-        for (let s = 25; s < d - 30; s += 25) if (hoehe(auge.x + (vx * s) / d, auge.z + (vz * s) / d) > auge.y + (vy * s) / d) return { verdeckt: s / d };
++        const v = r._landmarkeSicht(auge, q);
++        if (v) return { verdeckt: v.d / d, von: v.von };
+         for (let s = d + 50; s < d + 20000; s += 50) {
+             const y = auge.y + (vy * s) / d;
+             if (y > 4000) break;
+@@ -150,19 +158,34 @@ const LANDMARKE_AN = async (r, T, a) => {
+         return { hinter: "himmel" };
+     };
+     let imKegel = 0, sichtbar = 0, best = null;
+-    const brueche = []; // je verdeckter Landmarke im Kegel: wo die Gerade den Grund trifft, als Anteil ihres Wegs (0 = am Auge)
++    const brueche = []; // je verdeckter Landmarke im Kegel: wo die Gerade Grund oder Krone trifft, als Anteil ihres Wegs (0 = am Auge)
++    const verdecker = {}; // je Art des Verdeckers (`von` des Gesetzes: grund · Krone) die Zahl
+     const offen = [];
++    // DAS BLICKZIEL IST DIE WAHL DER ANKUNFT (`an.marke`, phyto-core `landmarkeAnkunft`): sie steht in der Reihe vorn — die Station
++    // wählt keine eigene Marke; erst wenn sie unter 0,1 Kontrast bleibt, misst sie die nächsten sichtbaren (der Soll der Sprosse:
++    // irgendeine sichtbare Marke im ersten Blick)
++    const zielAn = an.marke || null;
++    const istZiel = (q) => !!zielAn && q.art === zielAn.art && Math.abs(q.x - zielAn.x) < 0.01 && Math.abs(q.z - zielAn.z) < 0.01;
++    let ziel = zielAn ? "nicht_im_band" : "keine";
+     for (const q of liste) {
+-        if (!F.containsPoint(new T.Vector3(q.x, q.y, q.z))) continue;
++        const z = istZiel(q);
++        if (!F.containsPoint(new T.Vector3(q.x, q.y, q.z))) {
++            if (z) ziel = "nicht_im_kegel";
++            continue;
++        }
+         imKegel++;
+         const s = strahl(q);
+         if (s.verdeckt != null) {
+             brueche.push(s.verdeckt);
++            verdecker[s.von] = (verdecker[s.von] || 0) + 1;
++            if (z) ziel = "verdeckt_" + s.von;
+             continue;
+         }
+         sichtbar++;
+-        offen.push(Object.assign({ q }, s));
++        if (z) ziel = "frei";
++        offen.push(Object.assign({ q, ziel: z }, s));
+     }
++    offen.sort((u, v) => v.ziel - u.ziel); // stabil: das Ziel der Ankunft vorn, sonst nah zuerst
+     // DER KONTRAST je sichtbarer Landmarke (die nächsten vier, nah zuerst) aus dem Leser des Spiels: die erste mit ≥ 0,1 trägt den Wert,
+     // sonst die nächste sichtbare. Die Albedo kommt mit der Lieferung der Stufe 1 (`_landmarkeFarbe`: bis sie liegt, wartet der Leser,
+     // höchstens 3 s je Marke — wie der March wartet); ohne Himmel auf der CPU (`_skyEnvData`) bleibt der Kontrast ungemessen beim Namen.
+@@ -207,9 +230,11 @@ const LANDMARKE_AN = async (r, T, a) => {
+                 const dl = K.landmarke(L2, x, z);
+                 lamFrei += (dl.felsturm + dl.felsbogen) * 0.04;
+             }
++    const blickziel = { ziel, marke: zielAn ? zielAn.art + "@" + zielAn.x.toFixed(1) + "," + zielAn.z.toFixed(1) : null, traegt: !!(best && best.ziel), verdecker };
+     const ursache = best ? (best.k && !(best.k.kontrast >= 0.1) ? "kontrast" : "sichtbar") : imKegel ? "verdeckt" : "keine_im_kegel";
+     const karte = a.besucht ? { abstand: +Math.hypot(kam0.x - an.x, kam0.z - an.z).toFixed(2), gier: +Math.abs(kam0.yaw - an.yaw).toFixed(4) } : null;
+     const w = { glied: an.glied, ankunft: [+an.x.toFixed(1), +an.z.toFixed(1), +an.yaw.toFixed(3)], karteGleich: karte ? karte.abstand <= 0.5 && karte.gier <= 0.001 : null, karte, n13: liste.length, imKegel, sichtbar, treffer: best && best.k && best.k.kontrast >= 0.1 ? 1 : 0, sichtbarTreffer: best ? 1 : 0, kontrastFehlt, saatBoden: +hoehe(p.x, p.z).toFixed(2), kontrast: best && best.k ? +best.k.kontrast.toFixed(4) : null, hoeheMedian: hMedian == null ? null : +hMedian.toFixed(2), wurfBis: RM, ursache, verdeckt: ursache === "verdeckt", keineImKegel: ursache === "keine_im_kegel", bruchMedian: brueche.length ? +brueche[brueche.length >> 1].toFixed(3) : null, freiKegel: zellen ? +(frei / zellen).toFixed(3) : null, lamFrei: +lamFrei.toFixed(3), erdeErwartet: +(1 - Math.exp(-lamFrei)).toFixed(3) };
++    w.blickziel = blickziel; // das Blickziel der Ankunft: frei · verdeckt_<von> · nicht_im_kegel · nicht_im_band · keine, und ob es den Wert trägt
+     if (best) {
+         const T0 = r._luftDurchlass(auge, best.q);
+         Object.assign(w, { art: best.q.art, d: +best.q.d.toFixed(1), hoehe: +best.q.h.toFixed(2), durchlass: +T0[1].toFixed(4), durchlassRgb: T0.map((t) => +t.toFixed(4)), hinter: best.hinter, vorHimmel: best.hinter === "himmel" });
