@@ -1,0 +1,8 @@
+$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
+[linse-gpu] nvidia/pascal
+@@ 0.8 s · am Messort wiese (ego) nach 0.8 s, 70 Takte
+@@ 4.4 s · Wachstum: {"gruendSlots":15,"stufen":[{"jahr":1400,"slots":13,"neu":0,"weg":2},{"jahr":1500,"slots":16,"neu":3,"weg":0},{"jahr":1600,"slots":18,"neu":2,"weg":0},{"jahr":1700,"slots":20,"neu":3,"weg":1},{"jahr":1800,"slots":23,"neu":5,"weg":2},{"jahr":1900,"slots":25,"neu":5,"weg":3},{"jahr":1935,"slots":27,"neu":2,"weg":0}],"bleiben":11,"ueberdeckung":0.733,"ringe":5,"sprung":0.222,"sprungJ":1386,"wechsel":22,"paare":600,"spanne4":600,"umbau":0,"bauphasen":0,"niedergang":1,"namen":["Flelfgraus"],"gr0":1183,"ende":1922,"chronikJ":739,"letzterJahr":1862,"ms":3573,"pose":{"px":-280.4,"py":57.61,"pz":-1005.6,"lx":-280.4,"ly":27.61,"lz":-1045.6}}
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal
