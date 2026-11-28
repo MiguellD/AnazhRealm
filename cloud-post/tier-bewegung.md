@@ -78,3 +78,4 @@ Messort der Station: die Gang-Linse fährt an der Pose des Spielers (Preis-Pose 
 - **Die Wurzel der Setzzeit (gemessen):** zwei Jahre in der Welt — Leben 262,5 s (refS 2 100 ≙ 8 Jahre), Welt 2 400 s (jahreJeTag 1,5),
   Faktor 9,14; der Hirsch stirbt mit 0,86 Welt-Jahren. Eine Setzzeit am Welt-Jahr löscht die Art — nicht eingebaut; sie braucht EINE Uhr
   (die Raffung, leben-core :116). Begründung Punkt 4.
+- 28.11. 03:05 MEZ: masse#1 6e1d9d61 noch nicht im main 9885e7c, merge-tree ohne CONFLICT; keine neue Post seit 02:25. Wartezimmer.
