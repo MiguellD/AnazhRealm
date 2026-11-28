@@ -1,0 +1,42 @@
+diff --git a/meisterkarte-quelle/punkte/stationen/k2-mensch-leib.js b/meisterkarte-quelle/punkte/stationen/k2-mensch-leib.js
+index 84ac725df..274371181 100644
+--- a/meisterkarte-quelle/punkte/stationen/k2-mensch-leib.js
++++ b/meisterkarte-quelle/punkte/stationen/k2-mensch-leib.js
+@@ -415,14 +415,17 @@ const WETTER = async (r, T, arg) => window.__wetterSetzen(arg.wort);
+ // Feierabends (`_bewohnerSoll(b, h)`, 17:15–18:00 — der Schmied, der Händler, die Kirche sind noch am Werk, wer bis 17 Uhr
+ // arbeitet, ist schon im Abend: beide Klassen unter demselben Licht, die Uhr verrät die Klasse nicht) und der NAME, den sein Leib
+ // dann steht — dieselbe Wahl wie der Wirt (`_koerperMotionName` über `tagesHaltung(akt, rolle, b)` und die erinnerte Furcht, die
+-// `_bewohnerGemuet` liest). Die Klasse ist dieser Name, nie ein Wort von Hand: pwalk im Akt des Werks = Arbeit, sad im Abend =
+-// Müde, fear = Furcht (die Tat des Spielers im Umkreis, `_kreaturFurchtErinnert`). Die Pose steht SEITLICH (eine Beuge liest das
++// `_bewohnerGemuet` liest). Die Klasse ist dieser Name, nie ein Wort von Hand: der Name des Gesetzes zum Werk
++// (`TAGES_GESETZ.haltung.arbeit`, seit kunst-am-leib 8 `werk`, die Brust 20° vor nach Khan 2020) = Arbeit, der zum Abend (`.abend`,
++// sad) im Abend = Müde, fear = Furcht (die Tat des Spielers im Umkreis, `_kreaturFurchtErinnert`). Die Pose steht SEITLICH (eine Beuge liest das
+ // Auge im Profil, nie von vorn — kunst#1 sah von vorn nur die Höhe des Kopfs): 3,5 m quer zu seinem Blick, Augenhöhe 1,2 m, Blick
+ // auf 1 m über seinem Grund, die Uhr der Stunde. Jeder Bewohner zuerst einmal (die erste Stunde mit Klasse), dann die nächste.
+ const AUSDRUCK = async (r, T, arg) => {
+     const o = arg || {};
+     const KC = window.__koerperCore;
+     if (!KC || typeof KC.tagesHaltung !== "function") return { fehler: "der Kern trägt keine Haltung zum Akt (koerper tagesHaltung)" };
++    const HG = KC.TAGES_GESETZ && KC.TAGES_GESETZ.haltung;
++    if (!HG || !HG.arbeit || !HG.abend) return { fehler: "der Kern trägt keine Haltung je Akt (koerper TAGES_GESETZ.haltung arbeit/abend)" };
+     const stunden = o.stunden || [17.25, 17.5, 17.75, 18];
+     const tr = (KC.LEIB_SATZ && KC.LEIB_SATZ.trenner) || "/";
+     const pm = r.state.playerMesh.position;
+@@ -444,7 +447,7 @@ const AUSDRUCK = async (r, T, arg) => {
+                 }
+                 const nm = String(r._koerperMotionName(false, { haltung: KC.tagesHaltung(s.akt, b.rolle, b), sorrow: f, chaos: f }) || "");
+                 const basis = nm.split(tr)[0];
+-                const klasse = basis === "fear" ? "Furcht" : basis === "sad" && s.akt === "abend" ? "Müde" : basis === "pwalk" && (s.akt === "arbeit" || s.akt === "hilft") ? "Arbeit" : null;
++                const klasse = basis === "fear" ? "Furcht" : basis === HG.abend && s.akt === "abend" ? "Müde" : basis === HG.arbeit && (s.akt === "arbeit" || s.akt === "hilft") ? "Arbeit" : null; // prettier-ignore
+                 if (!klasse) {
+                     sonst[s.akt + ":" + (basis || "neutral")] = (sonst[s.akt + ":" + (basis || "neutral")] || 0) + 1;
+                     continue;
+@@ -462,7 +465,7 @@ const AUSDRUCK = async (r, T, arg) => {
+     const M = KC.MOTION || {};
+     const grad = (p, k) => (M[p] && Number.isFinite(M[p][k]) ? +((M[p][k] * 180) / Math.PI).toFixed(1) : null);
+     const winkel = {};
+-    for (const p of ["pwalk", "sad", "fear", "idle"]) winkel[p] = { rumpf: grad(p, "spineX"), leib: grad(p, "bodyX"), kopf: grad(p, "headX"), ellbogen: grad(p, "elbowL") };
++    for (const p of [HG.arbeit, HG.abend, "fear", "idle"]) winkel[p] = { rumpf: grad(p, "spineX"), leib: grad(p, "bodyX"), kopf: grad(p, "headX"), ellbogen: grad(p, "elbowL") };
+     return { posen: H, je, sonst, drinnen, winkel, stunden, lage: "zur Stunde des Feierabends " + stunden.join("/") + " Uhr draußen: Arbeit " + je.Arbeit + " · Müde " + je["Müde"] + " · Furcht " + je.Furcht + " · andere " + JSON.stringify(sonst) + " · drinnen " + drinnen }; // prettier-ignore
+ };
+ 

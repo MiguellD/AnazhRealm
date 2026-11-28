@@ -84,3 +84,12 @@ seine Zahl; liegt sie darunter, ist die Beuge am Werk und die Müdigkeit des Abe
 der Straße bei Tag, die Art des Bewohners im Gang des Feierabends. Geprüft und verworfen: Kategorien People walking outdoors 33,
 Old men mit walk 3, Walking men in Bangladesh (Gebäude), Pedestrians (Bahnhöfe, Kreuzungen), Shoulder-carrying (Stiche, Militär).
 Holer-Selbsttest 7 GRÜN, liste Exit 0.
+(4) Kopf 8 (Post 03:58: Winkel mit Quelle, bevor 44 Bilder an ein Urteil gehen): koerper-core.js trägt das Profil `werk` — die
+Brust 20° vor (spineX 0,195 + bodyX 0,155 rad) nach Khan, Bath, Kociolek, Zeng, Koehncke, Trask 2020 (J Agromed 25(2), doi
+10.1080/1059924X.2019.1659200: 38 % der Arbeitszeit in Rumpf-Vorbeuge ≥ 20°); TAGES_GESETZ.haltung arbeit/hilft = werk (Jagd,
+Wettkampf, Fischfang bleiben pwalk). Nachtrag gegen punkte-maschine 9834d6fd: ausdruck-1-werk-station.diff — die Klassen-Regel
+der Seite AUSDRUCK liest den Namen des Gesetzes (`KC.TAGES_GESETZ.haltung.arbeit` / `.abend`), nie ein Wort von Hand; vor Kopf 8
+ist das pwalk, nach ihm werk, ohne Gesetz bricht die Seite beim Namen (kein Rückfall). ausdruck-1-werk-faecher.diff — Kommentar
+und Selbsttest des Fachs lesen die neue Regel (ROT, wenn ein Name von Hand zurückkehrt). Fächer-Selbsttest 20 GRÜN · 0 ROT,
+liste Exit 0 · 1976 Stationen · Fehler 0. ausdruck-1-quellen-muede.diff neu gegen 9834d6fd (Inhalt gleich). Müde: keine Zahl in
+Grad mit Quelle (Michalak 2009, Gross 2012 tragen die Richtung) — der Winkel des Abends bleibt sad, offen mit Grund.

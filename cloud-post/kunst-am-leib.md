@@ -1,5 +1,29 @@
 # Stand-Blatt kunst-am-leib (Bahn der Welle 27.11., Sprosse `karte2.mensch.sport.kunst#1`, dann `#2`) — ZWISCHENSTAND
 
+## Kopf 8 — die Arbeit steht über das Werk gebeugt (auf main bbb97563, Post 03:58 + 04:26)
+
+- **Geschnitten:** `koerper-core.js` trägt das Profil `werk` (MOTION: spineX 0,195 + bodyX 0,155 = 20,1° Brust-Vorbeuge, sonst
+  pwalk) nach Khan, Bath, Kociolek, Zeng, Koehncke, Trask 2020 (J Agromed 25(2), doi 10.1080/1059924X.2019.1659200: 49
+  Landarbeiter, 38 % der Arbeitszeit in Rumpf-Vorbeuge ≥ 20°); `TAGES_GESETZ.haltung` arbeit/hilft = werk, Jagd · Wettkampf ·
+  Fischfang bleiben pwalk; `STAND.tun` werk = hand. Vorher stand der Arbeiter am Werk im Gang-Profil pwalk: 5,2°.
+- **Linse:** `scripts/diag-koerper-kern.cjs` WERK „die Beuge am Werk“ — je Rolle (und wohnhaus) die Akte arbeit/hilft, das Profil
+  ihres Namens, spineX + bodyX ≥ 20°. Rot vorher am main-Kern: 0 von 20 (pwalk 5,2°, Täter MOTION.werk · TAGES_GESETZ.haltung);
+  nachher 20 von 20 (werk 20,1°). Selbsttest 76/76 mit der Mutante „Werk wie Gang“ (ROT).
+- **Vertrags-Akt:** v1 recipes 5 899 → 5 927 Blätter (28 neu, 0 geändert, 0 gefallen, EINE Wurzel `mensch.fx.motion.presets.werk`);
+  v7 koerper-core 94d4f918958c → 98791f21b0a6, klang und tetrapoda byte-gleich; beide CONTRACT.md tragen den Akt.
+- **Geprüft am Baum:** check:statik GANZ 580 s · gate:daten-contract · gate:asset-contract · gate:welt-boot · gate:fachwerk-contract
+  · gate:mensch-zuege · gate:koerper-kern 83 s · gate:mensch-anatomie 870 s (haltung werk: Kopf über den Zyklus p50 22 mm, größter
+  Anteil in EINER Haltung 22 % ≤ 30 %) — alle Exit 0; Kreatur mit Stoppuhr: KREATUR_ZEITEN.
+- **Station (Nachtrag gegen punkte-maschine 9834d6fd):** `cloud-post/kunst-am-leib-station/ausdruck-1-werk-station.diff` — die
+  Klassen-Regel der Seite AUSDRUCK liest den Namen des Gesetzes (`TAGES_GESETZ.haltung.arbeit` / `.abend`), vor Kopf 8 pwalk, nach
+  ihm werk; ohne Gesetz bricht sie beim Namen · `cloud-post/kunst-am-leib-station/ausdruck-1-werk-faecher.diff` (Selbsttest ROT,
+  wenn ein Name von Hand zurückkehrt) · `cloud-post/kunst-am-leib-station/ausdruck-1-quellen-muede.diff` neu gegen 9834d6fd.
+  Fächer-Selbsttest 20 GRÜN · 0 ROT, liste Exit 0 · 1976 Stationen · Fehler 0.
+- **Geerbt, nicht meins:** Post 05:01 — „(A) KRONE“ der Wetter-Wache rot am main bbb97563 (Eigner pegel-nach-brand); Post 04:26 —
+  gate:kampf-gefuehl Posten 5, stand-takt an der Radeon.
+- **Ehrlich offen:** Müde trägt keinen Winkel in Grad mit Quelle (Michalak 2009, Gross 2012: die Richtung; die Zahl hinter 403) —
+  der Abend bleibt sad; Furcht 0 ohne Tat des Spielers; verschieden#1 und tracht#1 sind Arbeit am Gesetz vor dem Fach.
+
 ## Wartezimmer nach Kopf 3 (033ff310 auf main b3740dd5)
 
 - Kopf 3 geschoben (Post 18:10 trägt er: das Standbild 20 von 20 Phasen je Kunst nach Takayasu 2019); die GPU-Probe läuft, dann setzt

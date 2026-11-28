@@ -78,3 +78,11 @@ ist das kanonische JSON byte-gleich (geprüft, Feld für Feld). Der Spieler am B
 Partie gebeugt, der Lidschlag des Lesers) statt den des Handwerks (`pwalk`); der Blick am Blindpaar der Station
 mensch.sport.kunst#1 trennte beide Künste vorher nicht. Derselbe Akt in v1: `recipes.json` (+ Manifest). Wächter:
 gate:koerper-kern L7 („drei Künste, drei Leiber“), gate:daten-contract (dieser Fingerabdruck).
+
+**Vertrags-Akt 28.11.2026 (kunst-am-leib 8 — DIE ARBEIT STEHT ÜBER DAS WERK GEBEUGT):** `koerper-core.js` neu gemintet
+(`94d4f918958c…` → `98791f21b0a6…`, klang- und tetrapoda-core byte-gleich). Additiv genau EINE Wurzel:
+`PRESETS.mensch.fx.motion.presets.werk` (28 Felder; kein Feld fiel, keines änderte sich — v1 `recipes.json` 5 899 → 5 927 Blätter,
+Feld für Feld geprüft). Der Mensch im Akt des Werks (`TAGES_GESETZ.haltung` arbeit · hilft) steht mit der Brust 20° vor
+(Khan et al. 2020, J Agromed 25(2): 38 % der Arbeitszeit ≥ 20° Rumpf-Vorbeuge) statt im Gang-Profil `pwalk` (5,2°); Jagd,
+Wettkampf und Fischfang gehen weiter in `pwalk`. Derselbe Akt in v1: `recipes.json` (+ Manifest). Wächter: gate:koerper-kern
+WERK („die Beuge am Werk“), gate:daten-contract (dieser Fingerabdruck).

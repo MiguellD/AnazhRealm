@@ -198,3 +198,10 @@ EIN Feld neu (`boot.fx.fahrprofil.rumpf`, additiv), der Rest byte-gleich: vehicl
 (Archimedes-Linie, Ruderer, Haut nach ITTC 1957, Lateralplan, Segel mit Krängungs-Grenze, die Form der Welle für Holtrop) — statt des
 Reifen-Pfads, auf dem main b3740dd5 das Boot mit 0,01 m/s gleiten ließ. Die Potenzen der Regression stehen NICHT im Rezept
 (`rumpfWelleGesetz` in `fahrGesetz`): Browser und node rechnen Math.pow mit gebrochenem Exponenten nicht bit-gleich (ein ULP an a17).
+
+**Re-Mint 28.11.2026 (kunst-am-leib 8, begründet — DIE ARBEIT STEHT ÜBER DAS WERK GEBEUGT):** nur `recipes.json` (+ Manifest), per
+`MINT_NUR_DATEN=1`; die 128 Mesh-Goldens, `world-params.json` und `render-config.json` byte-gleich (`gate:asset-contract` vor dem
+Re-Mint EINE Verletzung: `mensch.fx.motion.presets.werk` fehlt). Genau EIN Feld neu (`mensch.fx.motion.presets.werk`, additiv, 28
+Blätter, 5 899 → 5 927, keines geändert), der Rest byte-gleich: koerper `MOTION.werk` — die Brust 20° über dem Werk (Khan et al.
+2020, J Agromed 25(2), doi 10.1080/1059924X.2019.1659200) — trägt den Akt des Werks (arbeit, hilft) statt des Gang-Profils `pwalk`
+(5,2°); der Prüfer der Station mensch.leib.ausdruck#1 sah den Menschen am Werk vorher aufrecht wie im Gang.

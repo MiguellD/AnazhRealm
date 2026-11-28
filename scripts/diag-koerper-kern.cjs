@@ -203,6 +203,28 @@ const verbKlassen = (P, H, stunde = 12, O = { heim: {}, werk: {}, platz: {}, mah
     return Object.entries(z).filter(([, k]) => k >= 0.1 * n).map(([h, k]) => `${h} ${Math.round((100 * k) / n)} %`); // prettier-ignore
 };
 
+// DIE BEUGE AM WERK (kunst-am-leib 8, Meisterkarte 2 mensch.leib.ausdruck#1; koerper MOTION.werk · TAGES_GESETZ.haltung, die
+// Familie des Verbs; Leser: der Wirt `_bewohnerGemuet` → der Leib): jede Rolle mit Haltung steht im Akt des Werks (arbeit, hilft)
+// mit der Brust ≥ 20° vor (spineX + bodyX ihres Profils) — Landarbeiter verbringen 38 % ihrer Arbeitszeit in Rumpf-Vorbeuge
+// ≥ 20° (Khan et al. 2020, J Agromed 25(2), doi 10.1080/1059924X.2019.1659200). Bis kunst-am-leib 8 stand der Arbeiter im
+// Gang-Profil pwalk: 5,2°. Täter (Selbsttest): das Werk im Gang-Profil (haltung arbeit/hilft → pwalk).
+const WERK_BEUGE = (20 * Math.PI) / 180;
+const werkBeuge = (K, H = K.tagesHaltung) => {
+    const zu = [];
+    let n = 0;
+    for (const ro of ["wohnhaus", ...Object.keys(K.TAGES_GESETZ.rollen)])
+        for (const akt of ["arbeit", "hilft"]) {
+            const nm = H(akt, ro);
+            if (!nm) continue; // die Rolle ohne Haltung (die Wache, der Fahrer) steht neutral — L7
+            const M = K.MOTION[String(nm).split(K.LEIB_SATZ.trenner)[0]];
+            const b = M ? M.spineX + M.bodyX : NaN;
+            n++;
+            if (!(b >= WERK_BEUGE - 1e-9)) zu.push(`${ro}/${akt} ${nm} ${((b * 180) / Math.PI).toFixed(1)}°`);
+        }
+    return { n, zu };
+};
+const werkWieGang = (K) => (akt, ro, s) => (akt === "arbeit" || akt === "hilft") && K.tagesHaltung(akt, ro, s) ? "pwalk" : K.tagesHaltung(akt, ro, s); // prettier-ignore
+
 // DER SATZ DES LEIBS (leib-liest-satz, die Familie des Verbs — koerper `tagesHaltung(akt, rolle, satz)` · `leibSatzProfil` ·
 // `leibSatzNamen` · `trachtDesTags`; Leser im Wirt, der Stamm im vm über stamm.cjs `grundWirt`: `_bewohnerGemuet` · `_bewohnerStaende`
 // · `_bewohnerTracht` · `_bestandAnlegen`): der Leib liest den GANZEN Satz seines Menschen.
@@ -1661,12 +1683,12 @@ if (SELBSTTEST) {
     const roGut = !rollenUrteil(core).rot.length;
     const rollenTaeter = [["ohneStreife", "R1 die Wache geht keine Streife"], ["ohneRueckkehr", "R2 die Runde kehrt nicht an den Posten"], ["ohneRevier", "J1 der Plan trägt kein Revier"], ["ohneJaeger", "J2 die Siedlung trägt keinen Jäger"], ["ohneTat", "J3 die Rolle trägt ihre Tat nicht"], ["beuteImmer", "J5 die Beute fällt"], ["fangAusNichts", "J6 der Fischfang trägt Beute aus dem Nichts"], ["durchDeckung", "H1 "], ["ohneAntwort", "H2 der Getroffene antwortet nicht"], ["ohneLage", "H5 der Treffer trägt keine Lage"], ["bindungAmPlatz", "J7 die Bindung trägt das Werk"], ["rundeSchiebt", "R6 die Runde frisst den Abend"]].map(([m, z]) => [roGut && rollenUrteil(core, m).rot.some((r) => r.startsWith(z)), `Rollen ${m} ${z}`]); // prettier-ignore
     const morgenTaeter = [...eTaeter, [ankGut.n >= 1000 && ankGut.frueh >= 0.99 && !ankGut.monoton && !ankGut.ohneAbschnitt && ankWende.frueh < 0.5, "Ankunft zurWende M3 der Aufbruch liegt nicht um die Gehzeit vor der Wende"], [!uGut.length && uTaeter.length === 1, "Ankunft eigeneUhr M4 ein Leser liest den Plan mit eigener Uhr"]]; // prettier-ignore
-    for (const [x, n] of [[t1.diffs, "Morph"], [t2.diffs, "Proportionen"], [t3.diffs, "Landmarken"], [w && !wacheLeer(core.tagesPlan), "Wache"], [verbKlassen(core.tagesPlan, () => null).length < 2 && verbKlassen(core.tagesPlan, core.tagesHaltung).length >= 2, "Verb"], ...taeter, ...bestandTaeter, ...ackerTaeter, ...koennenTaeter, ...stoffTaeter, ...verbenTaeter, ...spielTaeter, ...morgenTaeter, ...rollenTaeter, ...satzTaeter])
+    for (const [x, n] of [[t1.diffs, "Morph"], [t2.diffs, "Proportionen"], [t3.diffs, "Landmarken"], [w && !wacheLeer(core.tagesPlan), "Wache"], [verbKlassen(core.tagesPlan, () => null).length < 2 && verbKlassen(core.tagesPlan, core.tagesHaltung).length >= 2, "Verb"], [werkBeuge(core).n > 0 && !werkBeuge(core).zu.length && werkBeuge(core, werkWieGang(core)).zu.length > 0, "Werk-Beuge"], ...taeter, ...bestandTaeter, ...ackerTaeter, ...koennenTaeter, ...stoffTaeter, ...verbenTaeter, ...spielTaeter, ...morgenTaeter, ...rollenTaeter, ...satzTaeter])
         if (!x) {
             console.log(`⛔ Selbsttest: ${n}-Injektion NICHT erkannt`);
             fails++;
         }
-    urteilEnde(fails, "❌ ROT — die Linse ist blind.", `✅ Selbsttest: alle fünfundsiebzig injizierten Abweichungen erkannt (${t1.diffs}/${t2.diffs}/${t3.diffs} Treffer, die Wache, das Verb, fünf Täter des Stoßes, drei Täter des Bestands, drei Täter der Acker-Kette, fünf Täter des Könnens, zehn Täter der Stoffstrom-Kette, sieben Täter der Verben aus der Gestalt, neun Täter der Regel-Grammatik, sieben Täter des Einkaufs und der Ankunft zur Stunde, elf Täter der Rolle und ihres Tages-Angebots, zehn Täter des Satzes des Leibs).`);
+    urteilEnde(fails, "❌ ROT — die Linse ist blind.", `✅ Selbsttest: alle sechsundsiebzig injizierten Abweichungen erkannt (${t1.diffs}/${t2.diffs}/${t3.diffs} Treffer, die Wache, das Verb, die Beuge am Werk, fünf Täter des Stoßes, drei Täter des Bestands, drei Täter der Acker-Kette, fünf Täter des Könnens, zehn Täter der Stoffstrom-Kette, sieben Täter der Verben aus der Gestalt, neun Täter der Regel-Grammatik, sieben Täter des Einkaufs und der Ankunft zur Stunde, elf Täter der Rolle und ihres Tages-Angebots, zehn Täter des Satzes des Leibs).`);
 }
 
 const r = runVergleich(neuMorph, core.labProportionen, core.labLandmarks);
@@ -1675,6 +1697,9 @@ const st = stossUrteil(core);
 const verb = verbKlassen(core.tagesPlan, core.tagesHaltung);
 if (verb.length < 2) st.rot.push(`VERB die Stadt um 12 Uhr steht in ${verb.length} Haltung(en) [${verb.join(", ")}] (Soll ≥ 2) — Täter: koerper tagesHaltung`);
 console.log(`  VERB die Stadt um 12 Uhr: ${verb.join(" · ")}`);
+const wb = werkBeuge(core);
+if (!wb.n || wb.zu.length) st.rot.push(`WERK die Arbeit steht nicht über das Werk gebeugt: ${wb.zu.length} von ${wb.n} Rollen-Akten unter 20° Brust-Vorbeuge [${wb.zu.slice(0, 4).join(" · ")}] (Khan 2020) — Täter: koerper MOTION.werk · TAGES_GESETZ.haltung`); // prettier-ignore
+console.log(`  WERK die Beuge am Werk: ${wb.n - wb.zu.length} von ${wb.n} Rollen-Akten ≥ 20° Brust-Vorbeuge (Profil ${core.tagesHaltung("arbeit", "schmiede")}, ${((((core.MOTION.werk || {}).spineX || 0) + ((core.MOTION.werk || {}).bodyX || 0)) * 180 / Math.PI).toFixed(1)}°)`); // prettier-ignore
 const sa = satzUrteil();
 for (const z of sa.rot) st.rot.push("SATZ " + z);
 console.log(`  SATZ des Leibs: L1 ${sa.krank.anders} von ${sa.krank.n} Kranken stehen anders · L2 ${sa.paare.length} von 3 Künsten trennen Meister und Lehrling [${sa.paare.join(" · ")}] · L3 R² ${sa.uebung.r2 == null ? "—" : sa.uebung.r2.toFixed(3)} über ${sa.uebung.spanne.toFixed(0)} h (Steigung ${sa.uebung.steigung == null ? "—" : sa.uebung.steigung.toFixed(4)}, Band ${Number.isFinite(sa.uebung.soll) ? sa.uebung.soll.toFixed(4) : "—"}) · L4 Lagen am Dorf Sommer ${sa.lagen.sommer.toFixed(3)} · Winter ${sa.lagen.winter.toFixed(3)} · Regen ${sa.lagen.regen.toFixed(3)} · L5 ${sa.namen} Namen im Satz · L6 ${sa.tat.length} Rollen mit Tat lesen den Satz [${sa.tat.join(" · ")}] · L7 der Leib zeigt sein Können [${sa.kunst.join(" · ")}] · ${sa.posten} · Leiber ${sa.leiber} · Standbild ${(sa.standbild || []).join(" · ")}`);

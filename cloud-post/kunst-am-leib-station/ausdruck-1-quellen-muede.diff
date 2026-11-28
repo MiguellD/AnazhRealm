@@ -1,8 +1,8 @@
 diff --git a/vision/pruefer/quellen.json b/vision/pruefer/quellen.json
-index 2b40ef1dd..6051cd0f4 100644
+index 0adab4d5b..1489cd10d 100644
 --- a/vision/pruefer/quellen.json
 +++ b/vision/pruefer/quellen.json
-@@ -12208,6 +12208,25 @@
+@@ -12250,6 +12250,25 @@
     "dateien": [],
     "stand": "ungeholt — geholt wird am Gerät (`--nur haltung-arbeit`), nie in der Sitzung des Machers · die Kategorie trägt 108 Dateien unmittelbar (Commons categoryinfo 28.11.; 2 Unterkategorien liest der Holer nicht), davon 52 frei vor den Wänden (Trocken-Lauf des Holers 28.11.: Menschen im Akt der Feldarbeit, draußen, Tageslicht, der ganze Leib auf wenigen Metern — die Art der Pose der Station)"
    },
