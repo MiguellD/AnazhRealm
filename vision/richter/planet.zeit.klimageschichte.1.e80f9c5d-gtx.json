@@ -1,0 +1,88 @@
+{
+ "leiter": "planet.zeit.klimageschichte",
+ "sprosse": 1,
+ "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
+ "datum": "2026-11-28T07:42:07.532Z",
+ "soll": "+100 a bei +2 °C: Schneegrenze +300 m ±30 %; Küste wandert um Δh/Strandneigung ±25 %",
+ "station": "karte2.planet.zeit.klimageschichte#1",
+ "geraete": [
+  {
+   "geraet": "GTX 1060",
+   "richter": {
+    "wert": "S1 dT100aGrad -0,106 °C gegen Soll ≥ 2 °C ✗ · schneegrenzeDeltaM -1,37 gegen Soll 300 ± 30 % ✗ · kuesteJeSoll 2,351 gegen Soll 1 ± 25 % ✗ · Täter: keine Treibhaus-Drift in 100 a: die Welt erwärmt sich um -0.106 °C, die Schneegrenze wandert -1.37 m, die Küste 3 m (planet-core.js:2092 planetKlimaGlobal: Sternfluss und Walker-Thermostat über Ma, kein CO₂-Antrieb in Jahren) · Fächer 122/136 Adressen (48 Saaten × 2 Zeiten + 40) in 159 ms · Leser stamm/feld-leben.js:1298 _planetAuftrag planet-ort (die Reise: Ort und Zeit der Welt) · Gesetz voxel-worker.js:1446 planetOrtAuftrag → planet-core.js:2092 planetKlimaGlobal · gelaende-core.js:5911 ortGesetz (Sommer, Winter, schneeBandM) · 14 ohne Fähigkeit (kein Küstenpunkt k13 unter 800 Lagen (planet-ort kuesteKm)) · schlechteste {\"saat\":1,\"ort\":null,\"zeit\":0.0001} schnee -0.934 · Bild dort Ego an der Schneegrenze des Punkts [78.28,-180] (-0.934 m) zur Zeit +100 a, Blick hangauf · ungemessen: das Bildpaar der Schneegrenze heute / +100 a (am Gerät); der Sprung ≤ 5 s des Preises (die Maschine) · gemessen vor dem Abbruch: Deckel 150 s gerissen",
+    "urteil": "ROT"
+   },
+   "preis": {
+    "fehlt": "der Preis-Lauf nannte sein Stück nicht (kein Ergebnis von `/lauf`)",
+    "bilder": 0,
+    "fenster": {
+     "von": "2026-11-28T07:32:38.019Z",
+     "bis": "2026-11-28T07:42:07.532Z"
+    },
+    "quelle": "kein Preis: der Preis-Lauf nannte sein Stück nicht (kein Ergebnis von `/lauf`)",
+    "referenz": {
+     "f": 1,
+     "fEin": 1,
+     "fAlle": 1,
+     "vor": {
+      "ein": 87.4,
+      "alle": 195.4,
+      "tor": {
+       "ruhig": true,
+       "s": 0,
+       "kerne": 0.25,
+       "soll": 3,
+       "reihe": [
+        0.15,
+        0.14,
+        0.2,
+        0.38,
+        0.17,
+        0.2
+       ]
+      }
+     },
+     "nach": {
+      "ein": 88.5,
+      "alle": 220.2,
+      "tor": {
+       "ruhig": true,
+       "s": 0,
+       "kerne": 0.08,
+       "soll": 3,
+       "reihe": [
+        0.14,
+        0.15,
+        0.11,
+        0.07,
+        0.06,
+        0.12
+       ]
+      }
+     },
+     "ruhe": {
+      "ein": 89.2,
+      "alle": 220.6,
+      "n": 1192,
+      "von": "2026-11-27"
+     },
+     "nachGruendung": {
+      "f": 1.32,
+      "ein": 117.7,
+      "alle": 202.7,
+      "fahrten": 2,
+      "s": 20.8,
+      "ruhig": true
+     },
+     "umfeld": "sitzung",
+     "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz"
+    },
+    "posten": {
+     "fehler": "/puffer ohne Antwort binnen 120 s"
+    },
+    "urteil": "FEHLT",
+    "treppe": "2026-11-23b"
+   }
+  }
+ ]
+}
