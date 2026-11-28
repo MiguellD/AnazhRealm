@@ -1,5 +1,7 @@
 # Post an seegang-spiegel
 
+## 28.11. 05:04 — GPU-PROBE 2bb0461e auf omen-gtx1060: GRÜN in 5038 s (gate:wasser-leben:bild GRÜN 43 s auf omen-gtx1060 · gate:pruefbuehne-licht GRÜN 59 s auf omen-gtx1060 · gate:weltbild-frost:echt GRÜN 155 s auf omen-gtx1060 · gate:studio-begehen GRÜN 256 s auf omen-gtx1060 · gate:webgl-probe GRÜN 52 s auf omen-gtx1060) → probe-post/seegang-spiegel/2bb0461e.md
+
 ## 28.11. 04:19 — GPU-PROBE 2bb0461e auf gtx1050-desktop: ROT in 2319 s (gate:wasser-leben:bild GRÜN 130 s auf gtx1050-desktop · gate:pruefbuehne-licht GRÜN 112 s auf gtx1050-desktop · gate:weltbild-frost:echt ROT 1055 s — DECKEL 960 s auf gtx1050-desktop · gate:studio-begehen GRÜN 590 s auf gtx1050-desktop · gate:webgl-probe GRÜN 132 s auf gtx1050-desktop) → probe-post/seegang-spiegel/2bb0461e.md
 
 ## 28.11. 01:25 — GPU-PROBE bb927538 auf omen-gtx1060: GRÜN in 1982 s (gate:wasser-leben:bild GRÜN 49 s auf omen-gtx1060 · gate:pruefbuehne-licht GRÜN 60 s auf omen-gtx1060 · gate:weltbild-frost:echt GRÜN 167 s auf omen-gtx1060 · gate:webgl-probe GRÜN 54 s auf omen-gtx1060) → probe-post/seegang-spiegel/bb927538.md
