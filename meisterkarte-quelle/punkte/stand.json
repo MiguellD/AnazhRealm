@@ -23286,7 +23286,7 @@
   },
   "karte2.mensch.sport.koennen": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S1 GRÜN · Variationskoeffizient der 100-m-Zeit (%) 13.68 (Soll 10–20) · Umfang 100 (Soll ≥ 100 Bewohner mit 100-m-Zeit) · 100-m-Zeit = 100 m ÷ Tempo des Gangs (b.tempo, stamm/siedlung-bewohner.js:1051), Mittel 81.22 s · Altersgang ρ(Alter, Zeit) 0.477959795979598 · 1511 mit Können-Profil · [linse-gpu] amd/rdna-3 an f0a89f7e radeon · gehalten: S1 GRÜN · Variationskoeffizient der 100-m-Zeit (%) 12.3 (Soll 10–20) · Umfang 100 (Soll ≥ 100 Bewohner mit 100-m-Zeit) · 100-m-Zeit = 100 m ÷ Tempo des Gangs (b.tempo, stamm/siedlung-bewohner.js:1051), Mittel 83.92 s · Altersgang ρ(Alter, Zeit) 0.2695469546954695 · 477 mit Können-Profil · [linse-gpu] nvidia/pascal an 5b36f69a gtx · gehalten: S2 GRÜN · R² Güte ↔ Potenzgesetz der Übung 1 (Soll ≥ 0.8) · Umfang 100 (Soll ≥ 100 Übungsstunden eines Bewohners) · ein feld über 2077–2177 Übungsstunden (der Kalender der Welt rückt): die Güte seines Werks (b.bestand.rate ÷ jeStunde) 0.7108 → 0.7198, das Können seines Lebenslaufs 0.7108 → 0.7198; Querschnitt 139 Hersteller {\"feld\":149} über 0–36214 h: R² 1, α 0.2658 (Gesetz [object Object]) · [linse-gpu] nvidia/pascal an a954d698 gtx — offen: karte2.mensch.sport.koennen#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/albedo-tafel.cjs +14) · karte2.mensch.sport.koennen#3 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#3 gtx: Station seit der Messung geändert · karte2.mensch.sport.koennen#4 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#4 gtx: Station seit der Messung geändert · karte2.mensch.sport.koennen#5 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#5 gtx: Station seit der Messung geändert · karte2.mensch.sport.koennen#6 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: S1 GRÜN · Variationskoeffizient der 100-m-Zeit (%) 13.68 (Soll 10–20) · Umfang 100 (Soll ≥ 100 Bewohner mit 100-m-Zeit) · 100-m-Zeit = 100 m ÷ Tempo des Gangs (b.tempo, stamm/siedlung-bewohner.js:1051), Mittel 81.22 s · Altersgang ρ(Alter, Zeit) 0.477959795979598 · 1511 mit Können-Profil · [linse-gpu] amd/rdna-3 an f0a89f7e radeon · gehalten: S1 GRÜN · Variationskoeffizient der 100-m-Zeit (%) 12.3 (Soll 10–20) · Umfang 100 (Soll ≥ 100 Bewohner mit 100-m-Zeit) · 100-m-Zeit = 100 m ÷ Tempo des Gangs (b.tempo, stamm/siedlung-bewohner.js:1051), Mittel 83.92 s · Altersgang ρ(Alter, Zeit) 0.2695469546954695 · 477 mit Können-Profil · [linse-gpu] nvidia/pascal an 5b36f69a gtx · gehalten: S2 GRÜN · R² Güte ↔ Potenzgesetz der Übung 1 (Soll ≥ 0.8) · Umfang 100 (Soll ≥ 100 Übungsstunden eines Bewohners) · ein feld über 2077–2177 Übungsstunden (der Kalender der Welt rückt): die Güte seines Werks (b.bestand.rate ÷ jeStunde) 0.7108 → 0.7198, das Können seines Lebenslaufs 0.7108 → 0.7198; Querschnitt 139 Hersteller {\"feld\":149} über 0–36214 h: R² 1, α 0.2658 (Gesetz [object Object]) · [linse-gpu] nvidia/pascal an a954d698 gtx — offen: karte2.mensch.sport.koennen#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/albedo-tafel.cjs +14) · karte2.mensch.sport.koennen#3 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#3 gtx: ROT: S3 ROT: fehlender Leser: kein Wettkampf, kein Bestwert (477 Bewohner, 134 im Sport-Akt) (koerper-core.js:5126) · gemessen 134 · [linse-gpu] nvidia/pascal an e80f9c5d · karte2.mensch.sport.koennen#4 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#4 gtx: Station seit der Messung geändert · karte2.mensch.sport.koennen#5 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#5 gtx: Station seit der Messung geändert · karte2.mensch.sport.koennen#6 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.sport.koennen#1",
@@ -23341,10 +23341,10 @@
      "id": "karte2.mensch.sport.koennen#3",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "zahl": "S3 ROT: fehlender Leser: kein Wettkampf, kein Bestwert (477 Bewohner, 134 im Sport-Akt) (koerper-core.js:5126) · gemessen 134 · [linse-gpu] nvidia/pascal",
+     "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
+     "grund": "ROT: S3 ROT: fehlender Leser: kein Wettkampf, kein Bestwert (477 Bewohner, 134 im Sport-Akt) (koerper-core.js:5126) · gemessen 134 · [linse-gpu] nvidia/pascal",
+     "r6": "konsum"
     },
     {
      "id": "karte2.mensch.sport.koennen#4",
@@ -23793,7 +23793,7 @@
   },
   "karte2.mensch.sport.medium": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.sport.medium#1 radeon: ungemessen (R10) · karte2.mensch.sport.medium#1 gtx: Station seit der Messung geändert · karte2.mensch.sport.medium#2 radeon: ungemessen (R10) · karte2.mensch.sport.medium#2 gtx: Station seit der Messung geändert · karte2.mensch.sport.medium#3 radeon: ungemessen (R10) · karte2.mensch.sport.medium#3 gtx: Station seit der Messung geändert · karte2.mensch.sport.medium#4 radeon: ungemessen (R10) · karte2.mensch.sport.medium#4 gtx: Station seit der Messung geändert · karte2.mensch.sport.medium#5 radeon: ungemessen (R10) · karte2.mensch.sport.medium#5 gtx: Station seit der Messung geändert · karte2.mensch.sport.medium#6 radeon: ungemessen (R10) · karte2.mensch.sport.medium#6 gtx: Station seit der Messung geändert · karte2.mensch.sport.medium#7 radeon: ungemessen (R10) · karte2.mensch.sport.medium#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.sport.medium#1 radeon: ungemessen (R10) · karte2.mensch.sport.medium#1 gtx: ROT: S1 ROT: fehlender Leser: kein Ski, keine Kante, kein Schwung auf Schnee: der Leib kennt 11 Verben (Gehen, Sprint, Sprung, Rutsch, Klettern + schaukeln, rutschen, klettern, hangeln, balancieren, wippen) (koerper-core.js:5789) · gemessen 0 · [linse-gpu] nvidia/pascal an e80f9c5d · karte2.mensch.sport.medium#2 radeon: ungemessen (R10) · karte2.mensch.sport.medium#2 gtx: Station seit der Messung geändert · karte2.mensch.sport.medium#3 radeon: ungemessen (R10) · karte2.mensch.sport.medium#3 gtx: Station seit der Messung geändert · karte2.mensch.sport.medium#4 radeon: ungemessen (R10) · karte2.mensch.sport.medium#4 gtx: Station seit der Messung geändert · karte2.mensch.sport.medium#5 radeon: ungemessen (R10) · karte2.mensch.sport.medium#5 gtx: Station seit der Messung geändert · karte2.mensch.sport.medium#6 radeon: ungemessen (R10) · karte2.mensch.sport.medium#6 gtx: Station seit der Messung geändert · karte2.mensch.sport.medium#7 radeon: ungemessen (R10) · karte2.mensch.sport.medium#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.sport.medium#1",
@@ -23809,10 +23809,10 @@
      "id": "karte2.mensch.sport.medium#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true,
+     "zahl": "S1 ROT: fehlender Leser: kein Ski, keine Kante, kein Schwung auf Schnee: der Leib kennt 11 Verben (Gehen, Sprint, Sprung, Rutsch, Klettern + schaukeln, rutschen, klettern, hangeln, balancieren, wippen) (koerper-core.js:5789) · gemessen 0 · [linse-gpu] nvidia/pascal",
+     "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
+     "grund": "ROT: S1 ROT: fehlender Leser: kein Ski, keine Kante, kein Schwung auf Schnee: der Leib kennt 11 Verben (Gehen, Sprint, Sprung, Rutsch, Klettern + schaukeln, rutschen, klettern, hangeln, balancieren, wippen) (koerper-core.js:5789) · gemessen 0 · [linse-gpu] nvidia/pascal",
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -37466,7 +37466,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 294,
+  "konsum": 296,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37598,10 +37598,10 @@
    "karte2.same.kopplung.terraform#1 gtx",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3364
+  "ohne": 3362
  },
  "kopfVoll": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
- "zeit": "2026-11-28T08:30:21.899Z",
+ "zeit": "2026-11-28T08:36:34.034Z",
  "vorher": "e80f9c5d",
  "bilanz": {
   "gewinn": [],
