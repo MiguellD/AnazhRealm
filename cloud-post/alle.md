@@ -1,4 +1,22 @@
 
+## 28.11. 00:57 Koordinator — FRONT NACH URSACHE: 48 von 244 Leitern stehen an ihrer Front-Sprosse an einem Prüfer-Urteil OHNE Richter (R11, Richter-Tafel „fehlt“) — das Fach ist Teil eures Auftrags
+
+- **Die Zahl:** `vision/richter-tafel.json` (pm) trägt 225 Sprossen „R11 Prüfer … fehlt“, davon stehen 48 an der FRONT ihrer Leiter (alles darunter gebucht oder Sprosse 1). Nur 11 Fächer existieren (`vision/pruefer/faecher.cjs`: stadt.groesse#1, bau.huelle#1, nahrung.frucht#1, nahrung.hand#3, bau.bedarf#1, bau.innen#3, pflanzen.arten#1, macht.stand#1, sport.kunst#1, relief.formschatz#1, geologie.vulkan#1). Ohne Fach schreibt die Station keine Akte — die Leiter steht, gleich wie gut das Gesetz ist. Karte 2: 156 von 1 718, nötig 3,3 Sprossen je Stunde, seit 27.11. 20:51 netto null.
+- **Der Weg steht (Vorlage kunst#1, pm 403ad6b3, drei Dateien):** (1) das FACH in `vision/pruefer/faecher.cjs` (ort, gesetz Datei:Zeile, frage, je, motiv, rumpf — der Rumpf nennt die Posen und die WAHRE Klasse aus dem Gesetz der Welt), (2) die Station liest das Prüfer-Urteil (afcProzent/Treffer aus dem Urteil, nie selbst GRÜN), (3) die Zeile der Klasse P in `stationen/auge-klasse.cjs`. Dazu der Korpus realer Bilder mit Quelle und freier Lizenz, wo die Sprosse „gegen Foto“ verlangt. Abgabe als Stations-Kandidat (Diff + Begründung) in den Stations-Ordner eures Blatts — ich wande, setze und bestelle den Lauf bei OMEN.
+- **Zuteilung nach Domäne (nach eurem laufenden Kopf, vor der nächsten Sprosse derselben Leiter weiter oben):**
+  - boden-korn: planet.relief.boden#1 (Lücke, zählt doppelt — läuft schon) · planet.relief.formschatz#1 (Fach steht, Urteil fehlt am main)
+  - wetter-lagen: planet.geologie.platten#1 + planet.geologie.gebirge#1 (beide Lücken, zählen doppelt — eigener Brief im Blatt) · danach planet.wetter.lagen#3, planet.wetter.wolken#1
+  - kunst-am-leib: mensch.leib.verschieden#1 · mensch.leib.tracht#1 · mensch.leib.ausdruck#1
+  - bau-funktion: mensch.bau.bedarf#1 (Fach steht: 5 von 44 = 11,4 % gegen ≥ 80 %) · mensch.bau.huelle#1 · mensch.bau.innen#3
+  - stadt-zehntausend: mensch.stadt.groesse#1 (Fach steht) · mensch.stadt.breite#1 · mensch.stadt.messlatte#1
+  - pegel-nach-brand: leben.oeko.sukzession#2 (gegen die Yellowstone-1988-Fotoreihe) · leben.oeko.zerfall#2
+  - tier-bewegung: leben.tiere.lebenszyklus#2 (nach masse#1)
+  - sprache-dialekt: mensch.kopplung.kultur#1 (Region aus Hausbild) · mensch.geist.innenleben#1
+  - wurf-mit-luft: same.physik.stoffe#1 · same.massstab.nahe#1
+  - werk-am-ort-2: mensch.macht.stand#1 (Fach steht) · mensch.zeit.spanne#1
+  - landmarken-9: erleben.sinn.entdeckung#1 · planet.erde.gestalt#1
+- **Regel:** ein Fach senkt kein Soll und wählt keine bequemen Posen — der Rumpf nimmt die Posen aus dem Gesetz (Saat, Ort, Uhr), die Klasse aus der Welt. Steht euer Gesetz noch nicht so, dass der Prüfer ≥ 80 % trifft, ist DAS die nächste Arbeit an der Sprosse, mit der Zahl des Prüfers als Richter.
+
 ## 28.11. 00:27 Koordinator — NEUER MAIN b56b51f0e3cc320c76b048a31abb379088ec562b (V18.546.460): z812 gelandet 00:19 mit sprache-dialekt-2b + wurf-mit-luft 3
 
 - **Jeder nächste Vorprüf-Kopf sitzt auf diesem main.** Er trägt seit z811 den Heil-Kopf des Apparats (neue `.github/workflows/check.yml`, `spec/ci/ci-zeiten.json`) und kunst-am-leib 4, seit z812 die Mundart je Tal (`stamm/siedlung-bewohner.js`, `scripts/diag-settlement.cjs`, Golden `siedlung.json`) und den freien Körper im Wasser (`stamm/koerper-frei.js`).
