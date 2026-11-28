@@ -924,25 +924,30 @@ class AnazhRealm_klang {
         }
         // DER DECKEL: die lautesten Sprecher in Rede, die noch nicht klingen, bekommen ihre Stimme — je ein Teil bis zum Ende ihrer Rede.
         // DER TEIL IST EIN STÜCK SEINES SATZES (sprache#2): die Rede spricht den Satz seiner Sprache (der Wirt `_bewohnerLauf` „rede“,
-        // fachwerk `sprachSatz`), Silbe um Silbe — ihre Kerne (`sprachKerne`) sind die Vokale der Stimme (klang `stimmPuffer`). Ein
-        // Satz läuft über die Teile, bis er gesprochen ist; dann der nächste (`M.saetze` zählt sie, die Nummer ist der Same der Rede).
-        // Bis hier sprach die Menge Vokale aus einer Tafel ohne Sprache: jede Stadt klang gleich.
+        // fachwerk `sprachSatz`), Silbe um Silbe. Ein Satz läuft über die Teile, bis er gesprochen ist; dann der nächste (`M.saetze`
+        // zählt sie, die Nummer ist der Same der Rede). DIE SILBE TRÄGT IHRE LAUTE (sprache#5): die Lautung des Satzes (fachwerk
+        // `sprachSilben` in der Schrift seiner Sprache) mit den Dauern der Stimme (klang `stimmRede`, Klatt 1979, im Einsatz der
+        // Sprache) — der Teil ist so viele Silben, wie in die Rede passen (`mengeSilben`), seine Dauer ihre Summe (`mengeSek`). Bis
+        // sprache#5 klangen nur die Kerne (die Vokale): im Ohr 0,346 der Laute, kein Konsonant.
         kand.sort((a, c) => c.db - a.db);
         let rest = 0;
         for (const k of kand) {
-            const silben = klingen < UMWELT.stimmenMax ? kern.mengeSilben(k.z.bis - jetzt) : 0;
             const z = k.z;
-            if (silben && !(z.kerne && z.ab < z.kerne.length)) {
+            if (klingen < UMWELT.stimmenMax && !(z.rede && z.ab < z.rede.length)) {
                 z.nr = M.saetze = (M.saetze || 0) + 1;
-                z.satz = this._bewohnerLauf(k.S, k.b, "rede", z.nr);
+                [z.satz, z.akt] = [this._bewohnerLauf(k.S, k.b, "rede", z.nr), k.b.akt];
                 if (typeof z.satz !== "string") return; // der Kern fehlt: `_kernPflichtBruch` hat laut gebrochen
-                [z.kerne, z.ab] = [globalThis.__fachwerkCore.sprachKerne(z.satz), 0];
+                const FC = globalThis.__fachwerkCore;
+                const L = FC.spracheVon(k.S.plan.region, k.S.plan.mundart);
+                z.einsatz = L.gesetz.einsatz;
+                [z.rede, z.ab] = [kern.stimmRede(FC.sprachSilben(z.satz, L), z.einsatz), 0];
             }
-            const n = silben && Math.min(silben, z.kerne.length - z.ab);
-            const kerne = n ? z.kerne.slice(z.ab, z.ab + n) : null;
-            if (n && this._bewohnerLaut(k.b, kern.MENGE.laut, { silben: n, kerne, anstrengungDb: k.an })) {
-                z.ab += n;
-                z.klingtBis = jetzt + kern.mengeSek(n);
+            const rest0 = klingen < UMWELT.stimmenMax ? z.rede.slice(z.ab) : null;
+            const teil = rest0 && rest0.slice(0, kern.mengeSilben(z.bis - jetzt, rest0));
+            const rede = teil && teil.length ? { rede: teil, einsatz: z.einsatz, anstrengungDb: k.an } : null;
+            if (rede && this._bewohnerLaut(k.b, kern.MENGE.laut, rede)) {
+                z.ab += teil.length;
+                z.klingtBis = jetzt + kern.mengeSek(teil);
                 klingen++;
             } else rest += Math.pow(10, k.db / 10);
         }
@@ -1024,7 +1029,7 @@ class AnazhRealm_klang {
             verdeckung: this._klangVerdeckung(pm, g),
             temperatur: um.lage && Number.isFinite(um.lage.luft) ? um.lage.luft : this._temperaturAt(pm.position.y, 0),
         };
-        if (rede) [ruf.silben, ruf.kerne, ruf.anstrengungDb] = [rede.silben, rede.kerne, rede.anstrengungDb];
+        if (rede) [ruf.rede, ruf.einsatz, ruf.anstrengungDb] = [rede.rede, rede.einsatz, rede.anstrengungDb];
         if (!(um.kern.rufPegel(ruf) >= AnazhRealm._umweltGesetz().UMWELT.hoerschwelleDb)) return null;
         um.rufeBestellt++;
         um.werkstatt.postMessage({ typ: "ruf", ruf });
@@ -2584,6 +2589,7 @@ AnazhRealm._umweltGesetz = function () {
         kern.mengeAnstrengung &&
         kern.mengeSilben &&
         kern.mengeSek &&
+        kern.stimmRede &&
         kern.mengeDauer
     ) {
         AnazhRealm._umweltGesetzMemo = { UMWELT: U, kern };

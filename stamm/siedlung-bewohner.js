@@ -391,10 +391,11 @@ class AnazhRealm_siedlung_bewohner {
         if (feld === "rede") {
             // DER SATZ, DEN ER SPRICHT (sprache#2): die `tag`-te Rede des Bewohners in der Sprache des Orts — dasselbe Gesetz, das ihn
             // nennt (fachwerk `sprachSatz`: die Wörter der Grundliste seiner Sprache in der Folge ihrer Familie). Leser: die Rede der
-            // Menge (klang.js `_bewohnerLautTakt`: ihre Silben-Kerne sind die Vokale seiner Stimme)
+            // Menge (klang.js `_bewohnerLautTakt`: ihre Silben sind die Laute seiner Stimme). Der Satz spricht von seinem Akt
+            // (`b.akt`, SATZ_GESETZ.handlung — sprache#5 „Satz ↔ Handlung“)
             const FC = globalThis.__fachwerkCore;
             if (!FC || typeof FC.sprachSatz !== "function") return AnazhRealm._kernPflichtBruch("fachwerk:sprachSatz");
-            return FC.sprachSatz(FC.spracheVon(plan.region, plan.mundart), `${b.seed}:${tag}`);
+            return FC.sprachSatz(FC.spracheVon(plan.region, plan.mundart), `${b.seed}:${tag}`, b.akt);
         }
         if (feld === "freunde" || feld === "kreis") {
             // die Sympathie-Gruppe ohne den Haushalt: je Platz ein Mensch eines anderen Hauses des Plans, das Leute trägt. `kreis`
@@ -1538,9 +1539,15 @@ class AnazhRealm_siedlung_bewohner {
             // jeder Mensch desselben Berufs gleich viel her. DIE GÜTE FOLGT DER ÜBUNG (leib-liest-satz, koennen#2): die Rate ist eine
             // Funktion seines Satzes zur Zeit des Lesens (der Lebenslauf rechnet beim Lesen, `b.uebung`) — bis hier las sie das Können
             // EINMAL beim Bau der Liste, über 100 Stunden Übung stand seine Güte still (R² 0).
+            // DIE HAND IM WERK (kunst#2): dasselbe Können ist die Hand des Halters (`koennen`) — die Rate liest sie, die Kette der
+            // Schmiede trägt sie in jedes Stück, das sie schmiedet (koerper `stoffstromFassen`, schmiede `gueteAnteil(…, hand)`)
             const jeStunde = b.bestand.rate;
+            Object.defineProperty(b.bestand, "koennen", {
+                get: () => b.uebung.handwerk.koennen,
+                enumerable: true,
+            });
             Object.defineProperty(b.bestand, "rate", {
-                get: () => jeStunde * b.uebung.handwerk.koennen,
+                get: () => jeStunde * b.bestand.koennen,
                 enumerable: true,
             });
             waren.add(P.ware);
@@ -1698,8 +1705,9 @@ class AnazhRealm_siedlung_bewohner {
         if (!Z) return 0;
         const n = window.__koerperCore.stoffstromFassen(Z.K, h);
         while (Z.gegeben < Z.K.haende) {
-            const b = Z.haende[Z.gegeben++];
+            const b = Z.haende[Z.gegeben];
             b.werkzeug = globalThis.__schmiedeCore.STOFFSTROM.werkzeug;
+            b.werkzeugHand = Z.K.hand[Z.gegeben++]; // die Hand, die es schmiedete (sein Können zur Stunde des Stücks)
             this._stoffstromHand(b);
         }
         return n;
@@ -1725,6 +1733,14 @@ class AnazhRealm_siedlung_bewohner {
             barren,
             werkzeug: Z.haende.filter((b) => b.werkzeug).length,
             geschmiedet: K.werkzeug,
+            // DIE STÜCKE IN DEN HÄNDEN (kunst#2): je Werkzeug die Hand, die es schmiedete, und seine Güte (schmiede `gueteAnteil` des
+            // Werkzeugs der Kette mit dieser Hand) — die EINE Güte eines Schmiede-Geräts, nun mit der Hand
+            stuecke: Z.haende.slice(0, Z.gegeben).map((b) => ({
+                hand: +b.werkzeugHand.toFixed(4),
+                guete: +globalThis.__schmiedeCore
+                    .gueteAnteil(globalThis.__schmiedeCore.STOFFSTROM.werkzeug, null, b.werkzeugHand)
+                    .toFixed(4),
+            })),
             erzKg: +K.erz.toFixed(3),
             eisenKg: +K.eisen.toFixed(3),
             barrenGegossen: K.barren,

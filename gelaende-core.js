@@ -4226,11 +4226,13 @@
     // Die drei Töne eines Felsens aus seinem Grundton (linear): die dunkle Lage und die helle, sandige Bank. Der Grundton
     // liegt im Natur-Band: über `FELS.grundMax` (Leuchtdichte Y) sinken alle drei Töne gemeinsam — mit Bänken, Rinde und
     // Flechte bleibt der Fels ≤ 0,30 (ein heller Sandstein-Ton der Palette war Y 0,33).
-    function felsBasis(basis, dunkel, akzent) {
+    // `erde` (optional, linear): die Erde der Palette (`dirt`, die Heimat) — der Anschnitt des Erdbaus trägt sie (`anschnittErde`)
+    function felsBasis(basis, dunkel, akzent, erde) {
         const Y = 0.2126 * basis[0] + 0.7152 * basis[1] + 0.0722 * basis[2];
         const f = Y > FELS.grundMax ? FELS.grundMax / Y : 1;
         const b = [basis[0] * f, basis[1] * f, basis[2] * f];
         return Object.freeze({
+            erde: erde ? Object.freeze({ dirt: Object.freeze([erde[0], erde[1], erde[2]]) }) : null,
             basis: b,
             dunkel: dunkel ? [dunkel[0] * f, dunkel[1] * f, dunkel[2] * f] : [b[0] * 0.45, b[1] * 0.45, b[2] * 0.45],
             akzent: akzent ? [akzent[0] * f, akzent[1] * f, akzent[2] * f] : [b[0] * 1.35, b[1] * 1.28, b[2] * 1.18],
@@ -4657,7 +4659,7 @@
         _affinMemo.set(B, A);
         return A;
     }
-    function felsFarbe(B, x, y, z, nx, ny, nz, krumm, himmel, feucht, fuss, out) {
+    function felsFarbe(B, x, y, z, nx, ny, nz, krumm, himmel, feucht, fuss, out, km) {
         const F = FELS;
         const T = traegtSatz(fuss);
         const sy = y + FELS_TE * (x * FELS_CS + z * FELS_SN);
@@ -4713,11 +4715,10 @@
             r += (F.flechte[0] - r) * wf;
             g += (F.flechte[1] - g) * wf;
             b += (F.flechte[2] - b) * wf;
-            if (fe > 0 && ny > 0.15) {
-                const tm = T.tm;
-                const lm = F.moosLambda;
-                const pm = (tm > 0 ? tm * glatt(0.45, 0.7, wert3(x / lm, y / lm, z / lm, FELS_SAAT ^ 0xa3)) : 0) + (1 - tm) * 0.32;
-                const wm = F.moosDeckung * pm * h * fe * glatt(0.15, 0.7, ny);
+            // das Moos am Sims nach dem EINEN Gesetz der Deckung (`moosDeckung`: Feuchte, Klima `km`, Schatten, Steile)
+            const md = moosDeckung(fe, km > 0 ? km : 0, -nz, ny);
+            if (md > 0) {
+                const wm = F.moosDeckung * moosFleck(x, y, z, T.tm, F.moosLambda) * h * md;
                 r += (F.moos[0] - r) * wm;
                 g += (F.moos[1] - g) * wm;
                 b += (F.moos[2] - b) * wm;
@@ -4887,6 +4888,122 @@
             C[3 * i + 2] = tmp[2];
         }
         return C;
+    }
+    // DIE DECKUNG DES MOOSES (karte2.planet.relief.boden#1) — EIN Gesetz für Fels und Erde: Moos wächst, wo Wasser bleibt.
+    // Das Wasser des Orts ist die Feuchte des Bodens `fe` (die Hydrosphäre, Wirt `_feuchteAt`) ODER das Klima: der Index der
+    // Trockenheit nach de Martonne (1926) I = P / (T + 10) (P Niederschlag mm/a, T Jahresmittel °C) — unter 20 halbtrocken, über
+    // 55 extrem feucht (`MOOS.martonne`, die Heimat 547,5 mm bei 7 °C: I = 32). Der Schatten hält das Wasser: der Nordhang
+    // (Norden = −z, die Fläche schaut nach `nord` = max(0, −n_z)) verdunstet weniger, der Anteil des Klimas steigt dort bis aufs
+    // Doppelte (`MOOS.schatten`: voll ab n_z −0,5). Die wirksame Nässe m = 1 − (1 − fe)·(1 − k·(½ + ½·Schatten)); das Moos deckt
+    // glatt von `nass[0]` bis `nass[1]` und nur, wo die Fläche liegt (`glatt(0,15, 0,7, ny)`, die Steile des Felsen-Simses).
+    // `moosKlima(L)` → k ∈ [0, 1] des Orts (vor der Zeit der Landpflanzen und im Dauer-Frost 0: `wuchs.oase`).
+    // Leser: `felsFarbe` (das Moos am Sims), `felsStoff` (das Moos der Erde je Vertex) und `felsStoffPunkt` (am Punkt).
+    const MOOS = Object.freeze({
+        martonne: Object.freeze([20, 55]),
+        schatten: 0.5,
+        nass: Object.freeze([0.35, 0.8]),
+        gitter: 5.4, // m: die Feuchte der Erde je Chunk auf diesem Gitter (wie der Schutt, `FELS_STOFF.netz.schuttGitter`)
+        // m: der Teppich der Erde — das Netz der Nähe (Kante 1,8 m) trägt erst Flecken ab 2 × 1,8 m halber Welle (`traegt`): der Fleck
+        // des Simses (`FELS.moosLambda` 3,4 m) läge auf der Erde nur als sein Mittel, ein grüner Schleier statt Polstern
+        lambda: 8,
+        gitterMax: 12, // Punkte je Achse höchstens (die groben Stufen)
+    });
+    function moosKlima(L) {
+        const O = ortDer(L);
+        const K = O.klimaHeute;
+        const t = (K.sommer + K.winter) / 2 + 10;
+        const I = K.niederschlagMm / (t > 1 ? t : 1);
+        return glatt(MOOS.martonne[0], MOOS.martonne[1], I) * (O.wuchs ? O.wuchs.oase : 1);
+    }
+    // DIE FARBE DER ERDE NACH DEM KLIMA DES ORTS (karte2.planet.relief.boden#1) — die Erde (`dirt`, die einzige nackte Boden-Klasse der
+    // Palette: `mead`/`wet` sind Wiesen-Grund, der kahle heiße Trockenort trägt `wueste`) ist nie eine Konstante, sie ist das Klima:
+    //   HUMUS   Jenny (1930, Missouri AES Res. Bull. 152; 1941 „Factors of Soil Formation“): der organische Stoff (N) des Oberbodens
+    //           steigt je 10 °C kühlerem Jahresmittel auf das 2- bis 3-Fache (`humusJe10K` 2,5) und mit dem Niederschlag (gesättigt,
+    //           `humusP` 500 mm). h = 2,5^(−T/10)·(1 − e^(−P/500)); die Heimat (7 °C, 547,5 mm) h₀ = 0,350. Der Humus dunkelt: die
+    //           Albedo ∝ (1 + k)/(1 + k·h/h₀) (k 1: der Munsell-Wert 3 der Heimat-Erde 10YR 3/2 steigt im heißen Trockenort zur 5–6
+    //           der Steppenböden, fällt im kalten Nassen zur 2 der Moorerde; geklemmt [0,5, 2,2]).
+    //   RÖTE    Schwertmann, Murad & Schulze (1982, Geoderma 27:209): der Hämatit (2,5YR) wächst mit der Wärme und fällt mit der
+    //           Nässe zugunsten des Goethits (10YR); die Terra rossa Italiens trägt Hämatit ab 8,4 °C Jahresmittel (Clays Clay Min.,
+    //           MAT 8,4–20,3 °C). r = glatt(8, 20, T)·(1 − ½·glatt(800, 2 000, P)); die Röte färbt mit dem Verhältnis 2,5YR 4/6 :
+    //           10YR 4/4 (`hematit`, linear).
+    // RELATIV zur Heimat (die Heimat ist die Identität, byte-gleich): die Palette des Studios trägt die Heimat-Erde, der Ort skaliert
+    // sie. Leser: der Boden-Stoff (`_bodenFarbeAt`, der Worker `bodenFarbe` mit DIESER Funktion); die Wege und der Acker
+    // (stamm/siedlung-wege.js) lesen sie noch nicht (OFFEN, eigener Stempel).
+    const ERDE_KLIMA = Object.freeze({
+        humusJe10K: 2.5,
+        humusP: 500,
+        k: 1,
+        hell: Object.freeze([0.5, 2.2]),
+        rot: Object.freeze([8, 20]),
+        rotNass: Object.freeze([800, 2000]),
+        hematit: Object.freeze([1.45, 0.75, 0.82]),
+        // DER UNTERBODEN (der Anschnitt): der Bw-Horizont der Braunerde unter dem Oberboden (FAO, Guidelines for Soil Description
+        // 2006: Ah 10YR 2/2–3/3, Bw 10YR 4/4–5/6) — der Unterboden der Heimat IST 10YR 4/4 (sRGB ≈ 118/92/58, Y 0,12 nach ASTM D1535),
+        // linear gegen die Erde der Palette (`dirt` 0x5c4a33): [1,693, 1,563, 1,278]; die Erde der Wiesen-Wache bleibt nicht-grün
+        unterboden: Object.freeze([1.693, 1.563, 1.278]),
+    });
+    function erdKlima(K) {
+        const T = (K.sommer + K.winter) / 2;
+        const P = K.niederschlagMm > 0 ? K.niederschlagMm : 0;
+        const E = ERDE_KLIMA;
+        return {
+            humus: Math.pow(E.humusJe10K, -T / 10) * (1 - Math.exp(-P / E.humusP)),
+            rot: glatt(E.rot[0], E.rot[1], T) * (1 - 0.5 * glatt(E.rotNass[0], E.rotNass[1], P)),
+        };
+    }
+    const ERDE_JE = new WeakMap();
+    function ortErde(P, L) {
+        const O = ortDer(L);
+        let je = ERDE_JE.get(O);
+        if (!je) ERDE_JE.set(O, (je = new WeakMap()));
+        let aus = je.get(P);
+        if (aus) return aus;
+        const E = ERDE_KLIMA;
+        const h = erdKlima(O.klimaHeute);
+        const h0 = ORT_HEIMAT_ERDE || (ORT_HEIMAT_ERDE = erdKlima(ortGesetz(null).klimaHeute));
+        if (h.humus === h0.humus && h.rot === h0.rot) aus = P;
+        else {
+            let a = (1 + E.k) / (1 + (E.k * h.humus) / h0.humus);
+            a = a < E.hell[0] ? E.hell[0] : a > E.hell[1] ? E.hell[1] : a;
+            const d = P.dirt;
+            const f = [0, 1, 2].map(
+                (c) => (a * (1 + (E.hematit[c] - 1) * h.rot)) / (1 + (E.hematit[c] - 1) * h0.rot)
+            );
+            const o = {};
+            for (const k of Object.keys(P)) o[k] = P[k];
+            o.dirt = Object.freeze([d[0] * f[0], d[1] * f[1], d[2] * f[2]]);
+            aus = Object.freeze(o);
+        }
+        je.set(P, aus);
+        return aus;
+    }
+    let ORT_HEIMAT_ERDE = null;
+    // DIE ERDE AM ANSCHNITT (boden#1): der Unterboden des Orts — die Erde in der Farbe seines Klimas (`ortErde` über der Erde des
+    // Grundtons `B.erde`) × `ERDE_KLIMA.unterboden`. Leser: `felsStoff` und `felsStoffPunkt` (die Wand des Erdbaus). Ohne die Erde
+    // im Grundton bricht der Anschnitt laut (`felsBasis(…, erde)`).
+    const ANSCHNITT_JE = new WeakMap();
+    function anschnittErde(B, L) {
+        if (!B.erde) throw new Error("anschnittErde: der Grundton trägt keine Erde (`felsBasis(basis, dunkel, akzent, erde)`)");
+        const P = ortErde(B.erde, L);
+        let e = ANSCHNITT_JE.get(P);
+        if (!e) {
+            const U = ERDE_KLIMA.unterboden;
+            e = Object.freeze([P.dirt[0] * U[0], P.dirt[1] * U[1], P.dirt[2] * U[2]]);
+            ANSCHNITT_JE.set(P, e);
+        }
+        return e;
+    }
+    function moosDeckung(fe, km, nord, ny) {
+        if (!(ny > 0.15)) return 0;
+        const s = nord > 0 ? glatt(0, MOOS.schatten, nord) : 0;
+        const f = fe > 0 ? (fe < 1 ? fe : 1) : 0;
+        const m = 1 - (1 - f) * (1 - km * (0.5 + 0.5 * s));
+        return glatt(MOOS.nass[0], MOOS.nass[1], m) * glatt(0.15, 0.7, ny);
+    }
+    // Der Fleck des Mooses (λ `lm`: der Sims `FELS.moosLambda`, die Erde `MOOS.lambda`): wo das Netz ihn trägt (`tm`), sonst sein
+    // Mittel — Fels und Erde teilen die Form.
+    function moosFleck(x, y, z, tm, lm) {
+        return (tm > 0 ? tm * glatt(0.45, 0.7, wert3(x / lm, y / lm, z / lm, FELS_SAAT ^ 0xa3)) : 0) + (1 - tm) * 0.32;
     }
     // Das Mittel des Stoffs (die Ferne, wo kein Netz eine Bank trägt): ein senkrechter Fels unter dem Himmel.
     function felsMittel(B, feucht) {
@@ -6226,6 +6343,34 @@
                     const b = Gw[(iv + 1) * nx + iu] + (Gw[(iv + 1) * nx + iu + 1] - Gw[(iv + 1) * nx + iu]) * fu;
                     SW[i] = a + (b - a) * fv;
                 }
+            // DER SCHUTT-FÄCHER UNTER DER WAND (`schuttFaecher`): auf dem Gitter des Fächers (höchstens `gitterMax`² Punkte), bilinear,
+            // nur auf Vertices steiler als `schuttKandidat` (wie der Punkt) — der Schutt der Natur ist das größere aus Hang und Fächer
+            const F = SCHUTT_FAECHER;
+            const fx = Math.min(F.gitterMax, Math.max(2, Math.ceil((gx1 - gx0) / F.gitter) + 1));
+            const fz = Math.min(F.gitterMax, Math.max(2, Math.ceil((gz1 - gz0) / F.gitter) + 1));
+            const fdx = (gx1 - gx0) / (fx - 1) || 1;
+            const fdz = (gz1 - gz0) / (fz - 1) || 1;
+            const Gf = new Float32Array(fx * fz);
+            let jeder = 0;
+            for (let j = 0; j < fz; j++)
+                for (let i = 0; i < fx; i++)
+                    if ((Gf[j * fx + i] = schuttFaecher(L, gx0 + i * fdx, gz0 + j * fdz)) > 0) jeder++;
+            if (jeder)
+                for (let i = 0; i < n; i++) {
+                    if (1 - N[3 * i + 1] < o.schuttKandidat || (H && H[i] < 1)) continue;
+                    let u = (P[3 * i] - gx0) / fdx,
+                        v = (P[3 * i + 2] - gz0) / fdz;
+                    u = u < 0 ? 0 : u > fx - 1 ? fx - 1 : u;
+                    v = v < 0 ? 0 : v > fz - 1 ? fz - 1 : v;
+                    const iu = Math.min(fx - 2, Math.floor(u)),
+                        iv = Math.min(fz - 2, Math.floor(v));
+                    const fu = u - iu,
+                        fv = v - iv;
+                    const a = Gf[iv * fx + iu] + (Gf[iv * fx + iu + 1] - Gf[iv * fx + iu]) * fu;
+                    const b = Gf[(iv + 1) * fx + iu] + (Gf[(iv + 1) * fx + iu + 1] - Gf[(iv + 1) * fx + iu]) * fu;
+                    const f = a + (b - a) * fv;
+                    if (f > SW[i]) SW[i] = f;
+                }
         }
         // DIE WAND DES ERDBAUS (K66): der Vertex unter dem Himmel, steiler als `schuttKandidat`, trägt an der Wand des Erdbaus
         // (`erdbauWand`: Böschung, Kante zwischen zwei Flächen, Absatz an der Reichweite) den Schutt — die Stufe des Dorfs liest
@@ -6239,8 +6384,14 @@
                 if (1 - N[3 * i + 1] < o.schuttKandidat || (H && H[i] < 1)) continue;
                 EW[i] = erdbauWand(L, P[3 * i], P[3 * i + 1], P[3 * i + 2], N[3 * i + 1]);
             }
+        // DAS MOOS DER ERDE (boden#1, `moosDeckung`): je Vertex unter dem Himmel, die Feuchte auf dem Gitter `MOOS.gitter` (bilinear,
+        // wie der Schutthang), der Schatten aus der Normale, der Fleck wie am Sims — vor dem Fels: wo Fels und Schutt liegen, deckt
+        // ihr Gewicht die Erde und ihr Moos.
+        const km = moosKlima(L);
+        const moos = moosErde(L, P, N, H, C, n, feuchte, km, o.fuss);
         const W = new Float32Array(n);
         const KM = new Uint8Array(n);
+        let EA = null;
         let jeder = 0;
         let kante = 0;
         let sx = 0,
@@ -6248,9 +6399,16 @@
             sz = 0,
             sn = 0;
         for (let i = 0; i < n; i++) {
-            const wr = felsSteile(o, 1 - N[3 * i + 1]);
-            const ws = felsSchutt(o, wr, EW ? EW[i] : 0, SW[i]);
+            const st = 1 - N[3 * i + 1];
+            const wr = felsSteile(o, st);
+            const hs = H && H[i] < 1 ? 0 : hangSchutt(P[3 * i], P[3 * i + 2], st);
+            const ew = EW ? EW[i] : 0;
+            const ws = felsSchutt(o, wr, ew, SW[i], hs);
+            const ea = ew > 0 ? felsAnschnitt(o, wr, ew, SW[i], hs) : 0;
+            // `aSchutt` bleibt das Gewicht des Stoffs (K66: die Wand trägt ihn ≥ 0,5, die Wiese wächst dort nicht); die FARBE des
+            // Anschnitts ist Erde (`EA`), sein Korn die Scholle
             SW[i] = ws;
+            if (ea > 0) (EA || (EA = new Float32Array(n)))[i] = ea;
             const w = Math.max(H ? 1 - H[i] : 0, wr + ws);
             if (!(w > 0)) continue;
             W[i] = w;
@@ -6266,21 +6424,85 @@
                 sn++;
             }
         }
-        if (!jeder) return { schutt: SW, feuchte: undefined };
+        if (!jeder) return { schutt: SW, feuchte: undefined, moos };
         const K = kante ? felsKruemmung(P, N, I, n, null, KM) : null;
         const fe = sn ? feuchte(sx / sn, sz / sn, sy / sn) : 0;
         const t = [0, 0, 0];
+        const E = EA ? anschnittErde(B, L) : null;
         for (let i = 0; i < n; i++) {
             const w = W[i];
             if (!(w > 0)) continue;
             const h = H ? H[i] : 1;
             const kr = K && KM[i] ? K[i] : 0;
-            felsFarbe(B, P[3 * i], P[3 * i + 1], P[3 * i + 2], N[3 * i], N[3 * i + 1], N[3 * i + 2], kr, h, h > 0 ? fe : 0, o.fuss, t);
+            felsFarbe(B, P[3 * i], P[3 * i + 1], P[3 * i + 2], N[3 * i], N[3 * i + 1], N[3 * i + 2], kr, h, h > 0 ? fe : 0, o.fuss, t, km);
             C[3 * i] += (t[0] - C[3 * i]) * w;
             C[3 * i + 1] += (t[1] - C[3 * i + 1]) * w;
             C[3 * i + 2] += (t[2] - C[3 * i + 2]) * w;
+            // der Anschnitt: sein Anteil am Stoff ist Erde statt Fels (C·(1 − w) + Fels·(w − e) + Erde·e)
+            const e = EA ? EA[i] : 0;
+            if (e > 0) {
+                C[3 * i] += (E[0] - t[0]) * e;
+                C[3 * i + 1] += (E[1] - t[1]) * e;
+                C[3 * i + 2] += (E[2] - t[2]) * e;
+            }
         }
-        return { schutt: SW, feuchte: fe };
+        return { schutt: SW, feuchte: fe, moos };
+    }
+    // Das Moos der Erde eines Netzes (aus `felsStoff`): C ← Moos nach `moosDeckung` je Vertex unter dem Himmel (H ≥ 1). Die Feuchte
+    // liest `feuchte(x, z, y)` auf dem Gitter über den Vertices (höchstens `MOOS.gitterMax`² Rufe), bilinear. → die Zahl der Vertices
+    // mit Moos.
+    function moosErde(L, P, N, H, C, n, feuchte, km, fuss) {
+        let x0 = Infinity,
+            x1 = -Infinity,
+            z0 = Infinity,
+            z1 = -Infinity;
+        for (let i = 0; i < n; i++) {
+            if ((H && H[i] < 1) || !(N[3 * i + 1] > 0.15)) continue;
+            const x = P[3 * i],
+                z = P[3 * i + 2];
+            if (x < x0) x0 = x;
+            if (x > x1) x1 = x;
+            if (z < z0) z0 = z;
+            if (z > z1) z1 = z;
+        }
+        if (!(x1 >= x0)) return 0;
+        const nx = Math.min(MOOS.gitterMax, Math.max(2, Math.ceil((x1 - x0) / MOOS.gitter) + 1));
+        const nz = Math.min(MOOS.gitterMax, Math.max(2, Math.ceil((z1 - z0) / MOOS.gitter) + 1));
+        const dx = (x1 - x0) / (nx - 1) || 1;
+        const dz = (z1 - z0) / (nz - 1) || 1;
+        const F = new Float32Array(nx * nz);
+        for (let j = 0; j < nz; j++)
+            for (let i = 0; i < nx; i++) {
+                const gx = x0 + i * dx,
+                    gz = z0 + j * dz;
+                const f = feuchte(gx, gz, hoehe(L, gx, gz, false));
+                F[j * nx + i] = f > 0 ? f : 0;
+            }
+        const tm = traegt(MOOS.lambda, fuss);
+        const M = FELS.moos;
+        let zahl = 0;
+        for (let i = 0; i < n; i++) {
+            const ny = N[3 * i + 1];
+            if ((H && H[i] < 1) || !(ny > 0.15)) continue;
+            let u = (P[3 * i] - x0) / dx,
+                v = (P[3 * i + 2] - z0) / dz;
+            u = u < 0 ? 0 : u > nx - 1 ? nx - 1 : u;
+            v = v < 0 ? 0 : v > nz - 1 ? nz - 1 : v;
+            const iu = Math.min(nx - 2, Math.floor(u)),
+                iv = Math.min(nz - 2, Math.floor(v));
+            const fu = u - iu,
+                fv = v - iv;
+            const a = F[iv * nx + iu] + (F[iv * nx + iu + 1] - F[iv * nx + iu]) * fu;
+            const b = F[(iv + 1) * nx + iu] + (F[(iv + 1) * nx + iu + 1] - F[(iv + 1) * nx + iu]) * fu;
+            const md = moosDeckung(a + (b - a) * fv, km, -N[3 * i + 2], ny);
+            if (!(md > 0)) continue;
+            const wm = FELS.moosDeckung * moosFleck(P[3 * i], P[3 * i + 1], P[3 * i + 2], tm, MOOS.lambda) * md;
+            C[3 * i] += (M[0] - C[3 * i]) * wm;
+            C[3 * i + 1] += (M[1] - C[3 * i + 1]) * wm;
+            C[3 * i + 2] += (M[2] - C[3 * i + 2]) * wm;
+            zahl++;
+        }
+        return zahl;
     }
     // Das Gewicht des Felsens aus der Steile st (1 − ny): voll ab `rockHi`, 0 bis `rockLo` (der Fels-Stoff je Vertex und am Punkt).
     function felsSteile(o, st) {
@@ -6288,10 +6510,103 @@
         t = t < 0 ? 0 : t > 1 ? 1 : t;
         return t * t * (3 - 2 * t);
     }
-    // … und der Schutt unter ihm: die Wand des Erdbaus ew (voll) oder der Schutthang sw des Schicht-Gesetzes (× `schutt`), je
-    // das größere, wo der Fels ihn nicht deckt.
-    function felsSchutt(o, wr, ew, sw) {
-        return (ew > o.schutt * sw ? ew : o.schutt * sw) * (1 - wr);
+    // DER SCHUTT AM STEILEN (karte2.planet.relief.boden#1): wo der Hang die Erde nicht mehr hält, liegt der Schutt frei — unter
+    // 30° ist der Fels kaum entblößt, darüber steigt der entblößte Anteil steil mit der Neigung, und Schutt-Keile im Schüttwinkel
+    // halten die häufigste Neigung nahe 37° (DiBiase, Heimsath & Whipple 2012, ESPL 37:855, der Index der Entblößung geeicht an
+    // Panorama-Fotos von 500 km² LiDAR der San Gabriel Mountains; der Schüttwinkel des Gerölls 35 … 40°, Statham 1976). Der
+    // Anteil `hangSchuttAnteil(st)` der Fläche bei der Steile st (1 − ny) ist 0 bis `ab`° und 1 ab `voll`°, dazwischen glatt;
+    // jenseits von `rockLo` trägt ihn der Fels (`felsSteile`). Er liegt in FLECKEN, nie als grauer Schleier: `hangSchutt(x, z, st)`
+    // ist 1, wo das Rauschen der Kante `lambda` m unter seinem Quantil des Anteils liegt (das Quantil aus der Verteilung des
+    // Rauschens selbst, beim Laden aus `HANG_SCHUTT.proben` Proben gezogen) — das Mittel der Flecken IST der Anteil.
+    const HANG_SCHUTT = Object.freeze({ ab: 30, voll: 50, lambda: 9, oktave: 0.35, rand: 0.03, proben: 4096 });
+    const HANG_SCHUTT_ST = Object.freeze([
+        1 - Math.cos((HANG_SCHUTT.ab * Math.PI) / 180),
+        1 - Math.cos((HANG_SCHUTT.voll * Math.PI) / 180),
+    ]);
+    const HANG_SCHUTT_SAAT = saatHash("hang-schutt");
+    function hangSchuttRausch(x, z) {
+        const l = HANG_SCHUTT.lambda,
+            l2 = l / 2.7;
+        return (
+            (1 - HANG_SCHUTT.oktave) * wert3(x / l, 0.5, z / l, HANG_SCHUTT_SAAT) +
+            HANG_SCHUTT.oktave * wert3(x / l2, 7.5, z / l2, HANG_SCHUTT_SAAT ^ 0x2f)
+        );
+    }
+    const HANG_SCHUTT_Q = (() => {
+        const v = new Float64Array(HANG_SCHUTT.proben);
+        for (let i = 0; i < v.length; i++)
+            v[i] = hangSchuttRausch(
+                zufall(HANG_SCHUTT_SAAT, i, 1, 0) * 4096 - 2048,
+                zufall(HANG_SCHUTT_SAAT, i, 2, 0) * 4096 - 2048
+            );
+        v.sort();
+        const Q = new Float64Array(65);
+        for (let k = 0; k <= 64; k++) Q[k] = v[Math.round((k / 64) * (v.length - 1))];
+        return Q;
+    })();
+    function hangSchuttAnteil(st) {
+        return glatt(HANG_SCHUTT_ST[0], HANG_SCHUTT_ST[1], st);
+    }
+    function hangSchutt(x, z, st) {
+        if (!(st > HANG_SCHUTT_ST[0])) return 0;
+        const p = hangSchuttAnteil(st);
+        if (p >= 1) return 1;
+        const u = p * 64,
+            k = Math.min(63, Math.floor(u));
+        const q = HANG_SCHUTT_Q[k] + (HANG_SCHUTT_Q[k + 1] - HANG_SCHUTT_Q[k]) * (u - k);
+        return 1 - glatt(q - HANG_SCHUTT.rand, q + HANG_SCHUTT.rand, hangSchuttRausch(x, z));
+    }
+    // DER SCHUTT-FÄCHER UNTER DER WAND (boden#1): was die Wand verliert, liegt unter ihr — der Schutt rollt von der Wand hangab,
+    // bis die Linie von ihrer Krone den Schattenwinkel unterschreitet: Evans & Hungr (1993, Can. Geotech. J. 30:620) messen an
+    // 16 Steinschlag-Hängen den Schattenwinkel (Fuß der Wand → Ende des Schutts) 27,5° im Mittel, 22° am weitesten. Die Wand ist der
+    // Hang, an dem der Schutt voll liegt (`HANG_SCHUTT.voll` 50°, über einen Schritt von 2 m mit Detail gemessen — die Heimat trägt
+    // im Höhenfeld keine Fels-Wand über 55°, `felsSteile`); der Fächer ist 1, wo ein Punkt der Wand bergauf (Richtung des Gefälles,
+    // bis `reichweite` m) über `schatten` ± `rand` Grad über dem Punkt steht. Leser: `felsStoff` (das Gitter der Wand, gedeckelt
+    // `gitterMax`² Punkte, nur auf Vertices steiler als `schuttKandidat`) und `felsStoffPunkt` (dieselbe Schwelle) — der Fächer
+    // geht in den Schutt der Natur ein (`felsSchutt` `sw`, × `schutt` wie der Schutthang).
+    // `reichweite`: der Schatten einer Wand der Höhe H reicht H / tan 27,5° = 1,9 H vor ihren Fuß — 20 m für die Wände der Heimat
+    // (2,4 … 9,9 m hoch, die Sonde vom 27.11. an 2 700 Punkten); `gitter`: der Fächer ist breiter als 10 m (die Kosten: 13 Höhen
+    // je Punkt, ≈ 35 µs; höchstens `gitterMax`² Punkte je Netz)
+    const SCHUTT_FAECHER = Object.freeze({ schatten: 27.5, rand: 2, schritt: 2, reichweite: 20, gitter: 10.8, gitterMax: 8 });
+    const _SF_WAND = Math.tan((HANG_SCHUTT.voll * Math.PI) / 180);
+    const _SF_T0 = Math.tan(((SCHUTT_FAECHER.schatten - SCHUTT_FAECHER.rand) * Math.PI) / 180);
+    const _SF_T1 = Math.tan(((SCHUTT_FAECHER.schatten + SCHUTT_FAECHER.rand) * Math.PI) / 180);
+    function schuttFaecher(L, x, z) {
+        const gx = (hoehe(L, x + 1, z, true) - hoehe(L, x - 1, z, true)) / 2;
+        const gz = (hoehe(L, x, z + 1, true) - hoehe(L, x, z - 1, true)) / 2;
+        const g = Math.hypot(gx, gz);
+        if (!(g > 0.02)) return 0;
+        const ux = gx / g,
+            uz = gz / g,
+            S = SCHUTT_FAECHER.schritt;
+        const h0 = hoehe(L, x, z, true);
+        let hp = h0,
+            wand = false,
+            best = 0;
+        for (let k = 1, n = Math.round(SCHUTT_FAECHER.reichweite / S); k <= n; k++) {
+            const h = hoehe(L, x + ux * k * S, z + uz * k * S, true);
+            if ((h - hp) / S >= _SF_WAND) wand = true;
+            if (wand) {
+                const a = (h - h0) / (k * S);
+                if (a > best) best = a;
+            }
+            hp = h;
+        }
+        return wand ? glatt(_SF_T0, _SF_T1, best) : 0;
+    }
+    // … und der Schutt unter ihm: die Wand des Erdbaus ew (voll), der Schutthang sw des Schicht-Gesetzes oder der Schutt am
+    // Steilen hs (`hangSchutt`, beide × `schutt`), je das größere, wo der Fels ihn nicht deckt.
+    function felsSchutt(o, wr, ew, sw, hs) {
+        const s = o.schutt * (hs > sw ? hs : sw);
+        return (ew > s ? ew : s) * (1 - wr);
+    }
+    // DER ANSCHNITT IST ERDE (boden#1): der Teil des Schutts aus `felsSchutt`, den die Wand des Erdbaus über den Schutt der Natur
+    // hinaus trägt — die Böschung ist loser Boden im Schüttwinkel (`ERDBAU.boeschung`), ihr Anschnitt zeigt den Unterboden
+    // (`anschnittErde`), nie den Fels. Wo die Natur selbst Schutt trägt (Schutthang, der Schutt des Steilen), bleibt er Schutt.
+    // Bis boden#1 trug die Wand den Fels-Schutt (K66: grau wie Stein, gegen die Flecken der Wiese).
+    function felsAnschnitt(o, wr, ew, sw, hs) {
+        const s = o.schutt * (hs > sw ? hs : sw);
+        return ew > s ? (ew - s) * (1 - wr) : 0;
     }
     // DER FELS-STOFF AM PUNKT (w28-pop-treue): derselbe Stoff wie `felsStoff` für EINEN Punkt der obersten Fläche (unter dem
     // Himmel, H = 1) — für den Leser, der das Gesetz an der Welt fragt statt an einem Netz (Stamm `_bodenGruenAt`: der Wurf der
@@ -6301,20 +6616,66 @@
     // der Kante fehlt, sie hellt nur Fels auf, nie Wiese). Die Wand des Erdbaus fragt er wie der Vertex nur steiler als
     // `schuttKandidat`. L die Lage · B `felsBasis` · o wie `felsStoff` · (x, y, z) der Punkt · ny das y seiner Normale ·
     // C [r, g, b] die Säulen-Farbe (wird zum Stoff gemischt) · feuchte(x, z, y) die Feuchte des Wirts → das Gewicht des Stoffs.
+    // DIE FERNE (`fern`, die Naht Nah-Erde ↔ Fern-Mittel: an 17 von 29 Posen der Station, boden#1): derselbe Punkt für den Fern-Ring
+    // (voxel-worker `fernFarbeTeile`), `fern` der Schutthang aus dem Höhen-Ruf des Rufers (`hoehe(…, aus).schutt`, kein zweiter
+    // Ruf) und `o.fuss` die Kante seiner Abtastung — Moos-Fleck und Fels-Ton tragen dort ihr Mittel (`traegt`). Den Fels der Steile
+    // und den Schutt der Kurve legt der Stoff des Rings aus der Steile seiner Masche (stoff-material `_rockW`, `_hangFern`): der
+    // Punkt trägt sie nicht ein zweites Mal (wr = hs = 0). Das Korn des Schutts, das am Chunk der Detail-Term legt
+    // (`_kornFern` × `aSchutt`), trägt die Ferne als sein Mittel (`schuttMittel`) mit dem Gewicht des Schutts.
     const _felsPunkt = [0, 0, 0];
     const _felsPunktAus = {};
-    function felsStoffPunkt(L, B, o, x, y, z, ny, C, feuchte) {
+    function felsStoffPunkt(L, B, o, x, y, z, ny, C, feuchte, aus, nz, fern) {
+        const istFern = typeof fern === "number";
+        if (istFern && !(fern >= 0)) throw new Error("felsStoffPunkt: der Schutthang der Ferne fehlt (" + fern + ")");
         const st = 1 - ny;
-        const wr = felsSteile(o, st);
-        hoehe(L, x, z, false, _felsPunktAus);
-        const sw = _felsPunktAus.schutt > 0 ? _felsPunktAus.schutt : 0;
+        // das Moos der Erde am Punkt (dasselbe Gesetz wie `moosErde` je Vertex; `nz` die Nord-Komponente der Normale, ohne sie flach)
+        const km = moosKlima(L);
+        const fe = feuchte(x, z, y);
+        const md = moosDeckung(fe, km, nz < 0 ? -nz : 0, ny);
+        const wm = md > 0 ? FELS.moosDeckung * moosFleck(x, y, z, traegt(MOOS.lambda, o.fuss), MOOS.lambda) * md : 0;
+        if (wm > 0) {
+            const M = FELS.moos;
+            C[0] += (M[0] - C[0]) * wm;
+            C[1] += (M[1] - C[1]) * wm;
+            C[2] += (M[2] - C[2]) * wm;
+        }
+        const wr = istFern ? 0 : felsSteile(o, st);
+        if (!istFern) hoehe(L, x, z, false, _felsPunktAus);
+        const sh = istFern ? fern : _felsPunktAus.schutt > 0 ? _felsPunktAus.schutt : 0;
+        // der Fächer unter der Wand (`schuttFaecher`), wie am Vertex nur steiler als `schuttKandidat`
+        const sf = st < o.schuttKandidat ? 0 : schuttFaecher(L, x, z);
+        const sw = sf > sh ? sf : sh;
         const ew = L.erdbau && !(st < o.schuttKandidat) ? erdbauWand(L, x, y, z, ny) : 0;
-        const w = wr + felsSchutt(o, wr, ew, sw);
+        const hs = istFern ? 0 : hangSchutt(x, z, st);
+        const ws = felsSchutt(o, wr, ew, sw, hs);
+        const ea = ew > 0 ? felsAnschnitt(o, wr, ew, sw, hs) : 0;
+        const w = wr + ws;
+        // `aus` (optional): was der Punkt trägt — der Fels der Steile und der Schutt (0 … 1, sein Gewicht ÷ `o.schutt`: Schutthang
+        // des Schicht-Gesetzes, Wand des Erdbaus oder Schutt des Steilen, wie der Chunk ihn als `aSchutt` legt)
+        if (aus) {
+            aus.fels = wr;
+            aus.schutt = ws / o.schutt < 1 ? ws / o.schutt : 1;
+            aus.moos = wm * (w < 1 ? 1 - w : 0);
+            aus.anschnitt = ea;
+        }
         if (!(w > 0)) return 0;
-        const t = felsFarbe(B, x, y, z, 0, ny, 0, 0, 1, feuchte(x, z, y), o.fuss, _felsPunkt);
+        const t = felsFarbe(B, x, y, z, 0, ny, nz < 0 ? nz : 0, 0, 1, fe, o.fuss, _felsPunkt, km);
         C[0] += (t[0] - C[0]) * w;
         C[1] += (t[1] - C[1]) * w;
         C[2] += (t[2] - C[2]) * w;
+        if (ea > 0) {
+            const E = anschnittErde(B, L);
+            C[0] += (E[0] - t[0]) * ea;
+            C[1] += (E[1] - t[1]) * ea;
+            C[2] += (E[2] - t[2]) * ea;
+        }
+        if (istFern) {
+            const s = ws / o.schutt;
+            const k = 1 + (schuttMittel() - 1) * (s < 1 ? s : 1);
+            C[0] *= k;
+            C[1] *= k;
+            C[2] *= k;
+        }
         return w;
     }
 
@@ -9184,6 +9545,19 @@
         stufeZiel: stufeZiel,
         felsStoff: felsStoff,
         felsStoffPunkt: felsStoffPunkt,
+        HANG_SCHUTT: HANG_SCHUTT,
+        HANG_SCHUTT_ST: HANG_SCHUTT_ST,
+        MOOS: MOOS,
+        moosKlima: moosKlima,
+        ERDE_KLIMA: ERDE_KLIMA,
+        ortErde: ortErde,
+        anschnittErde: anschnittErde,
+        felsAnschnitt: felsAnschnitt,
+        moosDeckung: moosDeckung,
+        hangSchuttAnteil: hangSchuttAnteil,
+        hangSchutt: hangSchutt,
+        SCHUTT_FAECHER: SCHUTT_FAECHER,
+        schuttFaecher: schuttFaecher,
         MULDE: MULDE,
         muldeEcken: muldeEcken,
         felsBasis: felsBasis,

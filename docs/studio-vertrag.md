@@ -517,7 +517,10 @@ radiusM muendungM`), dazu `guete { faktorVoll faktorLeer }` +
   `gueteFaktor(rezeptId, ov?)` — das Lehren-Urteil der Schmiede als
   Schadens-Faktor; `gueteAnteil(rezeptId, ov?)` (Welle L, additiv) — derselbe
   Lehren-Anteil ∈ [0, 1] als die EINE Güte eines Schmiede-Geräts (Leser
-  `computeBlueprintQuality` → Schaden `_heldGueteFaktor`, Werkstoff-Kraft, Equip-Fold). Alle
+  `computeBlueprintQuality` → Schaden `_heldGueteFaktor`, Werkstoff-Kraft, Equip-Fold);
+  `gueteAnteil(rezeptId, ov?, hand?)` (kunst#2, additiv) — mit der Hand (das Können des
+  Schmieds, 1 = das Band der Guten) mal 1 − `handFehler(hand)` (`HAND.gut` 0,052 / k,
+  Birkmeyer 2013); ohne Hand byte-gleich. Leser: der Zensus der Kette (`stuecke`). Alle
   Blöcke leben NUR im Gesetzbuch — der Stamm trägt keinen Zahlen-Zwilling
   mehr (ZWILLINGS-ABSENZ-WAND).
   Welle L: `trefferUrteil(m, treffer)` — die Treffer-Physik des Prüfstands
@@ -1078,7 +1081,14 @@ des Felsens `FELS` mit seiner Saat `FELS_SAAT` — `felsStoff` (der Welt-Boden j
 `felsBasis`, `felsFarbe`, `felsKruemmung`, `felsLage`, `felsMittel`/`felsMittelWerte` (die Ferne), `felsFein` (der
 Detail-Term des Shaders) mit seiner Welle `felsWelle` (K17-3: der Shader liest sie EINMAL im Rausch-Atlas und reicht sie
 in die Fels-Funktion), `felsZahl` (das Rechenwerk des Gesetzes, mit `falte` und `fest`), `felsBankung` (die Messung der Bänke), der Schutt
-`schuttKorn`/`schuttMittel`, die Himmels-Sicht der Höhle `HIMMELS_SICHT`/`himmelsSicht`, die Mulde des Bodens `MULDE`/`muldeEcken`
+`schuttKorn`/`schuttMittel`, die Decke des Bodens nach Steile, Feuchte, Licht und Klima (karte2.planet.relief.boden#1): der Schutt
+am Steilen `HANG_SCHUTT`/`HANG_SCHUTT_ST`/`hangSchuttAnteil`/`hangSchutt` (Flecken, deren Mittel die Kurve der Steile ist; die Ferne
+liest `HANG_SCHUTT_ST` im Boden-Shader) und der Fächer unter der Wand `SCHUTT_FAECHER`/`schuttFaecher` (der Schatten 27,5° ihrer
+Krone, Evans & Hungr 1993; Leser `felsStoff` und `felsStoffPunkt`), das Moos `MOOS`/`moosKlima`/`moosDeckung` (Feuchte des Bodens oder de Martonne des Orts,
+der Nordhang hält das Wasser; Fels und Erde aus EINEM Gesetz) und die Erde in der Farbe ihres Klimas `ERDE_KLIMA`/`ortErde` (Humus
+nach Jenny, Hämatit nach Schwertmann, relativ zur Heimat — Leser `_bodenFarbeAt` und der Worker `bodenFarbe`; die
+Wege und der Acker offen), der Anschnitt des Erdbaus als Unterboden `felsAnschnitt`/`anschnittErde` (Bw 10YR 4/4 über der Erde des Orts, der
+Grundton trägt sie: `felsBasis(…, erde)`; Linse `gate:hoehlen-sicht` (o)/(p)), die Himmels-Sicht der Höhle `HIMMELS_SICHT`/`himmelsSicht`, die Mulde des Bodens `MULDE`/`muldeEcken`
 (wetter.K2: die Senke des Gesetzes je Vertex, in der der Regen als Pfütze steht — der voxel-worker rechnet sie je Chunk), die Boden-Karte des gerenderten
 Bodens `bodenKarte` (w4-b-boden: der voxel-worker rastert sie je Chunk, Sync-Bau und Naht-Morph rufen dieselbe Funktion), DER BODEN IM
 FADEN (w4-b-boden2: der voxel-worker hält jedes Netz und rechnet, was bis dahin der Haupt-Faden trug) — die Vertex-Form des Satzes
