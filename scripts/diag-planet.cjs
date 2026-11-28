@@ -1466,8 +1466,12 @@ function neigungZeile(Q, og, ohneHeimat) {
 // keiner) und jede Antwort der 9 Saaten, deren Anker unter dem Eis lag und auf der Stufe der Eis-Zeit neu gesucht wird (12 420 = 9 × 1 380:
 // Klima, Wetter, Wuchs, Wildnis gegen den neuen Anker; Linse anker.eis). Höhe, Land, Kontinent und Meer stehen bit-gleich an 138 000,
 // die Gipfel-Suche 2 804 Gipfel, 99,0 % an konvergenter Grenze wie vorher. Ohne die Stufe stand die Eis-Zeit an 9 816 Antworten auf −1.
+// NEU EINGEFROREN mit dem Streichen des Orts (Karte 2 planet.geologie.platten#1, Zweig wetter-lagen): vorher b1545ac3 / 34fd43fc, nachher
+// 254ce1f7 / 23f9c8d9. Neu sind NUR die zwei Wildnis-Felder streichC · streichS (der Tensor des Streichens aus drei Hüllen-Punkten); jede
+// andere Zahl jeder Antwort steht bit-gleich (300 Orte ohne die zwei Felder: SHA 8b04f9bf alt = neu), die Relief-Punkte je Ort bleiben 2,00
+// (die Hülle 2,26 → 5,26), die Gipfel-Suche 2 804 Gipfel, 99,0 % an konvergenter Grenze wie vorher.
 const FRAGE_SAATEN = 100, FRAGE_PUNKTE_JE_ORT = 2;
-const FRAGE_SHA = { alle: 'b1545ac3a13a6f9c4ee01693af8294730336f67a14aba6aec78a8ba289951080', erste: '34fd43fcf43764758175b3a9583913c9f45ab5e8b9166bdf03773b102484682d' };
+const FRAGE_SHA = { alle: '254ce1f79195706564d6f7fc39698c4bb85f613bd82de214600c5f2281192173', erste: '23f9c8d9ebff23c3feef801d3a8dd4ac5c4037d3f7a380d74387c5796f96f7b7' };
 const frageSaat = (i) => (i === 0 ? 'anazh-realm-seed' : 'zsp-' + (i - 1));
 const FRAGE_ORTE = (() => { const L = []; for (let b = -66; b <= 66; b += 6) for (let l = -180; l < 180; l += 6) L.push([b, l]); return L; })();
 // die Antwort des Fadens als Zahlen in fester Folge (wörtlich planetOrtAuftrag) — bit-genau gehasht, nie über JSON (−0, NaN)
