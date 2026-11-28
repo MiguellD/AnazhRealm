@@ -226,7 +226,7 @@
                 "fachwerk-core.js": [
                     "feuer: { kelvin: 2000, cd: 10.2,",
                     "fenster: { kelvin: 2800, cdM2: 8,",
-                    "laterne: { kelvin: 1900, lm: 2000,"
+                    "laterne: { kelvin: 2983, lm: 2000,"
                 ]
             }
         },

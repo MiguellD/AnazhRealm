@@ -2770,7 +2770,7 @@
       for(const _k in M) if(verbandReihe(_k)) M[_k].userData.__verband=verbandReihe(_k);   // DAS VERBAND-GESETZ: die Nummer des Verbands reist mit dem Stoff (mat.verband) — die Welt webt ihn als Funktion, wo das Labor seine Karte trägt
       for(const _k in M) if(!M[_k].userData.__verband&&gefuegeReihe(_k)) M[_k].userData.__verband=gefuegeReihe(_k);   // DAS GEFÜGE-GESETZ (haus-gefuege): ein Stoff ohne Verband trägt die Nummer seines Gefüges im selben Kanal (Holz, Gefach, Lehm, Stroh) — die Welt rechnet Korn, Faser und Verwitterung als Funktion
       for(const _k in M){ _HEX[_k]=M[_k].color.getHex(); M[_k].color.convertSRGBToLinear(); _karteEins(M[_k]); }   // FARB-GESETZ (Architektur-Welle 05.10.): das Hex ist eine sRGB-ABSICHT — der Stoff zeigt seinen linearen Wert (r128 läse es roh), _HEX hält die Absicht für den Bake (_colFor)
-      M.laternenglas.userData.__licht='laterne';                                               // der Kopf der Laterne glüht nach SEINEM Datum (LICHT_GESETZ.laterne: 1900 K, Zeitplan abends 1) — dasselbe Datum wie ihr Licht-Pool, nie die Fenster-Glut
+      M.laternenglas.userData.__licht='laterne';                                               // der Kopf der Laterne glüht nach SEINEM Datum (LICHT_GESETZ.laterne: 2983 K, Zeitplan abends 1) — dasselbe Datum wie ihr Licht-Pool, nie die Fenster-Glut
       M.glas.userData.__licht='fenster';                           // DAS LEUCHTQUELLEN-GESETZ (K11): die wachen Fenster glühen nach dem Zeitplan LICHT_GESETZ.fenster (reist als mat.licht; das Schlaf-Glas bleibt dunkel)
       M.feuer.userData.__leucht=FEUER_LEUCHT_JE_LUMA;                                          // DAS LEUCHT-GESETZ (05.10.; nacht-lichter): die Glut leuchtet in ihrer Vertex-Farbe — heiße Mitte, kühler Rand, gelbe Flammen-Wurzel, rote Spitze (reist als mat.leucht in cd/m² je Luma der Farbe; die Welt webt emissiveNode = Farbe × leucht ÷ EINHEIT_LX)
       return M; }
@@ -8760,7 +8760,7 @@
     // 29°; gate:pruefbuehne-licht) — bis K11b trug nacht 12 unter dem Legacy-Abfall das 33-Fache, schwach über mehrere Meter,
     // und der Fuß der ACES-Kurve kippt ein schwach beleuchtetes Orange ins Rot (Farbton 14,5°, lava-rot);
     // `fenster` das Nachtlicht der Glas-Stoffe (die Glut je Tageszeit; 2 800 K, der
-    // Farbort, den das Auge V18.542 an den Fenstern richtig fand), `laterne` das Gaslicht der Gasse (1 900 K, Nordstern
+    // Farbort, den das Auge V18.542 an den Fenstern richtig fand), `laterne` das Gaslicht der Gasse (2 983 K, der Glühkörper; Nordstern
     // Fachwerk-Soll: der Kopf auf der Lichthöhe des Labors bei 3,7 m Straße; unter ihr dieselbe Bestrahlung wie bis K11b,
     // zwischen zwei Laternen im Abstand 9 m 0,44 davon — das Band 2–5 lx). Leser: das Labor (Herdfeuer, Fenster) und die
     // Welt (`_leuchtTakt`: Feuerstelle, Glut, jeder Eintrag mit Datum — die Laternen eines Plans, K10; `_leuchtStoff`:
@@ -8777,8 +8777,10 @@
     // im Mittel Ē = 2·cd ÷ (Abstand · Höhe) = 3,5 lx, in der Mitte zwischen zwei Masten 0,52 lx — EN 13201-2:2015 Tab. 3 P5
     // (Ē 3 lx, Emin 0,6 lx; P1–P6: 15 · 10 · 7,5 · 5 · 3 · 2 lx). Bis nacht-gasse-licht trug sie 25,7 cd (ein offener Gas-Brenner,
     // 10–30 cd; 323 lm): 2 lx unter dem Mast, im Dorf Ē 0,57 lx — unter P6, die Gasse am Leser der Nacht (karte2.erleben.bild.nacht#2,
-    // GTX, Dorf dritte Person) 4,7–6,5 EV unter dem Band. Der Farbort bleibt der des Nordstern-Solls (1 900 K); der Glühkörper
-    // derselben Quelle misst 2 983 K — offen. Alles andere Licht der Leuchte FOLGT aus der Lichtstärke: der leuchtende
+    // GTX, Dorf dritte Person) 4,7–6,5 EV unter dem Band. DIE FARBE GEHÖRT ZUM STROM (nacht-füll): 2 000 lm sind Glühkörper, der Glühkörper
+    // derselben Quelle misst 2 983 K; die 1 900 K des Nordstern-Solls waren die Farbe der offenen Flamme (25,7 cd) — ein Paar aus zwei Lampen.
+    // OFFEN: ein unabhängig gemessener Farbort des Glühstrumpfs fehlt (der Strumpf strahlt selektiv, Candolumineszenz — ein Planck-Ort
+    // trägt ihn nur genähert; Schätzungen 2 400–4 000 K); die 2 983 K stammen aus derselben Quelle wie seine 500 lm. Alles andere Licht der Leuchte FOLGT aus der Lichtstärke: der leuchtende
     // Leib (Fläche = cd ÷ `FEUER_LEUCHTDICHTE`, `lichtFlammeM`), das Glas des Kopfs (eine Scheibe, von innen beleuchtet: Leuchtdichte
     // = `glasStreu` · E ÷ π mit E = cd · cos θ ÷ (r² + kern²) je Ecke, `laterneGlasTon` · `laterneGlasJeLuma`), die Wandlaterne (dieselbe Leuchte am Arm).
     // Bis nacht-lichter trug jede Zeile daneben die Zahl des Labors (`staerke` 1 / 19) und der Kopf eine eigene Leuchtdichte (`cdM2`
@@ -8803,7 +8805,7 @@
     var LICHT_GESETZ = {
         feuer: { kelvin: 2000, cd: 10.2, zeit: { mittag: 1.6, morgen: 1.6, abend: 2.2, nacht: 45 }, reichweiteM: 9, abfall: 2, kernM: 0.76, hoeheM: 0.35, flacker: { amp: 0.18, hz: [6.3, 9.7] } },
         fenster: { kelvin: 2800, cdM2: 8, schaltet: true, zeit: { mittag: 0, morgen: 0, abend: 0.42, nacht: 0.85 } },
-        laterne: { kelvin: 1900, lm: 2000, glasStreu: 0.05, schaltet: true, abfall: 2, hoeheM: 3.6, zeit: { mittag: 0, morgen: 0, abend: 1, nacht: 1 } },
+        laterne: { kelvin: 2983, lm: 2000, glasStreu: 0.05, schaltet: true, abfall: 2, hoeheM: 3.6, zeit: { mittag: 0, morgen: 0, abend: 1, nacht: 1 } },
     };
     // DIE LICHTSTÄRKE AUS DEM LICHTSTROM (nacht-gasse-licht): die Leuchte des Gesetzes strahlt nach allen Seiten gleich (`lichtAbfall`
     // kennt keine Richtung) — ihr Lichtstrom verteilt sich auf die Kugel, cd = lm ÷ 4π, auf ein Zehntel gerundet.
@@ -10101,7 +10103,7 @@
     // Glas-Kasten 0,26 × 0,40 m mit dem Licht-Mittelpunkt auf LICHT_GESETZ.laterne `hoeheM` (3,6 m), die Haube eine flache
     // Pyramide (0,40 m breit, 0,2 m hoch), nah mit Kranz und Knauf. ZWEI Rollen (das Budget der Ausstattung: der Stoff und
     // eine Seh-Klasse): metall und laternenglas — der Kopf ist Glas der Seh-Klasse glas mit dem Datum der Laterne (`__licht` laterne): sein
-    // Glühen und das Licht auf Boden und Wand tragen EIN Datum (fx.licht = LICHT_GESETZ.laterne, 1900 K, Zeitplan) — der Kopf
+    // Glühen und das Licht auf Boden und Wand tragen EIN Datum (fx.licht = LICHT_GESETZ.laterne, 2983 K, Zeitplan) — der Kopf
     // im Stoff, das Licht im EINEN Licht-Pool der Welt. Stufe 1: dieselbe Silhouette, vier Seiten, ohne Rahmen und Knauf.
     function ausLaterne(g, p, seed, stufe) {
         var m = AUS_MASS.laterne(p.groesse),

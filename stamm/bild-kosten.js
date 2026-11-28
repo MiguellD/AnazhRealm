@@ -2449,6 +2449,8 @@ class AnazhRealm_bild_kosten {
                 // DAS AUGE DER ART (auge-der-art): das Bild seiner Zapfen (tetrapoda `augeFang(…).bild`, 3 × 3 linear-sRGB) —
                 // `_zugangTakt` stellt es beim Wechsel und hängt seine Ausgabe (`ausgabe.auge`) ein
                 augeBild: uniform(new THREE.Matrix3()),
+                // DIE FARB-ANPASSUNG (nacht-füll): der Messer stellt sie (`_farbAnpassung`), die Einheit ohne Leuchten am Bild
+                anpassung: uniform(new THREE.Matrix3()),
             };
             this.state.postProcessingUniforms = u;
             // V8 (Kür) — die EINE benannte Godray-Quelle (Gesetz #0): der EINE Schreiber ist der Frame-Code (`_loopRender`,
@@ -2577,7 +2579,10 @@ class AnazhRealm_bild_kosten {
             // (log-linear 0 … 1); die Leuchtdichte des Pixels in cd/m² aus der Eichung der Nacht (der Stoff rechnet Albedo/π ·
             // Bestrahlung in Welt-Einheiten). Es ist die EINE Sättigung der Kette und nur ein Knoten der Nacht: am Tag
             // (`nightFactor` 0) fällt der Zweig (`nurBeiStaerke`), das Bild geht unberührt in die Tonkurve.
-            const gesehen = combined.add(nurBeiStaerke(this._nachtAuge(combined), u.nightFactor));
+            // DIE FARB-ANPASSUNG DES AUGES (nacht-füll, `anpassung`): das Auge stimmt sich auf das Licht des Orts um (von Kries,
+            // CAT02 mit dem Grad D aus CIECAM02) — eine 3 × 3 im linearen sRGB, ihr EINER Schreiber ist der Belichtungs-Messer
+            // (`_farbAnpassung`); ohne Leuchten am Bild die Einheit (der Tag bleibt bitgleich: 1 · x + 0 · y + 0 · z = x).
+            const gesehen = u.anpassung.mul(combined.add(nurBeiStaerke(this._nachtAuge(combined), u.nightFactor)));
             // das Ende der Vor-Belichtung (`_vorBelichtung`): die Kette gibt L weiter, die Tonkurve des Renderers belichtet
             const graded = gesehen.max(vec3(0, 0, 0)).div(VB.k);
             // DIE FARBSICHT (spielgang.K4, `AnazhRealm.FARBSICHT`): die Daltonisierung als die LETZTE Abbildung des Lichts vor der

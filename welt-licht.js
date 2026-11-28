@@ -242,7 +242,9 @@ var __weltLicht = (function () {
     // (sein Licht geht waagrecht hinaus) und die Wolke (unter der Decke wirft sie die Glocke vielfach zurück). Bezug: der klare
     // Stadthimmel 1,1·10⁻² cd/m² (Jechow u. a. 2020), der Himmel ohne Leuchten das Sternen-Licht oben (1,6·10⁻⁴).
     // `stufe`: die Glocke der Welt steht in Viertel-Stufen (EV) — die Himmels-Sicht zeichnet nur, wenn sie eine Stufe wandert.
-    const GLOCKE = Object.freeze({ schritte: 48, s: Object.freeze([1, 20000]), stufen: 64, stufe: 0.25 });
+    // `umkreisM` die Leuchten, die die Welt zählt (stadt-voll: 449 von 488 in 500 m, alle in 2 km), `nachM` der Weg, nach dem sie
+    // die Liste neu fragt (nacht-füll).
+    const GLOCKE = Object.freeze({ schritte: 48, s: Object.freeze([1, 20000]), stufen: 64, stufe: 0.25, umkreisM: 2000, nachM: 50 });
     function glockeKern(s, G) {
         const L = G.luft;
         const bR = L.betaRayleigh;

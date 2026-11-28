@@ -2396,7 +2396,11 @@ class AnazhRealm_stoff_material {
         if (!jeHimmel.has(himmel || ohne)) jeHimmel.set(himmel || ohne, {});
         const knoten = jeHimmel.get(himmel || ohne);
         const licht = mp && mp.licht ? String(mp.licht) : "";
-        const fach = fern ? `${licht}|fern` : licht;
+        // DER HALM IN SEINER NARBE (nacht-füll): der Halm-Stoff (`_halmStoff`, vor dem Leuchten gebaut) trägt seine Tiefe Λ = uv.y —
+        // jedes direkte Licht des Pools erreicht ihn × exp(−K(θ) · Λ) wie die Sonne (`_laubLichtStoff`); bis hier stand der Fuß der
+        // Wiese im Licht der Laterne wie ihre Spitze (Koordinator 28.11., Dorf Ego 0,92: das Gras brannte wie Flammen)
+        const narbe = mat.userData.halm === true ? Te.uv().y : null;
+        const fach = (fern ? `${licht}|fern` : licht) + (narbe ? "|narbe" : "");
         if (!knoten[fach]) {
             let em = mat.emissiveNode ? Te.vec3(mat.emissiveNode) : Te.materialEmissive;
             if (licht) {
@@ -2420,7 +2424,7 @@ class AnazhRealm_stoff_material {
                     );
                 em = em.add(jeEcke);
             }
-            knoten[fach] = em.add(this._lichtPoolTerm(Te, atmo, himmel || null, !!fern));
+            knoten[fach] = em.add(this._lichtPoolTerm(Te, atmo, himmel || null, !!fern, narbe));
         }
         mat.emissiveNode = knoten[fach];
         mat.userData.lichtPool = true;
@@ -2615,13 +2619,20 @@ class AnazhRealm_stoff_material {
     // CPU. NICHT als Schleife: die fünf Punkte des Kaskaden-Filters (`_schattenFilter`) — eine Schleife mit Abtastung kostete
     // +0,35–0,47 ms GPU je Bild (der Treiber überlappt die Abgriffe nicht mehr) für −0,6 s Übersetzung; der Pool trägt keine.
     // Die Schleife lebt in einer Fn ohne Layout: nur in ihrem Bau hat `Loop` einen Stapel.
-    _lichtPoolTerm(Te, atmo, himmel, fern) {
+    // `narbe` (ein Knoten oder nichts): die Tiefe Λ des Halms — jeder Platz und die Karte dämpfen ihr Licht in der Narbe
+    // (`_halmNarbeDirekt`), die Höhe der Quelle in der Sicht wie bei der Sonne.
+    _lichtPoolTerm(Te, atmo, himmel, fern, narbe) {
         const W = this._lichtWurf();
         return Te.Fn(() => {
             Te.normalView.toVar();
             Te.positionView.toVar();
             const wurf = W.faktor.toVar();
             const summe = Te.vec3(0).toVar();
+            const oben = narbe ? Te.cameraViewMatrix.transformDirection(Te.vec3(0, 1, 0)).toVar() : null;
+            const halm = narbe ? { lambda: narbe.toVar(), oben } : null;
+            // der Fern-Ring liegt jenseits des Gitters (`_leuchtStoff`): ohne Karte kein Boden, kein Rückwurf
+            const karte = fern ? null : this._lichtKarteAbgriff(Te, atmo);
+            const boden = karte ? Te.vec3(0).toVar() : null;
             Te.Loop(atmo.lichtLage.length, ({ i: k }) => {
                 const [lage, farbe, ersatz, kern] = AnazhRealm._jePlatz(
                     Te,
@@ -2630,10 +2641,11 @@ class AnazhRealm_stoff_material {
                 );
                 const platz = { lage, farbe, ersatz, kern };
                 summe.addAssign(
-                    this._lichtPlatz(Te, platz, himmel).mul(Te.mix(Te.float(1), wurf, Te.float(W.platz.equal(k))))
+                    this._lichtPlatz(Te, platz, himmel, halm).mul(Te.mix(Te.float(1), wurf, Te.float(W.platz.equal(k))))
                 );
+                if (karte) boden.addAssign(this._lichtPlatzBoden(Te, platz, karte.grund));
             });
-            if (!fern) summe.addAssign(this._lichtKarteTerm(Te, atmo)); // der Fern-Ring liegt jenseits des Gitters (`_leuchtStoff`)
+            if (karte) summe.addAssign(this._lichtKarteTerm(Te, atmo, karte, boden, halm));
             return summe;
         })();
     }
@@ -2641,37 +2653,95 @@ class AnazhRealm_stoff_material {
     // DIE LICHT-KARTE IM STOFF (`LICHT_KARTE`): der Vektor der Bestrahlung an der Lage des Fragments (zwischen den zwei Lagen über
     // dem Boden der Zelle), in den Blick-Raum gedreht und gegen die Normale des Pools (`normalView`) — Lambert der Quellen ohne
     // Platz, ohne Glanz und Wurf (die trägt der Platz der wichtigsten). Außerhalb des Gitters 0 (der Rand trägt 0).
-    _lichtKarteTerm(Te, atmo) {
+    // DER RÜCKWURF DES BODENS (nacht-füll): der Boden unter dem Fragment wirft das Licht, das auf ihn fällt, als Lambert-Fläche
+    // zurück — eine Fläche der Neigung β sieht den Boden mit dem Anteil (1 − cos β) ÷ 2 (Liu & Jordan 1963, der isotrope
+    // Boden-Reflex geneigter Flächen; die Wand ½, der Boden 0, die Decke 1): E_rück = ρ · E_Boden · (1 − n_y) ÷ 2. E_Boden ist die
+    // waagrechte Bestrahlung am Boden unter dem Fragment aus ALLEN Quellen des Pools — die Karte trägt sie im unteren Band (d0.y,
+    // die Quellen ohne Platz), jeder Platz rechnet sie an derselben Stelle (`_lichtPlatzBoden`). ρ ist die EINE Erde der Welt
+    // (`ATMO_BODEN`, ihre Luma — derselbe Boden, den die Lichtglocke nach oben wirft, welt-licht `glockeKern`). Bis nacht-füll
+    // stand jede Fläche, die den Lichtern abgewandt ist, im Schwarz der mondlosen Nacht: die Gasse p10 7,6 EV unter dem Band.
+    // DER ABGRIFF DER KARTE (`LICHT_KARTE`) EINMAL je Fragment, VOR der Schleife der Plätze (Lehre 26: r184 schreibt einen Knoten,
+    // wo er zuerst gebaut wird): die Bänder d0 · d1 · c und der Boden unter dem Fragment (`grund`, Welt-Raum, die Höhe d0.w der
+    // Zelle; außerhalb des Gitters `drin` 0).
+    _lichtKarteAbgriff(Te, atmo) {
         const K = AnazhRealm.LICHT_KARTE;
         const LK = atmo.lichtKarte;
         const pw = Te.positionWorld;
         // EIN Gitter, EIN Sampler (der Boden trägt 16 je Stufe — drei Gitter rissen die Grenze: 17): die drei Bänder übereinander
         // (d0 · d1 · c), die Lage im Band auf die Mitte der Rand-Zellen geklemmt (sie tragen 0, kein Band blutet ins nächste)
         const rand = 0.5 / K.texel;
-        const uv = pw.xz
+        const roh = pw.xz
             .sub(LK.mitte)
             .div(K.texel * K.zelleM)
-            .add(0.5)
-            .clamp(rand, 1 - rand);
+            .add(0.5);
+        const uv = roh.clamp(rand, 1 - rand);
+        const drin = Te.float(roh.equal(uv).all()).toVar();
         const band = (k) => Te.texture(LK.gitter, Te.vec2(uv.x, uv.y.add(k).div(3)));
-        const a = band(0);
-        const b = band(1);
-        const c = band(2).rgb;
-        const t = pw.y
+        const a = band(0).toVar();
+        const b = band(1).toVar();
+        const c = band(2).rgb.toVar();
+        const grund = Te.vec3(pw.x, a.w, pw.z).toVar();
+        return { a, b, c, drin, grund };
+    }
+
+    // DIE LICHT-KARTE IM STOFF (`LICHT_KARTE`): der Vektor der Bestrahlung an der Lage des Fragments (zwischen den zwei Lagen über
+    // dem Boden der Zelle), in den Blick-Raum gedreht und gegen die Normale des Pools (`normalView`) — Lambert der Quellen ohne
+    // Platz, ohne Glanz und Wurf (die trägt der Platz der wichtigsten). Außerhalb des Gitters 0 (der Rand trägt 0). Dazu der
+    // RÜCKWURF des Bodens aus Karte und Plätzen (`boden`: die Bestrahlung der Plätze am Boden unter dem Fragment).
+    // `halm` (oder nichts): der Vektor der Bestrahlung ist die Richtung der Quellen ohne Platz — der Halm dämpft ihn in seiner
+    // Narbe unter seiner Höhe (`_halmNarbeDirekt`), den Rückwurf von unten nicht.
+    _lichtKarteTerm(Te, atmo, karte, boden, halm) {
+        const K = AnazhRealm.LICHT_KARTE;
+        const { a, b, c, drin } = karte;
+        const t = Te.positionWorld.y
             .sub(a.w)
             .sub(K.lagenM[0])
             .div(K.lagenM[1] - K.lagenM[0])
             .clamp();
         const D = Te.cameraViewMatrix.mul(Te.vec4(Te.mix(a.xyz, b.xyz, t), 0)).xyz;
-        const E = Te.normalView
+        const E0 = Te.normalView
             .dot(D)
             .max(0)
             .mul(1 / K.skala);
+        const E = halm ? E0.mul(this._halmNarbeDirekt(Te, halm, D.div(D.length().max(1e-6)))) : E0;
+        const B = AnazhRealm.ATMO_BODEN;
+        const rho = 0.2126 * B[0] + 0.7152 * B[1] + 0.0722 * B[2];
+        const ny = Te.normalView.dot(Te.cameraViewMatrix.mul(Te.vec4(0, 1, 0, 0)).xyz);
+        const eBoden = c.mul(a.y.max(0).mul(1 / K.skala)).add(boden.mul(drin));
+        const rueck = eBoden.mul(ny.oneMinus().mul(rho * 0.5));
         return c
             .mul(E)
+            .add(rueck)
             .mul(Te.diffuseColor.rgb)
             .mul(Te.metalness.oneMinus())
             .mul(1 / Math.PI);
+    }
+
+    // DER PLATZ AM BODEN (nacht-füll, der Rückwurf): die waagrechte Bestrahlung, die der Platz auf den Boden unter dem Fragment
+    // wirft (`grund`, Welt-Raum) — derselbe Abfall wie die Fläche (`_lichtAbstand`), der Kosinus zur Senkrechten, ohne Wurf und
+    // ohne Himmels-Sicht des Bodens (der Ersatz zählt ganz).
+    _lichtPlatzBoden(Te, platz, grund) {
+        const { lage, farbe, ersatz, kern } = platz;
+        const Lg = lage.xyz.sub(grund);
+        const d = Lg.length().max(1e-3);
+        const bedingung = lage.w.greaterThan(0).and(d.lessThan(lage.w)).and(Lg.y.greaterThan(0));
+        const E = farbe.rgb.mul(
+            this._lichtAbstand(Te, d, lage.w, kern, farbe.a).mul(Lg.y.div(d)).mul(ersatz.oneMinus())
+        );
+        return Te.select(bedingung, E, Te.vec3(0));
+    }
+
+    // DER ABFALL EINES PLATZES (K11): das Fenster der Reichweite (1 − (d ÷ R)⁴)² × (d² + Kern)^(−Abfall ÷ 2) — EIN Gesetz für
+    // die Fläche (`_lichtPlatz`) und den Boden unter ihr (`_lichtPlatzBoden`).
+    _lichtAbstand(Te, d, R, kern, abfall) {
+        return d
+            .div(R)
+            .pow2()
+            .pow2()
+            .oneMinus()
+            .clamp()
+            .pow2()
+            .mul(d.mul(d).add(kern).pow(abfall.mul(-0.5)));
     }
 
     // DAS GITTER DER LICHT-KARTE (`LICHT_KARTE`): Halb-Float RGBA, n × 3n — die Bänder d0 (Zeilen 0…n−1), d1, c —, linear gefiltert,
@@ -2717,7 +2787,7 @@ class AnazhRealm_stoff_material {
     // der Fläche (der Boden: `aHimmel`) oder nichts. Der Abfall des Gesetzes, das Gewicht des Himmels-Ersatzes, die Bedingung
     // (Reichweite, Gewicht, Fläche in ihr und ihm zugewandt — sie liest `positionView` und `normalView`) und die EINE BRDF
     // (`_punktLichtBrdf`). → der Beitrag des Platzes ohne den Faktor des Wurfs.
-    _lichtPlatz(Te, platz, himmel) {
+    _lichtPlatz(Te, platz, himmel, halm) {
         const N = Te.normalView;
         const P = Te.positionView;
         const { lage, farbe, ersatz, kern } = platz;
@@ -2731,17 +2801,18 @@ class AnazhRealm_stoff_material {
             .and(N.dot(Lv).greaterThan(0));
         const L = Lv.div(d);
         const nl = N.dot(L).clamp();
-        const q = d.div(lage.w).pow2();
-        const abst = q
-            .pow2()
-            .oneMinus()
-            .clamp()
-            .pow2()
-            .mul(d.mul(d).add(kern).pow(farbe.a.mul(-0.5)));
-        const beitrag = farbe.rgb
+        const abst = this._lichtAbstand(Te, d, lage.w, kern, farbe.a);
+        const roh = farbe.rgb
             .mul(nl.mul(abst).mul(gewicht))
             .mul(this._punktLichtBrdf(Te, N, L, P.negate().normalize(), nl));
+        const beitrag = halm ? roh.mul(this._halmNarbeDirekt(Te, halm, L)) : roh;
         return Te.select(bedingung, beitrag, Te.vec3(0));
+    }
+
+    // DAS LICHT IN DER NARBE DES HALMS (nacht-füll): der Faktor exp(−K(θ) · Λ) auf eine Quelle in der Blick-Richtung `L`
+    // (normiert, Blick-Raum) — phyto-core `halmNarbe`, dasselbe Gesetz, mit dem die Sonne den Halm erreicht (`_laubLichtModell`).
+    _halmNarbeDirekt(Te, halm, L) {
+        return globalThis.__phytoCore.halmNarbe(AnazhRealm._windTsl(Te), halm.lambda, L.dot(halm.oben)).direkt;
     }
 
     // DIE EINE BRDF EINES PUNKTLICHTS (K11, jeder Platz des Licht-Pools): r184s Lambert + GGX ausgeschrieben — BRDF_Lambert,

@@ -1825,7 +1825,7 @@ class AnazhRealm_bild_himmel {
     // Maß der Nacht (1 − Dämmerung der EINEN Tag-Achse, `_tagAchse`: wie die Sterne erscheinen, erscheint ihr Licht). Bis D3-2 trug der Himmel der EINEN Atmosphäre nachts nur die Streuung des Mondes
     // (Zenit 0,009): der Himmel der Nacht war schwarz, Wiese Mitternacht Luma 4,9 (vor D3 31,7), Dämmerung 0,78 4,2 (38,1).
     // DIE LICHTGLOCKE (nacht-gasse-licht) — der Nacht-Sockel des Orts, ein eigener Term NEBEN dem Sternen-Licht in derselben
-    // Leuchtdichte der Nacht: die Leuchten der Wahl (`_leuchtPool.alle` — dieselben Quellen und dieselbe Stärke wie Karte und
+    // Leuchtdichte der Nacht: die Leuchten des Orts (`_leuchtQuellen` bis `GLOCKE.umkreisM` — dieselbe Stärke wie Karte und
     // Messer, `_leuchtStaerke` mit Schaltplan, ohne Flackern), je Quelle ihr waagrechter Abstand zum Auge der Wahl, die Glocke aus
     // der EINEN Luft (welt-licht `lichtGlocke`) in der Farbe ihrer Leuchten (ihr Mittel nach Stärke). Das Fenster (eine Quelle mit
     // Normale: sein Licht geht waagrecht hinaus), das Licht des Auges und der Stahl an der Hand zählen nicht. Die Glocke steht in
@@ -1845,7 +1845,31 @@ class AnazhRealm_bild_himmel {
             const [q0, rgb, GL] = [[], [0, 0, 0], __weltLicht.GLOCKE];
             let summe = 0;
             this._zeitplanFest(() => {
-                for (const q of pool.alle) {
+                // DIE LEUCHTEN DES GANZEN ORTS (nacht-füll): die Glocke sieht jede Leuchte bis `GLOCKE.umkreisM`, nie nur die Wahl des
+                // Pools (56 m) — an stadt-voll trugen die 54 Quellen der Wahl 0,0017 cd/m², die 488 des Orts 0,0038. Die Liste fragt
+                // `_leuchtQuellen` ohne Glas (das Fenster zählt nicht) und nur nach `GLOCKE.nachM` Weg oder einem neuen Schaltplan
+                // (Gebot 7: der Weg ändert die Glocke langsam, J ~ 1/s); je Wahl rechnet sie nur die Abstände neu.
+                const g = this._zeitplanJetzt();
+                if (
+                    !A.quellen ||
+                    A.frage !== this._leuchtQuellen ||
+                    A.plan !== this._lichtZeitplan ||
+                    A.nacht !== g.nacht ||
+                    A.abend !== g.abend ||
+                    !(Math.hypot(pool.x - A.qx, pool.z - A.qz) <= GL.nachM)
+                ) {
+                    A.quellen = this._leuchtQuellen(pool.x, pool.y, pool.z, GL.umkreisM, null, false);
+                    Object.assign(A, {
+                        frage: this._leuchtQuellen,
+                        qx: pool.x,
+                        qz: pool.z,
+                        plan: this._lichtZeitplan,
+                        nacht: g.nacht,
+                        abend: g.abend,
+                    });
+                    A.fragen = (A.fragen || 0) + 1;
+                }
+                for (const q of A.quellen) {
                     if (q.quelle === "auge" || q.quelle === "stahl" || q.normale || q.L.ersatz) continue;
                     const I = this._leuchtStaerke(q, 0, true) * __weltLicht.EINHEIT_LX;
                     if (!(I > 0)) continue;
@@ -2356,6 +2380,7 @@ class AnazhRealm_bild_himmel {
         // (`_poolAmBild`: dieselben Punkte, deren Sonnen-Sicht er liest) — unter der Laterne und am Feuer schließt die Blende, wie
         // das Auge es tut. `_belichtungE` bleibt die Lesung des Himmels (Regen, Raum und Wurf lesen sie).
         const wp = this._poolAmBild(w, this._belichtungMitPool || (this._belichtungMitPool = [0, 0, 0]));
+        this._farbAnpassung(w, wp);
         // das Gesetz der Kamera (welt-licht.js `belichtung`) mit den Stufen am Glied der Welt (die Linsen prüfen ihren Schein dort)
         // und dem Boden des Messers: der Mond auf seiner Bahn (`_mondRichtung`, Höhe y) ohne Wolken-Decke zu dieser Stunde,
         // derselbe Durchlass wie sein Richtlicht (`_dayNightApplyDirectionalLight`) — unter offenem Himmel liegt er nie über dem
@@ -2383,6 +2408,41 @@ class AnazhRealm_bild_himmel {
         const ws = this._belichtungOhneSonne || (this._belichtungOhneSonne = [0, 0, 0]);
         for (let i = 0; i < 3; i++) ws[i] = Math.max(0, wp[i] - so[i]);
         return k * 2 ** (u * Math.log2(gesetz(ws) / k) + a);
+    }
+
+    // DIE FARB-ANPASSUNG DES AUGES (nacht-füll, die Schwester der Belichtung): das Auge stimmt sich auf das Licht um, das es misst —
+    // von Kries im Zapfen-Raum CAT02 (CIE 159:2004), der Grad D = F · [1 − (1/3,6) · e^((−L_A − 42)/92)] (CIECAM02) mit F = 0,8
+    // (Umfeld dunkel, die Nacht im Freien) und L_A = E ÷ 5π (der Adaptations-Leuchtdichte der 20-%-Umgebung). Das Weiß des Orts liest
+    // derselbe Messer wie die Blende: der Himmel (`w`, Sonne und Kuppel — die Eichung der Welt, ihr Weiß ist das Weiß des Bilds)
+    // in seiner Luma, dazu der Licht-Pool am Bild (`wp − w`) in seiner Farbe (`_poolFarbe`). Ohne Leuchten am Bild die Einheit (der Tag bitgleich);
+    // unter 2 983 K mit D ≈ 0,66 bleibt die Gasse warm — keine volle Neutralisierung (Fairchild, Color Appearance Models, Kap. 9:
+    // die unvollständige Anpassung an Glühlicht). → stellt `postProcessingUniforms.anpassung` (3 × 3 linear sRGB).
+    _farbAnpassung(w, wp) {
+        const u = this.state.postProcessingUniforms;
+        if (!u || !u.anpassung) return;
+        const M = u.anpassung.value;
+        const luma = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+        const [lw, lp, pf] = [luma(w), luma(wp) - luma(w), this._poolFarbe];
+        if (!(lp > 0) || !(lw + lp > 0) || !pf) return void M.identity();
+        // der Pool trägt in der Belichtung nur seine Luma (`_poolAmBild`), seine Farbe führt der Messer daneben (`_poolFarbe`, Luma 1)
+        const weiss = [0, 1, 2].map((i) => (lw + lp * pf[i]) / (lw + lp));
+        const LA = ((lw + lp) * __weltLicht.EINHEIT_LX) / (5 * Math.PI);
+        const D = Math.min(1, Math.max(0, 0.8 * (1 - (1 / 3.6) * Math.exp((-LA - 42) / 92))));
+        const C = AnazhRealm.FARB_ANPASSUNG;
+        const lms = (c) => [0, 1, 2].map((i) => C.lms[i][0] * c[0] + C.lms[i][1] * c[1] + C.lms[i][2] * c[2]);
+        const [ziel, ort] = [lms([1, 1, 1]), lms(weiss)];
+        const g = [0, 1, 2].map((i) => D * (ziel[i] / ort[i]) + 1 - D);
+        // A = lms⁻¹ · diag(g) · lms
+        const A = [0, 1, 2].map((r) =>
+            [0, 1, 2].map(
+                (c) =>
+                    C.inv[r][0] * g[0] * C.lms[0][c] +
+                    C.inv[r][1] * g[1] * C.lms[1][c] +
+                    C.inv[r][2] * g[2] * C.lms[2][c]
+            )
+        );
+        M.set(...A[0], ...A[1], ...A[2]);
+        this._farbAnpassungStand = { D: +D.toFixed(3), LA: +LA.toPrecision(3), weiss: weiss.map((v) => +v.toFixed(3)) };
     }
 
     // DIE BLENDE DES RAUMS (je Takt, hinter der Belichtung): unter einer Decke (`_raumAmAuge`, null unter offenem Himmel) sind
@@ -3942,6 +4002,20 @@ AnazhRealm.ATMO_LUT = __weltLicht.ATMO_LUT; // welt-licht.js — die Größen un
 // (0,1130/0,1344/0,0646, G/B 2,1 statt 3,1) für beide: der graue Boden der Ferne stand in jeder nahen Spiegelung, der Film der
 // Tore las als Milch (gate:portal-membran H, Radeon: milchweiß 4,7 → 5,3 % > 5 %) — heil-w4-ferne-blau.
 AnazhRealm.ATMO_BODEN = __weltLicht.ATMO_BODEN; // welt-licht.js — [0,1003 · 0,1385 · 0,0449]
+// DER ZAPFEN-RAUM DER FARB-ANPASSUNG (nacht-füll, `_farbAnpassung`): `lms` = M_CAT02 (CIE 159:2004) · sRGB→XYZ (IEC 61966-2-1,
+// D65) — vom linearen sRGB der Welt in die Zapfen; `inv` ihre Umkehr (lms · inv = Einheit auf 6 Stellen).
+AnazhRealm.FARB_ANPASSUNG = Object.freeze({
+    lms: [
+        [0.3904725, 0.5499044, 0.0089016],
+        [0.0709259, 0.9631074, 0.0013581],
+        [0.0231427, 0.1280122, 0.9360519],
+    ],
+    inv: [
+        [2.8583111, -1.628708, -0.0248187],
+        [-0.2104348, 1.1584149, 0.0003205],
+        [-0.0418895, -0.1181543, 1.0688866],
+    ],
+});
 // Licht-Rig: KEY_BASE skaliert die Rayleigh-Lichtmenge aufs Schlüssellicht (Mittag ≈ 2.6·0.913). Ziel key-dominant (Vorlage dir/(amb+hemi) ≈ 15:1); die Schattenseite trägt der Himmel.
 AnazhRealm.KEY_BASE = __weltLicht.KEY_BASE; // welt-licht.js — 2,6
 // r128→r184-Licht-Übersetzung (three.js r155, useLegacyLights → physisch): Legacy-Licht hatte keine

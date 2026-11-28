@@ -2187,6 +2187,7 @@ class AnazhRealm {
         aus[1] = w[1];
         aus[2] = w[2];
         this._poolE = 0;
+        this._poolFarbe = null;
         const pool = this._leuchtPool;
         const cam = this.state.camera;
         if (!pool || !cam) return aus;
@@ -2216,6 +2217,9 @@ class AnazhRealm {
                     : (this._poolBildJe = new Float64Array(P.kacheln || P.n));
             je.fill(0, 0, P.n);
             let farbig = 0;
+            // DIE FARBE DES POOLS AM BILD (nacht-füll): dieselbe Summe je Kanal — die Farb-Anpassung des Auges liest sie
+            // (`_farbAnpassung`), die Belichtung weiter nur die Luma
+            const farbe = [0, 0, 0];
             let wandert = false;
             // der Kasten der Punkte: eine Quelle, deren Reichweite ihn nicht berührt, trägt keinem Punkt (sie fällt vor der Schleife)
             const kasten = [Infinity, Infinity, Infinity, -Infinity, -Infinity, -Infinity];
@@ -2253,14 +2257,22 @@ class AnazhRealm {
                     } else d = Math.hypot(vx, dy, vz);
                     if (!(d < R)) continue;
                     const e = FC.lichtAbfall(q.L, d) * (dy / d) * lambert;
-                    if (e > 0) ((je[i] += lu * e), farbig++);
+                    if (e > 0)
+                        ((je[i] += lu * e),
+                            farbig++,
+                            (farbe[0] += I * e * c.r),
+                            (farbe[1] += I * e * c.g),
+                            (farbe[2] += I * e * c.b));
                 }
             }
-            const merk = { P, alle: pool.alle, nacht: g.nacht, abend: g.abend, plan, je, farbig };
+            const fl = 0.2126 * farbe[0] + 0.7152 * farbe[1] + 0.0722 * farbe[2];
+            if (fl > 0) for (let k = 0; k < 3; k++) farbe[k] /= fl;
+            const merk = { P, alle: pool.alle, nacht: g.nacht, abend: g.abend, plan, je, farbig, farbe };
             this._poolBildMerk = wandert ? null : merk;
             return merk;
         });
         const { je, farbig } = M;
+        this._poolFarbe = farbig ? M.farbe : null;
         if (!farbig) return aus;
         // das Fenster: log₂((Himmel + Pool) ÷ Himmel) je Kachel des Bilds, sortiert, gemittelt zwischen den Perzentilen — eine
         // Kachel ohne Punkt (der Himmel) trägt das Licht des Himmels allein: 0 Stufen
@@ -2360,7 +2372,7 @@ class AnazhRealm {
     // Mit dem Sichtkegel `F` (`_leuchtKegel`) rangiert jede Quelle, deren Reichweiten-Kugel ihn nicht berührt, hinter allen,
     // die ihn berühren: sie erhellt kein Pixel des Bildes — die Laterne hinter dem Rücken nahm sonst den Platz der Laterne
     // vor dem Auge (die Gasse nachts: 1 von 6 Laternen im Bild hell). Freie Plätze nehmen sie weiter (das Drehen blendet).
-    _leuchtQuellen(x, y, z, R, F) {
+    _leuchtQuellen(x, y, z, R, F, glas = true) {
         const out = [];
         const t = this._bildZeit; // das Flackern auf der Bild-Uhr (A9)
         const kugel = F ? this._leuchtKugel || (this._leuchtKugel = new THREE.Sphere()) : null;
@@ -2388,7 +2400,8 @@ class AnazhRealm {
         // seiner Größe (`_fensterLicht`); ihr Licht trägt die Karte (nie ein Platz, `_leuchtWahl`) in den Halbraum vor der Wand
         // (`_lichtKarteFleck`). Brennt kein Fenster zur Stunde (Schaltplan 0, der Tag), fragt die Wahl kein Glas. Bis hier leuchtete
         // das Glas nur als Stoff: der Boden vor dem Haus stand im Mondlicht.
-        const fensterAn = this._lichtSchaltplan(globalThis.__fachwerkCore.LICHT_GESETZ.fenster) > 0;
+        // `glas` false: die Lichtglocke fragt ohne Glas (sein Licht geht waagrecht hinaus, `_atmoSternenLicht`)
+        const fensterAn = glas && this._lichtSchaltplan(globalThis.__fachwerkCore.LICHT_GESETZ.fenster) > 0;
         for (const e of this._blockerMit("licht")) {
             const p = e.position;
             if (!p || (p.x - x) * (p.x - x) + (p.z - z) * (p.z - z) > R * R) continue;
