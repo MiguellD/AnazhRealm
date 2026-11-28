@@ -1,7 +1,7 @@
 {
  "sha": "e80f9c5d0c5db273352ab3dcda920df4b149fe59",
  "geraet": "gtx",
- "zeit": "2026-11-28T08:44:06.079Z",
+ "zeit": "2026-11-28T08:45:39.707Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "profiband.K4#1": {
@@ -3207,6 +3207,70 @@
    },
    "zeit": "2026-11-28T08:19:20.251Z",
    "abdruck": "0b389cec986f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.same.preis.speicher#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 87 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter same.preis.speicher) · Täter: @@PUNKTE@@ FRIST 87 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 1.47,
+   "grund": "Frist der Probe 87 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter same.preis.speicher) · Täter: @@PUNKTE@@ FRIST 87 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 87.8,
+   "fremd": {
+    "s": 90.9,
+    "takte": 40,
+    "fremdS": 77.38,
+    "kerne": 0.851,
+    "fensterKerne": 1.44,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      12.97
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      8.98
+     ],
+     [
+      "Explorer.EXE",
+      5.5
+     ]
+    ],
+    "dienerS": 35.3,
+    "diener": [
+     [
+      "dwm.exe",
+      14.2
+     ],
+     [
+      "System",
+      14.09
+     ]
+    ],
+    "geraetS": 56.69,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      38.31
+     ],
+     [
+      "svchost.exe",
+      16.19
+     ],
+     [
+      "SearchIndexer.exe",
+      1.03
+     ]
+    ],
+    "eigenS": 402.63,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-28T08:45:39.707Z",
+   "abdruck": "afb781b2f72e",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
