@@ -296,8 +296,10 @@ class AnazhRealm_feld_brand {
     // brennt), liest sie das Gemessene (`_brandBett`, geleert, wenn ein neuer Brand fängt). Die Asche fragt der Index jedes Mal.
     _brandStoff(cx, cz, uhr) {
         const key = cx + "," + cz;
-        const je = this._tatIndex().je.get(key);
-        if (je && je.some((a) => a.tat === "brand")) return null;
+        const I = this._tatIndex();
+        const je = I.je.get(key);
+        // auf der Asche brennt nichts, bis ihr Boden heilt (`_tatBoden`); im jungen Wald danach trägt das Bett, was wächst
+        if (je && je.some((a) => a.tat === "brand" && this._weltStunde(uhr) < a.h + I.boden.get(a))) return null;
         const M = this._brandBett || (this._brandBett = new Map());
         if (M.has(key)) return M.get(key);
         const cs = AnazhRealm.LIFE_FIELD.cell;

@@ -2831,7 +2831,8 @@ class AnazhRealm_feld_leben {
                 gen: this._tatGen,
                 je: new Map(),
                 kachel: new Map(),
-                dauer: new Map(),
+                dauer: new Map(), // je Tat ihr Leben bis zur Heilung (der Brand: bis sein Wald steht)
+                boden: new Map(), // je Tat die Uhr ihres Bodens (Narbe, Nährstoff, Asche, Busch; `_tatBoden`)
                 lava: [], // die Lava-Taten (das Licht fragt sie, `_leuchtQuellen`)
                 brand: [], // die Aschen (die Boden-Decke malt sie, `_ascheStufeMalen`; die Sukzession weckt sie)
                 bestellen: [], // die bestellten Stücke der Äcker (der Körper des Ackers legt sie, `_ackerKoerperTakt`)
@@ -2844,6 +2845,7 @@ class AnazhRealm_feld_leben {
             const a = L[J.n];
             if (!a || !N[a.tat] || !Number.isFinite(a.x + a.z + a.h)) continue;
             J.dauer.set(a, this._tatDauer(a));
+            J.boden.set(a, this._tatBoden(a));
             const k = this._lifeCellKey(a.x, a.z);
             if (!J.je.has(k)) J.je.set(k, []);
             J.je.get(k).push(a);
@@ -2867,7 +2869,7 @@ class AnazhRealm_feld_leben {
         return J;
     }
 
-    // Die Narbe an (x,z): Σ Tiefe × Rest je Tat der Zelle (der Rest fällt linear von 1 auf 0 über ihre Dauer), gekappt.
+    // Die Narbe an (x,z): Σ Tiefe × Rest je Tat der Zelle (der Rest fällt linear von 1 auf 0 über die Uhr ihres Bodens), gekappt.
     _narbeAt(x, z, uhr) {
         const I = this._tatIndex();
         const je = I.n ? I.je.get(this._lifeCellKey(x, z)) : null;
@@ -2875,7 +2877,7 @@ class AnazhRealm_feld_leben {
         const N = AnazhRealm.TAT_NARBE;
         const h = this._weltStunde(uhr);
         let s = 0;
-        for (const a of je) s += N[a.tat].tiefe * Math.min(1, Math.max(0, 1 - (h - a.h) / I.dauer.get(a)));
+        for (const a of je) s += N[a.tat].tiefe * Math.min(1, Math.max(0, 1 - (h - a.h) / I.boden.get(a)));
         return Math.min(N.max, s);
     }
 
@@ -3276,7 +3278,11 @@ AnazhRealm.TAT_NARBE = Object.freeze({
     faellen: Object.freeze({ tiefe: 0.12, stunden: 48, naehr: -0.3 }), // der Stamm trägt den Nährstoff des Orts davon
     ernten: Object.freeze({ tiefe: 0.01, stunden: 3, naehr: -0.02 }),
     abbauen: Object.freeze({ tiefe: 0, stunden: Infinity }), // ein Wurf des Gesetzes, abgebaut: er kehrt nie zurück (speicher.K3)
-    brand: Object.freeze({ tiefe: 0.3, stunden: 72, naehr: 0.4 }), // die Asche (`_brandSchritt`): solange sie liegt, brennt die Zelle nicht; sie düngt
+    // die Asche (`_brandSchritt`): solange ihr Boden nicht geheilt ist (`stunden`), brennt die Zelle nicht; sie düngt. DER WALD
+    // KEHRT IN SPIELJAHREN (`waldJahre` ÷ Wuchs, `_tatDauer`; die Tat lebt, bis er steht): nach dem Yellowstone-Brand 1988 grünt
+    // der Boden im ersten Jahr, nach 24 Jahren steht dichter Jungwald (Turner u. a. 2016, Ecology 97: im Mittel 21 738 Stämme/ha)
+    // — Stufe 0,18 der Jugend nach 25 a —, geschlossen erst nach Jahrzehnten; bis hier stand der Wald nach 5,6 a gewachsen
+    brand: Object.freeze({ tiefe: 0.3, stunden: 72, naehr: 0.4, waldJahre: 60 }),
     lava: Object.freeze({ tiefe: 0.5, stunden: Infinity }), // die Lava (`_lavaGiessen`): erstarrt bleibt sie Stein
     riss: Object.freeze({ tiefe: 0.03, stunden: 24, naehr: 0.2 }), // ein Tod von Spieler-Hand (`_creatureCombatDeath`): ein Leben fehlt dem Ort, sein Leichnam nährt ihn
     bauen: Object.freeze({ tiefe: 0, stunden: Infinity }), // ein gebautes Werk (`_werkAkt`): seine Störungszone senkt das Leben, bis sein Abriss kommt (`_werkStoerungAt`)

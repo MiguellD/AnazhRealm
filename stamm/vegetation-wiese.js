@@ -2359,7 +2359,7 @@ class AnazhRealm_vegetation_wiese {
         if (!je) return Math.max(0, Math.min(AnazhRealm.WUCHS.naehrMax, n));
         const N = AnazhRealm.TAT_NARBE;
         for (const a of je) {
-            const d = J.dauer.get(a);
+            const d = J.boden.get(a);
             if (N[a.tat].naehr && d) n += N[a.tat].naehr * Math.min(1, Math.max(0, 1 - (h - a.h) / d));
         }
         return Math.max(0, Math.min(AnazhRealm.WUCHS.naehrMax, n));
@@ -2374,17 +2374,22 @@ class AnazhRealm_vegetation_wiese {
     // den Sämling, der bis zur Heilung zum Baum wächst. Die Rampen sind in Stufen gezählt (Achtel, der Jungwuchs in den Stufen
     // seiner Gestalt `SUKZESSION.jugend`; `stufe` ihr Schlüssel): nur dort ändert sich ein Leser, und nur dort weckt der
     // Nachwuchs (`_sukzessionNaechste`).
+    // DER WALD GEHT SEINE EIGENE UHR (oeko.sukzession#2): er beginnt bei `wald[0]` der Uhr des Bodens und steht gewachsen, wenn
+    // die Tat heilt (`_tatDauer`: Spieljahre, nicht die Stunden der Asche) — `sw` der Rest seiner Rampe.
     _sukzession(a, h = this._weltStunde()) {
         const S = AnazhRealm.SUKZESSION;
-        const d = this._tatIndex().dauer.get(a);
-        const s = d ? Math.max(0, (h - a.h) / d) : 1;
-        const q = ([lo, hi], n = S.stufen) => Math.ceil(Math.min(1, Math.max(0, (s - lo) / (hi - lo))) * n) / n;
+        const I = this._tatIndex();
+        const [d, db] = [I.dauer.get(a), I.boden.get(a)];
+        const s = db ? Math.max(0, (h - a.h) / db) : 1;
+        const w0 = db ? S.wald[0] * db : 0;
+        const sw = d > w0 ? Math.max(0, (h - a.h - w0) / (d - w0)) : 1;
+        const q = ([lo, hi], n = S.stufen, x = s) => Math.ceil(Math.min(1, Math.max(0, (x - lo) / (hi - lo))) * n) / n;
         const [J, brand] = [S.jugend.length, a.tat === "brand"];
         const z = {
             s,
             asche: brand ? 1 - q(S.asche) : 0,
             busch: brand ? q(S.busch) : 1,
-            wald: brand ? q(S.wald, J) : 1,
+            wald: brand ? q([0, S.wald[1]], J, sw) : 1,
             stubben: a.tat === "faellen" ? q(S.stubben, J) : 1,
         };
         z.stufe = [z.asche, z.busch, z.wald, z.stubben].join("|");
@@ -2393,21 +2398,31 @@ class AnazhRealm_vegetation_wiese {
 
     // Die nächste Welt-Stunde, zu der sich die Sukzession einer Tat ändert (die nächste Stufen-Grenze einer ihrer Rampen),
     // sonst das Ende ihrer Narbe.
+    // Je Rampe ihre Uhr: Asche und Busch die des Bodens, der Wald die seine (ab `wald[0]` des Bodens bis zur Heilung), der
+    // Stubben die der Tat.
     _sukzessionNaechste(a) {
         const S = AnazhRealm.SUKZESSION;
-        const d = this._tatIndex().dauer.get(a);
+        const I = this._tatIndex();
+        const [d, db] = [I.dauer.get(a), I.boden.get(a)];
         if (!d || !Number.isFinite(d)) return Infinity;
-        const s = (this._weltStunde() - a.h) / d;
+        const h = this._weltStunde();
         const J = S.jugend.length;
-        let n = 1;
-        for (const [[lo, hi], m = S.stufen] of a.tat === "brand"
-            ? [[S.asche], [S.busch], [S.wald, J]]
-            : [[S.stubben, J]])
+        const w0 = S.wald[0] * db;
+        let t = a.h + d + 1e-6;
+        for (const [[lo, hi], m, ab, span] of a.tat === "brand"
+            ? [
+                  [S.asche, S.stufen, 0, db],
+                  [S.busch, S.stufen, 0, db],
+                  [[0, S.wald[1]], J, w0, d - w0],
+              ]
+            : [[S.stubben, J, 0, d]]) {
+            const s = (h - a.h - ab) / span;
             for (let k = 0; k <= m; k++) {
                 const g = lo + ((hi - lo) * k) / m;
-                if (g > s + 1e-9 && g < n) n = g;
+                if (g > s + 1e-9 && g < 1) t = Math.min(t, a.h + ab + g * span + 1e-6);
             }
-        return a.h + n * d + 1e-6;
+        }
+        return t;
     }
 
     // Die Leser einer Tat folgen ihrer Sukzession, wo sich ihre Stufe änderte (`_sukzStand`: die zuletzt gemalte Stufe je Tat,
@@ -2469,9 +2484,21 @@ class AnazhRealm_vegetation_wiese {
     // die Tat EINMAL, im Augenblick ihres Schreibens (die Lichtung des gefällten Baums, `w`), und trägt ihn im worldMeta — über
     // Save und Reload heilt sie gleich, auch wenn die Kronen ringsum noch nicht wieder stehen. Eine Tat aus einem Stand vor
     // stoffe.K5 misst ihn beim ersten Lesen.
+    // Die Dauer ist das Leben der Tat bis zu ihrer Heilung: der Brand lebt, bis sein Wald steht — `waldJahre` Spieljahre
+    // (das Jahr in Welt-Stunden: tagStunden ÷ jahreJeTag, der Kalender) durch denselben Wuchs; sein Boden heilt nach `stunden`
+    // (`_tatBoden`: die Uhr von Narbe, Nährstoff, Asche und Busch).
     _tatDauer(a) {
         const N = AnazhRealm.TAT_NARBE;
         // das Werk heilt nicht (es steht bis zu seinem Abriss): es misst keinen Wuchs — seine Zeile trägt nur Ort, Fläche, Stempel
+        if (a.tat === "bauen" || a.tat === "abriss") return Infinity;
+        const b = this._tatBoden(a);
+        const wj = N[a.tat].waldJahre;
+        if (!wj) return b;
+        const K = AnazhRealm.WELT_GESETZ_ERDE.kalender;
+        return Math.max(b, (wj * K.tagStunden) / K.jahreJeTag / Math.max(N.lebMin, a.w));
+    }
+    _tatBoden(a) {
+        const N = AnazhRealm.TAT_NARBE;
         if (a.tat === "bauen" || a.tat === "abriss") return Infinity;
         if (!Number.isFinite(a.w)) a.w = Math.round(this._wuchsAt(a.x, a.z) * 1e3) / 1e3;
         return N[a.tat].stunden / Math.max(N.lebMin, a.w);

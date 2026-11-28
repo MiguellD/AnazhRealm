@@ -1339,7 +1339,7 @@ async function brandSeite(MESS) {
         N.asche = r3(r._naehrstoffAt(MESS.x, MESS.z)); // die Asche des Herds, frisch
         // die Welt-Stunde bis `h` (die Welt-Uhr `_weltUhrNimm` in Schritten ≤ 4 h — die Uhr des Spielers bewegt keinen Prozess, je Schritt ein Takt: der Nachwuchs wacht), dann steht die Welt
         const reif = async (h) => {
-            for (let n = 0; n < 400 && r._weltStunde() < h; n++)
+            for (let n = 0, N = Math.ceil((h - r._weltStunde()) / 4) + 2; n < N && r._weltStunde() < h; n++)
                 r._weltUhrNimm(st.spielZeit + ((Math.min(4, h - r._weltStunde() + 1e-3)) * r._kalender().tagS) / 24), takt();
             await stehen(MESS);
         };
@@ -1352,7 +1352,7 @@ async function brandSeite(MESS) {
             r._ascheAt = () => 0;
             F.mutante = folge(hx, hz);
             delete r._ascheAt;
-            const dauer = r._tatIndex().dauer.get(a);
+            const dauer = r._tatIndex().boden.get(a); // die Uhr des Bodens: Asche, Gras, Busch
             const bis = async (s) => (await reif(a.h + s * dauer), Object.assign(folge(hx, hz), { s: r3(r._sukzession(a).s) }));
             F.gras = await bis(0.31);
             F.busch = await bis(0.61);
