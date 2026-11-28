@@ -382,6 +382,11 @@
         { id: "kontinentLambda", gruppe: "kontinent", einheit: "m", min: 3000, max: 24000, step: 500, def: 9000, law: "Wellenlänge der Kontinentalität" },
         { id: "hoehe", gruppe: "kontinent", einheit: "1", min: 0.2, max: 1.6, step: 0.05, def: 1, law: "Relief-Skala der Hülle" },
         { id: "rauhLambda", gruppe: "kontinent", einheit: "m", min: 1200, max: 9000, step: 100, def: 3200, law: "Wellenlänge des Erosions-Felds (Gebirge ↔ Ebene)" },
+        // DAS STREICHEN (Karte 2 planet.geologie.platten#1): der Tensor der Streckung längs des Gebirgs-Streichens, m·(cos 2θ, sin 2θ),
+        // θ gegen +x (Ost) nach +z (Süd) — axial, darum der doppelte Winkel; als Paar addiert sich das Δ des Orts linear und reist
+        // ohne Sprung bei 0°/180°. 0 = isotrop (die Heimat). Die Großform liest ihn (`grossform`), planetOrt setzt ihn.
+        { id: "streichC", gruppe: "kontinent", einheit: "1", min: -3, max: 3, step: 0.05, def: 0, law: "Streichen: Streckung m × cos 2θ" },
+        { id: "streichS", gruppe: "kontinent", einheit: "1", min: -3, max: 3, step: 0.05, def: 0, law: "Streichen: Streckung m × sin 2θ" },
         // TÄLER
         { id: "netzDichte", gruppe: "taeler", einheit: "1", min: 0.6, max: 1.8, step: 0.05, def: 1, law: "Knotendichte des Flussnetzes (Ebene 0: 1600 m / Dichte)" },
         { id: "talForm", gruppe: "taeler", einheit: "1", min: 1, max: 2.2, step: 0.05, def: 1.3, law: "Querprofil-Exponent b (V 1 … Trog 2)" },
@@ -573,7 +578,19 @@
             (n.noise2D(wx * lc + 7.2, wz * lc + 3.8) + 0.45 * n.noise2D(wx * lc * 2.7 + 1.7, wz * lc * 2.7 - 6.1)) / 1.45 +
             P.land;
         const le = 1 / P.rauhLambda;
-        const e = (n.noise2D(wx * le + 33.1, wz * le + 71.7) + 0.4 * n.noise2D(wx * le * 2.3 - 5.3, wz * le * 2.3 + 9.9)) / 1.4;
+        // DAS STREICHEN (platten#1): das Relief-Feld wird längs der Richtung t um 1 + m gestreckt — p' = p − (1 − 1/(1+m))·(p·t)·t,
+        // t·tᵀ aus dem Tensor (m + C, S; S, m − C)/2m, ohne Winkel-Funktion. Die Kämme liegen im Streichen des Gürtels (reale
+        // Faltengürtel 100 × 100 km, Strukturtensor des Hochpass-Reliefs, Terrarium-Kacheln: Appalachen 2,5 · Jura 1,77 · Zagros
+        // 1,5–1,72; Kristallin-Kerne isotrop: Alpen 1,05 · Himalaya 1,02 · Tian Shan 1,09). m = 0 rechnet nichts: dieselben Bytes.
+        let ex = wx;
+        let ez = wz;
+        const sm = Math.hypot(P.streichC, P.streichS);
+        if (sm > 0) {
+            const q = (1 - 1 / (1 + sm)) / (2 * sm);
+            ex = wx - q * ((sm + P.streichC) * wx + P.streichS * wz);
+            ez = wz - q * (P.streichS * wx + (sm - P.streichC) * wz);
+        }
+        const e = (n.noise2D(ex * le + 33.1, ez * le + 71.7) + 0.4 * n.noise2D(ex * le * 2.3 - 5.3, ez * le * 2.3 + 9.9)) / 1.4;
         const off = spline(OFFSET_SPLINE, c);
         const kueste = glatt(-0.28, 0.12, c);
         const rel = spline(RELIEF_SPLINE, e) * P.hoehe * (0.15 + 0.85 * kueste);

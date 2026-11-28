@@ -3165,7 +3165,26 @@
       foerderKm3Ma: _orP.vulkanAktiv ? (_orP.vulkanArt === VULKAN_ART.hotspot ? 8 : 0.6) : 0 };   // dieselbe Regel wie planetVulkane
     o.rand = { art: _orP.randArt, abstandKm: _orP.randAbstandKm, rateCmA: _orP.randRateCmA };
     o.stauchung = sv;
+    streichenAmOrt(S, breite, laenge, reglerZeile(og, 'streichC'), o.wildnis);
     return o;
+  }
+  // DAS STREICHEN DES ORTS (Karte 2 planet.geologie.platten#1): der Gürtel streicht quer zum Gefälle seiner Gebirgs-Höhe (tGeb =
+  // max(Orogen, Gedächtnis)), gelesen an drei Punkten der Hülle (Schritt 30 km, Ost und Nord; die Hülle ist der Regenschatten-Leser,
+  // kein Relief-Punkt: ort.frage.punkte bleibt 2). Die Streckung m wächst mit dem Gefälle — die Flanke des Keils trägt die Falten
+  // (kritischer Keil, Davis, Suppe & Dahlen 1983: Oberflächen-Neigung 1–4° in Falten-Überschiebungs-Gürteln), der Kern mit Gefälle 0
+  // und das Kraton ohne Gebirge bleiben isotrop. 1 km je 100 km ⇒ m = 1 (gesetzt; geeicht am Band der realen Regionen, gelaende-core
+  // `grossform`). Der Tensor reist als m·(cos 2θ, sin 2θ) des Streichens, Spiel-x Ost, Spiel-z Süd.
+  const STREICHEN = Object.freeze({ schrittKm: 30, gefaelleJeStreckung: 0.01 });
+  const _stR = new Float64Array(3);
+  function gebirgeHuelle(S, breite, laenge) { planetRichtung(breite, laenge, _stR); punktKern(S, _stR[0], _stR[1], _stR[2], 400, true); return PK.tGeb; }
+  function streichenAmOrt(S, breite, laenge, zeile, wildnis) {
+    const d = STREICHEN.schrittKm, R = S.R, cb = Math.max(0.05, kcos(breite));
+    const h0 = gebirgeHuelle(S, breite, laenge), hO = gebirgeHuelle(S, breite, laenge + d / (R * cb)), hN = gebirgeHuelle(S, breite + d / R, laenge);
+    const gx = (hO - h0) / d, gz = -(hN - h0) / d, g2 = gx * gx + gz * gz;   // das Gefälle im Spiel-Rahmen (z Süd)
+    if (!(g2 > 0)) { wildnis.streichC = 0; wildnis.streichS = 0; return; }
+    const m = Math.min(zeile.max, Math.sqrt(g2) / STREICHEN.gefaelleJeStreckung);
+    // das Streichen steht senkrecht zum Gefälle: 2θ_t = 2θ_g + 180° ⇒ (cos, sin) wechseln das Vorzeichen
+    wildnis.streichC = -m * (gx * gx - gz * gz) / g2; wildnis.streichS = -m * 2 * gx * gz / g2;
   }
 
   // G3.2 die Terme des zuletzt gerechneten Punkts (planetPunktR davor), für die Linse, die den Täter eines Sprungs nennt
