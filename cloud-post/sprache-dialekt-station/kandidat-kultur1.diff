@@ -1,0 +1,26 @@
+diff --git a/meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js b/meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js
+index 1185669..7e0db4d 100644
+--- a/meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js
++++ b/meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js
+@@ -4263,7 +4263,8 @@ L.perspektive("mensch", (() => {
+                     // dieselben Leser, die Gelände und Wiese tragen); passend heißt: der Baustoff des Plans ist der Stoff seines Bodens. Die
+                     // Region aus dem Hausbild ist R11 (ein Prüfer liest) — ungemessen bis zum Gerät und zum Panel
+                     const BAU_AN = async (r, T, a, mit) => {
+-                        const P = await r._foundryRequestSettlement({ seed: a.saat, nH: mit.nH[a.saat] });
++                        // DER PLAN, DEN DER ORT BAUT, MIT SEINEM EINGANG (Klima, Mundart, Boden: `_zellEingang` der Zelle) — wie der Zug ihn bestellt
++                        const P = await r._foundryRequestSettlement({ seed: a.saat, nH: mit.nH[a.saat], ...r._zellEingang(mit.zelle[a.saat], a.saat) });
+                         if (!P || !P.slots || !P.slots.length) return { fehlt: "die Gießerei gibt der Saat keinen Plan (fachwerk-core.js, _foundryRequestSettlement)" };
+                         const [x, z] = mit.lage[a.saat];
+                         const fels = r._rockExposureAt(x, z), wald = r._forestStandDensity(x, z);
+@@ -4277,9 +4278,9 @@ L.perspektive("mensch", (() => {
+                         return { ist, soll, passend: ist === soll ? 1 : 0, fels, wald, heilig: P.slots.some((x) => /kirche|kapelle|tempel|schrein|kloster/i.test(String(x.rolle || ""))) ? 1 : 0, hash: h, stoff: { [ist]: 1 } };
+                     };
+                     const R1 = await FAECHER((c) => H.seite(c), {
+-                        gesetz: { fn: BAU_AN, export: "fachwerk-core.js:2762 bauRezept über _foundryRequestSettlement({seed, nH}) — der Stil (ov.stil) der Slots", leser: "fachwerk-core.js:5192 region = rnd() des Samens (der Plan, den der Ort baut); Boden: _rockExposureAt · _forestStandDensity der Zelle" },
++                        gesetz: { fn: BAU_AN, export: "fachwerk-core.js DORF über _foundryRequestSettlement({seed, nH, ..._zellEingang}) — der Stil (ov.stil) der Slots", leser: "fachwerk-core.js stoffDesBodens → regionImKlima · imVorrat (der Baustoff folgt dem Vorrat des Eingangs boden); Boden: _rockExposureAt · _forestStandDensity der Zelle" },
+                         adressen: { saaten: s2.zellen.map((c) => c.seed) },
+-                        mit: { nH: nH2, lage, STOFF: { stein: "stein", klinker: "stein", huette: "holz", alt: "lehm", glas: "glas", modern: "glas" } },
++                        mit: { nH: nH2, lage, zelle, STOFF: { stein: "stein", klinker: "stein", huette: "holz", alt: "lehm", glas: "glas", modern: "glas" } },
+                         ms: 15000,
+                         masse: {
+                             saaten: { wie: "verschieden", feld: "a.saat" },

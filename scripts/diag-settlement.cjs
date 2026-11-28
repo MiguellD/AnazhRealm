@@ -382,7 +382,7 @@ function klimaGang(FC) {
             d = FC.deckungVon({ stil: st });
         if (g < FC.DECKUNG_GESETZ[d].grad) unter.push(`stil ${st}: Grenze ${g}° unter ${d} ${FC.DECKUNG_GESETZ[d].grad}°`);
     }
-    return { je, aus, r4, unter, sockel: sockelGang(FC), dach: dachGang(FC), regen: regenGang(FC), planet: planetGang(FC), sprache: spracheGang(FC), baum: baumGang(FC), himmel: himmelGang(FC), mundart: mundartGang(FC) };
+    return { je, aus, r4, unter, sockel: sockelGang(FC), dach: dachGang(FC), regen: regenGang(FC), planet: planetGang(FC), sprache: spracheGang(FC), baum: baumGang(FC), himmel: himmelGang(FC), mundart: mundartGang(FC), vorrat: vorratGang(FC) };
 }
 function klimaUrteil(K, check) {
     const fremd = Object.entries(K.aus)
@@ -416,6 +416,7 @@ function klimaUrteil(K, check) {
     if (K.baum) baumUrteil(K.baum, check);
     if (K.himmel) himmelUrteil(K.himmel, check);
     if (K.mundart) mundartUrteil(K.mundart, check);
+    vorratUrteil(K.vorrat, check);
 }
 // R6/R7 (haus-dach): DIE DECKUNG FOLGT DEM ORT, DIE NEIGUNG DER DECKUNG — R6 die Wand: kein Bau trägt eine Deckung unter ihrer
 // Regeldachneigung (Reet 45°, Mönch-Nonne 40°, Biber 30°, Schiefer 26,5°, Schindel 22°, Hohlziegel 16,7°; fachwerk DECKUNG_GESETZ);
@@ -954,6 +955,51 @@ function mundartUrteil(G, check) {
         P.senken > 0 && P.gleich === P.senken && P.ortUs < 0.5 * P.schluesselUs
     );
 }
+// R16 (Karte 2 mensch.kopplung.kultur#1): DER BAUSTOFF FOLGT DEM VORRAT — 32 Saaten (14 Häuser) je Ort auf drei Böden (Wald 0,8 ·
+// Wiese 0,2 · Fels 0,6; fachwerk `stoffDesBodens`: Holz · Lehm · Stein): je Plan der Stoff der meisten Häuser (ihr Stil, fachwerk
+// `STIL_STOFF`, wie die Station ihn zählt) gegen den Stoff seines Bodens. Soll: ≥ 85 % passend je Fall von `VORRAT_FAELLE` und
+// ≥ 80 % der Häuser im Stoff (das Band 90 %: die Einfamilienhäuser der waldreichen Länder Nordeuropas, Schauerte 2010 — zweimal
+// gezogen, Region und Haus, 0,9² = 0,81 wo beide mischen), und derselbe Plan ohne Boden bleibt der
+// Wurf des Klimas (der Gegenlauf: dieselbe Saat mit `boden: undefined` ist byte-gleich zum Plan ohne den Schlüssel). Die
+// Mutanten „die Region liest den Boden nicht“, „das Haus liest den Boden nicht“, „die Legende liest den Ort nicht“ (fachwerk
+// `regionImKlima` · DORF · `legendeAmOrt`; jeder Plan trägt die Legende seiner Saat, `siedlungsEpoche`, wie der Wirt) fallen in R16.
+const VORRAT_BOEDEN = { holz: { fels: 0, wald: 0.8 }, lehm: { fels: 0, wald: 0.2 }, stein: { fels: 0.6, wald: 0.3 } };
+// der Ort Fernost (Tokio 5 / 26 °C, WMO 1961–1990): sein Pool mischt Holz (japanisch) und Stein (chinesisch) — dort wählt das Haus
+const VORRAT_ORTE = { ...KLIMA_ORTE, fernost: { winter: 5, sommer: 26, spendeVerh: 1 } };
+const VORRAT_FAELLE = [["heimat", "holz"], ["heimat", "lehm"], ["mittelmeer", "stein"], ["fernost", "holz"]];
+// offen (gemessen, ohne Soll): kein Pool im Klima baut den Stoff um 880 — der Fels der Heimat (ihr Mittelalter baut Fachwerk und
+// Holz), der Wald am Mittelmeer (mediterran und antik bauen Stein); dort bleibt der Wurf des Klimas
+const VORRAT_OFFEN = [["heimat", "stein"], ["mittelmeer", "holz"]];
+function vorratGang(FC) {
+    if (typeof FC.stoffDesBodens !== "function" || !FC.STIL_STOFF) return { leer: "fachwerk stoffDesBodens / STIL_STOFF fehlt: der Plan liest keinen Boden" };
+    const je = {}, offen = {}, saaten = REGEN_SAATEN;
+    for (const [ort, st, aus] of [...VORRAT_FAELLE, ...VORRAT_OFFEN.map((f) => [...f, 1])]) {
+        const klima = ortKlimaVon(VORRAT_ORTE[ort]), boden = VORRAT_BOEDEN[st], ist = {};
+        let passt = 0, hIm = 0, hAlle = 0;
+        for (const seed of saaten) {
+            const hs = FC.DORF({ seed, nH: 14, klima, boden, epoche: FC.siedlungsEpoche(seed) }).houses.map((h) => h.p || h), k = {}; // die Legende der Saat wie der Wirt sie reicht (`_zellZeit`)
+            for (const p of hs) { const s = FC.STIL_STOFF[p.stil] || "lehm"; k[s] = (k[s] || 0) + 1; }
+            const hof = hs.filter((p) => p.rolle === "wohnhaus" || p.rolle === "scheune"); // das Band zählt Häuser, nicht Kirche, Burg, Werk
+            hIm += hof.filter((p) => (FC.STIL_STOFF[p.stil] || "lehm") === FC.stoffDesBodens(boden)).length;
+            hAlle += hof.length;
+            const m = Object.keys(k).sort((a, b) => k[b] - k[a])[0];
+            ist[m] = (ist[m] || 0) + 1;
+            if (m === FC.stoffDesBodens(boden)) passt++;
+        }
+        (aus ? offen : je)[ort + "/" + st] = { anteil: +(passt / saaten.length).toFixed(3), haeuser: +(hIm / hAlle).toFixed(3), ist };
+    }
+    const g = (dp) => JSON.stringify(FC.DORF(dp).houses.map((h) => { const p = h.p || h; return [p.kultur, p.seed]; }));
+    const k = ortKlimaVon(KLIMA_ORTE.heimat), gegen = saaten.slice(0, 8).filter((seed) => g({ seed, nH: 14, klima: k }) !== g({ seed, nH: 14, klima: k, boden: undefined })).length;
+    return { je, offen, gegen, n: saaten.length };
+}
+function vorratUrteil(V, check) {
+    if (!V || V.leer) return check("R16 der Baustoff folgt dem Vorrat — der Plan liest den Boden", false, (V && V.leer) || "kein Gang");
+    const z = (J) => Object.entries(J).map(([f, v]) => `${f} ${(100 * v.anteil).toFixed(1)} % der Pläne, ${(100 * v.haeuser).toFixed(1)} % der Wohnhäuser und Scheunen (${Object.entries(v.ist).map(([s, n]) => s + " " + n).join(", ")})`).join(" · "); // prettier-ignore
+    check(
+        `R16 der Baustoff folgt dem Vorrat — ${V.n} Saaten je Fall, der Stoff der meisten Häuser im Stoff des Bodens: ${z(V.je)} (Soll ≥ 85 % der Pläne und ≥ 80 % der Häuser je Fall), ohne Boden ${V.gegen} von 8 anders (Soll 0); offen, kein Pool des Klimas baut den Stoff: ${z(V.offen)}`,
+        Object.values(V.je).every((v) => v.anteil >= 0.85 && v.haeuser >= 0.8) && V.gegen === 0
+    );
+}
 const KLIMA_TAETER = {
     "der Kern liest das Klima nicht": [
         ["var im = Z.filter(function (z) { return klimaAbstand(z, klima) === 0; });", "var im = Z.slice();"],
@@ -1000,6 +1046,10 @@ KLIMA_TAETER["die Sprache liest den Raum nicht"] = [["var SPRACH_RAUM = { sigma:
 KLIMA_TAETER["die Mundart kennt keinen Fächer"] = [["var SPRACH_RAUM = { sigma: 5000, faecher: 0.3 };", "var SPRACH_RAUM = { sigma: 5000, faecher: 0 };"]];
 // der Preis (R15): die Mundart rechnet je Ruf neu (kein Merkbuch an der Senke) · die Sprache rechnet je Bewohner neu (kein Merkbuch am Ort)
 KLIMA_TAETER["die Mundart rechnet je Ruf neu"] = [["if (M) return M;", ""]];
+// R16 (kultur#1): der Plan, der den Boden nicht liest — die Region würfelt nur im Klima, das Haus nur im Pool seines Jahrs
+KLIMA_TAETER["die Region liest den Boden nicht"] = [["region=regionImKlima(rnd(), DP.klima, DP.boden);", "region=regionImKlima(rnd(), DP.klima);"]];
+KLIMA_TAETER["das Haus liest den Boden nicht"] = [["const geb=[], St=stoffDesBodens(DP.boden);", "const geb=[], St=null;"]];
+KLIMA_TAETER["die Legende liest den Ort nicht"] = [["legendeAmOrt(DP.epoche, DP.seed, DP.klima, DP.boden))?EPOCHEN", "true)?EPOCHEN"]];
 KLIMA_TAETER["die Sprache rechnet je Bewohner neu"] = [["if (o) return o;", ""]];
 const KLIMA_SOLL = {
     "die Trockenheit kennt den Pol nicht": "R8",
@@ -1021,6 +1071,9 @@ const KLIMA_SOLL = {
     "die Mundart kennt keinen Fächer": "R13",
     "die Mundart rechnet je Ruf neu": "R15",
     "die Sprache rechnet je Bewohner neu": "R15",
+    "die Region liest den Boden nicht": "R16",
+    "das Haus liest den Boden nicht": "R16",
+    "die Legende liest den Ort nicht": "R16",
 };
 
 

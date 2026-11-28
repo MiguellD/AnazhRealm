@@ -792,9 +792,11 @@ class AnazhRealm_gelaende_boden {
     }
 
     // Rock-Exposure: slope-getrieben, `smoothstep(0.75, 1.45, slope)` — die Kliffs und Flanken des Flussnetzes tragen
-    // den Fels (K16: der Massiv-Bias des Ein-Massiv-Ankers fiel mit ihm). Returnt [0, 1].
-    _rockExposureAt(x, z) {
-        const slope = this._slopeAt(x, z);
+    // den Fels (K16: der Massiv-Bias des Ein-Massiv-Ankers fiel mit ihm). Returnt [0, 1]. `surf` (optional): die Fläche des Hangs —
+    // ohne die gebaute (`_voxelSurfaceY`); der Plan eines Orts liest die Höhe der Saat (`_terrainSaatY`, `_zellEingang`): sein
+    // Boden ist eine Funktion von Saat und Gesetz, gleich, welche Kachel geladen ist und wann ein Ort seinen Erdbau legt.
+    _rockExposureAt(x, z, surf) {
+        const slope = this._slopeAt(x, z, surf);
         const ss = (e0, e1, v) => {
             let t = (v - e0) / (e1 - e0);
             t = t < 0 ? 0 : t > 1 ? 1 : t;

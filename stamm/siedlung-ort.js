@@ -1716,7 +1716,9 @@ class AnazhRealm_siedlung_ort {
     // einer Stadt des Worts (`kachel`) trägt keins. Leser: der Export der Zelle (`_dorfBereiten`) und ihres Gedächtnisses (`_ortDp`).
     // Dazu die MUNDART ihres Orts (Karte 2 mensch.kultur.sprache#4, `_mundartAm`): gelesen an der Mitte der Zelle („cx,cz“, die
     // Zelle von `SIEDLUNG.cellM`) oder am Genesis-Ort („start“) — EIN Punkt je Schlüssel, damit der Export und das Gedächtnis
-    // denselben Plan rechnen (der Plan-Hash Studio = Welt); die Stelle des Dorfs liegt im selben Tal.
+    // denselben Plan rechnen (der Plan-Hash Studio = Welt); die Stelle des Dorfs liegt im selben Tal. Dazu der BODEN am Anker des
+    // Dorfs (`boden` {fels, wald}: `_rockExposureAt` über der Höhe der Saat · `_forestStandDensity`): der Baustoff folgt dem Vorrat
+    // (fachwerk `stoffDesBodens`) — eine Funktion von Saat und Gesetz, das Gedächtnis rechnet denselben Plan.
     _zellEingang(key, seed) {
         const z = this._zellZeit(key, seed);
         if (z.kachel) return z;
@@ -1724,7 +1726,11 @@ class AnazhRealm_siedlung_ort {
         const c = AnazhRealm._siedlungGesetz().cellM;
         const o = m ? { x: (+m[1] + 0.5) * c, z: (+m[2] + 0.5) * c } : key === "start" ? this._genesisMitte() : null;
         if (!o) throw new Error(`ORT: die Zelle „${key}" trägt keinen Ort für ihre Mundart (start ohne Genesis-Ort?)`);
-        return Object.assign(z, { klima: this._siedlungKlima(), mundart: this._mundartAm(o.x, o.z) });
+        // DER BODEN AM ANKER (fachwerk `stoffDesBodens`, Karte 2 mensch.kopplung.kultur#1): wo das Dorf steht, nicht die Mitte der Zelle
+        const a = m ? this._autoSettlementCellInfo(+m[1], +m[2]) : o;
+        if (!a) throw new Error(`ORT: die Zelle „${key}" trägt kein Dorf, ihr Boden hat keinen Anker`);
+        const boden = { fels: this._rockExposureAt(a.x, a.z, (px, pz) => this._terrainSaatY(px, pz)), wald: this._forestStandDensity(a.x, a.z) }; // prettier-ignore
+        return Object.assign(z, { klima: this._siedlungKlima(), mundart: this._mundartAm(o.x, o.z), boden });
     }
     // DIE MUNDART AM ORT (fachwerk `mundartVon`, sprache#4): der Weg des Wassers bis zur Senke seines Tals (gelaende-core `talWeg`
     // auf der Lage der Welt), dort liest das Gesetz der Welt-Saat die Blätter des Stammbaums — der Ort spricht, was sein Tal spricht.

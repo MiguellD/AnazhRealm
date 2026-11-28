@@ -6055,18 +6055,94 @@
         return a(k.winter, z.winter) + a(k.sommer, z.sommer);
     }
     // prettier-ignore
-    function regionImKlima(r, klima) {
-        var Z = REGION_KLIMA;
+    function regionImKlima(r, klima, boden) {
+        var Z = REGION_KLIMA, St = stoffDesBodens(boden);
         // ohne Ort jede Region: die Schwellen des Wurfs als Literale (die Summe der Gewichte in Gleitkomma läge um 1e-16 daneben)
-        if (klima == null) return r < 0.3 ? "mitteleuropa" : r < 0.46 ? "alpin" : r < 0.64 ? "mediterran" : r < 0.76 ? "nordisch" : r < 0.88 ? "fernost" : "antik";
+        if (klima == null && St == null) return r < 0.3 ? "mitteleuropa" : r < 0.46 ? "alpin" : r < 0.64 ? "mediterran" : r < 0.76 ? "nordisch" : r < 0.88 ? "fernost" : "antik";
+        // DER BAUSTOFF FOLGT DEM VORRAT (unten): der Wurf fällt zum Anteil des Bands auf die Regionen, deren Geschichte den Stoff des Bodens baut
+        var vorrat = function (L) { return L[imVorrat(L.length, r, function (i) { return L[i].w; }, function (i) { return regionBaut(L[i].region, St); })].region; };
+        if (klima == null) return vorrat(Z);
         if (!(isFinite(klima.winter) && isFinite(klima.sommer)))
             throw new Error("fachwerk regionImKlima: das Klima des Orts trägt winter und sommer nicht als Zahl");
         var im = Z.filter(function (z) { return klimaAbstand(z, klima) === 0; });
         if (!im.length) im = [Z.reduce(function (b, z) { return klimaAbstand(z, klima) < klimaAbstand(b, klima) ? z : b; })];
+        if (St != null) return vorrat(im);
         var S = 0, c = 0;
         for (var i = 0; i < im.length; i++) S += im[i].w;
         for (var j = 0; j < im.length; j++) { c += im[j].w / S; if (r < c) return im[j].region; }
         return im[im.length - 1].region;
+    }
+    // DER BAUSTOFF FOLGT DEM VORRAT (Karte 2 mensch.kopplung.kultur#1): wer ohne Wort baut, baut mit dem, was sein Boden trägt —
+    // `DP.boden` {fels, wald}: die Fels-Blöße und die Bestandesdichte am Anker des Orts (der Wirt `_zellEingang`: `_rockExposureAt` ·
+    // `_forestStandDensity`, dieselben Leser, die Gelände und Wiese tragen). Der Stoff des Bodens (`stoffDesBodens`): Fels ab 0,3 trägt
+    // Stein, sonst Wald ab 0,5 Holz, sonst Lehm; der Stoff einer Kultur folgt ihrem Stil (`STIL_STOFF`: stein · klinker Stein, huette
+    // Holz, alt das Fachwerk mit Lehm-Gefach, modern · glas Glas). Das Band: in den waldreichen Ländern Finnland, Norwegen, Schweden
+    // sind 90 % der Einfamilienhäuser aus Holz (Schauerte 2010, zitiert in Silva Fennica Artikel 10503; Statistik Finnland 2017: 84 %
+    // der Wohngebäude) — der Anteil `anteil` des Wurfs baut den Stoff des Bodens, der Rest bleibt der Wurf der Region. Der Wurf `r`
+    // bleibt EIN Zug des Samens (`imVorrat`): trägt die Wahl Glieder des Stoffs und andere, fällt `anteil` des Wurfs auf jene (je nach
+    // Gewicht), der Rest auf diese; trägt sie nur eine Art, der Wurf über alle. Die Wahl ist zweifach: die Region im Klima (ihr
+    // Pool im Jahr des Wurfs baut eine Kultur des Stoffs, `regionBaut`) und je Haus die Kultur aus dem Pool seines Jahrs (DORF). Baut
+    // keine Region im Klima den Stoff (der Fels der Heimat: ihr Mittelalter baut Fachwerk und Holz), bleibt der Wurf des Klimas — offen.
+    // Ohne Boden (das Labor, ein Plan ohne Ort, das Wort) der Wurf bis hier, byte-gleich. Vorher baute in der Heimat das Dorf im Wald
+    // Fachwerk wie das Dorf auf der Wiese: 10 von 32 Zellen im Stoff ihres Bodens (31,3 %), der Wald fordert Holz in 27.
+    // Leser: DORF (Region und Kultur), die Linse gate:settlement Teil R (R16).
+    var BODEN_STOFF = { fels: 0.3, wald: 0.5, anteil: 0.9 };
+    var STIL_STOFF = { stein: "stein", klinker: "stein", huette: "holz", alt: "lehm", modern: "glas", glas: "glas" };
+    function stoffDesBodens(boden) {
+        if (boden == null) return null;
+        if (!(isFinite(boden.fels) && isFinite(boden.wald)))
+            throw new Error("fachwerk stoffDesBodens: der Boden des Orts trägt fels und wald nicht als Zahl");
+        return boden.fels >= BODEN_STOFF.fels ? "stein" : boden.wald >= BODEN_STOFF.wald ? "holz" : "lehm";
+    }
+    function kulturStoff(k) {
+        var K = KULTUR[k], s = K && STIL_STOFF[K.stil];
+        if (!s) throw new Error("fachwerk kulturStoff: die Kultur „" + k + "“ trägt keinen Stil mit Stoff");
+        return s;
+    }
+    // die Region baut den Stoff, wenn ihr Pool im Jahr des Wurfs ihn trägt: der Wurf ohne Legende gründet ab 880 (DORF; die Antike
+    // früher, ihr Pool steht seit 0) — nicht die ganze Geschichte (Mitteleuropa baut im Mittelalter Fachwerk, den Stein erst ab 1650)
+    var VORRAT_JAHR = 880;
+    function regionBaut(region, St) {
+        var H = REGION_HIST[region], P = H[0][1];
+        for (var i = 0; i < H.length; i++) if (VORRAT_JAHR >= H[i][0]) P = H[i][1];
+        return P.some(function (k) { return kulturStoff(k) === St; });
+    }
+    // DIE LEGENDE GILT, WO IHR ORT SIE TRÄGT (kultur#1): die Epochen-Legende einer Zelle (`siedlungsEpoche`, jede dritte) setzt Region,
+    // Jahr und Pool — bis hier ohne den Ort: im Heimat-Klima (−4 / 18 °C) stand das mediterrane Dorf im Wald, das alpine Holzdorf
+    // auf der Wiese. Ihre Region muss im Klima-Band des Orts liegen (`REGION_KLIMA`, dasselbe Band wie der Wurf), und ihr Pool im Jahr
+    // der Legende (`pool`, sonst `REGION_HIST` ihrer Region) muss den Stoff des Bodens bauen — sonst hält sie nur im Rest des Bands
+    // (`BODEN_STOFF.anteil`: 1 von 10 Orten baut nicht aus seinem Vorrat), gezogen aus dem Samen der Zelle. Fällt sie, würfelt der
+    // Ort wie jede Zelle ohne Legende (Klima und Vorrat). Ohne Klima und Boden (das Wort, das Labor) hält sie immer — byte-gleich.
+    function legendeAmOrt(name, seed, klima, boden) {
+        var E = EPOCHEN[name];
+        if (!E) return true; // kein Name der Tafel: der Weg bis hier entscheidet
+        if (klima != null) {
+            var z = REGION_KLIMA.filter(function (k) { return k.region === E.region; })[0];
+            if (z && klimaAbstand(z, klima) !== 0) return false;
+        }
+        var St = stoffDesBodens(boden);
+        if (St == null) return true;
+        var H = REGION_HIST[E.region], P = E.pool || H[0][1];
+        if (!E.pool) for (var i = 0; i < H.length; i++) if (E.jahr >= H[i][0]) P = H[i][1];
+        if (P.some(function (k) { return kulturStoff(k) === St; })) return true;
+        var h = Math.imul((seed >>> 0) || 1, 0x85ebca6b) >>> 0;
+        h = (h ^ (h >>> 13)) >>> 0;
+        return h / 4294967296 >= BODEN_STOFF.anteil;
+    }
+    // prettier-ignore
+    function imVorrat(n, r, w, passt) {
+        var P = 0, A = 0, i, nur, q = r, a = BODEN_STOFF.anteil;
+        for (i = 0; i < n; i++) passt(i) ? (P += w(i)) : (A += w(i));
+        if (P === 0 || A === 0) nur = null;                       // nur eine Art: der Wurf über alle
+        else if (r < a) { nur = true; q = r / a; }
+        else { nur = false; q = (r - a) / (1 - a); }
+        var S = nur === null ? P + A : nur ? P : A, c = 0, last = -1;
+        for (i = 0; i < n; i++) {
+            if (nur !== null && !!passt(i) !== nur) continue;
+            last = i; c += w(i) / S;
+            if (q < c) return i;
+        }
+        return last;
     }
     // DER SOCKEL FOLGT DEM WASSER DES ORTS (haus-stoff): die Schwelle liegt über dem Spritzwasser — Marx 1891 (Handbuch der
     // Architektur III.2.1, „Unterbaute Fachwerkwand“): der Sockel „gern 50 bis 60 cm“, die Bauordnungen je Land Mähren 0,5 m, Hessen
@@ -6086,14 +6162,14 @@
     // prettier-ignore
     function DORF(DP){
   let s=((Math.round((DP.seed||1)*613+29)*2654435761)>>>0); const rnd=()=>{ s=(s*1664525+1013904223)>>>0; return s/4294967296; };
-  const samenT=DP.erbe&&isFinite(DP.erbe.samen)?DP.erbe.samen:(DP.seed||1), E0=(DP.epoche&&DP.epoche!=='gewuerfelt')?EPOCHEN[DP.epoche]:null;   /*DER TECHNIK-STAND DER SAAT (TECHNIK) in ihrer Region: die Viertel einer Stadt tragen den ihrer Mitte (`viertelWort` erbe.samen)*/
+  const samenT=DP.erbe&&isFinite(DP.erbe.samen)?DP.erbe.samen:(DP.seed||1), E0=(DP.epoche&&DP.epoche!=='gewuerfelt'&&legendeAmOrt(DP.epoche, DP.seed, DP.klima, DP.boden))?EPOCHEN[DP.epoche]:null;   /*DIE LEGENDE GILT, WO IHR ORT SIE TRÄGT (legendeAmOrt)*/   /*DER TECHNIK-STAND DER SAAT (TECHNIK) in ihrer Region: die Viertel einer Stadt tragen den ihrer Mitte (`viertelWort` erbe.samen)*/
   const TS0=E0?technikStand(samenT,E0.region):null, ep0=E0?epocheDerSaat(DP.epoche,TS0.stand):null;          /*die Epoche liest den Stand: die jüngste ihrer Achse bis zur verlangten, die er trägt*/
   const leg0=ep0?EPOCHEN[ep0]:null, achse=leg0?zeitachse(leg0.region).filter(k=>traegt(TS0.stand,EPOCHEN[k].technik)):[];
   const chronik=!!leg0&&achse.length>1;                                                 /*DIE CHRONIK (siedlung.K4): die Epoche lebt in der Gegenwart ihrer Region — der Plan ist der ihrer juengsten Epoche, das Jahr schneidet ihn (unten). Die ZAHL ist die Groesse der Gegenwart (die Gestalt); bis w3w schaltete sie die Chronik ab: jede Zelle der Welt (Rang-Gesetz), der Satz „dorf 7 300" und der Akt des DSL trugen eine Zahl und rechneten je Epoche einen eigenen Plan — die Mutante ohne Erbe (Teil J 0,222)*/
   const leg=chronik?EPOCHEN[achse[achse.length-1]]:leg0;
   let region,jahr,spanne,d=0;
   if(leg){ region=leg.region; d=((rnd()-0.5)*50)|0; jahr=leg.jahr+d; spanne=leg.spanne; }
-  else{ region=regionImKlima(rnd(), DP.klima);   // DIE BAUWEISE FOLGT DEM KLIMA (REGION_KLIMA): der Wurf über die Regionen im Klima des Orts
+  else{ region=regionImKlima(rnd(), DP.klima, DP.boden);   // DIE BAUWEISE FOLGT DEM KLIMA (REGION_KLIMA) UND DEM VORRAT (BODEN_STOFF): der Wurf über die Regionen im Klima des Orts
     if(region==='antik'){ jahr=-150+((rnd()*400)|0); spanne=40+((rnd()*90)|0); }
     else{ jahr=880+((rnd()*680)|0); const sp=rnd(); spanne= sp<.35?(20+((rnd()*60)|0)):(sp<.75?(180+((rnd()*300)|0)):(500+((rnd()*420)|0)));
       if(region==='fernost'&&jahr>1500) jahr=1050+((rnd()*450)|0); } }
@@ -6109,7 +6185,7 @@
   const staedtisch=staedtischVon(groesse);
   const kernel= staedtisch?'markt':(kr<.45?'brunnen':(kr<.78?'anger':'kreuzung'));
   const poolAt=(y,hist)=>{ if(!hist&&leg&&leg.pool)return leg.pool; const H=REGION_HIST[region]; let P=H[0][1]; for(const q of H){ if(y>=q[0])P=q[1]; } return P; };   /*hist=true: die HISTORIE gewinnt ueber die Legende — Jahresringe brauchen die Architektur ihrer Zeit*/
-  const geb=[];
+  const geb=[], St=stoffDesBodens(DP.boden);
   const anker=ringe? chronikAnker(vor, d, gr0, jahr+spanne, n, leg?leg.groesse:groesse) : null;   /*die Ring-Stadt waechst laengs der Zeitachse (chronikJahr) — Kern=Gruendung, Rand=Gegenwart*/
   const gr=[], fr=[];                                                                         /*je Los: das Gruendungsjahr und die frueheren Bauten [{ab, v}] (der Schnitt der Chronik liest sie)*/
   for(let i=0;i<n;i++){
@@ -6119,7 +6195,7 @@
       by=Math.max(gr0, Math.min(jahr+spanne, by)); }
     else by=jahr+Math.round(spanne*t9r*(0.55+0.45*rnd()));
     gr.push(ringe?chronikJahr(anker,i):by); fr.push([]);
-    const pool=poolAt(by, ringe), kn=pool[(rnd()*pool.length)|0], hs=1+((rnd()*1e6)|0);
+    const pool=poolAt(by, ringe), kn=pool[St==null?(rnd()*pool.length)|0:imVorrat(pool.length, rnd(), ()=>1, k=>kulturStoff(pool[k])===St)], hs=1+((rnd()*1e6)|0);   /*DER BAUSTOFF FOLGT DEM VORRAT: der Anteil des Bands baut im Stoff des Bodens, wo der Pool ihn trägt*/
     const p=bauRezept({bauweise:kn},null,hs); p.seed=hs; p.kultur=kn; p.terrain=0; p.baujahr=by; p.rolle='wohnhaus';
     if(ringe) p.W=Math.max(4.5, Math.min(15, Math.round(p.W*(0.80+0.38*t9r)*2)/2));         /*PARZELLEN-GEDAECHTNIS: schmale Buergerhaeuser im Kern, breite Lose am Saum*/
     const w=(1.22-0.5*(i/Math.max(1,n-1)))*(0.78+0.44*rnd()); p.wohl=Math.round(w*100)/100;
@@ -6163,7 +6239,7 @@
     if((p.rolle==='wohnhaus'||p.rolle==='wache')&&Math.min(p.W,p.D)>=6.5&&rnd()<schQ){        /*die Wache ist ein Wohn-Los (`wacheLose` waehlt nur Wohnhaeuser): sie wuerfelt ihren Hof wie es — der Strom `rnd` bleibt der Strom vor ihr (ohne das rueckten am Dorf 21/150 fuenf der 153 Slots von ihrem Ort vor der Wache, mit ihm steht jeder ausser ihr selbst dort)*/
       const cap2=Math.min(7,Math.min(p.W,p.D)-2), sn=1+((rnd()*1e6)|0);
       alle.push({W:Math.max(4,Math.round((cap2-rnd()*1.5)*2)/2), D:Math.max(4,Math.round((cap2-0.5-rnd()*1.5)*2)/2), storeys:1,
-        pitchDeg:Math.max(28,p.pitchDeg-6), brace:'k', stil:(region==='mediterran'||region==='antik')?'stein':'huette',
+        pitchDeg:Math.max(28,p.pitchDeg-6), brace:'k', stil:St!=null&&STIL_STOFF[p.stil]===St?p.stil:(region==='mediterran'||region==='antik')?'stein':'huette',   /*DER HOF BAUT AUS SEINEM VORRAT: steht das Haus im Stoff des Bodens, steht die Scheune in seinem Stil (im Fachwerk-Dorf auf Lehm bis hier die Holz-Scheune)*/
         hip:0, roofCurve:0, dachTyp:'sattel', bogenTyp:'none', seed:sn, kultur:p.kultur, col:p.col,
         terrain:0, rolle:'scheune', parent:pi, baujahr:za[pi].gr, wohl:p.wohl,   // das Los der Scheune; ihre Form ist die Zeile `scheune` am Schreiber-Ende
         treppgiebel:0,kuppel:0,portikus:0,arkade:0,turm:0,zinnen:0,veranda:0,vorkragung:0,pilotis:0,terrasse:0}); za.push({gr:za[pi].gr, fr:[]}); } });
@@ -13377,6 +13453,7 @@
             klima: dp.klima, // das Klima des Orts (REGION_KLIMA): der Wirt nennt es, ein Plan ohne Ort (das Labor) nicht
             himmel: dp.himmel, // der Regen des gehaltenen Himmels (`himmelNeigung`): der Wirt nennt ihn, solange ein Wort gilt
             mundart: kw ? undefined : dp.mundart, // die Mundart des Orts (`mundartVon`): der Wirt nennt sie, die Kachel einer Stadt des Worts und das Labor nicht
+            boden: kw ? undefined : dp.boden, // der Vorrat am Anker (`stoffDesBodens`): der Wirt nennt ihn, die Kachel einer Stadt des Worts und das Labor nicht
         });
         // DIE MAUER STEHT IM JAHR DER WELT (mensch.macht.wehrbau#3, das EINE Urteil jeder Mauer des Exports: die Kachel, das Layout,
         // der Schnitt): die Entfestigung ist ein Gesetz der Welt-Zeit, nicht des Schnitts — steht das Jahr der Welt (`dp.jahr`,
@@ -16529,6 +16606,10 @@
         DORF: DORF,
         REGION_KLIMA: REGION_KLIMA, // die Bauweise folgt dem Klima (haus-gestalt): je Region das Band der Monats-Mittel; Leser: DORF, gate:settlement Teil R
         regionImKlima: regionImKlima,
+        stoffDesBodens: stoffDesBodens,
+        kulturStoff: kulturStoff,
+        BODEN_STOFF: BODEN_STOFF,
+        STIL_STOFF: STIL_STOFF,
         SOCKEL_WASSER: SOCKEL_WASSER, // der Sockel folgt dem Wasser des Orts (haus-stoff): Spritzwasser 0,30 · Heimat 0,55 · Böhmen 0,95 m; Leser: DORF, gate:settlement R5
         sockelImWasser: sockelImWasser,
         DECKUNG_GESETZ: DECKUNG_GESETZ, // die Regeldachneigung und der Stoff je Deckung (haus-dach); Leser: HAUS, DORF, gate:settlement Teil R
